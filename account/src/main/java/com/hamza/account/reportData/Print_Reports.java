@@ -1,7 +1,5 @@
 package com.hamza.account.reportData;
 
-import com.hamza.account.finance.MoneyMath;
-import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
@@ -9,6 +7,7 @@ import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.features.invoice.InvoicePdfLayout;
 import com.hamza.account.features.invoice.InvoicePrintDocument;
+import com.hamza.account.features.invoice.InvoiceReceiptLayout;
 import com.hamza.account.features.invoice.MultiInvoicePdfLayout;
 import com.hamza.account.features.export.DocumentPdfPage;
 import com.hamza.account.features.export.PdfExportService;
@@ -105,27 +104,44 @@ public class Print_Reports extends ReportCompany {
                 file.getAbsolutePath(), page, TablePdfReport.uprightPageSize()));
     }
 
-    public void printReceiptInvoice(List<ModelPrintInvoice> list, String name, int numInvoice, double otherDiscount
-            , String date_insert, String invoice_date, double delivery) {
-        BigDecimal totalAmount = MoneyMath.money(list.stream()
-                .map(ModelPrintInvoice::getTotal_amount)
-                .map(MoneyMath::decimal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-        double total = MoneyMath.asDouble(totalAmount);
-        BigDecimal afterDiscount = MoneyMath.subtract(
-                totalAmount, MoneyMath.decimal(otherDiscount));
-        HashMap<String, Object> map = dataForPrinterReceipt(name, list, total, date_insert);
-        map.put("No_Invoice", numInvoice);
-        map.put("discount", otherDiscount);
-        map.put("invoice_date", invoice_date);
-        map.put("after_discount", MoneyMath.asDouble(afterDiscount));
-        if (delivery != 0) {
-            map.put("delivery", delivery);
-            map.put("active_delivery", true);
-            map.put("after_discount", MoneyMath.asDouble(MoneyMath.add(
-                    afterDiscount, MoneyMath.decimal(delivery))));
-        }
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
+    /**
+     * One invoice or return on the 80mm thermal printer, straight to the printer by name.
+     * <p>
+     * The figures are the ones the A4 page prints - {@link InvoiceReceiptLayout} reads the same
+     * {@link InvoicePrintDocument} - so a deferred sale's receipt now says what was paid, what is
+     * left and the party's balance, where it used to stop at the total.
+     *
+     * @param enteredAt when the document was entered, as the receipt prints it
+     */
+    public void printReceiptInvoice(@NotNull InvoicePrintDocument document, String enteredAt) {
+        Users user = CurrentUser.get();
+        HashMap<String, Object> map = getCompany();
+        map.putAll(receiptParameters(document, enteredAt, user == null ? "admin" : user.getUsername(),
+                getCount(), LanguageManager.getInstance()::getString));
+        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL,
+                LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
+    }
+
+    /**
+     * Everything the thermal template reads except the company, which {@link #getCompany()} adds.
+     * Separate so a test can fill the real template with it and no database.
+     */
+    public static HashMap<String, Object> receiptParameters(InvoicePrintDocument document, String enteredAt,
+                                                            String userName, int printCount,
+                                                            InvoicePdfLayout.Labels labels) {
+        InvoiceReceiptLayout layout = InvoiceReceiptLayout.of(document, labels);
+        HashMap<String, Object> map = new HashMap<>();
+        map.put(COLLECTION_BEAN_PARAM, new JRBeanCollectionDataSource(layout.lines()));
+        map.put("SummaryBeanParam", new JRBeanCollectionDataSource(layout.summary()));
+        map.put("lines_total", layout.linesTotal());
+        map.put("lines_label", layout.linesTotalLabel());
+        map.put("No_Invoice", document.number());
+        map.put("invoice_date", document.date());
+        map.put("name", document.partyName());
+        map.put("date_time", enteredAt == null ? "" : enteredAt);
+        map.put("admin", userName);
+        map.put("count", printCount);
+        return map;
     }
 
     private HashMap<String, Object> getStringObjectHashMap(@NotNull List<?> list, CssToColorHelper helper) {
@@ -137,22 +153,6 @@ public class Print_Reports extends ReportCompany {
             map.put("color_line", "#ffffff");
             map.put("color_column_header", hex);
         }*/
-        return map;
-    }
-
-    private HashMap<String, Object> dataForPrinterReceipt(@NotNull String name, @NotNull List<?> list, double total
-            , String date_insert) {
-        int count = getCount();
-        Users usersVo = CurrentUser.get();
-        if (usersVo == null)
-            usersVo = new Users(1, "admin");
-
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("count", count);
-        map.put("date_time", date_insert);
-        map.put("name", name);
-        map.put("admin", usersVo.getUsername());
-        map.put("totals", total);
         return map;
     }
 

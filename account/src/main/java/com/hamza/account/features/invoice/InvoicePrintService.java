@@ -6,14 +6,13 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Supplier;
 
 /** Prepares immutable invoice print data and executes the selected print format. */
 public final class InvoicePrintService {
 
-    /** Builds the upright page's content from the captured lines; asked only when one is printed. */
+    /** Builds what the paper says from the captured lines: the saved header, the letterhead, the balance. */
     @FunctionalInterface
     public interface DocumentSource {
         InvoicePrintDocument build(List<ModelPrintInvoice> lines) throws DaoException;
@@ -29,13 +28,15 @@ public final class InvoicePrintService {
         this.reportsFactory = reportsFactory;
     }
 
+    /**
+     * Captures the lines and builds the document for either format. The receipt reads the same
+     * {@link InvoicePrintDocument} as the A4 page, so the two cannot quote different figures.
+     *
+     * @param printedAt when the document was entered, as the receipt prints it
+     */
     public <T extends BasePurchasesAndSales> InvoicePrintRequest prepare(
             List<T> source,
-            String partyName,
-            int invoiceNumber,
-            double discount,
             String printedAt,
-            LocalDate invoiceDate,
             boolean receipt,
             DocumentSource document) throws DaoException {
         List<ModelPrintInvoice> lines = source.stream()
@@ -47,8 +48,7 @@ public final class InvoicePrintService {
                                 MoneyMath.decimal(line.getTotal()),
                                 MoneyMath.decimal(line.getDiscount())))))
                 .toList();
-        return new InvoicePrintRequest(lines, partyName, invoiceNumber, discount,
-                printedAt, invoiceDate, receipt, receipt ? null : document.build(lines));
+        return new InvoicePrintRequest(lines, printedAt, receipt, document.build(lines));
     }
 
     /**
@@ -60,9 +60,7 @@ public final class InvoicePrintService {
     public void print(InvoicePrintRequest request) {
         Print_Reports reports = reportsFactory.get();
         if (request.receipt()) {
-            reports.printReceiptInvoice(request.lines(), request.partyName(),
-                    request.invoiceNumber(), request.discount(), request.printedAt(),
-                    request.invoiceDate().toString(), 0);
+            reports.printReceiptInvoice(request.document(), request.printedAt());
             return;
         }
         reports.printInvoice(request.document());

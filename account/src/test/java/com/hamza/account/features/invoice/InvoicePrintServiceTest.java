@@ -9,7 +9,6 @@ import com.hamza.account.type.InvoiceType;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,8 +22,8 @@ class InvoicePrintServiceTest {
         InvoicePrintService service = new InvoicePrintService(() -> mock(Print_Reports.class));
         Sales line = line();
 
-        InvoicePrintRequest request = service.prepare(List.of(line), "عميل", 42,
-                2, "2026/08/13 09:00", LocalDate.of(2026, 8, 13), true, lines -> fail("a receipt builds no page"));
+        InvoicePrintRequest request = service.prepare(List.of(line), "2026/08/13 09:00", true,
+                lines -> document());
 
         assertEquals(1, request.lines().size());
         assertEquals("صنف", request.lines().getFirst().getName_item());
@@ -35,41 +34,40 @@ class InvoicePrintServiceTest {
                 "print data must not follow later table-row mutations");
     }
 
+    /**
+     * The receipt reads the same document as the A4 page - that is what puts what was paid, what
+     * is left and the balance on it - so the document is built for both formats, from the lines.
+     */
     @Test
-    void theUprightPageIsBuiltFromTheCapturedLinesAndOnlyForThatFormat() throws Exception {
+    void bothFormatsBuildTheDocumentFromTheCapturedLines() throws Exception {
         InvoicePrintService service = new InvoicePrintService(() -> mock(Print_Reports.class));
-        AtomicInteger built = new AtomicInteger();
-
-        InvoicePrintRequest standard = service.prepare(List.of(line()), "عميل", 42, 2, "now",
-                LocalDate.of(2026, 8, 13), false, lines -> {
-                    built.incrementAndGet();
-                    assertEquals(18, lines.getFirst().getTotal_amount());
-                    return document(lines.size());
-                });
-
-        assertEquals(1, built.get());
-        assertNotNull(standard.document());
+        for (boolean receipt : new boolean[]{true, false}) {
+            AtomicInteger built = new AtomicInteger();
+            InvoicePrintRequest request = service.prepare(List.of(line()), "now", receipt, lines -> {
+                built.incrementAndGet();
+                assertEquals(18, lines.getFirst().getTotal_amount());
+                return document();
+            });
+            assertEquals(1, built.get());
+            assertNotNull(request.document());
+        }
     }
 
     @Test
     void routesReceiptAndStandardFormatsToTheirDedicatedPrinterMethods() throws Exception {
         Print_Reports reports = mock(Print_Reports.class);
         InvoicePrintService service = new InvoicePrintService(() -> reports);
-        InvoicePrintRequest receipt = service.prepare(List.of(line()), "عميل", 42,
-                2, "now", LocalDate.of(2026, 8, 13), true, lines -> null);
-        InvoicePrintRequest standard = service.prepare(List.of(line()), "عميل", 42,
-                2, "now", LocalDate.of(2026, 8, 13), false, lines -> document(lines.size()));
+        InvoicePrintRequest receipt = service.prepare(List.of(line()), "now", true, lines -> document());
+        InvoicePrintRequest standard = service.prepare(List.of(line()), "now", false, lines -> document());
 
         service.print(receipt);
         service.print(standard);
 
-        verify(reports).printReceiptInvoice(receipt.lines(), "عميل", 42,
-                2, "now", "2026-08-13", 0);
+        verify(reports).printReceiptInvoice(receipt.document(), "now");
         verify(reports).printInvoice(standard.document());
     }
 
-    private static InvoicePrintDocument document(int lines) {
-        assertEquals(1, lines);
+    private static InvoicePrintDocument document() {
         return new InvoicePrintDocument(InvoicePrintDocument.Letterhead.EMPTY, DocumentType.SALES, 42,
                 "2026-08-13", "عميل", InvoiceType.CASH, "", "", 0, "", "", List.of(),
                 new BigDecimal("18"), BigDecimal.ZERO, new BigDecimal("18"), "now", null);

@@ -1447,6 +1447,22 @@ row** of the statement, so a reprint a month later still says what it was then -
 gets the invoice without the balance. **Print it from the JavaFX thread**: `chooseTarget` may
 open a dialog, and the post-save print used to call it from the masker pane's worker.
 
+**The 80mm receipt stays on Jasper, printed straight to the thermal printer by name, and reads the
+same `InvoicePrintDocument`.** Converting it to PDF was weighed and declined: a PDF on a roll needs its
+length worked out per receipt and has to reach a thermal driver at actual size, neither checkable from
+a build, and Jasper stays in the project for the shift and label templates anyway.
+`features/invoice/InvoiceReceiptLayout` writes every figure and label as text (`Columns.money`), so
+`invoice-80mm.jrxml` carries no pattern and no arithmetic; its summary is a table of rows, so a row that
+does not apply (no discount, no balance on a cash sale) leaves no gap; and `isIgnorePagination` makes
+the page as long as what is on it - it was a fixed 850 points, a whole page for four lines and a second
+page after forty. Both invoice screens decide receipt-or-A4 by `getPrintPaperReceiptInvoice`; the saved
+invoice screen read the *account* thermal setting. `ReceiptTemplateFillTest` fills the real file with
+`Print_Reports.receiptParameters` - compiling alone passes a field whose class no longer matches its bean.
+
+**`JasperData` compiles each template once** (`CompiledReports`), recompiling a file in `reports/` only
+when it changes on disk. Every print used to load and compile its `.jrxml` first: 1.3 s for the first
+receipt after the program opened and 110-210 ms for each one after, against a 40-70 ms fill.
+
 One consequence is accepted rather than fixed: on the 80mm receipt layout the amount columns are
 35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number
 is complete and readable, and widening those columns would narrow the name column on every row to
