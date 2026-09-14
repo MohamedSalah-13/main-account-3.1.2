@@ -2012,6 +2012,22 @@ cannot — the import runs `DROP TABLE` over the live schema, so a run that fail
 neither the old contents nor a complete new set. It is encrypted with the password that has just
 been proved to open the backup, so it is an ordinary backup file the same screen restores.
 
+**A backup's name says why it was taken, and retention prunes each reason apart**
+(`features/backup/BackupKind`): `backup_` (the timer, the button, the copy on closing - 30 kept),
+`after-invoice_` (10), `before-delete_` (before deleting documents or wiping - 30) and
+`before-restore_` (never pruned). Retention used to keep the newest thirty `.enc` files of any
+kind, so with "back up after saving an invoice" on the thirty were the last thirty invoices: the
+scheduled copies from yesterday and the copy taken before a wipe were gone within the hour. It also
+deleted *any* `.enc` in the folder, which defaults to the user's home directory. `backup_` is the
+name every backup already had, so an install's existing files stay in the scheduled pool.
+
+**The after-invoice backup is throttled, not per invoice** (`BackupThrottle`, `AfterInvoiceBackup`):
+one run at a time on one thread for the whole process, at most one start every ten minutes, and a
+request during a run or inside the gap is owed exactly one more run after it - so the last sale of a
+busy spell is always inside a dump that started after it was saved. It used to start a full
+`mysqldump` per invoice on the common pool with nothing waiting for the one before, and a failure
+reached the cashier as an error dialog after every sale; it is now one folded notification.
+
 **Also: `DatabaseMigrationService` runs `mysqldump` before applying anything, and those dumps land
 in `backups/` and `account/backups/` inside the repository.** They are full database contents —
 every customer, every invoice, and any row holding a credential. They are git-ignored today; check

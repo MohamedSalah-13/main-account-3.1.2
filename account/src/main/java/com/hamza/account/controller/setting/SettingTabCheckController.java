@@ -99,6 +99,10 @@ public class SettingTabCheckController implements Initializable {
         if (!BackupPolicy.databaseIsOnThisMachine()) {
             checkBackupAfterSave.setDisable(true);
             checkBackupAfterSave.setTooltip(new Tooltip(lm.getString("settings.checks.backupAfterSave.remoteDatabase")));
+        } else {
+            // It is no longer one dump per invoice - see AfterInvoiceBackup - so the box says
+            // what it does rather than leaving somebody to count the files.
+            checkBackupAfterSave.setTooltip(new Tooltip(lm.getString("settings.checks.backupAfterSave.howOften")));
         }
 
         checkSetting(checkBalance, lm.getString("settings.checks.itemAlert"), getItemShowAlert());

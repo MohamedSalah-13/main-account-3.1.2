@@ -1,5 +1,6 @@
 package com.hamza.account.backup;
 
+import com.hamza.account.features.backup.BackupKind;
 import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.features.notification.AppNotifications;
 import com.hamza.account.features.notification.NotificationCategories;
@@ -21,11 +22,10 @@ import java.util.prefs.Preferences;
 public class ScheduledBackup {
 
     /**
-     * How many backup files to keep in the backup folder.
+     * How many scheduled backups to keep. Each other kind keeps its own number - see
+     * {@link BackupKind}.
      */
-    public static final int MAX_BACKUP_FILES = 30;
-
-    private static final String BACKUP_FILE_SUFFIX = ".enc";
+    public static final int MAX_BACKUP_FILES = BackupKind.SCHEDULED.keep();
 
     /*
      * Constant keys, so consecutive successes collapse into one inbox entry with a
@@ -101,10 +101,10 @@ public class ScheduledBackup {
         backupTaskHandle = scheduler.scheduleAtFixedRate(() -> {
             try {
                 File dir = new File(backupPath());
-                File backup = backupService.backupToFile(dir);
+                File backup = backupService.backupToFile(dir, BackupKind.SCHEDULED);
                 // Pruned only after a backup succeeds: a failed run must not be able
                 // to delete the copies that are still the most recent ones we have.
-                pruneOldBackups(dir, MAX_BACKUP_FILES);
+                pruneOldBackups(dir, BackupKind.SCHEDULED);
                 setStatus(LanguageManager.getInstance().getString("backup.status.auto.created", backup.getName()));
                 AppNotifications.success(SUCCESS_KEY, NotificationCategories.BACKUP,
                         LanguageManager.getInstance().getString("backup.notify.success.title"), backup.getName());
@@ -131,6 +131,10 @@ public class ScheduledBackup {
      * <p>
      * A folder with no backup in it still starts immediately: there is nothing to lose by
      * waiting, and everything to lose by not having one at all.
+     * <p>
+     * Only scheduled backups count. An after-invoice copy taken ten minutes ago would
+     * otherwise push the schedule out, and it belongs to a pool of ten that rolls in an
+     * afternoon - it is not the day's copy the schedule exists to keep.
      *
      * @param periodMinutes the chosen interval; a folder whose newest backup is already
      *                      older than this is due now
@@ -153,7 +157,7 @@ public class ScheduledBackup {
             return 0;
         }
         File[] backups = backupDir.listFiles(file ->
-                file.isFile() && file.getName().toLowerCase().endsWith(BACKUP_FILE_SUFFIX));
+                file.isFile() && BackupKind.SCHEDULED.matches(file.getName()));
         if (backups == null || backups.length == 0) {
             return 0;
         }
@@ -161,21 +165,27 @@ public class ScheduledBackup {
     }
 
     /**
-     * Keeps the newest {@code keep} backups in the folder and deletes the rest.
+     * Keeps the newest {@link BackupKind#keep()} backups of {@code kind} in the folder and
+     * deletes the rest of that kind. Nothing of another kind, and nothing that is not ours,
+     * is looked at.
      * <p>
      * Retention used to be by age - delete anything older than 30 days - which set
      * no ceiling on how many files could accumulate inside that window. On an
      * hourly schedule that is more than 700 backups before the first one becomes
      * eligible for deletion, which is what filled the disk. A count is a bound the
      * disk can actually be sized against.
+     * <p>
+     * It then counted every {@code .enc} in the folder as one pool, which let one kind
+     * delete another - see {@link BackupKind} - and deleted any encrypted file of anybody's
+     * that happened to sit in the folder, which defaults to the user's home directory.
      */
-    public static void pruneOldBackups(File backupDir, int keep) {
-        if (backupDir == null || !backupDir.isDirectory()) {
+    public static void pruneOldBackups(File backupDir, BackupKind kind) {
+        int keep = kind.keep();
+        if (backupDir == null || !backupDir.isDirectory() || keep == BackupKind.KEEP_ALL) {
             return;
         }
 
-        File[] backups = backupDir.listFiles(file ->
-                file.isFile() && file.getName().toLowerCase().endsWith(BACKUP_FILE_SUFFIX));
+        File[] backups = backupDir.listFiles(file -> file.isFile() && kind.matches(file.getName()));
 
         if (backups == null || backups.length <= keep) {
             return;

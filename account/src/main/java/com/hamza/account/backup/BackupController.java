@@ -156,7 +156,7 @@ public class BackupController {
             File result = task.getValue();
             // Only once the new copy exists, so a failed backup cannot take the
             // existing ones down with it.
-            ScheduledBackup.pruneOldBackups(dir, ScheduledBackup.MAX_BACKUP_FILES);
+            ScheduledBackup.pruneOldBackups(dir, com.hamza.account.features.backup.BackupKind.SCHEDULED);
             setStatus("✓ " + LanguageManager.getInstance().getString("backup.status.created", result.getName()));
             resetUIAfterTask();
         });

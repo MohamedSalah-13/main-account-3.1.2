@@ -1,6 +1,7 @@
 package com.hamza.account.backup;
 
 import com.hamza.account.config.MysqlTools;
+import com.hamza.account.features.backup.BackupKind;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
@@ -28,6 +29,11 @@ public class BackupService {
 
     // إجراء نسخ احتياطي كامل إلى ملف مشفر
     public File backupToFile(File backupDir) throws Exception {
+        return backupToFile(backupDir, BackupKind.SCHEDULED);
+    }
+
+    /** A backup of {@code kind}, named with its prefix so retention prunes it against its own kind. */
+    public File backupToFile(File backupDir, BackupKind kind) throws Exception {
         // The encryption password defaults to empty when none was ever set. Restore
         // already refuses an empty password, so a backup taken with one is a file
         // that cannot be restored through the application - and its contents are
@@ -38,7 +44,7 @@ public class BackupService {
                     LanguageManager.getInstance().getString("backup.error.no.encryption.password"));
         }
 
-        File encryptedFile = new File(backupDir, "backup_" + timestamp() + ".enc");
+        File encryptedFile = new File(backupDir, kind.fileName(timestamp()));
         return dumpAndEncrypt(encryptedFile, encryptionPassword);
     }
 
@@ -192,7 +198,7 @@ public class BackupService {
     private File takeSafetyCopy(File encryptedBackup, String password) throws Exception {
         File folder = encryptedBackup.getParentFile();
         File target = new File(folder == null ? new File(".") : folder,
-                "before-restore_" + timestamp() + ".enc");
+                BackupKind.BEFORE_RESTORE.fileName(timestamp()));
         try {
             File copy = dumpAndEncrypt(target, password);
             log.info("Safety copy taken before restore: {}", copy.getName());

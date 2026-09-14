@@ -5,7 +5,6 @@ import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.controlsfx.observer.EventBus;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -20,9 +19,9 @@ class InvoicePostSaveServiceTest {
         bus.subscribe(InvoiceSaved.class, published::set);
         AtomicInteger backups = new AtomicInteger();
         InvoicePostSaveService service = new InvoicePostSaveService(
-                bus, InvoiceSide.SALES, Runnable::run, backups::incrementAndGet);
+                bus, InvoiceSide.SALES, backups::incrementAndGet);
 
-        service.afterSave(false).join();
+        service.afterSave(false);
 
         assertNotNull(published.get());
         assertEquals(InvoiceSide.SALES, published.get().side());
@@ -30,25 +29,13 @@ class InvoicePostSaveServiceTest {
     }
 
     @Test
-    void runsAnEnabledBackupExactlyOnceOnTheProvidedExecutor() {
+    void requestsAnEnabledBackupOncePerSave() {
         AtomicInteger backups = new AtomicInteger();
         InvoicePostSaveService service = new InvoicePostSaveService(
-                null, InvoiceSide.PURCHASE, Runnable::run, backups::incrementAndGet);
+                null, InvoiceSide.PURCHASE, backups::incrementAndGet);
 
-        service.afterSave(true).join();
+        service.afterSave(true);
 
-        assertEquals(1, backups.get());
-    }
-
-    @Test
-    void exposesBackupFailureToTheController() {
-        InvoicePostSaveService service = new InvoicePostSaveService(
-                null, InvoiceSide.SALES, Runnable::run,
-                () -> { throw new IllegalStateException("backup failed"); });
-
-        CompletionException error = assertThrows(
-                CompletionException.class, () -> service.afterSave(true).join());
-
-        assertEquals("backup failed", error.getCause().getMessage());
+        assertEquals(1, backups.get(), "whether it runs is AfterInvoiceBackup's decision, not the screen's");
     }
 }
