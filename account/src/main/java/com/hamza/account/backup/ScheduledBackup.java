@@ -2,6 +2,7 @@ package com.hamza.account.backup;
 
 import com.hamza.account.features.backup.BackupKind;
 import com.hamza.account.features.backup.BackupPolicy;
+import com.hamza.account.features.backup.RetentionPolicy;
 import com.hamza.account.features.notification.AppNotifications;
 import com.hamza.account.features.notification.NotificationCategories;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -9,9 +10,11 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -20,12 +23,6 @@ import java.util.prefs.Preferences;
 
 @Log4j2
 public class ScheduledBackup {
-
-    /**
-     * How many scheduled backups to keep. Each other kind keeps its own number - see
-     * {@link BackupKind}.
-     */
-    public static final int MAX_BACKUP_FILES = BackupKind.SCHEDULED.keep();
 
     /*
      * Constant keys, so consecutive successes collapse into one inbox entry with a
@@ -165,9 +162,10 @@ public class ScheduledBackup {
     }
 
     /**
-     * Keeps the newest {@link BackupKind#keep()} backups of {@code kind} in the folder and
+     * Keeps the backups of {@code kind} that its {@link BackupKind#retention()} chooses and
      * deletes the rest of that kind. Nothing of another kind, and nothing that is not ours,
-     * is looked at.
+     * is looked at. A bound on the number of files is still the point - every policy but
+     * the before-restore one has a ceiling - it just no longer means "the last few hours only".
      * <p>
      * Retention used to be by age - delete anything older than 30 days - which set
      * no ceiling on how many files could accumulate inside that window. On an
@@ -180,22 +178,29 @@ public class ScheduledBackup {
      * that happened to sit in the folder, which defaults to the user's home directory.
      */
     public static void pruneOldBackups(File backupDir, BackupKind kind) {
-        int keep = kind.keep();
-        if (backupDir == null || !backupDir.isDirectory() || keep == BackupKind.KEEP_ALL) {
+        pruneOldBackups(backupDir, kind, ZoneId.systemDefault());
+    }
+
+    /** {@link #pruneOldBackups(File, BackupKind)} with the zone days are counted in, for tests. */
+    static void pruneOldBackups(File backupDir, BackupKind kind, ZoneId zone) {
+        if (backupDir == null || !backupDir.isDirectory() || kind.retention() instanceof RetentionPolicy.KeepAll) {
             return;
         }
 
         File[] backups = backupDir.listFiles(file -> file.isFile() && kind.matches(file.getName()));
-
-        if (backups == null || backups.length <= keep) {
+        if (backups == null || backups.length == 0) {
             return;
         }
 
-        // Newest first, so everything from index `keep` onwards is surplus.
-        Arrays.sort(backups, Comparator.comparingLong(File::lastModified).reversed());
+        List<RetentionPolicy.Candidate> candidates = Arrays.stream(backups)
+                .map(file -> new RetentionPolicy.Candidate(file.getName(), file.lastModified()))
+                .toList();
+        Set<String> kept = kind.retention().keep(candidates, zone);
 
-        for (int i = keep; i < backups.length; i++) {
-            File surplus = backups[i];
+        for (File surplus : backups) {
+            if (kept.contains(surplus.getName())) {
+                continue;
+            }
             if (surplus.delete()) {
                 log.info("Deleted old backup: {}", surplus.getName());
             } else {

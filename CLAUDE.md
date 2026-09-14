@@ -2029,13 +2029,28 @@ neither the old contents nor a complete new set. It is encrypted with the passwo
 been proved to open the backup, so it is an ordinary backup file the same screen restores.
 
 **A backup's name says why it was taken, and retention prunes each reason apart**
-(`features/backup/BackupKind`): `backup_` (the timer, the button, the copy on closing - 30 kept),
-`after-invoice_` (10), `before-delete_` (before deleting documents or wiping - 30) and
-`before-restore_` (never pruned). Retention used to keep the newest thirty `.enc` files of any
+(`features/backup/BackupKind`, `RetentionPolicy`): `backup_` (the timer, the button, the copy on
+closing - tiered: the newest 24, then one a day for a week, one a week for four weeks and one a
+month for a year, at most 47 files), `after-invoice_` (newest 10), `before-delete_` (before deleting
+documents or wiping - newest 30) and `before-restore_` (never pruned). Thirty newest on an hourly
+schedule reached back barely more than a day, so the mistake found a week later had no copy from
+before it. The periods count back from the newest backup, not the clock, so a schedule that stopped
+months ago is not emptied by the first run that works again. Retention used to keep the newest thirty `.enc` files of any
 kind, so with "back up after saving an invoice" on the thirty were the last thirty invoices: the
 scheduled copies from yesterday and the copy taken before a wipe were gone within the hour. It also
 deleted *any* `.enc` in the folder, which defaults to the user's home directory. `backup_` is the
 name every backup already had, so an install's existing files stay in the scheduled pool.
+
+**A backup is read back before it counts** (`features/backup/DumpCheck`). `mysqldump` ends its
+output with `-- Dump completed`, and only after the last table, so a dump whose last line is
+anything else was cut short. `BackupService` checks the dump before encrypting it, then decrypts the
+written file into a `DumpCheck` - the plaintext never touches the disk a second time - and deletes a
+backup that fails either check rather than leaving it looking like one; retention only runs after
+success, so the good copies stay. The restore refuses an incomplete file **before the safety copy
+and before touching the database**: its old check looked at the first 64 KB for something like SQL,
+which a file truncated in its data passes, and the import drops every table before it reaches the
+point where such a file stops. Measured: a truncated dump encrypted with the right password was
+refused with nothing written; the read-back cost 240 ms on a 6.2 s backup of 91 tables.
 
 **The after-invoice backup is throttled, not per invoice** (`BackupThrottle`, `AfterInvoiceBackup`):
 one run at a time on one thread for the whole process, at most one start every ten minutes, and a
