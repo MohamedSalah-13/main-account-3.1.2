@@ -143,6 +143,19 @@ public final class JdbcEmployeeStatementRepository extends AbstractDao<EmployeeS
     }
 
     @Override
+    public Integer shiftChargedBy(int entryId) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement =
+                         connection.prepareStatement(EmployeeStatementQuery.LEDGER_SHIFT_CHARGE_SQL)) {
+                statement.setInt(1, entryId);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : null;
+                }
+            }
+        });
+    }
+
+    @Override
     public int deleteLedgerEntry(int employeeId, int entryId) throws DaoException {
         return executeUpdate(EmployeeStatementQuery.DELETE_LEDGER_SQL, entryId, employeeId);
     }

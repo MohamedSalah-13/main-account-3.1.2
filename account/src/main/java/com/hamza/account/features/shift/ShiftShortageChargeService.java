@@ -2,6 +2,9 @@ package com.hamza.account.features.shift;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.employee.EmployeeEntryKind;
+import com.hamza.account.features.employee.EmployeeLedgerEntry;
+import com.hamza.account.features.employee.EmployeeLedgerService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
@@ -14,19 +17,29 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
-/** Authorized, investigated conversion of one closed-shift shortage into a deduction. */
+/**
+ * Authorized, investigated conversion of one closed-shift shortage into a deduction.
+ * <p>
+ * The deduction is written by {@link EmployeeLedgerService}, the one writer of
+ * {@code employee_ledger}, so it is validated like any movement a person enters; this service
+ * adds only what makes it a shift decision - the shortage must exist, be closed, be charged once,
+ * and be approved by somebody other than the cashier - and the immutable link beside it.
+ */
 public final class ShiftShortageChargeService {
-    private static final int REASON_MAX = 180;
+    static final int REASON_MAX = 180;
     private final ShiftShortageChargeRepository repository;
+    private final EmployeeLedgerService ledger;
     private final UserSessionContext session;
     private final Clock clock;
 
-    public ShiftShortageChargeService(ShiftShortageChargeRepository repository,
+    public ShiftShortageChargeService(ShiftShortageChargeRepository repository, EmployeeLedgerService ledger,
                                       UserSessionContext session, Clock clock) {
-        this.repository = repository;
+        this.repository = Objects.requireNonNull(repository, "repository");
+        this.ledger = Objects.requireNonNull(ledger, "ledger");
         this.session = session;
-        this.clock = clock;
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     public int charge(int shiftId, int employeeId, String reason) throws DaoException {
@@ -58,8 +71,8 @@ public final class ShiftShortageChargeService {
             }
             LocalDateTime approvedAt = LocalDateTime.now(clock);
             String note = message("user.shift.shortage.ledger.note", shiftId, approvalReason);
-            int ledgerId = repository.insertDeduction(employeeId, LocalDate.now(clock), amount,
-                    note, actor);
+            int ledgerId = ledger.record(EmployeeLedgerEntry.parse(employeeId, approvedAt.toLocalDate(),
+                    EmployeeEntryKind.DEDUCTION, amount, note));
             if (repository.appendCharge(shiftId, employeeId, ledgerId, amount, approvalReason,
                     actor, approvedAt) != 1) {
                 throw new DaoException("Could not link employee deduction to shift " + shiftId);

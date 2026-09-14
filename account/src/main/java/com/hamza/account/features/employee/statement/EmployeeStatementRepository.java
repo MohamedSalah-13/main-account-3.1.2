@@ -32,6 +32,9 @@ public interface EmployeeStatementRepository {
     /** The payroll run that wrote a ledger row, or {@code null} when a person did. */
     Integer ledgerRunOf(int employeeId, int entryId) throws DaoException;
 
+    /** The shift whose shortage a ledger row charges, or {@code null} when it charges none. */
+    Integer shiftChargedBy(int entryId) throws DaoException;
+
     int deleteLedgerEntry(int employeeId, int entryId) throws DaoException;
 
     /** Files a payment under what it was for. Written in the payment's own transaction. */

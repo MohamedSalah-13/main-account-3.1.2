@@ -108,6 +108,18 @@ class EmployeeAccountServiceTest {
     }
 
     @Test
+    @DisplayName("a deduction that charges a shift shortage is refused, not left to the foreign key")
+    void aChargedShiftShortageIsNotRemoved() {
+        signInWith(AppPermissions.EMPLOYEE_ACCOUNT_ADJUST);
+        repository.runOfEntry = null;
+        repository.chargedShift = 12;
+
+        assertEquals("employee.error.account.shift.shortage.row",
+                assertThrows(UserValidationException.class, () -> ledger.remove(7, 3)).getMessage());
+        assertEquals(0, repository.deletedEntryId, "nothing may be deleted");
+    }
+
+    @Test
     @DisplayName("one a person entered is removed")
     void aHandEnteredRowIsRemoved() throws Exception {
         signInWith(AppPermissions.EMPLOYEE_ACCOUNT_ADJUST);
@@ -136,6 +148,7 @@ class EmployeeAccountServiceTest {
         private BigDecimal lastAmount;
         private int lastUserId;
         private Integer runOfEntry;
+        private Integer chargedShift;
         private int deletedEntryId;
 
         @Override
@@ -175,6 +188,11 @@ class EmployeeAccountServiceTest {
         @Override
         public Integer ledgerRunOf(int employeeId, int entryId) {
             return runOfEntry;
+        }
+
+        @Override
+        public Integer shiftChargedBy(int entryId) {
+            return chargedShift;
         }
 
         @Override

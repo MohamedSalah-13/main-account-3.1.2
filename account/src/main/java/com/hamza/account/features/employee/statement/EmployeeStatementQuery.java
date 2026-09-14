@@ -223,6 +223,10 @@ public final class EmployeeStatementQuery {
     public static final String LEDGER_RUN_SQL =
             "SELECT payroll_run_id FROM employee_ledger WHERE id = ? AND employee_id = ?";
 
+    /** The shift whose shortage a ledger row charges - an approval record that must keep its row. */
+    public static final String LEDGER_SHIFT_CHARGE_SQL =
+            "SELECT shift_id FROM shift_employee_shortage_charges WHERE employee_ledger_id = ?";
+
     // ---- the purpose beside a payment ---------------------------------------------------
 
     public static final String INSERT_PURPOSE_SQL = """

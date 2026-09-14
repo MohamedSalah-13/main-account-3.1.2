@@ -295,9 +295,9 @@ public class AdminShiftsController {
                 Columns.text("invoice.treasury", ShiftVarianceSettlement::treasuryName),
                 Columns.text("user.shift.settlement.column.original.date",
                         row -> row.originalShiftDate().toString()),
-                Columns.number("user.shift.label.expected.balance", ShiftVarianceSettlement::expectedBalance),
-                Columns.number("user.shift.approval.column.actual", ShiftVarianceSettlement::actualBalance),
-                Columns.number("user.shift.label.difference", ShiftVarianceSettlement::difference),
+                Columns.money("user.shift.report.period.column.expected", ShiftVarianceSettlement::expectedBalance),
+                Columns.money("user.shift.approval.column.actual", ShiftVarianceSettlement::actualBalance),
+                Columns.money("user.shift.report.period.column.difference", ShiftVarianceSettlement::difference),
                 Columns.text("user.shift.approval.column.requester", ShiftVarianceSettlement::requestedByName),
                 Columns.text("user.shift.approval.column.time", row -> formatTime(row.requestedAt())));
         boolean allowed = varianceSettlements != null
@@ -959,14 +959,14 @@ public class AdminShiftsController {
                 Columns.number("user.shift.report.period.column.shifts", ShiftPeriodRow::shiftCount),
                 Columns.number("user.shift.report.period.column.open", ShiftPeriodRow::openShiftCount),
                 Columns.number("user.shift.report.period.column.closed", ShiftPeriodRow::closedShiftCount),
-                Columns.number("user.shift.label.total.sales", ShiftPeriodRow::totalSales),
-                Columns.number("user.shift.label.sales.returns", ShiftPeriodRow::totalSalesReturns),
-                Columns.number("user.shift.label.expenses", ShiftPeriodRow::totalExpenses),
-                Columns.number("user.shift.label.deposits", ShiftPeriodRow::totalDeposits),
-                Columns.number("user.shift.label.withdrawals", ShiftPeriodRow::totalWithdrawals),
-                Columns.number("user.shift.label.expected.balance", ShiftPeriodRow::totalExpectedBalance),
-                Columns.number("user.shift.report.period.column.actual", ShiftPeriodRow::totalActualBalance),
-                Columns.number("user.shift.label.difference", ShiftPeriodRow::totalDifference),
+                Columns.money("user.shift.report.period.column.sales", ShiftPeriodRow::totalSales),
+                Columns.money("user.shift.report.period.column.returns", ShiftPeriodRow::totalSalesReturns),
+                Columns.money("user.shift.report.period.column.expenses", ShiftPeriodRow::totalExpenses),
+                Columns.money("user.shift.report.period.column.deposits", ShiftPeriodRow::totalDeposits),
+                Columns.money("user.shift.report.period.column.withdrawals", ShiftPeriodRow::totalWithdrawals),
+                Columns.money("user.shift.report.period.column.expected", ShiftPeriodRow::totalExpectedBalance),
+                Columns.money("user.shift.report.period.column.actual", ShiftPeriodRow::totalActualBalance),
+                Columns.money("user.shift.report.period.column.difference", ShiftPeriodRow::totalDifference),
                 Columns.number("user.shift.label.invoices.count", ShiftPeriodRow::invoicesCount));
         btnPeriodReportRefresh.setOnAction(event -> refreshPeriodReport());
         btnPeriodReportExcel.setOnAction(event -> exportPeriodReport(true));
