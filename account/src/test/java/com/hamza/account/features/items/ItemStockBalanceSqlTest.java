@@ -92,8 +92,23 @@ class ItemStockBalanceSqlTest {
     }
 
     @Test
+    @DisplayName("across warehouses, named items are folded by the list's own aggregate")
+    void acrossStocksUsesTheListsAggregate() {
+        String sql = ItemStockBalanceSql.acrossStocksForItems(2);
+        String rows = ItemStockBalanceSql.forItems(2);
+        String inner = rows.substring(0, rows.indexOf(" WHERE ist.stock_id")) + " WHERE ist.item_id IN (?, ?)";
+
+        assertEquals(ItemCatalogSql.movementsOver("(" + inner + ") rows_for_items"), sql);
+        assertFalse(sql.contains("quantity_items_table"));
+        assertEquals(2, count(sql, "?"), "no warehouse is bound: every one of the item's rows is folded");
+        assertEquals(ItemCatalogSql.movementsOver("quantity_items_table"), ItemCatalogSql.MOVEMENTS,
+                "the list and a finder must fold warehouses with one text");
+    }
+
+    @Test
     void refusesAnEmptyList() {
         assertThrows(IllegalArgumentException.class, () -> ItemStockBalanceSql.forItems(0));
+        assertThrows(IllegalArgumentException.class, () -> ItemStockBalanceSql.acrossStocksForItems(0));
     }
 
     /** How the view selects a column: bare when it already carries the name, aliased when not. */

@@ -27,9 +27,10 @@ import java.util.StringJoiner;
  * the build. The document sources come from {@link DocumentTableSpec#lineView()} and
  * {@link DocumentTableSpec#lineItem()}, which are the views the CTEs read.
  * <p>
- * The catalogue-wide queries keep reading the view: when every item is wanted, aggregating
- * everything once is the right plan, and a correlated subquery per item would be the slower
- * one.
+ * The catalogue-wide queries keep reading the view: when every item is wanted - or a page
+ * filtered or sorted by its balance - aggregating everything once is the right plan, and a
+ * correlated subquery per item would be the slower one. A search that picks its items by
+ * name or code first, and only then needs their balances, belongs here.
  */
 public final class ItemStockBalanceSql {
 
@@ -79,6 +80,19 @@ public final class ItemStockBalanceSql {
      * row here, as it has none in the view.
      */
     public static String forItems(int itemCount) {
+        return rows() + " WHERE ist.stock_id = ? AND ist.item_id IN " + marks(itemCount);
+    }
+
+    /**
+     * {@link ItemCatalogSql#MOVEMENTS} for {@code itemCount} items: one row per item with
+     * every warehouse folded in, by the same aggregate text. Binds each item id. An item
+     * with no {@code items_stock} row at all has no row, as it has none in the list.
+     */
+    public static String acrossStocksForItems(int itemCount) {
+        return ItemCatalogSql.movementsOver("(" + rows() + " WHERE ist.item_id IN " + marks(itemCount) + ") rows_for_items");
+    }
+
+    private static String marks(int itemCount) {
         if (itemCount < 1) {
             throw new IllegalArgumentException("itemCount must be at least 1");
         }
@@ -86,7 +100,7 @@ public final class ItemStockBalanceSql {
         for (int i = 0; i < itemCount; i++) {
             marks.add("?");
         }
-        return rows() + " WHERE ist.stock_id = ? AND ist.item_id IN " + marks;
+        return marks.toString();
     }
 
     private static String rows() {

@@ -706,6 +706,16 @@ two were compared row for row on that copy with a second warehouse, transfers an
 counts seeded in - 2,504 rows, none different. A catalogue-wide query keeps reading the view, where
 aggregating everything once is the right plan. A barcode resolves to an item id first, on the three
 code indexes, and a code naming two items is still "not found", logged.
+
+The name search behind the invoice's suggestion list (`ItemsDao.getFilterItems`) had the same
+defect through the all-stocks aggregate: its `LIMIT 50` could only apply after every item's balance
+had been built, about a second per suggestion on that copy. Its three searches now answer ranked
+ids only, and the rows are read for those ids with `ItemStockBalanceSql.acrossStocksForItems` -
+folded by `ItemCatalogSql.movementsOver`, the same text `MOVEMENTS` is, so the list and a search
+cannot fold warehouses two ways. `findItemById`, `getDataById` and `getDataByString` read the same
+way. Run old and new code side by side on the copy, thirteen searches plus the finders and the last
+fifty returned the same items in the same order with the same balances; the searches went from
+0.7-1.4 s to 4-243 ms. What is left of the 243 is `map`'s query per row over fifty rows.
 - **A transfer line carries the unit and factor it was entered in**
   (`V19__stock_transfer_units.sql`), converts to base units before checking the source balance, is
   refused inside a closed period (`PeriodLockRegistry.STOCK_TRANSFER`), and is reversed through

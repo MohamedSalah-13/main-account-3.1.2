@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,14 +78,22 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * reads it, so the item reports join the very row this list does.
      */
     private static final String ITEM_MOVEMENTS_ALL_STOCKS = ItemCatalogSql.MOVEMENTS;
-    private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
-            SELECT *
+    /*
+     * The three searches behind getFilterItems answer ids only, ranked and capped; the rows
+     * and their balances are read for those ids afterwards (itemsInOrder). They used to join
+     * ITEM_MOVEMENTS_ALL_STOCKS, which builds every item's balance from the whole line
+     * history before the LIMIT can apply: about a second per suggestion on a copy with
+     * 106,606 sales lines. "IN items_stock" keeps what that inner join kept - an item with
+     * no warehouse row was never a match.
+     */
+    private static final String FILTER_ITEM_IDS_SQL_TEXT_STARTS = """
+            SELECT items.id
             FROM items
-            JOIN %s ip ON items.id = ip.item_id
-            WHERE items.nameItem LIKE ?
+            WHERE items.id IN (SELECT item_id FROM items_stock)
+              AND (items.nameItem LIKE ?
                OR items.barcode LIKE ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
-               OR %s
+               OR %s)
             ORDER BY
                 CASE
                     WHEN items.barcode = ? THEN 0
@@ -99,16 +108,15 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
-            ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_LIKE, FILTER_ITEMS_LIMIT);
-    private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
-            SELECT *
+            """.formatted(ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_LIKE, FILTER_ITEMS_LIMIT);
+    private static final String FILTER_ITEM_IDS_SQL_TEXT_CONTAINS = """
+            SELECT items.id
             FROM items
-            JOIN %s ip ON items.id = ip.item_id
-            WHERE items.nameItem LIKE ?
+            WHERE items.id IN (SELECT item_id FROM items_stock)
+              AND (items.nameItem LIKE ?
                OR items.barcode LIKE ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
-               OR %s
+               OR %s)
             ORDER BY
                 CASE
                     WHEN items.barcode = ? THEN 0
@@ -119,16 +127,15 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
-            ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
-    private static final String FILTER_ITEMS_SQL_NUMERIC = """
-            SELECT *
+            """.formatted(ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
+    private static final String FILTER_ITEM_IDS_SQL_NUMERIC = """
+            SELECT items.id
             FROM items
-            JOIN %s ip ON items.id = ip.item_id
-            WHERE items.id = ?
+            WHERE items.id IN (SELECT item_id FROM items_stock)
+              AND (items.id = ?
                OR items.barcode = ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
-               OR %s
+               OR %s)
             ORDER BY
                 CASE
                     WHEN items.id = ? THEN 0
@@ -139,8 +146,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
-            ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
     /**
      * What a catalog search matches, and in what order it ranks what it matched.
      * <p>
@@ -236,6 +242,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             + " UNION SELECT item_id FROM item_barcodes WHERE barcode = ?"
             + " UNION SELECT items_id FROM items_units WHERE items_barcode = ?";
     private static final String ITEM_IDS_BY_NAME = "SELECT id FROM items WHERE nameItem = ?";
+    private static final String LAST_ITEM_IDS = "SELECT id FROM items WHERE id IN (SELECT item_id FROM items_stock)"
+            + " ORDER BY id DESC LIMIT 50";
     /** One row per item, aggregated across every warehouse. For every catalog query that names no stock. */
     private final String QUERY_ITEMS_ALL_STOCKS = "SELECT * from items join " + ITEM_MOVEMENTS_ALL_STOCKS + " ip on items.id = ip.item_id ";
     /**
@@ -428,12 +436,13 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     @Override
     public ItemsModel getDataById(int id) throws DaoException {
-        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.id = ? "), this::map, id);
+        return findItemById(id);
     }
 
     @Override
     public ItemsModel getDataByString(String s) throws DaoException {
-        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.nameItem = ? "), this::map, s);
+        List<Integer> ids = itemIds(ITEM_IDS_BY_NAME, s);
+        return ids.size() == 1 ? findItemById(ids.getFirst()) : null;
     }
 
     @Override
@@ -653,7 +662,35 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public ItemsModel findItemById(Integer itemId) throws DaoException {
-        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.id = ? "), this::map, itemId);
+        return queryForObject(queryItemsAcrossStocks(1), this::map, itemId);
+    }
+
+    /**
+     * {@link #QUERY_ITEMS_ALL_STOCKS} for named items: the same columns, every warehouse
+     * folded in by the same aggregate, computed for these ids alone. Binds each id.
+     */
+    private static String queryItemsAcrossStocks(int itemCount) {
+        return "SELECT * FROM items JOIN " + ItemStockBalanceSql.acrossStocksForItems(itemCount)
+                + " ip ON items.id = ip.item_id";
+    }
+
+    /** The items {@code ids} names, loaded whole, in the order {@code ids} gives them. */
+    private List<ItemsModel> itemsInOrder(List<Integer> ids, GenericMapper<ItemsModel> mapper) throws DaoException {
+        if (ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<Integer, ItemsModel> byId = new LinkedHashMap<>();
+        for (ItemsModel item : queryForObjects(queryItemsAcrossStocks(ids.size()), mapper, ids.toArray())) {
+            byId.put(item.getId(), item);
+        }
+        List<ItemsModel> ordered = new ArrayList<>(ids.size());
+        for (Integer id : ids) {
+            ItemsModel item = byId.get(id);
+            if (item != null) {
+                ordered.add(item);
+            }
+        }
+        return ordered;
     }
 
     public ItemsModel findItemByIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
@@ -872,45 +909,40 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 // باركود طويل جداً => اعتبره باركود فقط
                 id = -1;
             }
-            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, mapper, id, q, q, q, id, q, q, q);
+            return itemsInOrder(itemIds(FILTER_ITEM_IDS_SQL_NUMERIC, id, q, q, q, id, q, q, q), mapper);
         }
 
         // 2) نص/مختلط: مرحلتين startsWith ثم contains
         final String likeStarts = q + "%";
         final String likeContains = "%" + q + "%";
 
-        // LinkedHashMap يحافظ على الترتيب + يمنع التكرار حسب id
-        Map<Integer, ItemsModel> result = new LinkedHashMap<>(FILTER_ITEMS_LIMIT);
+        // LinkedHashSet يحافظ على الترتيب + يمنع التكرار
+        Set<Integer> ids = new LinkedHashSet<>(FILTER_ITEMS_LIMIT);
 
         // Phase A: startsWith (سريع + يستفيد من index)
-        List<ItemsModel> starts = queryForObjects(
-                FILTER_ITEMS_SQL_TEXT_STARTS,
-                mapper,
+        addUpToLimit(ids, itemIds(
+                FILTER_ITEM_IDS_SQL_TEXT_STARTS,
                 likeStarts, likeStarts, likeStarts, likeStarts, // WHERE
                 q, 0, q, q,                                      // ORDER BY (barcode exact, id exact disabled, extra barcode exact, unit barcode exact)
                 likeStarts, likeStarts, likeStarts, likeStarts   // ORDER BY (name, barcode, extra barcode, unit barcode - all starts)
-        );
-        putUniqueById(result, starts, FILTER_ITEMS_LIMIT);
+        ));
 
         // Phase B: contains (%text%) فقط إذا لسه محتاجين نتائج
-        if (result.size() < FILTER_ITEMS_LIMIT) {
-            List<ItemsModel> contains = queryForObjects(
-                    FILTER_ITEMS_SQL_TEXT_CONTAINS,
-                    mapper,
+        if (ids.size() < FILTER_ITEMS_LIMIT) {
+            addUpToLimit(ids, itemIds(
+                    FILTER_ITEM_IDS_SQL_TEXT_CONTAINS,
                     likeContains, likeContains, likeContains, likeContains, // WHERE (contains)
                     q, 0, q, q                                               // ORDER BY (barcode exact, id exact disabled, extra barcode exact, unit barcode exact)
-            );
-            putUniqueById(result, contains, FILTER_ITEMS_LIMIT);
+            ));
         }
 
-        return new ArrayList<>(result.values());
+        return itemsInOrder(new ArrayList<>(ids), mapper);
     }
 
-    private void putUniqueById(Map<Integer, ItemsModel> target, List<ItemsModel> source, int limit) {
-        for (ItemsModel item : source) {
-            if (item == null) continue;
-            target.putIfAbsent(item.getId(), item);
-            if (target.size() >= limit) return;
+    private static void addUpToLimit(Set<Integer> target, List<Integer> source) {
+        for (Integer id : source) {
+            if (target.size() >= FILTER_ITEMS_LIMIT) return;
+            target.add(id);
         }
     }
 
@@ -919,7 +951,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     private List<ItemsModel> getLast50Items(GenericMapper<ItemsModel> mapper) throws DaoException {
-        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT 50"), mapper);
+        return itemsInOrder(itemIds(LAST_ITEM_IDS), mapper);
     }
 
     // ---------------------------------------------------------------------------
