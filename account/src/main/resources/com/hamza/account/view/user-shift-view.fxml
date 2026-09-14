@@ -20,7 +20,7 @@
 
 <VBox prefHeight="720.0" prefWidth="760.0" styleClass="app-root,shift-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.UserShiftController">
    <children>
-      <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="app-scroll-pane" VBox.vgrow="ALWAYS">
+      <ScrollPane fitToWidth="true" styleClass="app-scroll-pane" VBox.vgrow="ALWAYS">
          <content>
             <VBox alignment="TOP_CENTER" spacing="15" styleClass="app-container">
                 <padding>
@@ -34,17 +34,17 @@
 
                 <!-- Current Shift Info -->
                 <GridPane alignment="CENTER" hgap="18" vgap="10" maxWidth="1.7976931348623157E308" styleClass="shift-status-card">
-                    <Label text="%user.shift.label.status" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.status" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                     <Label fx:id="labelShiftStatus" styleClass="shift-status-value" text="%user.shift.status.undetermined" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                    <Label text="%user.shift.label.open.time" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                    <Label fx:id="labelOpenTime" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.open.time" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <Label fx:id="labelOpenTime" styleClass="shift-field-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                    <Label text="%user.shift.label.open.balance" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                    <Label fx:id="labelOpenBalance" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                    <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.open.balance" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <Label fx:id="labelOpenBalance" styleClass="shift-field-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                    <Label text="%invoice.treasury" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                    <Label fx:id="labelShiftTreasury" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    <Label styleClass="form-label" minWidth="-Infinity" text="%invoice.treasury" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                    <Label fx:id="labelShiftTreasury" styleClass="shift-field-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                   <columnConstraints>
                      <ColumnConstraints />
                      <ColumnConstraints />
@@ -63,13 +63,13 @@
                 <VBox fx:id="boxOpenShift" alignment="CENTER" spacing="10" maxWidth="1.7976931348623157E308" styleClass="shift-card">
                     <Label styleClass="section-title" text="%user.shift.section.open.new" />
                     <GridPane alignment="CENTER" hgap="10" vgap="10">
-                        <Label text="%user.shift.label.open.balance" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.open.balance" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                         <TextField fx:id="txtOpenBalance" promptText="%user.shift.prompt.open.balance" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                        <Label text="%invoice.treasury" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label styleClass="form-label" minWidth="-Infinity" text="%invoice.treasury" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                         <ComboBox fx:id="comboOpenTreasury" maxWidth="1.7976931348623157E308" promptText="%invoice.treasury" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                        <Label text="%user.shift.label.notes" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.notes" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                         <TextArea fx:id="txtOpenNotes" prefRowCount="2" promptText="%user.shift.prompt.notes.optional" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                      <columnConstraints>
                         <ColumnConstraints />
@@ -94,34 +94,34 @@
                         </padding>
 
                         <!-- Row 0: Sales -->
-                        <Label text="%user.shift.label.total.sales" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label styleClass="summary-label" text="%user.shift.label.total.sales" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                         <Label fx:id="labelSummaryTotalSales" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                        <Label text="%user.shift.label.sales.returns" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                        <Label styleClass="summary-label" text="%user.shift.label.sales.returns" GridPane.columnIndex="2" GridPane.rowIndex="0" />
                         <Label fx:id="labelSummaryReturns" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0" />
 
                         <!-- Row 1: Expenses + invoice count -->
-                        <Label text="%user.shift.label.expenses" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label styleClass="summary-label" text="%user.shift.label.expenses" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                         <Label fx:id="labelSummaryExpenses" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                        <Label text="%user.shift.label.invoice.count" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                        <Label styleClass="summary-label" text="%user.shift.label.invoice.count" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                         <Label fx:id="labelSummaryInvoices" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
                         <!-- Row 2: Expected balance + difference -->
-                        <Label text="%user.shift.label.expected.balance" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label styleClass="summary-label" text="%user.shift.label.expected.balance" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                         <Label fx:id="labelSummaryExpected" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                        <Label text="%user.shift.label.difference" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                        <Label styleClass="summary-label" text="%user.shift.label.difference" GridPane.columnIndex="2" GridPane.rowIndex="2" />
                         <Label fx:id="labelSummaryDifference" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="2" />
 
                         <!-- Row 3: everything the four named lines above do not carry -
                              customer collections, supplier payments, cash purchases,
                              purchase returns and transfers. They reach the till and
                              used not to be counted at all. -->
-                        <Label text="%user.shift.label.other.in" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <Label styleClass="summary-label" text="%user.shift.label.other.in" GridPane.columnIndex="0" GridPane.rowIndex="3" />
                         <Label fx:id="labelSummaryOtherIn" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                        <Label text="%user.shift.label.other.out" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                        <Label styleClass="summary-label" text="%user.shift.label.other.out" GridPane.columnIndex="2" GridPane.rowIndex="3" />
                         <Label fx:id="labelSummaryOtherOut" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="3" />
                      <columnConstraints>
                         <ColumnConstraints />
@@ -143,10 +143,10 @@
                 <VBox fx:id="boxCloseShift" alignment="CENTER" spacing="10" maxWidth="1.7976931348623157E308" styleClass="shift-card">
                     <Label styleClass="section-title" text="%user.shift.close.action" />
                     <GridPane alignment="CENTER" hgap="10" vgap="10">
-                        <Label text="%user.shift.label.close.balance" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.close.balance" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                         <TextField fx:id="txtCloseBalance" promptText="%user.shift.prompt.close.balance" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                        <Label text="%user.shift.label.notes" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label styleClass="form-label" minWidth="-Infinity" text="%user.shift.label.notes" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                         <TextArea fx:id="txtCloseNotes" prefRowCount="2" promptText="%user.shift.prompt.notes.optional" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                      <columnConstraints>
                         <ColumnConstraints />
@@ -164,7 +164,9 @@
 
                 <!-- Shifts History Table -->
                 <Label styleClass="section-title" text="%user.shift.section.history" />
-                <TableView fx:id="tableShifts" prefHeight="240" maxWidth="1.7976931348623157E308">
+                <!-- The content scrolls at its natural height (no fitToHeight on the ScrollPane):
+                     fitting it to the window squeezed this table to its header and one row. -->
+                <TableView fx:id="tableShifts" minHeight="320" prefHeight="420" maxWidth="1.7976931348623157E308">
                     <columns>
                         <TableColumn fx:id="colId" prefWidth="60" text="%code" />
                         <TableColumn fx:id="colOpenTime" prefWidth="150" text="%user.shift.column.open.time" />

@@ -2593,6 +2593,13 @@
     -fx-text-fill: -app-primary-dark;
 }
 
+/* A value beside a caption on a shift card. Every label on these cards carries a class:
+   the glass theme paints a bare .label white, and on a -app-surface card that is invisible -
+   the X-report captions and the open/close form captions shipped that way. */
+.shift-root .shift-field-value {
+    -fx-text-fill: -app-text;
+}
+
 .shift-root .shift-summary-card {
     -fx-background-color: -app-neutral-soft;
     -fx-background-radius: 0.8em;
