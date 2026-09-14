@@ -691,7 +691,21 @@ Three things had to be true before any of this was safe, and all three now are:
 - **A catalog query must not multiply rows.** `quantity_items_table` is keyed by (item, stock), so
   joining it to `items` returns one row per warehouse. `ItemsDao` now has two joins and the choice is
   the point: `QUERY_ITEMS_ALL_STOCKS` pre-aggregates by `item_id` for every query that names no stock,
-  and the raw `QUERY_ITEMS` is only for finders that already scope with `ip.stock_id = ?`.
+  and `QUERY_ITEM_IN_STOCK` is for finders that name one item in one warehouse.
+
+**A query for named items must not join `quantity_items_table`.** Each of its seven CTEs is a
+`GROUP BY` over a whole line table, and MySQL builds all of them before it can return one row,
+whatever the outer query filters on - so every barcode scan used to aggregate the entire sales
+history: 0.8 s a scan on a copy with 106,606 sales lines, on the JavaFX thread, growing with every
+invoice saved, and paid again by the save's stock guard and once per line by `SalesDao.map`.
+`features/items/ItemStockBalanceSql` computes the view's own columns for named items with
+correlated subqueries that reach their lines through the item's index (3 ms a scan, 31 ms for the
+item with the most lines). It is the same definition, not a second one: `ItemStockBalanceSqlTest`
+rebuilds the view's CTEs, joins and columns from its list and finds each in `R__views.sql`, and the
+two were compared row for row on that copy with a second warehouse, transfers and posted and draft
+counts seeded in - 2,504 rows, none different. A catalogue-wide query keeps reading the view, where
+aggregating everything once is the right plan. A barcode resolves to an item id first, on the three
+code indexes, and a code naming two items is still "not found", logged.
 - **A transfer line carries the unit and factor it was entered in**
   (`V19__stock_transfer_units.sql`), converts to base units before checking the source balance, is
   refused inside a closed period (`PeriodLockRegistry.STOCK_TRANSFER`), and is reversed through

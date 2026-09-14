@@ -3,6 +3,7 @@ package com.hamza.account.model.dao;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.items.ItemCatalogSql;
+import com.hamza.account.features.items.ItemStockBalanceSql;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.Items_Stock_Model;
@@ -70,7 +71,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * warehouse every time, and once a second one exists {@code itemsModel.getItemStock()}
      * from a catalog-wide query is informational only - the per-stock truth for a
      * specific warehouse is what {@link #findItemByIdAndStockId} and its siblings are
-     * for, and they still join the raw (unaggregated) view scoped to one {@code stock_id}.
+     * for, and they read one (item, stock) row through {@link ItemStockBalanceSql}.
      * <p>
      * The text is {@link ItemCatalogSql#MOVEMENTS}, kept beside the balance expression that
      * reads it, so the item reports join the very row this list does.
@@ -214,9 +215,27 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     private final String USER_ID = "user_id";
     private static final String UPDATED_AT = "updated_at";
-    /** One row per (item, stock). For the finder methods that already scope to one warehouse via {@code ip.stock_id = ?}; see {@link #ITEM_MOVEMENTS_ALL_STOCKS}. */
-    private final String QUERY_ITEMS = "SELECT items.*, ip.*, ip.first_balance AS stock_first_balance "
-            + "from items join quantity_items_table ip on items.id = ip.item_id ";
+    /**
+     * One item in one warehouse, for the finders that name both. Binds the stock id, then
+     * the item id.
+     * <p>
+     * The movement row is {@link ItemStockBalanceSql} - the view's own columns, computed for
+     * this item alone - and not {@code quantity_items_table}. Joining the view built the
+     * whole stock history of every item before it could return this one: 0.75 to 1.4 seconds
+     * a barcode scan on a copy with 106,606 sales lines, against 3 ms this way, and the
+     * invoice line mapper ({@code SalesDao.map}) paid it once per line it loaded.
+     */
+    private static final String QUERY_ITEM_IN_STOCK = "SELECT items.*, ip.*, ip.first_balance AS stock_first_balance "
+            + "FROM items JOIN (" + ItemStockBalanceSql.forItems(1) + ") ip ON items.id = ip.item_id";
+    /**
+     * Every item a code belongs to: its own barcode, an extra barcode, or a unit's. Binds the
+     * code three times. The three unique indexes cannot see each other, so more than one item
+     * is possible, and the finder treats that the way it always has - as not found, logged.
+     */
+    private static final String ITEM_IDS_BY_CODE = "SELECT id FROM items WHERE barcode = ?"
+            + " UNION SELECT item_id FROM item_barcodes WHERE barcode = ?"
+            + " UNION SELECT items_id FROM items_units WHERE items_barcode = ?";
+    private static final String ITEM_IDS_BY_NAME = "SELECT id FROM items WHERE nameItem = ?";
     /** One row per item, aggregated across every warehouse. For every catalog query that names no stock. */
     private final String QUERY_ITEMS_ALL_STOCKS = "SELECT * from items join " + ITEM_MOVEMENTS_ALL_STOCKS + " ip on items.id = ip.item_id ";
     /**
@@ -638,25 +657,54 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public ItemsModel findItemByIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? and ip.stock_id = ? "), this::map, itemId, stockId);
+        return queryForObject(QUERY_ITEM_IN_STOCK, this::map, stockId, itemId);
     }
 
     public ItemsModel findItemByStockIdAndName(String itemName, Integer stockId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where nameItem = ? and ip.stock_id = ? "), this::map, itemName, stockId);
+        return findOneInStock(itemIds(ITEM_IDS_BY_NAME, itemName), stockId, ITEM_IDS_BY_NAME);
     }
 
     /**
      * All three places a code can live, so scanning the code on a carton finds
      * the item it belongs to. Which unit was scanned is answered from the item's
      * own list by {@code ItemUnits.unitByBarcode} - it is already loaded.
+     * <p>
+     * Two steps, both on an index: which item the code names, then that item's row.
+     * Asking both at once put the code's {@code OR} beside the balance, and the balance
+     * then had to be built for every item before the code could pick one.
      */
     public ItemsModel findItemByStockIdAndBarcode(String barcode, Integer stockId) throws DaoException {
-        String query = QUERY_ITEMS.concat(
-                " where (items.barcode = ?"
-                        + " or items.id in (select item_id from item_barcodes where barcode = ?)"
-                        + " or items.id in (select items_id from items_units where items_barcode = ?))"
-                        + " and ip.stock_id = ? ");
-        return queryForObject(query, this::map, barcode, barcode, barcode, stockId);
+        return findOneInStock(itemIds(ITEM_IDS_BY_CODE, barcode, barcode, barcode), stockId, ITEM_IDS_BY_CODE);
+    }
+
+    private ItemsModel findOneInStock(List<Integer> ids, Integer stockId, String lookup) throws DaoException {
+        if (ids.isEmpty()) {
+            return null;
+        }
+        if (ids.size() > 1) {
+            // What queryForObject did when the joined query matched several items: a
+            // code that belongs to two of them is a data problem, not a choice to make.
+            log.warn("Expected at most one item but {} matched, returning none: {}", ids.size(), lookup);
+            return null;
+        }
+        return findItemByIdAndStockId(ids.getFirst(), stockId);
+    }
+
+    private List<Integer> itemIds(String query, Object... parameters) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                for (int i = 0; i < parameters.length; i++) {
+                    statement.setObject(i + 1, parameters[i]);
+                }
+                List<Integer> ids = new ArrayList<>();
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        ids.add(rs.getInt(1));
+                    }
+                }
+                return ids;
+            }
+        });
     }
 
     /**

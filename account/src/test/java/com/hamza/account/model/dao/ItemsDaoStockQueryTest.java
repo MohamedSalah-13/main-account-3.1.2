@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -74,15 +75,29 @@ class ItemsDaoStockQueryTest {
     class StockScopedQueries {
 
         @Test
-        @DisplayName("QUERY_ITEMS stays the raw (item, stock) join")
-        void queryItemsStaysUnaggregated() throws Exception {
-            String sql = field("QUERY_ITEMS");
+        @DisplayName("QUERY_ITEM_IN_STOCK reads one (item, stock) row, not the view")
+        void queryItemInStockReadsOneRow() throws Exception {
+            String sql = field("QUERY_ITEM_IN_STOCK");
             assertFalse(sql.contains("GROUP BY"),
-                    "findItemByIdAndStockId and its siblings filter on ip.stock_id = ?, which only "
-                            + "makes sense against the real per-stock rows - aggregating first would "
-                            + "make the filter pick an arbitrary warehouse instead of the one asked for");
+                    "findItemByIdAndStockId and its siblings name one warehouse - aggregating "
+                            + "would make it pick an arbitrary warehouse instead of the one asked for");
+            assertFalse(sql.contains("quantity_items_table"),
+                    "joining the view builds every item's balance before returning this one - "
+                            + "the cost of a barcode scan grew with every invoice ever saved");
+            assertTrue(sql.endsWith("WHERE ist.stock_id = ? AND ist.item_id IN (?)) ip ON items.id = ip.item_id"),
+                    "the stock is bound first, then the item - the order findItemByIdAndStockId passes them");
             assertTrue(sql.contains("ip.first_balance AS stock_first_balance"),
                     "the per-stock and all-stock result sets must expose the opening under the same name");
+        }
+
+        @Test
+        @DisplayName("a code is resolved to an item on the three indexed code columns")
+        void aCodeIsResolvedOnTheThreeCodeColumns() throws Exception {
+            String sql = field("ITEM_IDS_BY_CODE");
+            assertTrue(sql.contains("FROM items WHERE barcode = ?"));
+            assertTrue(sql.contains("FROM item_barcodes WHERE barcode = ?"));
+            assertTrue(sql.contains("FROM items_units WHERE items_barcode = ?"));
+            assertEquals(3, sql.chars().filter(c -> c == '?').count());
         }
     }
 }

@@ -4,6 +4,7 @@ import com.hamza.account.document.DocumentType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JdbcInvoiceStockRepositoryTest {
@@ -33,7 +34,19 @@ class JdbcInvoiceStockRepositoryTest {
         assertTrue(sql.contains("tostock"));
         assertTrue(sql.contains("fromstock"));
         assertTrue(sql.contains("adjustment"));
-        assertEquals(3, sql.chars().filter(value -> value == '?').count());
+        // The stock and both ids inside the per-item rows, then both ids again outside -
+        // the order currentBaseBalances binds them in.
+        assertEquals(5, sql.chars().filter(value -> value == '?').count());
+        assertTrue(sql.indexOf("where ist.stock_id = ? and ist.item_id in (?, ?)")
+                < sql.indexOf("where i.id in (?,?)"));
+    }
+
+    @Test
+    void theSaveGuardDoesNotBuildEveryItemsBalance() {
+        String sql = normalize(JdbcInvoiceStockRepository.baseBalancesSql(2));
+
+        assertFalse(sql.contains("quantity_items_table"),
+                "the view aggregates every line in the database before it returns one item's row");
     }
 
     @Test
