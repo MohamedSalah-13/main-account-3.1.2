@@ -3,6 +3,7 @@ package com.hamza.account.controller.users;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.CurrentUser;
@@ -11,6 +12,9 @@ import com.hamza.account.features.shift.ShiftMode;
 import com.hamza.account.features.shift.ShiftPolicy;
 import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.features.shift.ShiftTrackingMode;
+import com.hamza.account.features.shift.ShiftVarianceSettlement;
+import com.hamza.account.features.shift.ShiftVarianceSettlementService;
+import com.hamza.account.features.shift.ShiftShortageChargeService;
 import com.hamza.account.features.shift.TreasuryShiftPolicy;
 import com.hamza.account.features.shift.ShiftCashAuditService;
 import com.hamza.account.features.shift.ShiftCashLedgerEntry;
@@ -47,6 +51,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -96,6 +101,10 @@ public class AdminShiftsController {
     private final ShiftCashHandoverService handovers = ServiceRegistry.get(ShiftCashHandoverService.class);
     private final ShiftPeriodReportService periodReports = ServiceRegistry.get(ShiftPeriodReportService.class);
     private final ShiftPeriodExportService periodExports = ServiceRegistry.get(ShiftPeriodExportService.class);
+    private final ShiftVarianceSettlementService varianceSettlements =
+            ServiceRegistry.get(ShiftVarianceSettlementService.class);
+    private final ShiftShortageChargeService shortageCharges =
+            ServiceRegistry.get(ShiftShortageChargeService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Subscriptions subscriptions = new Subscriptions();
     private final UsersService users = ServiceRegistry.get(UsersService.class);
@@ -103,7 +112,7 @@ public class AdminShiftsController {
     private final Print_Reports printReports = new Print_Reports();
 
     @FXML private TableView<UserShift> tableView;
-    @FXML private Button btnRefresh, btnForceClose, btnPrintZ, btnSavePolicy;
+    @FXML private Button btnRefresh, btnForceClose, btnChargeShortage, btnPrintZ, btnSavePolicy;
     @FXML private ComboBox<ShiftMode> comboShiftMode;
     @FXML private CheckBox checkBlindClose, checkAutoPrintZ, checkVarianceReason,
             checkSupervisorApproval, checkEnforceTreasuryAssignments, checkAssignmentDefault;
@@ -144,6 +153,10 @@ public class AdminShiftsController {
     @FXML private Button btnPeriodReportRefresh, btnPeriodReportExcel, btnPeriodReportPdf;
     @FXML private ProgressIndicator periodReportProgress;
     @FXML private Label labelPeriodReportState;
+    @FXML private TitledPane settlementPane;
+    @FXML private TableView<ShiftVarianceSettlement> settlementTable;
+    @FXML private Button btnSettlementRefresh, btnSettleVariance;
+    @FXML private ProgressIndicator settlementProgress;
     private List<Treasury> handoverTreasuries = List.of();
     private long ledgerRequest;
     private long reconciliationRequest;
@@ -170,8 +183,10 @@ public class AdminShiftsController {
         setupAssignments();
         setupHandovers();
         setupApprovals();
+        setupSettlements();
         setupLedger();
         setupPeriodReport();
+        applyTablePlaceholders();
         subscribeToRemoteShiftChanges();
         updateReprintState();
         if (mayManageShifts) refreshData();
@@ -185,7 +200,10 @@ public class AdminShiftsController {
         tableView.setDisable(!mayManageShifts);
         btnRefresh.setDisable(!mayManageShifts);
         tableView.getSelectionModel().selectedItemProperty().addListener(
-                (observable, old, selected) -> updateReprintState());
+                (observable, old, selected) -> {
+                    updateReprintState();
+                    updateShortageChargeState();
+                });
         tableView.getColumns().addAll(
                 Columns.number(NamesTables.CODE, UserShift::getId),
                 Columns.text("user.shift.column.username", UserShift::getUsername),
@@ -205,11 +223,23 @@ public class AdminShiftsController {
     private void setupActions() {
         btnRefresh.setOnAction(event -> refreshData());
         btnForceClose.setOnAction(event -> forceCloseSelected());
+        btnChargeShortage.setOnAction(event -> chargeSelectedShortage());
         btnPrintZ.setOnAction(event -> reprintSelectedZ());
         btnSavePolicy.setOnAction(event -> savePolicy());
         btnLedgerRefresh.setOnAction(event -> refreshLedger());
         btnLedgerClear.setOnAction(event -> clearLedgerFilters());
         btnLedgerReconcile.setOnAction(event -> reconcileSelected());
+    }
+
+    private void applyTablePlaceholders() {
+        String empty = message("user.shift.table.empty");
+        List.of(tableView, assignmentTable, assignmentHistoryTable, handoverPolicyTable,
+                        handoverTable, approvalTable, settlementTable, periodReportTable, ledgerTable)
+                .forEach(table -> {
+                    Label placeholder = new Label(empty);
+                    placeholder.getStyleClass().add("table-placeholder");
+                    table.setPlaceholder(placeholder);
+                });
     }
 
     private void setupIcons() {
@@ -227,6 +257,9 @@ public class AdminShiftsController {
         btnApprovalRefresh.setGraphic(AppIcon.REFRESH.graphic());
         btnApproveClose.setGraphic(AppIcon.CONFIRM.graphic());
         btnRejectClose.setGraphic(AppIcon.CLOSE.graphic());
+        btnChargeShortage.setGraphic(AppIcon.EMPLOYEES.graphic());
+        btnSettlementRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnSettleVariance.setGraphic(AppIcon.CONFIRM.graphic());
         btnLedgerRefresh.setGraphic(AppIcon.REFRESH.graphic());
         btnLedgerClear.setGraphic(AppIcon.CLEAR.graphic());
         btnLedgerReconcile.setGraphic(AppIcon.REPORT.graphic());
@@ -253,6 +286,76 @@ public class AdminShiftsController {
         btnApprovalRefresh.setOnAction(event -> refreshApprovals());
         btnApproveClose.setOnAction(event -> approveSelected());
         btnRejectClose.setOnAction(event -> rejectSelected());
+    }
+
+    private void setupSettlements() {
+        settlementTable.getColumns().addAll(
+                Columns.number(NamesTables.CODE, ShiftVarianceSettlement::id),
+                Columns.number("user.shift.approval.column.shift", ShiftVarianceSettlement::shiftId),
+                Columns.text("invoice.treasury", ShiftVarianceSettlement::treasuryName),
+                Columns.text("user.shift.settlement.column.original.date",
+                        row -> row.originalShiftDate().toString()),
+                Columns.number("user.shift.label.expected.balance", ShiftVarianceSettlement::expectedBalance),
+                Columns.number("user.shift.approval.column.actual", ShiftVarianceSettlement::actualBalance),
+                Columns.number("user.shift.label.difference", ShiftVarianceSettlement::difference),
+                Columns.text("user.shift.approval.column.requester", ShiftVarianceSettlement::requestedByName),
+                Columns.text("user.shift.approval.column.time", row -> formatTime(row.requestedAt())));
+        boolean allowed = varianceSettlements != null
+                && AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE);
+        settlementPane.setDisable(!allowed);
+        btnSettlementRefresh.setOnAction(event -> refreshSettlements());
+        btnSettleVariance.setOnAction(event -> settleSelectedVariance());
+        settlementTable.getSelectionModel().selectedItemProperty().addListener(
+                (observable, old, selected) -> btnSettleVariance.setDisable(selected == null));
+        settlementProgress.setVisible(false);
+        btnSettleVariance.setDisable(true);
+        if (allowed) refreshSettlements();
+    }
+
+    private void refreshSettlements() {
+        settlementProgress.setVisible(true);
+        btnSettlementRefresh.setDisable(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return varianceSettlements.pending();
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((rows, error) -> Platform.runLater(() -> {
+            settlementProgress.setVisible(false);
+            btnSettlementRefresh.setDisable(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.settlement.error.load"), rootCause(error));
+                return;
+            }
+            settlementTable.setItems(FXCollections.observableArrayList(rows));
+            btnSettleVariance.setDisable(settlementTable.getSelectionModel().getSelectedItem() == null);
+        }));
+    }
+
+    private void settleSelectedVariance() {
+        ShiftVarianceSettlement selected = settlementTable.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+        if (!AllAlerts.confirm_all(message("user.shift.settlement.title"),
+                message("user.shift.settlement.confirm", selected.shiftId(),
+                        selected.difference(), LocalDate.now()))) return;
+        settlementProgress.setVisible(true);
+        CompletableFuture.runAsync(() -> {
+            try {
+                varianceSettlements.settle(selected.id());
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+            settlementProgress.setVisible(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.settlement.error.save"), rootCause(error));
+                return;
+            }
+            AllAlerts.alertSaveWithMessage(message("user.shift.settlement.saved"));
+            refreshSettlements();
+            refreshData();
+        }));
     }
 
     private void setupLedger() {
@@ -401,6 +504,7 @@ public class AdminShiftsController {
         setPolicyBusy(false);
         btnForceClose.setDisable(!mayManageShifts
                 || !AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE));
+        updateShortageChargeState();
         try {
             ShiftPolicy policy = policies.current();
             comboShiftMode.setValue(policy.mode());
@@ -1143,6 +1247,8 @@ public class AdminShiftsController {
         TextInputDialog dialog = new TextInputDialog(initial);
         dialog.setTitle(message(titleKey));
         dialog.setHeaderText(message(headerKey));
+        ChangeOrientation.sceneOrientation(dialog.getDialogPane().getScene());
+        ThemeManager.apply(dialog.getDialogPane().getScene());
         return dialog.showAndWait();
     }
 
@@ -1188,6 +1294,51 @@ public class AdminShiftsController {
         }
     }
 
+    private void chargeSelectedShortage() {
+        try {
+            UserShift selected = tableView.getSelectionModel().getSelectedItem();
+            if (selected == null) throw new UserValidationException(message("user.shift.msg.select.first"));
+            if (selected.isOpen() || selected.getDifference() == null
+                    || selected.getDifference().signum() >= 0) {
+                throw new UserValidationException(message("user.shift.shortage.error.not.eligible"));
+            }
+            Optional<String> employeeText = promptWithTitle("user.shift.shortage.title",
+                    "user.shift.shortage.employee.prompt", "");
+            if (employeeText.isEmpty()) return;
+            if (!employeeText.get().trim().matches("\\d+")) {
+                throw new UserValidationException(message("employee.error.account.employee"));
+            }
+            int employeeId = Integer.parseInt(employeeText.get().trim());
+            Optional<String> reason = promptWithTitle("user.shift.shortage.title",
+                    "user.shift.shortage.reason.prompt", "");
+            if (reason.isEmpty() || reason.get().isBlank()) {
+                throw new UserValidationException(message("user.shift.shortage.reason.required"));
+            }
+            if (!AllAlerts.confirm_all(message("user.shift.shortage.title"),
+                    message("user.shift.shortage.confirm", selected.getId(),
+                            selected.getDifference().abs(), employeeId))) return;
+            btnChargeShortage.setDisable(true);
+            mainProgress.setVisible(true);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    shortageCharges.charge(selected.getId(), employeeId, reason.get().trim());
+                } catch (DaoException e) {
+                    throw new CompletionException(e);
+                }
+            }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+                mainProgress.setVisible(false);
+                updateShortageChargeState();
+                if (error != null) {
+                    AllAlerts.handleError(message("user.shift.shortage.title"), rootCause(error));
+                    return;
+                }
+                AllAlerts.alertSaveWithMessage(message("user.shift.shortage.saved"));
+            }));
+        } catch (Exception e) {
+            AllAlerts.handleError(message("user.shift.shortage.title"), e);
+        }
+    }
+
     private void reprintSelectedZ() {
         UserShift selected = tableView.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -1225,10 +1376,22 @@ public class AdminShiftsController {
                 || selected == null || selected.isOpen());
     }
 
+    private void updateShortageChargeState() {
+        UserShift selected = tableView == null ? null : tableView.getSelectionModel().getSelectedItem();
+        boolean eligible = selected != null && !selected.isOpen()
+                && selected.getDifference() != null && selected.getDifference().signum() < 0;
+        btnChargeShortage.setDisable(!mayManageShifts || shortageCharges == null
+                || !AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE)
+                || !AuthorizationGuard.isGranted(AppPermissions.EMPLOYEE_ACCOUNT_ADJUST)
+                || mainProgress.isVisible() || !eligible);
+    }
+
     private Optional<String> prompt(String key, String initial) {
         TextInputDialog dialog = new TextInputDialog(initial);
         dialog.setTitle(message("user.shift.force.close.title"));
         dialog.setHeaderText(message(key));
+        ChangeOrientation.sceneOrientation(dialog.getDialogPane().getScene());
+        ThemeManager.apply(dialog.getDialogPane().getScene());
         return dialog.showAndWait();
     }
 

@@ -30,13 +30,21 @@ public final class ShiftCashHandoverService {
     private final DaoFactory daoFactory;
     private final UserSessionContext session;
     private final Clock clock;
+    private final ShiftVarianceSettlementRepository varianceSettlements;
 
     public ShiftCashHandoverService(ShiftCashHandoverRepository repository, DaoFactory daoFactory,
                                     UserSessionContext session, Clock clock) {
+        this(repository, daoFactory, session, clock, null);
+    }
+
+    public ShiftCashHandoverService(ShiftCashHandoverRepository repository, DaoFactory daoFactory,
+                                    UserSessionContext session, Clock clock,
+                                    ShiftVarianceSettlementRepository varianceSettlements) {
         this.repository = repository;
         this.daoFactory = daoFactory;
         this.session = session;
         this.clock = clock;
+        this.varianceSettlements = varianceSettlements;
     }
 
     public List<ShiftCashHandoverPolicy> policies() throws DaoException {
@@ -151,6 +159,9 @@ public final class ShiftCashHandoverService {
             if (handover.handedByUserId() == actor) {
                 throw new BusinessRuleException(message("user.shift.handover.error.second.user"));
             }
+            if (varianceSettlements != null && varianceSettlements.isPendingForShift(handover.shiftId())) {
+                throw new BusinessRuleException(message("user.shift.handover.error.settlement.pending"));
+            }
             repository.insertOpenOverride(handover.id(), actor, normalizedReason,
                     LocalDateTime.now(clock));
             return null;
@@ -169,6 +180,10 @@ public final class ShiftCashHandoverService {
             }
             if (handover.handedByUserId() == actor) {
                 throw new BusinessRuleException(message("user.shift.handover.error.second.user"));
+            }
+
+            if (varianceSettlements != null && varianceSettlements.isPendingForShift(handover.shiftId())) {
+                throw new BusinessRuleException(message("user.shift.handover.error.settlement.pending"));
             }
 
             var source = daoFactory.treasuryCurrentBalanceDao()

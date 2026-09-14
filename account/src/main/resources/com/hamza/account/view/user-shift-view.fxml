@@ -18,24 +18,24 @@
 <?import javafx.scene.layout.VBox?>
 
 
-<VBox prefHeight="587.0" prefWidth="600.0"  xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.UserShiftController">
+<VBox prefHeight="720.0" prefWidth="760.0" styleClass="app-root,shift-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.UserShiftController">
    <children>
-      <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+      <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="app-scroll-pane" VBox.vgrow="ALWAYS">
          <content>
-            <VBox alignment="CENTER" spacing="15">
+            <VBox alignment="TOP_CENTER" spacing="15" styleClass="app-container">
                 <padding>
                     <Insets bottom="20" left="20" right="20" top="20" />
                 </padding>
             
                 <!-- Header -->
-                <Label fx:id="labelTitle" styleClass="title-label" text="%user.shift.title" />
+                <Label fx:id="labelTitle" styleClass="title-label,shift-hero" maxWidth="1.7976931348623157E308" text="%user.shift.title" />
                 <ProgressIndicator fx:id="shiftProgress" visible="false" managed="true"
                                    prefWidth="28" prefHeight="28" />
 
                 <!-- Current Shift Info -->
-                <GridPane alignment="CENTER" hgap="10" vgap="10">
+                <GridPane alignment="CENTER" hgap="18" vgap="10" maxWidth="1.7976931348623157E308" styleClass="shift-status-card">
                     <Label text="%user.shift.label.status" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                    <Label fx:id="labelShiftStatus" styleClass="status-label" text="%user.shift.status.undetermined" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                    <Label fx:id="labelShiftStatus" styleClass="shift-status-value" text="%user.shift.status.undetermined" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                     <Label text="%user.shift.label.open.time" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                     <Label fx:id="labelOpenTime" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
@@ -60,7 +60,7 @@
                 <Separator />
             
                 <!-- Open Shift Section -->
-                <VBox fx:id="boxOpenShift" alignment="CENTER" spacing="10">
+                <VBox fx:id="boxOpenShift" alignment="CENTER" spacing="10" maxWidth="1.7976931348623157E308" styleClass="shift-card">
                     <Label styleClass="section-title" text="%user.shift.section.open.new" />
                     <GridPane alignment="CENTER" hgap="10" vgap="10">
                         <Label text="%user.shift.label.open.balance" GridPane.columnIndex="0" GridPane.rowIndex="0" />
@@ -87,8 +87,8 @@
                 <Separator />
 
                 <!-- ==================== Live Summary (X-Report) ==================== -->
-                <TitledPane collapsible="true" expanded="true" text="%user.shift.section.live.summary">
-                    <GridPane alignment="CENTER" hgap="15" vgap="8">
+                <TitledPane collapsible="true" expanded="true" maxWidth="1.7976931348623157E308" text="%user.shift.section.live.summary">
+                    <GridPane alignment="CENTER" hgap="18" vgap="10" styleClass="shift-card">
                         <padding>
                             <Insets bottom="10" left="15" right="15" top="10" />
                         </padding>
@@ -140,7 +140,7 @@
                 <Button fx:id="btnPrintXReport" text="%user.shift.btn.print.x" />
             
                 <!-- Close Shift Section -->
-                <VBox fx:id="boxCloseShift" alignment="CENTER" spacing="10">
+                <VBox fx:id="boxCloseShift" alignment="CENTER" spacing="10" maxWidth="1.7976931348623157E308" styleClass="shift-card">
                     <Label styleClass="section-title" text="%user.shift.close.action" />
                     <GridPane alignment="CENTER" hgap="10" vgap="10">
                         <Label text="%user.shift.label.close.balance" GridPane.columnIndex="0" GridPane.rowIndex="0" />
@@ -164,7 +164,7 @@
 
                 <!-- Shifts History Table -->
                 <Label styleClass="section-title" text="%user.shift.section.history" />
-                <TableView fx:id="tableShifts" prefHeight="200">
+                <TableView fx:id="tableShifts" prefHeight="240" maxWidth="1.7976931348623157E308">
                     <columns>
                         <TableColumn fx:id="colId" prefWidth="60" text="%code" />
                         <TableColumn fx:id="colOpenTime" prefWidth="150" text="%user.shift.column.open.time" />

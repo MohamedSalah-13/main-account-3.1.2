@@ -57,6 +57,10 @@ import com.hamza.account.features.shift.ShiftPeriodReportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.features.employee.EmployeeLedgerService;
+import com.hamza.account.features.shift.JdbcShiftShortageChargeRepository;
+import com.hamza.account.features.shift.JdbcShiftVarianceSettlementRepository;
+import com.hamza.account.features.shift.ShiftShortageChargeService;
+import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.employee.attendance.AttendanceService;
 import com.hamza.account.features.employee.attendance.LeaveService;
@@ -289,15 +293,23 @@ public class DownLoadApplication extends Application {
                 new JdbcShiftPolicyRepository(), eventBus, cashierTreasuryRepository);
         CashierTreasuryAssignmentService cashierTreasuries = new CashierTreasuryAssignmentService(
                 cashierTreasuryRepository, shiftPolicies, userSession);
+        var varianceSettlementRepository = new JdbcShiftVarianceSettlementRepository();
         ShiftCashHandoverService cashHandovers = new ShiftCashHandoverService(
                 new JdbcShiftCashHandoverRepository(), daoFactory, userSession,
+                java.time.Clock.systemDefaultZone(), varianceSettlementRepository);
+        ShiftVarianceSettlementService varianceSettlements = new ShiftVarianceSettlementService(
+                varianceSettlementRepository, cashHandovers, userSession,
                 java.time.Clock.systemDefaultZone());
         UserShiftService shiftService = new UserShiftService(
                 daoFactory, userSession, shiftPolicies, eventBus, java.time.Clock.systemDefaultZone(),
-                new ShiftCloseRequestDao(), cashierTreasuries, cashHandovers);
+                new ShiftCloseRequestDao(), cashierTreasuries, cashHandovers, varianceSettlements);
         ServiceRegistry.register(ShiftPolicyService.class, shiftPolicies);
         ServiceRegistry.register(CashierTreasuryAssignmentService.class, cashierTreasuries);
         ServiceRegistry.register(ShiftCashHandoverService.class, cashHandovers);
+        ServiceRegistry.register(ShiftVarianceSettlementService.class, varianceSettlements);
+        ServiceRegistry.register(ShiftShortageChargeService.class, new ShiftShortageChargeService(
+                new JdbcShiftShortageChargeRepository(), userSession,
+                java.time.Clock.systemDefaultZone()));
         ServiceRegistry.register(ShiftCashAuditService.class, new ShiftCashAuditService());
         ServiceRegistry.register(ShiftReconciliationService.class, new ShiftReconciliationService());
         ServiceRegistry.register(UserShiftService.class, shiftService);

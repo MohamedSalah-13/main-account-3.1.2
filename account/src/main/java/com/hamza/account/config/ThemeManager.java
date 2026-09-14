@@ -36,7 +36,7 @@ public final class ThemeManager {
      */
     private static final String ROOT_STYLE_SELECTOR = ".app-root, .reports-root, .items-root, "
             + ".settings-root, .treasury-root, .treasury-transfer-root, .table-screen-root, "
-            + ".main-root, .backup-root, .settings-main-root";
+            + ".main-root, .backup-root, .settings-main-root, .shift-root";
 
     private ThemeManager() {
     }

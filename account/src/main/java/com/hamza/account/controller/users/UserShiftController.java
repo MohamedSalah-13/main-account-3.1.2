@@ -102,6 +102,9 @@ public class UserShiftController {
         setupTableColumns();
         setupActions();
         setupIcons();
+        Label placeholder = new Label(message("user.shift.table.empty"));
+        placeholder.getStyleClass().add("table-placeholder");
+        tableShifts.setPlaceholder(placeholder);
         applyActionState();
         subscribeToRemoteShiftChanges();
         refreshView();
