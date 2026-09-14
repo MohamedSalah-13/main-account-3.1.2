@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,13 +60,31 @@ class ItemsDaoStockQueryTest {
         }
 
         @Test
-        @DisplayName("the three FILTER_ITEMS_SQL_* searches also aggregate")
-        void filterQueriesAggregate() throws Exception {
+        @DisplayName("the three name searches pick ids without building any balance")
+        void filterQueriesPickIdsOnly() throws Exception {
             for (String name : new String[]{
-                    "FILTER_ITEMS_SQL_TEXT_STARTS", "FILTER_ITEMS_SQL_TEXT_CONTAINS", "FILTER_ITEMS_SQL_NUMERIC"}) {
+                    "FILTER_ITEM_IDS_SQL_TEXT_STARTS", "FILTER_ITEM_IDS_SQL_TEXT_CONTAINS", "FILTER_ITEM_IDS_SQL_NUMERIC"}) {
                 String sql = field(name);
-                assertTrue(sql.contains("GROUP BY item_id"), name + " must aggregate across stocks");
+                assertTrue(sql.startsWith("SELECT items.id\n"), name + " answers ids; the rows are loaded for them after");
+                assertFalse(sql.contains("quantity_items_table") || sql.contains("GROUP BY"),
+                        name + " must not build every item's balance before its LIMIT applies");
+                assertTrue(sql.contains("WHERE items.id IN (SELECT item_id FROM items_stock)\n  AND ("),
+                        name + " keeps the inner join's rule, and brackets its ORs so the rule applies to all of them");
             }
+        }
+
+        @Test
+        @DisplayName("the rows for chosen ids fold every warehouse with the list's own aggregate")
+        void rowsForChosenIdsAggregateLikeTheList() throws Exception {
+            java.lang.reflect.Method method = ItemsDao.class.getDeclaredMethod("queryItemsAcrossStocks", int.class);
+            method.setAccessible(true);
+            String sql = (String) method.invoke(null, 2);
+            assertTrue(sql.contains(com.hamza.account.features.items.ItemStockBalanceSql.acrossStocksForItems(2)),
+                    "the rows are ItemStockBalanceSql's, folded by ItemCatalogSql's aggregate");
+            assertTrue(sql.contains("GROUP BY item_id"));
+            assertFalse(sql.contains("quantity_items_table"));
+            assertTrue(sql.endsWith(" ip ON items.id = ip.item_id"));
+            assertEquals(2, sql.chars().filter(c -> c == '?').count());
         }
     }
 
@@ -74,15 +93,29 @@ class ItemsDaoStockQueryTest {
     class StockScopedQueries {
 
         @Test
-        @DisplayName("QUERY_ITEMS stays the raw (item, stock) join")
-        void queryItemsStaysUnaggregated() throws Exception {
-            String sql = field("QUERY_ITEMS");
+        @DisplayName("QUERY_ITEM_IN_STOCK reads one (item, stock) row, not the view")
+        void queryItemInStockReadsOneRow() throws Exception {
+            String sql = field("QUERY_ITEM_IN_STOCK");
             assertFalse(sql.contains("GROUP BY"),
-                    "findItemByIdAndStockId and its siblings filter on ip.stock_id = ?, which only "
-                            + "makes sense against the real per-stock rows - aggregating first would "
-                            + "make the filter pick an arbitrary warehouse instead of the one asked for");
+                    "findItemByIdAndStockId and its siblings name one warehouse - aggregating "
+                            + "would make it pick an arbitrary warehouse instead of the one asked for");
+            assertFalse(sql.contains("quantity_items_table"),
+                    "joining the view builds every item's balance before returning this one - "
+                            + "the cost of a barcode scan grew with every invoice ever saved");
+            assertTrue(sql.endsWith("WHERE ist.stock_id = ? AND ist.item_id IN (?)) ip ON items.id = ip.item_id"),
+                    "the stock is bound first, then the item - the order findItemByIdAndStockId passes them");
             assertTrue(sql.contains("ip.first_balance AS stock_first_balance"),
                     "the per-stock and all-stock result sets must expose the opening under the same name");
+        }
+
+        @Test
+        @DisplayName("a code is resolved to an item on the three indexed code columns")
+        void aCodeIsResolvedOnTheThreeCodeColumns() throws Exception {
+            String sql = field("ITEM_IDS_BY_CODE");
+            assertTrue(sql.contains("FROM items WHERE barcode = ?"));
+            assertTrue(sql.contains("FROM item_barcodes WHERE barcode = ?"));
+            assertTrue(sql.contains("FROM items_units WHERE items_barcode = ?"));
+            assertEquals(3, sql.chars().filter(c -> c == '?').count());
         }
     }
 }

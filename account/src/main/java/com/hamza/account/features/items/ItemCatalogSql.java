@@ -43,20 +43,29 @@ public final class ItemCatalogSql {
      * failed with an unknown column, while the items list, which read the original, worked.
      * {@code ItemCatalogSqlTest} checks that every column {@code BALANCE} names is here.
      */
-    public static final String MOVEMENTS = """
-            (SELECT item_id,
-                    ANY_VALUE(stock_id)     AS stock_id,
-                    SUM(first_balance)       AS stock_first_balance,
-                    SUM(quantityPurchase)   AS quantityPurchase,
-                    SUM(quantitySales)      AS quantitySales,
-                    SUM(quantityPurchaseRe) AS quantityPurchaseRe,
-                    SUM(quantitySalesRe)    AS quantitySalesRe,
-                    SUM(fromStock)          AS fromStock,
-                    SUM(toStock)            AS toStock,
-                    SUM(adjustment)         AS adjustment
-             FROM quantity_items_table
-             GROUP BY item_id)
-            """;
+    public static final String MOVEMENTS = movementsOver("quantity_items_table");
+
+    /**
+     * {@link #MOVEMENTS} folded from {@code rows} - anything with {@code quantity_items_table}'s
+     * columns. {@code ItemStockBalanceSql.acrossStocksForItems} passes the view's rows for
+     * named items only, so a finder and the list fold warehouses with one text.
+     */
+    public static String movementsOver(String rows) {
+        return """
+                (SELECT item_id,
+                        ANY_VALUE(stock_id)     AS stock_id,
+                        SUM(first_balance)       AS stock_first_balance,
+                        SUM(quantityPurchase)   AS quantityPurchase,
+                        SUM(quantitySales)      AS quantitySales,
+                        SUM(quantityPurchaseRe) AS quantityPurchaseRe,
+                        SUM(quantitySalesRe)    AS quantitySalesRe,
+                        SUM(fromStock)          AS fromStock,
+                        SUM(toStock)            AS toStock,
+                        SUM(adjustment)         AS adjustment
+                 FROM %s
+                 GROUP BY item_id)
+                """.formatted(rows);
+    }
 
     /**
      * What an item has on hand, in SQL, aliased exactly as {@code ItemsDao.applyBalances}

@@ -3,6 +3,7 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.items.ItemStockBalanceSql;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -82,8 +83,11 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
         return withConnection(connection -> {
             Map<Integer, Double> balances = new LinkedHashMap<>();
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                // The movement rows are computed for these items alone (see
+                // ItemStockBalanceSql), so the ids are bound twice: inside, and for the
+                // outer list that keeps an item with no row in this warehouse at zero.
                 statement.setInt(1, stockId);
-                bindIds(statement, 2, itemIds);
+                bindIds(statement, bindIds(statement, 2, itemIds), itemIds);
                 try (ResultSet rows = statement.executeQuery()) {
                     while (rows.next()) {
                         balances.put(rows.getInt("id"), rows.getDouble("current_balance"));
@@ -156,11 +160,11 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
                        - COALESCE(q.quantityPurchaseRe, 0)
                        - COALESCE(q.fromStock, 0) AS current_balance
                 FROM items i
-                LEFT JOIN quantity_items_table q
-                  ON q.item_id = i.id AND q.stock_id = ?
+                LEFT JOIN (%s) q
+                  ON q.item_id = i.id
                 WHERE i.id IN (%s)
                 ORDER BY i.id
-                """.formatted(placeholders(itemCount));
+                """.formatted(ItemStockBalanceSql.forItems(itemCount), placeholders(itemCount));
     }
 
     static String expiryBalancesSql(int itemCount) {
