@@ -43,6 +43,11 @@ public final class TablePdfReport {
     private TablePdfReport() {
     }
 
+    @FunctionalInterface
+    public interface PdfFileWriter {
+        boolean write(File target) throws Exception;
+    }
+
     /**
      * Resolves the configured report destination. The legacy callers still pass a File, so a
      * direct-print request uses a temporary PDF that is deleted after it has reached the spooler.
@@ -97,14 +102,26 @@ public final class TablePdfReport {
             AllAlerts.alertError(text("party.error.no.data.print"));
             return;
         }
-        PageSize pageSize = pageSize(chartPng, layout);
+        PageSize pageSize = chartPng != null ? configuredPageSize().rotate() : pageSizeFor(layout.headers().length);
+        write(target, file -> new PdfExportService().exportChartReport(file.getAbsolutePath(), title,
+                subtitle, chartPng, layout.headers(), layout.columnWidths(), layout.rows(),
+                layout.totals(), pageSize), afterSaved);
+    }
+
+    /**
+     * Writes a report that is not a flat table - it brings its own renderer - to the target
+     * {@link #chooseTarget} resolved, with the same direct-print and announcement as a table.
+     */
+    public static void write(File target, PdfFileWriter writer) {
+        write(target, writer, () -> { });
+    }
+
+    private static void write(File target, PdfFileWriter writer, Runnable afterSaved) {
         ReportOutputMode mode = OUTPUT_TARGETS.remove(target.getAbsolutePath());
         Task<Boolean> write = new Task<>() {
             @Override
             protected Boolean call() throws Exception {
-                boolean exported = new PdfExportService().exportChartReport(target.getAbsolutePath(), title,
-                        subtitle, chartPng, layout.headers(), layout.columnWidths(), layout.rows(),
-                        layout.totals(), pageSize);
+                boolean exported = writer.write(target);
                 if (exported && mode == ReportOutputMode.PRINT_DIRECT) {
                     DirectPdfPrintService.print(target, getSettingPrinterNormal(), configuredPaperSize());
                 }
@@ -128,6 +145,16 @@ public final class TablePdfReport {
         write.setOnFailed(event -> deleteTemporaryPrintPdf(target, mode));
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), write);
         start(write, "table-pdf-write");
+    }
+
+    /** The configured paper, turned sideways when the columns would not fit across it upright. */
+    public static PageSize pageSizeFor(int columns) {
+        PageSize configured = configuredPageSize();
+        return columns > UPRIGHT_COLUMN_LIMIT ? configured.rotate() : configured;
+    }
+
+    private static PageSize configuredPageSize() {
+        return configuredPaperSize() == ReportPaperSize.A5 ? PageSize.A5 : PageSize.A4;
     }
 
     public static void start(Task<?> task, String name) {
@@ -160,12 +187,6 @@ public final class TablePdfReport {
             return null;
         }
         return choice.get().equals(print) ? ReportOutputMode.PRINT_DIRECT : ReportOutputMode.SAVE_PDF;
-    }
-
-    private static PageSize pageSize(byte[] chartPng, TablePdfLayout layout) {
-        PageSize configured = configuredPaperSize() == ReportPaperSize.A5 ? PageSize.A5 : PageSize.A4;
-        return chartPng != null || layout.headers().length > UPRIGHT_COLUMN_LIMIT
-                ? configured.rotate() : configured;
     }
 
     private static void deleteTemporaryPrintPdf(File target) {

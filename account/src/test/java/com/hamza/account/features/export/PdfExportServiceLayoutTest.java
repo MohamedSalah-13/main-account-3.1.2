@@ -63,8 +63,48 @@ class PdfExportServiceLayoutTest {
                 first + ", " + second + ", " + third + " should run right to left: " + x);
     }
 
+    /**
+     * A tree report: a branch heading above its own rows and its summary, the next branch below
+     * that, and every line of cells running right to left like the headings.
+     */
+    @Test
+    void aTreeReportPrintsEachBranchHeadingAboveItsRowsAndItsSummary() throws Exception {
+        String pdf = dir.resolve("tree.pdf").toString();
+        TreePdfLayout layout = new TreePdfLayout(
+                new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                List.of(new TreePdfLayout.Branch("7001", List.<String[]>of(new String[]{"111", "222", "333"}),
+                                new String[]{"511", "522", "533"}),
+                        new TreePdfLayout.Branch("7002", List.<String[]>of(new String[]{"444", "555", "666"}),
+                                new String[]{"611", "622", "633"})),
+                new String[]{"911", "922", "933"});
+        assertTrue(new PdfExportService().exportTreeReport(pdf, "1", "", layout, PageSize.A4));
+
+        Set<String> wanted = Set.of("101", "202", "303", "7001", "111", "222", "333", "511", "522", "533",
+                "7002", "444", "555", "666", "611", "622", "633", "911", "922", "933");
+        Map<String, Float> x = textPositions(pdf, wanted);
+        Map<String, Float> y = textPositions(pdf, wanted, 1);
+
+        assertOrderedRightToLeft(x, "111", "222", "333");
+        assertOrderedRightToLeft(x, "511", "522", "533");
+        assertOrderedRightToLeft(x, "444", "555", "666");
+        assertOrderedRightToLeft(x, "911", "922", "933");
+
+        // PDF y grows upwards: each line printed below the previous one has a smaller y.
+        String[] topToBottom = {"101", "7001", "111", "511", "7002", "444", "611", "911"};
+        for (int i = 1; i < topToBottom.length; i++) {
+            assertNotNull(y.get(topToBottom[i]), topToBottom[i] + " was not found on the page: " + y);
+            assertTrue(y.get(topToBottom[i - 1]) > y.get(topToBottom[i]),
+                    topToBottom[i - 1] + " should print above " + topToBottom[i] + ": " + y);
+        }
+    }
+
     /** The x of each wanted string's baseline start on page 1. */
     private static Map<String, Float> textPositions(String pdf, Set<String> wanted) throws Exception {
+        return textPositions(pdf, wanted, 0);
+    }
+
+    /** One coordinate (0 = x, 1 = y) of each wanted string's baseline start on page 1. */
+    private static Map<String, Float> textPositions(String pdf, Set<String> wanted, int axis) throws Exception {
         Map<String, Float> found = new HashMap<>();
         try (PdfDocument document = new PdfDocument(new PdfReader(pdf))) {
             new PdfCanvasProcessor(new IEventListener() {
@@ -74,7 +114,7 @@ class PdfExportServiceLayoutTest {
                         TextRenderInfo info = (TextRenderInfo) data;
                         String text = info.getText();
                         if (text != null && wanted.contains(text.strip())) {
-                            found.put(text.strip(), info.getBaseline().getStartPoint().get(0));
+                            found.put(text.strip(), info.getBaseline().getStartPoint().get(axis));
                         }
                     }
                 }

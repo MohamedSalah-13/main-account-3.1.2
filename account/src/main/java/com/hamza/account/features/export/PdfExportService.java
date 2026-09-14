@@ -10,6 +10,7 @@ import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
@@ -42,6 +43,8 @@ public class PdfExportService {
 
     private static final DeviceRgb HEADER_COLOR = new DeviceRgb(41, 128, 185);
     private static final DeviceRgb ALTERNATE_ROW_COLOR = new DeviceRgb(236, 240, 241);
+    private static final DeviceRgb BRANCH_COLOR = new DeviceRgb(214, 234, 248);
+    private static final DeviceRgb BRANCH_TEXT_COLOR = new DeviceRgb(21, 67, 96);
 
     private PdfFont arabicFont;
     private PdfFont boldFont;
@@ -288,6 +291,82 @@ public class PdfExportService {
         } catch (IOException e) {
             log.error("Error exporting PDF", e);
             return false;
+        }
+    }
+
+    /**
+     * A tree report: for each branch a heading line across every column, its rows indented under
+     * it, and its summary line; then the closing totals. One table throughout, so the column
+     * headings repeat at the top of every page a long branch runs onto.
+     */
+    public boolean exportTreeReport(String filePath, String title, String subtitle,
+                                    TreePdfLayout layout, PageSize pageSize) {
+        try (Document document = createDocument(filePath, pageSize)) {
+            addHeader(document, title, subtitle);
+            Table table = createTable(layout.headers(), layout.columnWidths());
+            int columns = layout.headers().length;
+            for (TreePdfLayout.Branch branch : layout.branches()) {
+                table.addCell(new Cell(1, columns)
+                        .add(arabicParagraphBold(branch.title()))
+                        .setBackgroundColor(BRANCH_COLOR)
+                        .setFontColor(BRANCH_TEXT_COLOR)
+                        .setTextAlignment(TextAlignment.RIGHT)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                        .setPaddingTop(4)
+                        .setPaddingBottom(4)
+                        .setPaddingRight(6));
+                int rowIndex = 0;
+                for (String[] row : branch.rows()) {
+                    addBranchRow(table, row, rowIndex % 2 == 1);
+                    rowIndex++;
+                }
+                if (branch.summary() != null) {
+                    addBranchSummary(table, branch.summary());
+                }
+            }
+            if (layout.totals() != null) {
+                addTotalsRow(table, layout.totals());
+            }
+            document.add(table);
+            addFooter(document);
+            log.info("PDF exported successfully: {}", filePath);
+            return true;
+        } catch (IOException e) {
+            log.error("Error exporting PDF", e);
+            return false;
+        }
+    }
+
+    /** A leaf line: the first logical column is indented so it reads as belonging to the heading. */
+    private void addBranchRow(Table table, String[] rowData, boolean isAlternate) {
+        String[] rtlRow = reverseStrings(rowData);
+        for (int i = 0; i < rtlRow.length; i++) {
+            boolean first = i == rtlRow.length - 1;
+            Cell cell = new Cell()
+                    .add(arabicParagraph(rtlRow[i]))
+                    .setFontSize(10)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .setPadding(2)
+                    .setPaddingRight(first ? 18 : 6);
+            if (isAlternate) {
+                cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
+            }
+            table.addCell(cell);
+        }
+    }
+
+    /** Right-aligned like the rows above it, so each figure sits under the column it sums. */
+    private void addBranchSummary(Table table, String[] cells) {
+        for (String cell : reverseStrings(cells)) {
+            table.addCell(new Cell()
+                    .add(arabicParagraphBold(cell == null ? "" : cell))
+                    .setFontColor(BRANCH_TEXT_COLOR)
+                    .setBorderTop(new SolidBorder(BRANCH_TEXT_COLOR, 0.8f))
+                    .setBorderBottom(new SolidBorder(BRANCH_TEXT_COLOR, 0.8f))
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .setFontSize(10)
+                    .setPadding(2)
+                    .setPaddingRight(6));
         }
     }
 
