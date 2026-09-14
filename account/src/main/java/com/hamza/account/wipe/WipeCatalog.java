@@ -155,7 +155,8 @@ public final class WipeCatalog {
      * left to refuse the delete.
      */
     public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
-            List.of(WipeTable.of("employee_ledger"),
+            List.of(WipeTable.of("shift_employee_shortage_charges"),
+                    WipeTable.of("employee_ledger"),
                     // payroll_line cascades from payroll_run, but the run itself is refused
                     // while a ledger row or a purpose row still points at it - so the run goes
                     // after employee_ledger and after employee_cash_purpose, which EXPENSES
@@ -169,6 +170,7 @@ public final class WipeCatalog {
                     WipeTable.of("leave_request"),
                     WipeTable.of("targeted_sales"),
                     WipeTable.of("shift_cash_variance_adjustments"),
+                    WipeTable.of("shift_variance_settlement_requests"),
                     WipeTable.of("treasury_deposit_expenses"),
                     WipeTable.of("shift_cash_handover_receipts"),
                     WipeTable.of("shift_cash_handover_open_overrides"),

@@ -318,6 +318,10 @@ DROP TRIGGER IF EXISTS prevent_shift_cash_variance_adjustment_update;
 DROP TRIGGER IF EXISTS prevent_shift_cash_variance_adjustment_delete;
 DROP TRIGGER IF EXISTS prevent_shift_handover_open_override_update;
 DROP TRIGGER IF EXISTS prevent_shift_handover_open_override_delete;
+DROP TRIGGER IF EXISTS prevent_shift_variance_settlement_request_update;
+DROP TRIGGER IF EXISTS prevent_shift_variance_settlement_request_delete;
+DROP TRIGGER IF EXISTS prevent_shift_employee_shortage_charge_update;
+DROP TRIGGER IF EXISTS prevent_shift_employee_shortage_charge_delete;
 
 DELIMITER |
 CREATE TRIGGER validate_shift_cash_handover_receiver
@@ -407,6 +411,34 @@ BEGIN
     IF run_status IS NOT NULL AND run_status <> 'DRAFT' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'A payroll line is frozen once its run leaves DRAFT';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_shift_variance_settlement_request_update
+BEFORE UPDATE ON shift_variance_settlement_requests FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift variance settlement request is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_variance_settlement_request_delete
+BEFORE DELETE ON shift_variance_settlement_requests FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift variance settlement request is immutable';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_shift_employee_shortage_charge_update
+BEFORE UPDATE ON shift_employee_shortage_charges FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift employee shortage charge is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_employee_shortage_charge_delete
+BEFORE DELETE ON shift_employee_shortage_charges FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift employee shortage charge is immutable';
     END IF;
 END|
 

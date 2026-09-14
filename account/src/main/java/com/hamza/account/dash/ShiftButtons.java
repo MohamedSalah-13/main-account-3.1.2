@@ -8,6 +8,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.view.SceneAll;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.scene.Scene;
@@ -37,10 +38,11 @@ public class ShiftButtons extends LoadData {
             public void action() throws Exception {
                 // Action for non-tabpane scenario
                 var controller = new UserShiftController();
-                Scene scene = new Scene(new OpenFxmlApplication(controller).getPane()
-                        , 680, 720);
+                Scene scene = new SceneAll(new OpenFxmlApplication(controller).getPane());
                 Stage stage = new Stage();
                 stage.setScene(scene);
+                stage.setMinWidth(760);
+                stage.setMinHeight(760);
                 ChangeOrientation.sceneOrientation(scene);
                 stage.show();
             }

@@ -328,10 +328,12 @@ public class UserShiftDao extends AbstractDao<UserShift> {
                     UNION ALL SELECT 1 FROM treasury_transfers WHERE source_shift_id=?
                     UNION ALL SELECT 1 FROM treasury_transfers WHERE destination_shift_id=?
                     UNION ALL SELECT 1 FROM shift_cash_ledger WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM shift_variance_settlement_requests WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM shift_employee_shortage_charges WHERE shift_id=?
                 )
                 """;
         return countInt(sql, shiftId, shiftId, shiftId, shiftId, shiftId,
-                shiftId, shiftId, shiftId, shiftId, shiftId, shiftId) > 0;
+                shiftId, shiftId, shiftId, shiftId, shiftId, shiftId, shiftId, shiftId) > 0;
     }
 
     /** Serializes competing opens for the same user and till inside the service transaction. */

@@ -17,6 +17,7 @@ import com.hamza.account.features.events.ShiftsChanged;
 import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.features.shift.ShiftStatus;
 import com.hamza.account.features.shift.ShiftTrackingMode;
+import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
@@ -42,6 +43,7 @@ public final class UserShiftService {
     private final ShiftCloseRequestDao closeRequests;
     private final CashierTreasuryAssignmentService treasuryAssignments;
     private final ShiftCashHandoverService cashHandovers;
+    private final ShiftVarianceSettlementService varianceSettlements;
 
     /** Compatibility constructor used by tests that only exercise authorization. */
     public UserShiftService(DaoFactory daoFactory) {
@@ -71,6 +73,16 @@ public final class UserShiftService {
                             ShiftCloseRequestDao closeRequests,
                             CashierTreasuryAssignmentService treasuryAssignments,
                             ShiftCashHandoverService cashHandovers) {
+        this(daoFactory, session, policies, events, clock, closeRequests, treasuryAssignments,
+                cashHandovers, null);
+    }
+
+    public UserShiftService(DaoFactory daoFactory, UserSessionContext session,
+                            ShiftPolicyService policies, EventBus events, Clock clock,
+                            ShiftCloseRequestDao closeRequests,
+                            CashierTreasuryAssignmentService treasuryAssignments,
+                            ShiftCashHandoverService cashHandovers,
+                            ShiftVarianceSettlementService varianceSettlements) {
         this.daoFactory = daoFactory;
         this.session = session;
         this.policies = policies;
@@ -79,6 +91,7 @@ public final class UserShiftService {
         this.closeRequests = closeRequests;
         this.treasuryAssignments = treasuryAssignments;
         this.cashHandovers = cashHandovers;
+        this.varianceSettlements = varianceSettlements;
     }
 
     public int openShift(int userId, int treasuryId, BigDecimal openBalance, String notes) throws DaoException {
@@ -390,7 +403,7 @@ public final class UserShiftService {
 
     private void requireSettlementAllowed(BigDecimal difference, LocalDateTime closeTime)
             throws DaoException {
-        if (cashHandovers != null) {
+        if (cashHandovers != null && varianceSettlements == null) {
             cashHandovers.requireSettlementAllowed(difference, closeTime.toLocalDate());
         }
     }
@@ -404,8 +417,13 @@ public final class UserShiftService {
                                       BigDecimal actualBalance, int actorUserId,
                                       LocalDateTime closeTime) throws DaoException {
         if (cashHandovers == null) return;
-        cashHandovers.settleCloseVariance(shift.getId(), shift.getTreasuryId(),
-                expectedBalance, actualBalance, actorUserId, closeTime);
+        if (varianceSettlements == null) {
+            cashHandovers.settleCloseVariance(shift.getId(), shift.getTreasuryId(),
+                    expectedBalance, actualBalance, actorUserId, closeTime);
+        } else {
+            varianceSettlements.settleOrDefer(shift.getId(), shift.getTreasuryId(),
+                    expectedBalance, actualBalance, actorUserId, closeTime);
+        }
         cashHandovers.requestForClosedShift(shift.getId(), shift.getTreasuryId(),
                 actualBalance, shift.getUserId(), closeTime);
     }

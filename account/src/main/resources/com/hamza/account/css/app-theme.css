@@ -13,7 +13,8 @@
 .treasury-transfer-root,
 .table-screen-root,
 .main-root,
-.backup-root {
+.backup-root,
+.shift-root {
     -fx-font-family: "Cairo", "Tahoma", "Arial", sans-serif;
     -fx-background-color: -app-bg;
     -fx-font-size: 11px;
@@ -2541,6 +2542,74 @@
     -fx-border-radius: 12;
     -fx-border-color: -app-border;
     -fx-border-width: 1;
+}
+
+/* Shift workspaces: operational data stays roomy while configuration and audit
+   live in separate tabs. All colours are palette tokens so this works in every theme. */
+.shift-root .shift-hero {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1.273em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 1.273em;
+    -fx-border-width: 0.091em;
+    -fx-padding: 1.091em 1.364em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 12, 0.12, 0, 4);
+}
+
+.shift-root .shift-tabs > .tab-header-area {
+    -fx-padding: 0.25em 0 0.55em 0;
+}
+
+.shift-root .shift-tabs > .tab-header-area > .headers-region > .tab {
+    -fx-background-radius: 0.75em 0.75em 0 0;
+    -fx-padding: 0.45em 1.1em;
+}
+
+.shift-root .shift-workspace,
+.shift-root .shift-card {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 1em;
+    -fx-border-width: 0.091em;
+    -fx-padding: 1em;
+}
+
+.shift-root .shift-toolbar {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 0.65em 0.8em;
+}
+
+.shift-root .shift-status-card {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 1em;
+    -fx-padding: 0.9em 1.2em;
+}
+
+.shift-root .shift-status-value {
+    -fx-font-size: 1.25em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-primary-dark;
+}
+
+.shift-root .shift-summary-card {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 0.75em 1em;
+    -fx-min-width: 10em;
+}
+
+.shift-root .table-view {
+    -fx-background-radius: 0.8em;
+    -fx-border-radius: 0.8em;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+}
+
+.shift-root .table-placeholder {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 1.1em;
 }
 
 /* RBAC is deliberately dense, but its groups must remain visually distinct while an

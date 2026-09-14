@@ -6,6 +6,7 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.DeleteDataController;
 import com.hamza.account.controller.users.AdminShiftsController;
+import com.hamza.account.view.SceneAll;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
@@ -238,8 +239,10 @@ public class SettingButtons {
                 if (pane != null) {
                     Stage stage = new Stage();
                     stage.setTitle(textName());
-                    Scene scene = new Scene(pane);
+                    Scene scene = new SceneAll(pane);
                     stage.setScene(scene);
+                    stage.setMinWidth(1180);
+                    stage.setMinHeight(760);
                     ChangeOrientation.sceneOrientation(scene);
                     stage.show();
                 } else {
