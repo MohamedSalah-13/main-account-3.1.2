@@ -153,6 +153,11 @@ public final class TablePdfReport {
         return columns > UPRIGHT_COLUMN_LIMIT ? configured.rotate() : configured;
     }
 
+    /** The configured paper, upright whatever it holds - for a document handed to a customer. */
+    public static PageSize uprightPageSize() {
+        return configuredPageSize();
+    }
+
     private static PageSize configuredPageSize() {
         return configuredPaperSize() == ReportPaperSize.A5 ? PageSize.A5 : PageSize.A4;
     }

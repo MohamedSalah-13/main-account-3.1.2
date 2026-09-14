@@ -9,10 +9,14 @@ import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Div;
 import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.LineSeparator;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.*;
@@ -493,6 +497,252 @@ public class PdfExportService {
             log.error("Error exporting PDF", e);
             return false;
         }
+    }
+
+    // ===================== a document handed to a customer =====================
+
+    private static final DeviceRgb LABEL_COLOR = new DeviceRgb(236, 240, 241);
+    private static final DeviceRgb RULE_COLOR = new DeviceRgb(189, 195, 199);
+    private static final float DOCUMENT_FONT_SIZE = 9.5f;
+
+    /**
+     * An invoice or a return, on the page it was given: the letterhead on the right with the
+     * document's name and number opposite it, who it is for, its lines, and a summary box on the
+     * left with the notes and a signature line beside it.
+     * <p>
+     * The page is the one passed and is never turned: a document is upright whatever it holds.
+     * The column headings repeat on every page a long document runs onto, the summary is kept
+     * whole on the last, and every page is numbered at its foot.
+     * <p>
+     * Like every table here, cells are added left to right and each line is reversed on its way
+     * in, so the first logical column lands on the right - {@code PdfExportServiceLayoutTest}
+     * reads the positions back.
+     */
+    public boolean exportDocument(String filePath, DocumentPdfPage page, PageSize pageSize) {
+        try (PdfDocument pdf = new PdfDocument(new PdfWriter(filePath));
+             Document document = new Document(pdf, pageSize, false)) {
+            document.setFont(arabicFont);
+            document.setFontSize(DOCUMENT_FONT_SIZE);
+            document.setProperty(Property.BASE_DIRECTION, BaseDirection.RIGHT_TO_LEFT);
+            document.setTextAlignment(TextAlignment.RIGHT);
+            document.setMargins(24, 24, 34, 24);
+
+            document.add(documentHeader(page));
+            document.add(new LineSeparator(new SolidLine(1.2f)).setStrokeColor(HEADER_COLOR)
+                    .setMarginTop(4).setMarginBottom(6));
+            if (!page.details().isEmpty()) {
+                document.add(documentDetails(page.details()));
+            }
+            document.add(documentLines(page));
+            document.add(documentClosing(page));
+            if (!page.footer().isBlank()) {
+                document.add(arabicParagraph(page.footer()).setFontSize(8)
+                        .setFontColor(ColorConstants.GRAY)
+                        .setTextAlignment(TextAlignment.CENTER).setMarginTop(8));
+            }
+
+            int pages = pdf.getNumberOfPages();
+            for (int number = 1; number <= pages; number++) {
+                document.showTextAligned(new Paragraph(number + " / " + pages)
+                                .setFont(arabicFont).setFontSize(8).setFontColor(ColorConstants.GRAY),
+                        pageSize.getWidth() / 2, 16, number,
+                        TextAlignment.CENTER, VerticalAlignment.BOTTOM, 0);
+            }
+            log.info("Document PDF exported successfully: {}", filePath);
+            return true;
+        } catch (IOException e) {
+            log.error("Error exporting document PDF", e);
+            return false;
+        }
+    }
+
+    /**
+     * A paragraph that sits in a table cell without the margin above and below it a paragraph
+     * otherwise carries, and on a fixed leading. The Naskh face declares a line height far taller
+     * than its letters, so a multiplied leading changes little: with the defaults every line of an
+     * invoice was more than twice the height of its text, and forty-five lines ran onto three pages.
+     */
+    private static Paragraph tight(Paragraph paragraph) {
+        return paragraph.setMarginTop(0).setMarginBottom(0).setFixedLeading(DOCUMENT_FONT_SIZE * 1.45f);
+    }
+    /** The document's name and number on the left, the letterhead on the right. */
+    private Table documentHeader(DocumentPdfPage page) {
+        Table header = new Table(UnitValue.createPercentArray(new float[]{40, 60})).useAllAvailableWidth();
+
+        Cell identity = new Cell().setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        identity.add(arabicParagraphBold(page.title()).setFontSize(17).setFontColor(HEADER_COLOR)
+                .setTextAlignment(TextAlignment.CENTER).setMarginBottom(3));
+        if (!page.identity().isEmpty()) {
+            Table fields = new Table(UnitValue.createPercentArray(new float[]{55, 45})).useAllAvailableWidth();
+            for (DocumentPdfPage.Field field : page.identity()) {
+                fields.addCell(new Cell().add(tight(arabicParagraphBold(field.value()))
+                                .setTextAlignment(TextAlignment.CENTER))
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(2));
+                fields.addCell(new Cell().add(tight(arabicParagraphBold(field.label())))
+                        .setBackgroundColor(LABEL_COLOR)
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(2).setPaddingRight(5));
+            }
+            identity.add(fields);
+        }
+        header.addCell(identity);
+
+        Cell letterhead = new Cell().setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        Div text = new Div();
+        text.add(arabicParagraphBold(page.companyName()).setFontSize(15).setMarginBottom(1));
+        for (String line : page.companyLines()) {
+            text.add(tight(arabicParagraph(line)).setFontSize(8.5f).setFontColor(ColorConstants.DARK_GRAY)
+                    .setMarginTop(0).setMarginBottom(0));
+        }
+        Image logo = logoImage(page.logo());
+        if (logo == null) {
+            letterhead.add(text);
+        } else {
+            Table withLogo = new Table(UnitValue.createPercentArray(new float[]{74, 26})).useAllAvailableWidth();
+            withLogo.addCell(new Cell().add(text).setBorder(Border.NO_BORDER)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE).setPaddingRight(6));
+            withLogo.addCell(new Cell().add(logo).setBorder(Border.NO_BORDER)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+            letterhead.add(withLogo);
+        }
+        header.addCell(letterhead);
+        return header;
+    }
+
+    /**
+     * The company's picture scaled into a small square, or null. A picture the PDF library cannot
+     * read prints the letterhead without it rather than failing the whole document.
+     */
+    private Image logoImage(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return null;
+        }
+        try {
+            Image logo = new Image(ImageDataFactory.create(bytes));
+            logo.scaleToFit(64, 64);
+            logo.setHorizontalAlignment(HorizontalAlignment.RIGHT);
+            return logo;
+        } catch (RuntimeException e) {
+            log.warn("The company logo could not be read and was left off the document", e);
+            return null;
+        }
+    }
+
+    /** Two labelled values to a line, the first of each pair on the right. */
+    private Table documentDetails(List<DocumentPdfPage.Field> details) {
+        Table table = new Table(UnitValue.createPercentArray(new float[]{31, 19, 31, 19})).useAllAvailableWidth();
+        table.setMarginBottom(6);
+        for (int i = 0; i < details.size(); i += 2) {
+            DocumentPdfPage.Field right = details.get(i);
+            DocumentPdfPage.Field left = i + 1 < details.size() ? details.get(i + 1) : null;
+            addDetail(table, left);
+            addDetail(table, right);
+        }
+        return table;
+    }
+
+    private void addDetail(Table table, DocumentPdfPage.Field field) {
+        String value = field == null ? "" : field.value();
+        String label = field == null ? "" : field.label();
+        table.addCell(new Cell().add(tight(arabicParagraph(value)))
+                .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(3).setPaddingRight(5));
+        Cell labelCell = new Cell().add(tight(arabicParagraphBold(label)))
+                .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(3).setPaddingRight(5);
+        if (field != null) {
+            labelCell.setBackgroundColor(LABEL_COLOR);
+        }
+        table.addCell(labelCell);
+    }
+
+    /**
+     * The lines. The first column (the item's name, after the row number) reads right-aligned like
+     * text; every other column is a code or a figure and is centred under its heading.
+     */
+    private Table documentLines(DocumentPdfPage page) {
+        String[] headers = reverseStrings(page.headers());
+        Table table = new Table(UnitValue.createPercentArray(reverseFloats(page.columnWidths())))
+                .useAllAvailableWidth();
+        table.setFont(arabicFont);
+        for (String heading : headers) {
+            table.addHeaderCell(new Cell()
+                    .add(tight(arabicParagraphBold(heading)).setTextAlignment(TextAlignment.CENTER))
+                    .setBackgroundColor(HEADER_COLOR)
+                    .setFontColor(ColorConstants.WHITE)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                    .setPadding(3));
+        }
+        int columns = headers.length;
+        int rowIndex = 0;
+        for (String[] row : page.rows()) {
+            String[] cells = reverseStrings(row);
+            for (int i = 0; i < columns; i++) {
+                boolean textColumn = columns - 1 - i == 1;
+                Cell cell = new Cell()
+                        .add(tight(arabicParagraph(cells[i])).setTextAlignment(
+                                textColumn ? TextAlignment.RIGHT : TextAlignment.CENTER))
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.5f))
+                        .setPadding(2).setPaddingRight(textColumn ? 5 : 2);
+                if (rowIndex % 2 == 1) {
+                    cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
+                }
+                table.addCell(cell);
+            }
+            rowIndex++;
+        }
+        if (page.totals() != null) {
+            for (String cell : reverseStrings(page.totals())) {
+                table.addCell(new Cell()
+                        .add(tight(arabicParagraphBold(cell)).setTextAlignment(TextAlignment.CENTER))
+                        .setBackgroundColor(BRANCH_COLOR)
+                        .setFontColor(BRANCH_TEXT_COLOR)
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.5f))
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                        .setPadding(3));
+            }
+        }
+        return table;
+    }
+
+    /** The summary box on the left; the notes and the signature line on the right. Never split. */
+    private Table documentClosing(DocumentPdfPage page) {
+        Table closing = new Table(UnitValue.createPercentArray(new float[]{44, 56})).useAllAvailableWidth();
+        closing.setMarginTop(8);
+        closing.setKeepTogether(true);
+
+        Cell summaryCell = new Cell().setBorder(Border.NO_BORDER).setPadding(0);
+        if (!page.summary().isEmpty()) {
+            Table summary = new Table(UnitValue.createPercentArray(new float[]{48, 52})).useAllAvailableWidth();
+            for (DocumentPdfPage.Field field : page.summary()) {
+                Paragraph value = field.emphasised()
+                        ? tight(arabicParagraphBold(field.value())) : tight(arabicParagraph(field.value()));
+                Cell valueCell = new Cell().add(value.setTextAlignment(TextAlignment.CENTER))
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(3);
+                Cell labelCell = new Cell().add(tight(arabicParagraphBold(field.label())))
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(3).setPaddingRight(6);
+                if (field.emphasised()) {
+                    valueCell.setBackgroundColor(BRANCH_COLOR).setFontColor(BRANCH_TEXT_COLOR);
+                    labelCell.setBackgroundColor(BRANCH_COLOR).setFontColor(BRANCH_TEXT_COLOR);
+                } else {
+                    labelCell.setBackgroundColor(LABEL_COLOR);
+                }
+                summary.addCell(valueCell);
+                summary.addCell(labelCell);
+            }
+            summaryCell.add(summary);
+        }
+        closing.addCell(summaryCell);
+
+        Cell side = new Cell().setBorder(Border.NO_BORDER).setPaddingRight(0).setPaddingLeft(12);
+        if (!page.notes().isBlank()) {
+            side.add(arabicParagraphBold(page.notesLabel()).setMarginBottom(1));
+            side.add(arabicParagraph(page.notes()).setFontSize(9).setMarginBottom(10));
+        }
+        if (!page.signatureLabel().isBlank()) {
+            side.add(arabicParagraph(page.signatureLabel() + ": ....................................")
+                    .setMarginTop(18));
+        }
+        closing.addCell(side);
+        return closing;
     }
 
     /**

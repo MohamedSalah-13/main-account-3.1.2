@@ -81,6 +81,19 @@ public final class PartyStatementService {
     }
 
     /**
+     * What the party owed straight after one of its documents: the running balance on that
+     * document's row. The printed invoice reads this rather than {@link #currentBalance}, so a
+     * reprint shows the balance as it stood then, not as it stands today.
+     *
+     * @return the balance, or null when the document is not in the party's ledger
+     */
+    public BigDecimal balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
+                                           long number) throws DaoException {
+        requireShow(kind);
+        return repository.balanceAfterMovement(kind, partyId, movement, number);
+    }
+
+    /**
      * One page of the statement, with the period's figures.
      * <p>
      * The page is asked for one row more than it holds, and that extra row is what answers

@@ -28,4 +28,12 @@ public interface PartyStatementRepository {
 
     /** What the party owes today: their whole history summed. Never null; zero for a new party. */
     java.math.BigDecimal currentBalance(PartyKind kind, int partyId) throws DaoException;
+
+    /**
+     * The party's running balance on one movement's row of the statement.
+     *
+     * @return the balance straight after that movement, or null when it is not in the ledger
+     */
+    java.math.BigDecimal balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
+                                              long number) throws DaoException;
 }

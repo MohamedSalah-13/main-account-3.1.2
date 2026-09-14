@@ -1,17 +1,17 @@
 package com.hamza.account.reportData;
 
 import com.hamza.account.finance.MoneyMath;
-import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
-import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
+import com.hamza.account.features.invoice.InvoicePdfLayout;
+import com.hamza.account.features.invoice.InvoicePrintDocument;
 import com.hamza.account.features.invoice.MultiInvoicePdfLayout;
+import com.hamza.account.features.export.DocumentPdfPage;
 import com.hamza.account.features.export.PdfExportService;
-import com.hamza.account.config.NamesTables;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
@@ -85,49 +85,24 @@ public class Print_Reports extends ReportCompany {
     }
 
     /**
-     * Prints the inventory sheet.
+     * One invoice or return on an upright page - see {@link InvoicePdfLayout} for what it carries.
      * <p>
-     * The rows are {@link InventoryRow} now, not {@code ItemsModel}: the screen no
-     * longer loads item models, and the caller passes every row matching the search
-     * rather than the page on screen - "طباعة" used to print whichever fifty rows
-     * the user happened to be looking at. The template is unchanged; the row type
-     * carries the getters needed by the remaining Jasper inventory consumers.
+     * <b>Call it on the JavaFX thread.</b> {@link TablePdfReport#chooseTarget} may open a dialog;
+     * the file is then written in the background.
+     * <p>
+     * It went through the report path once, as a seven-column table: {@code TablePdfReport} turns
+     * a page with more than five columns sideways, and the table had no room for the letterhead,
+     * the payment type, the additional discount, what was paid or what was left.
      */
-    /**
-     * @param tableName the document kind the screen is filtered to
-     *                  ({@code sales}, {@code purchase_re}, ...), or null for all
-     *                  four. The report used to print every document whatever the
-     *                  screen showed, so a card filtered to sales printed with the
-     *                  purchases still on it and totals that did not match its rows.
-     */
-    public void printInvoice(@NotNull List<?> list, @NotNull HashMap<String, Object> invoiceDetails, String nameReport) { // invoice purchase or nameReport
-        String title = nameReport == null || nameReport.isBlank()
-                ? LanguageManager.getInstance().getString("invoice.title") : nameReport;
-        File target = TablePdfReport.chooseTarget(null, title);
-        if (target == null) return;
-        String[] headers = {
-                LanguageManager.getInstance().getString(NamesTables.ITEM_NAME),
-                LanguageManager.getInstance().getString(NamesTables.BARCODE),
-                LanguageManager.getInstance().getString(NamesTables.TYPE),
-                LanguageManager.getInstance().getString(NamesTables.QUANTITY),
-                LanguageManager.getInstance().getString(NamesTables.PRICE),
-                LanguageManager.getInstance().getString(NamesTables.DISCOUNT),
-                LanguageManager.getInstance().getString(NamesTables.TOTAL_AMOUNT)};
-        float[] widths = {150, 95, 75, 70, 85, 85, 100};
-        List<String[]> rows = list.stream().map(value -> {
-            ModelPrintInvoice row = (ModelPrintInvoice) value;
-            return new String[]{row.getName_item(), row.getBarcode(), row.getType(),
-                    com.hamza.controlsfx.table.Columns.quantity(BigDecimal.valueOf(row.getQuantity())),
-                    com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(row.getPrice())),
-                    com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(row.getDiscount())),
-                    com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(row.getTotal_amount()))};
-        }).toList();
-        String subtitle = LanguageManager.getInstance().getString("column.code") + ": " + invoiceDetails.get(ShowInvoiceNameData.ID)
-                + "  |  " + LanguageManager.getInstance().getString("column.name") + ": " + invoiceDetails.get(ShowInvoiceNameData.NAME)
-                + "  |  " + LanguageManager.getInstance().getString("column.date") + ": " + invoiceDetails.get(ShowInvoiceNameData.DATE);
-        String[] totals = {LanguageManager.getInstance().getString("total"), "", "", "", "", "",
-                com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(((Number) invoiceDetails.get(ShowInvoiceNameData.TOTAL)).doubleValue()))};
-        TablePdfReport.write(target, title, subtitle, new TablePdfLayout(headers, widths, rows, totals), () -> { });
+    public void printInvoice(@NotNull InvoicePrintDocument document) {
+        LanguageManager language = LanguageManager.getInstance();
+        DocumentPdfPage page = InvoicePdfLayout.of(document, language::getString);
+        File target = TablePdfReport.chooseTarget(null, page.title() + " " + document.number());
+        if (target == null) {
+            return;
+        }
+        TablePdfReport.write(target, file -> new PdfExportService().exportDocument(
+                file.getAbsolutePath(), page, TablePdfReport.uprightPageSize()));
     }
 
     public void printReceiptInvoice(List<ModelPrintInvoice> list, String name, int numInvoice, double otherDiscount

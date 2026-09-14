@@ -3,12 +3,15 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
-/** Immutable print snapshot captured before work leaves the JavaFX thread. */
+/**
+ * Immutable print snapshot captured before work leaves the JavaFX thread.
+ *
+ * @param document what the upright page prints; null for a receipt, which the thermal template
+ *                 builds from the other fields
+ */
 public record InvoicePrintRequest(
         List<ModelPrintInvoice> lines,
         String partyName,
@@ -17,13 +20,13 @@ public record InvoicePrintRequest(
         String printedAt,
         LocalDate invoiceDate,
         boolean receipt,
-        Map<String, Object> invoiceDetails,
-        String reportName) {
+        InvoicePrintDocument document) {
 
     public InvoicePrintRequest {
         lines = List.copyOf(lines);
         partyName = partyName == null ? "" : partyName;
-        invoiceDetails = Collections.unmodifiableMap(new HashMap<>(invoiceDetails));
-        reportName = reportName == null ? "" : reportName;
+        if (!receipt) {
+            Objects.requireNonNull(document, "document");
+        }
     }
 }
