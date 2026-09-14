@@ -3,10 +3,18 @@ package com.hamza.account.features.shift;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.treasury.CashDirection;
+import com.hamza.account.features.treasury.CashMovementCommand;
+import com.hamza.account.model.dao.CashMovementDao;
+import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.dao.TreasuryCurrentBalanceDao;
+import com.hamza.account.treasury.TreasuryBalanceSummary;
+import com.hamza.account.treasury.TreasuryType;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -16,6 +24,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ShiftCashHandoverServiceTest {
     private FakeRepository repository;
@@ -80,6 +92,38 @@ class ShiftCashHandoverServiceTest {
      * only what was counted. This pins that the declaration takes no expected balance, which
      * is what let the settlement stop depending on a handover policy existing.
      */
+    /**
+     * A shortage records cash that is already gone, so the till's book balance may not refuse
+     * it. It used to: requireEnough ran for a shortage like for a withdrawal, and a till whose
+     * book balance was below the shortage (seen on screen at -241,630.46) could not close its
+     * shift at all.
+     */
+    @Test
+    void aShortageLargerThanTheBookBalanceIsStillSettled() throws Exception {
+        DaoFactory daoFactory = mock(DaoFactory.class);
+        TreasuryCurrentBalanceDao balances = mock(TreasuryCurrentBalanceDao.class);
+        CashMovementDao movements = mock(CashMovementDao.class);
+        when(daoFactory.treasuryCurrentBalanceDao()).thenReturn(balances);
+        when(daoFactory.cashMovementDao()).thenReturn(movements);
+        when(balances.lockAndRead(3)).thenReturn(new TreasuryBalanceSummary(3, "drawer",
+                TreasuryType.values()[0], true, 1, BigDecimal.ZERO, BigDecimal.ZERO,
+                BigDecimal.ZERO, new BigDecimal("241630.46"), new BigDecimal("-241630.46")));
+        when(movements.insertReturningId(any(), any())).thenReturn(88);
+        UserSessionContext session = new UserSessionContext();
+        session.signIn(7, "supervisor", List.of(AppPermissions.SHIFT_FORCE_CLOSE));
+        ShiftCashHandoverService settling =
+                new ShiftCashHandoverService(repository, daoFactory, session, Clock.systemUTC());
+
+        settling.settleCloseVariance(12, 3, new BigDecimal("500"), new BigDecimal("480"), 7,
+                LocalDateTime.of(2026, 9, 14, 22, 0));
+
+        ArgumentCaptor<CashMovementCommand> command = ArgumentCaptor.forClass(CashMovementCommand.class);
+        verify(movements).insertReturningId(command.capture(), any());
+        assertEquals(CashDirection.WITHDRAWAL, command.getValue().direction());
+        assertEquals(new BigDecimal("20.00"), command.getValue().amount());
+        assertEquals(1, repository.varianceAdjustments, "the shortage is recorded against the shift");
+    }
+
     @Test
     void settlementRejectsMissingBalancesBeforeReachingTheTreasury() {
         LocalDateTime at = LocalDateTime.of(2026, 9, 4, 7, 30);
