@@ -98,6 +98,43 @@ class PdfExportServiceLayoutTest {
         }
     }
 
+    /**
+     * An invoice: an upright page whatever it holds - the report path turned an eight-column
+     * table sideways - with its lines right to left, and the summary box on the left half under
+     * them.
+     */
+    @Test
+    void aDocumentStaysUprightAndPutsItsSummaryOnTheLeftUnderItsLines() throws Exception {
+        String pdf = dir.resolve("document.pdf").toString();
+        String[] headers = {"101", "202", "303", "404", "505", "606", "707", "808"};
+        DocumentPdfPage page = new DocumentPdfPage("1", "2", List.of("3"), null,
+                List.of(DocumentPdfPage.Field.of("4", "5")),
+                List.of(DocumentPdfPage.Field.of("6", "7"), DocumentPdfPage.Field.of("8", "9")),
+                headers, new float[]{1, 3, 2, 1, 1, 1, 1, 1},
+                List.<String[]>of(new String[]{"11", "12", "13", "14", "15", "16", "17", "18"}),
+                new String[]{"", "921", "", "", "", "", "927", "928"},
+                List.of(DocumentPdfPage.Field.of("931", "932"), DocumentPdfPage.Field.emphasised("941", "942")),
+                "", "", "", "");
+        assertTrue(new PdfExportService().exportDocument(pdf, page, PageSize.A4));
+
+        try (PdfDocument document = new PdfDocument(new PdfReader(pdf))) {
+            var size = document.getPage(1).getPageSize();
+            assertTrue(size.getHeight() > size.getWidth(), "an invoice page is upright: " + size);
+        }
+
+        Set<String> wanted = Set.of("101", "202", "808", "11", "12", "18", "921", "928", "932", "942");
+        Map<String, Float> x = textPositions(pdf, wanted);
+        Map<String, Float> y = textPositions(pdf, wanted, 1);
+
+        assertOrderedRightToLeft(x, "101", "202", "808");
+        assertOrderedRightToLeft(x, "11", "12", "18");
+        assertTrue(x.get("921") > x.get("928"), "the totals line runs right to left: " + x);
+        float middle = PageSize.A4.getWidth() / 2;
+        assertTrue(x.get("932") < middle && x.get("942") < middle, "the summary sits on the left half: " + x);
+        assertTrue(y.get("18") > y.get("928") && y.get("928") > y.get("932") && y.get("932") > y.get("942"),
+                "the lines, then their totals, then the summary top to bottom: " + y);
+    }
+
     /** The x of each wanted string's baseline start on page 1. */
     private static Map<String, Float> textPositions(String pdf, Set<String> wanted) throws Exception {
         return textPositions(pdf, wanted, 0);

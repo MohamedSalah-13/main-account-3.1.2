@@ -33,7 +33,12 @@ public final class ArabicTextHelper {
      * It must end on a digit or a percent sign: a full stop after a number at the end of a
      * sentence belongs to the sentence, and swallowed here it would print on the wrong side.
      */
-    private static final Pattern NUMBER = Pattern.compile("[-+]?\\d(?:[\\d,.:/\\-]*\\d)?%?");
+    // Not touching a Latin letter or another digit on either side: digits inside a product code
+    // ("NC7013") are part of a left-to-right word the bidi pass already keeps whole, and isolating
+    // them alone printed the code as "7013NC". The digit in each guard stops a backtrack from
+    // isolating the front part of a number that runs into letters.
+    private static final Pattern NUMBER =
+            Pattern.compile("(?<![A-Za-z\\d])[-+]?\\d(?:[\\d,.:/\\-]*\\d)?%?(?![A-Za-z\\d])");
 
     /** Written as escapes: both are invisible, and a literal one is lost to the next edit. */
     static final String LEFT_TO_RIGHT_ISOLATE = "\u2066";

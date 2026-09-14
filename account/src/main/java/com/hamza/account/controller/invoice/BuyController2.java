@@ -1096,24 +1096,35 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         if (!print) {
             return null;
         }
+        String printedAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         try {
             return invoicePrintService.prepare(command.lines(), command.partyName(),
                     result.invoiceNumber(), result.payment().discount(),
-                    LocalDateTime.now().format(DATE_TIME_FORMATTER), command.invoiceDate(),
+                    printedAt, command.invoiceDate(),
                     getPrintPaperReceiptInvoice(),
-                    ShowInvoiceDetails.invoiceDetails(
-                            dataInterface.loadInvoiceHeader(result.invoiceNumber())),
-                    dataInterface.designInterface().nameTextOfInvoice());
+                    lines -> ShowInvoiceDetails.printDocument(
+                            dataInterface.loadInvoiceHeader(result.invoiceNumber()),
+                            designInterface.documentType(), lines, printedAt));
         } catch (DaoException e) {
             logError(e);
             return null;
         }
     }
 
+    /**
+     * The receipt goes to the thermal printer behind the masker pane. The upright page does not:
+     * it may ask where to save the file, a dialog that throws on any thread but this one, and it
+     * already writes the file in the background once that is answered.
+     */
     private void printInvoice(InvoicePrintRequest request) {
-        if (request != null) {
+        if (request == null) {
+            return;
+        }
+        if (request.receipt()) {
             maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.masker.printing"),
                     () -> invoicePrintService.print(request));
+        } else {
+            invoicePrintService.print(request);
         }
     }
 

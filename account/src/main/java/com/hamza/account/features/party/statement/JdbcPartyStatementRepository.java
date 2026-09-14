@@ -123,6 +123,22 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
         });
     }
 
+    @Override
+    public BigDecimal balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
+                                           long number) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    PartyStatementQuery.balanceAfterMovementSql(kind))) {
+                statement.setInt(1, partyId);
+                statement.setInt(2, movement.code());
+                statement.setLong(3, number);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getBigDecimal("running_balance") : null;
+                }
+            }
+        });
+    }
+
     /**
      * The fifteen values {@link PartyStatementQuery#rowFilterSql(String)} binds, in its
      * order. Each optional filter is bound twice — once for the {@code ? IS NULL} test and

@@ -194,6 +194,34 @@ public final class PartyStatementQuery {
     }
 
     /**
+     * What the party owed straight after one of its documents - the running balance the
+     * statement shows on that document's row.
+     * <p>
+     * The printed invoice needs it, and <b>not</b> {@link #currentBalanceSql}: an invoice
+     * reprinted a month later would otherwise show a "balance after" that includes every
+     * movement since. It is the same window over the same {@link #MOVEMENT_ORDER} as
+     * {@link #pageSql}, so the figure on the paper is the figure on that row of the statement.
+     * <p>
+     * Parameters in order: the party, the movement's {@code information} code, its number.
+     * No row means the document is not in the ledger.
+     */
+    public static String balanceAfterMovementSql(PartyKind kind) {
+        return """
+                SELECT r.running_balance
+                FROM (SELECT m.information,
+                             m.account_num,
+                             SUM(m.purchase - m.discount - m.paid) OVER (
+                                 ORDER BY %2$s
+                                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                             ) AS running_balance
+                      FROM %1$s m
+                      WHERE m.account_code = ?) r
+                WHERE r.information = ?
+                  AND r.account_num = ?"""
+                .formatted(PartyLedgerSpec.of(kind).view(), MOVEMENT_ORDER);
+    }
+
+    /**
      * The filters that hide rows, shared by the page and by the summary so that the two
      * cannot come to describe different sets.
      * <p>

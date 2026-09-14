@@ -166,6 +166,29 @@ class PartyStatementQueryTest {
     }
 
     /**
+     * The balance a printed invoice carries: the running balance on its own row, over the
+     * same order the statement accumulates in - so paper and statement cannot disagree.
+     */
+    @ParameterizedTest
+    @EnumSource(PartyKind.class)
+    void theBalanceAfterAMovementStatement(PartyKind kind) {
+        assertEquals("""
+                        SELECT r.running_balance
+                        FROM (SELECT m.information,
+                                     m.account_num,
+                                     SUM(m.purchase - m.discount - m.paid) OVER (
+                                         ORDER BY m.account_date, m.created_at, m.information, m.account_num
+                                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                                     ) AS running_balance
+                              FROM %s m
+                              WHERE m.account_code = ?) r
+                        WHERE r.information = ?
+                          AND r.account_num = ?""".formatted(PartyLedgerSpec.of(kind).view()),
+                PartyStatementQuery.balanceAfterMovementSql(kind));
+        assertEquals(3, placeholders(PartyStatementQuery.balanceAfterMovementSql(kind)));
+    }
+
+    /**
      * The page binds: the party and {@code from} for the opening seed, the party again,
      * {@code from} and {@code to}, the fifteen row filters, then the limit and the offset.
      */

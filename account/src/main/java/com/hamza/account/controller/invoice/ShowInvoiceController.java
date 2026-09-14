@@ -44,12 +44,14 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.URL;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.ToDoubleFunction;
 
+import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
@@ -210,8 +212,15 @@ public class ShowInvoiceController<T3 extends BaseNames, T4 extends BaseAccount>
         if (PropertiesName.getPrintPaperReceiptAccount()) {
             printReports.printReceiptInvoice(modelPrintInvoices, txtName.getText(), invNum
                     , Double.parseDouble(textInvoiceDiscount.getText()), date_insert, txtDate.getText(), 0);
-        } else
-            printReports.printInvoice(modelPrintInvoices, ShowInvoiceDetails.invoiceDetails(header), dataInterface.designInterface().nameTextOfInvoice());
+            return;
+        }
+        try {
+            printReports.printInvoice(ShowInvoiceDetails.printDocument(header,
+                    dataInterface.designInterface().documentType(), modelPrintInvoices,
+                    LocalDateTime.now().format(DATE_TIME_FORMATTER)));
+        } catch (DaoException e) {
+            AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.export.generic"), e);
+        }
     }
 
     private void rowColorForSearchItemsName() {

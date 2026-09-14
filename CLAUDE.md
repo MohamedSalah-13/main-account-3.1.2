@@ -1422,7 +1422,9 @@ Two traps when fixing this, both paid for:
 `ArabicTextHelper` runs the Unicode bidi pass itself, and under its rules digits after an Arabic
 word become "Arabic numbers" that a hyphen or a percent sign does not join: every PDF printed the
 dates in its subtitle backwards (`01-10-2025`), its rates as `%113.44`, and every negative amount
-as `11,995.00-`. Numbers are now isolated left-to-right before the pass. And the bundled bold Naskh
+as `11,995.00-`. Numbers are now isolated left-to-right before the pass - **but not digits touching a Latin
+letter**: isolated alone, the digits of a product code are a run of their own, and "نوته NC7013"
+printed on every invoice as "7013NC" (45 of 1,836 items on a real database). And the bundled bold Naskh
 has **no glyph for the minus sign**, so a negative total - the one bold row - printed as a
 positive number beside an empty box; `boldFontFor` falls back to the regular face. And the totals
 line ran left to right under a right-to-left table - the headers and rows were reversed on their
@@ -1430,6 +1432,20 @@ way in and it was not - so every label and figure on it sat under another column
 totals screen's reports as much as the party ones. All three were found only by rendering a report
 to an image: the text extracted from the PDF was right all along. `PdfExportServiceLayoutTest` now
 reads cell positions out of a real PDF, which is the only check that can see the last one.
+
+**An invoice is a document, not a report, and prints through its own path.** The A4 invoice
+first went to PDF through `TablePdfReport`, which turns any table of more than five columns
+sideways, and a seven-column table had no room for the letterhead, the payment type, the
+additional discount, what was paid or what was left - it printed the total *before* the
+additional discount under the word "total". `features/invoice/InvoicePdfLayout` builds a
+`DocumentPdfPage` from an `InvoicePrintDocument` (the saved header, never the screen's fields),
+and `PdfExportService.exportDocument` draws it on the configured paper, always upright. A
+deferred document also prints the party's balance before and after it: `after` is
+`PartyStatementQuery.balanceAfterMovementSql` - the running balance on **that document's own
+row** of the statement, so a reprint a month later still says what it was then - and `before` is
+`after` less `DocumentLedgerEffect.balanceChange()`. A reader without the account permission
+gets the invoice without the balance. **Print it from the JavaFX thread**: `chooseTarget` may
+open a dialog, and the post-save print used to call it from the masker pane's worker.
 
 One consequence is accepted rather than fixed: on the 80mm receipt layout the amount columns are
 35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number
