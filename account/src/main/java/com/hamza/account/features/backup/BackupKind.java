@@ -21,41 +21,43 @@ public enum BackupKind {
     /**
      * The timer, the backup button and the copy on closing. Keeps the name every backup
      * already had, so the files an install holds today stay in this pool and keep their place.
+     * <p>
+     * Tiered rather than a count, because this is the kind somebody reaches back through: the
+     * newest 24, then one a day for a week, one a week for four weeks and one a month for a year
+     * - at most 47 files, where it used to be 30 that covered barely more than a day on an
+     * hourly schedule. See {@link RetentionPolicy.Tiered}.
      */
-    SCHEDULED("backup_", 30),
+    SCHEDULED("backup_", new RetentionPolicy.Tiered(24, 7, 4, 12)),
 
     /** Taken after invoices are saved. Frequent by nature, so it rolls quickly. */
-    AFTER_INVOICE("after-invoice_", 10),
+    AFTER_INVOICE("after-invoice_", new RetentionPolicy.KeepNewest(10)),
 
     /** Taken before deleting documents or wiping data - the copy of what was about to go. */
-    BEFORE_DELETE("before-delete_", 30),
+    BEFORE_DELETE("before-delete_", new RetentionPolicy.KeepNewest(30)),
 
     /**
      * Taken by a restore before it replaces the database. Rare, and the only copy of what the
-     * restore overwrote, so nothing prunes it: {@link #keep()} is {@link #KEEP_ALL}.
+     * restore overwrote, so nothing prunes it.
      */
-    BEFORE_RESTORE("before-restore_", 0);
-
-    /** {@link #keep()} for a kind retention never deletes. */
-    public static final int KEEP_ALL = 0;
+    BEFORE_RESTORE("before-restore_", new RetentionPolicy.KeepAll());
 
     public static final String SUFFIX = ".enc";
 
     private final String prefix;
-    private final int keep;
+    private final RetentionPolicy retention;
 
-    BackupKind(String prefix, int keep) {
+    BackupKind(String prefix, RetentionPolicy retention) {
         this.prefix = prefix;
-        this.keep = keep;
+        this.retention = retention;
     }
 
     public String prefix() {
         return prefix;
     }
 
-    /** How many of this kind to keep, newest first; {@link #KEEP_ALL} for all of them. */
-    public int keep() {
-        return keep;
+    /** Which of this kind's backups are kept. */
+    public RetentionPolicy retention() {
+        return retention;
     }
 
     public String fileName(String timestamp) {

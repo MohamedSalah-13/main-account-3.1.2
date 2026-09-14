@@ -83,45 +83,55 @@ public class EncryptionUtil {
     // فك تشفير ملف
     public static void decryptFile(File inputFile, File outputFile, String password) throws Exception {
         try {
-            try (FileInputStream fis = new FileInputStream(inputFile);
-                 BufferedInputStream bis = new BufferedInputStream(fis);
-                 FileOutputStream fos = new FileOutputStream(outputFile);
+            try (FileOutputStream fos = new FileOutputStream(outputFile);
                  BufferedOutputStream bos = new BufferedOutputStream(fos)) {
-
-                byte[] salt = bis.readNBytes(SALT_SIZE);
-                if (salt.length != SALT_SIZE) {
-                    throw new IOException(LanguageManager.getInstance().getString("backup.error.file.corrupt.salt"));
-                }
-
-                byte[] iv = bis.readNBytes(IV_SIZE);
-                if (iv.length != IV_SIZE) {
-                    throw new IOException(LanguageManager.getInstance().getString("backup.error.file.corrupt.iv"));
-                }
-
-                SecretKey key = getKeyFromPassword(password, salt);
-                Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-                cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_BIT_LENGTH, iv));
-
-                byte[] buffer = new byte[8192];
-                int count;
-                while ((count = bis.read(buffer)) != -1) {
-                    byte[] plain = cipher.update(buffer, 0, count);
-                    if (plain != null) bos.write(plain);
-                }
-                // Verifies the tag over everything read. A wrong password, an altered
-                // byte or a truncated file all fail here, and only here.
-                byte[] last = cipher.doFinal();
-                if (last != null) bos.write(last);
+                decryptTo(inputFile, bos, password);
             }
-        } catch (AEADBadTagException e) {
-            Files.deleteIfExists(outputFile.toPath());
-            throw new UserValidationException(
-                    LanguageManager.getInstance().getString("backup.error.wrong.password.or.corrupt"), e);
         } catch (Exception e) {
             // Whatever went wrong, what is on disk is a partial decrypt and must not be
             // left looking like a usable one.
             Files.deleteIfExists(outputFile.toPath());
             throw e;
+        }
+    }
+
+    /**
+     * Decrypts {@code inputFile} into {@code sink}, verifying the tag at the end. The sink has
+     * seen the plaintext before the tag is known to be good, so a caller that keeps what it
+     * received must discard it when this throws - {@link #decryptFile} does. A backup's own
+     * verification passes a {@code DumpCheck}, so the plaintext is never written to disk.
+     */
+    public static void decryptTo(File inputFile, OutputStream sink, String password) throws Exception {
+        try (FileInputStream fis = new FileInputStream(inputFile);
+             BufferedInputStream bis = new BufferedInputStream(fis)) {
+
+            byte[] salt = bis.readNBytes(SALT_SIZE);
+            if (salt.length != SALT_SIZE) {
+                throw new IOException(LanguageManager.getInstance().getString("backup.error.file.corrupt.salt"));
+            }
+
+            byte[] iv = bis.readNBytes(IV_SIZE);
+            if (iv.length != IV_SIZE) {
+                throw new IOException(LanguageManager.getInstance().getString("backup.error.file.corrupt.iv"));
+            }
+
+            SecretKey key = getKeyFromPassword(password, salt);
+            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_BIT_LENGTH, iv));
+
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = bis.read(buffer)) != -1) {
+                byte[] plain = cipher.update(buffer, 0, count);
+                if (plain != null) sink.write(plain);
+            }
+            // Verifies the tag over everything read. A wrong password, an altered
+            // byte or a truncated file all fail here, and only here.
+            byte[] last = cipher.doFinal();
+            if (last != null) sink.write(last);
+        } catch (AEADBadTagException e) {
+            throw new UserValidationException(
+                    LanguageManager.getInstance().getString("backup.error.wrong.password.or.corrupt"), e);
         }
     }
 }

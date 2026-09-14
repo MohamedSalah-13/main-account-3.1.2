@@ -2,6 +2,7 @@ package com.hamza.account.backup;
 
 import com.hamza.account.config.MysqlTools;
 import com.hamza.account.features.backup.BackupKind;
+import com.hamza.account.features.backup.DumpCheck;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
@@ -52,15 +53,44 @@ public class BackupService {
         return new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
     }
 
-    /** Dumps the database and writes it encrypted to {@code target}, leaving no plaintext behind. */
+    /**
+     * Dumps the database and writes it encrypted to {@code target}, leaving no plaintext behind,
+     * and does not return until the file has been read back.
+     * <p>
+     * Twice checked, because the two checks catch different things. The dump is checked before
+     * it is encrypted - a {@code mysqldump} that stopped early can still exit cleanly - and the
+     * encrypted file is then decrypted with the same password and checked again, which is the only
+     * way to know that what is on disk opens: the file that matters is the one a restore will be
+     * handed, not the one that was written. A backup that fails either check is deleted rather
+     * than left in the folder looking like one, and since retention only runs after a backup
+     * succeeds, the good copies already there stay.
+     */
     private File dumpAndEncrypt(File target, String password) throws Exception {
         File tempSqlFile = File.createTempFile("backup_", ".sql");
         try {
             runMysqldump(tempSqlFile);
+            try (InputStream dump = new BufferedInputStream(new FileInputStream(tempSqlFile))) {
+                requireUsable(DumpCheck.of(dump), "backup.error.dump.incomplete");
+            }
             EncryptionUtil.encryptFile(tempSqlFile, target, password);
+
+            DumpCheck readBack = new DumpCheck();
+            EncryptionUtil.decryptTo(target, readBack, password);
+            readBack.close();
+            requireUsable(readBack, "backup.error.verify.failed");
             return target;
+        } catch (Exception e) {
+            Files.deleteIfExists(target.toPath());
+            throw e;
         } finally {
             Files.deleteIfExists(tempSqlFile.toPath());
+        }
+    }
+
+    private static void requireUsable(DumpCheck check, String messageKey) throws UserValidationException {
+        if (!check.usable()) {
+            log.warn("Backup check failed ({}): completed={}, tables={}", messageKey, check.completed(), check.tables());
+            throw new UserValidationException(LanguageManager.getInstance().getString(messageKey));
         }
     }
 
@@ -151,6 +181,12 @@ public class BackupService {
             if (!isSqlFile(tempSqlFile)) {
                 throw new UserValidationException(
                         LanguageManager.getInstance().getString("backup.error.invalid.file.or.password"));
+            }
+            // A file cut short still starts like SQL. The import below drops every table
+            // before it reaches the point where such a file stops, so it is refused here,
+            // before the safety copy and before anything in the database is touched.
+            try (InputStream dump = new BufferedInputStream(new FileInputStream(tempSqlFile))) {
+                requireUsable(DumpCheck.of(dump), "backup.error.restore.incomplete");
             }
 
             // 3. نسخة أمان لما سيُستبدل، قبل لمس قاعدة البيانات

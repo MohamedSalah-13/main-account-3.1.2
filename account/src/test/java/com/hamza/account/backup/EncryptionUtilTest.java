@@ -61,6 +61,35 @@ class EncryptionUtilTest {
         }
 
         @Test
+        @DisplayName("decrypting into a stream gives the same bytes and writes no file")
+        void decryptingIntoAStream(@TempDir Path dir) throws Exception {
+            byte[] original = sampleDump();
+            File plain = write(dir, "dump.sql", original);
+            File encrypted = dir.resolve("dump.enc").toFile();
+            EncryptionUtil.encryptFile(plain, encrypted, PASSWORD);
+            Files.delete(plain.toPath());
+
+            java.io.ByteArrayOutputStream sink = new java.io.ByteArrayOutputStream();
+            EncryptionUtil.decryptTo(encrypted, sink, PASSWORD);
+
+            assertArrayEquals(original, sink.toByteArray());
+            try (var files = Files.list(dir)) {
+                assertArrayEquals(new Object[]{encrypted.toPath()}, files.toArray());
+            }
+        }
+
+        @Test
+        @DisplayName("a wrong password into a stream is refused the same way as into a file")
+        void aWrongPasswordIntoAStreamIsRefused(@TempDir Path dir) throws Exception {
+            File plain = write(dir, "dump.sql", sampleDump());
+            File encrypted = dir.resolve("dump.enc").toFile();
+            EncryptionUtil.encryptFile(plain, encrypted, PASSWORD);
+
+            assertThrows(UserValidationException.class,
+                    () -> EncryptionUtil.decryptTo(encrypted, new java.io.ByteArrayOutputStream(), "not-it"));
+        }
+
+        @Test
         @DisplayName("two encryptions of the same file differ - the salt and IV are fresh")
         void everyFileGetsItsOwnSaltAndIv(@TempDir Path dir) throws Exception {
             File plain = write(dir, "dump.sql", sampleDump());

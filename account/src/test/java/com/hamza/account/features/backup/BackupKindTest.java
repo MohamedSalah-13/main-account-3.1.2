@@ -42,11 +42,12 @@ class BackupKindTest {
     }
 
     @Test
-    @DisplayName("the copy a restore overwrote is never pruned; the rest keep a number")
+    @DisplayName("the copy a restore overwrote is never pruned; scheduled ones are tiered; the rest keep a number")
     void retention() {
-        assertEquals(BackupKind.KEEP_ALL, BackupKind.BEFORE_RESTORE.keep());
-        assertEquals(30, BackupKind.SCHEDULED.keep());
-        assertEquals(30, BackupKind.BEFORE_DELETE.keep());
-        assertEquals(10, BackupKind.AFTER_INVOICE.keep());
+        assertEquals(new RetentionPolicy.KeepAll(), BackupKind.BEFORE_RESTORE.retention());
+        assertEquals(new RetentionPolicy.Tiered(24, 7, 4, 12), BackupKind.SCHEDULED.retention());
+        assertEquals(47, ((RetentionPolicy.Tiered) BackupKind.SCHEDULED.retention()).ceiling());
+        assertEquals(new RetentionPolicy.KeepNewest(30), BackupKind.BEFORE_DELETE.retention());
+        assertEquals(new RetentionPolicy.KeepNewest(10), BackupKind.AFTER_INVOICE.retention());
     }
 }

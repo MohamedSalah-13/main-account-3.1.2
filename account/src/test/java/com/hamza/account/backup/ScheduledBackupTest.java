@@ -56,9 +56,9 @@ class ScheduledBackupTest {
     @Test
     @DisplayName("keeps the newest and deletes the surplus")
     void keepsTheNewest(@TempDir Path dir) throws Exception {
-        List<File> created = givenBackups(dir, BackupKind.SCHEDULED, 35);
+        List<File> created = givenBackups(dir, BackupKind.BEFORE_DELETE, 35);
 
-        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.SCHEDULED);
+        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.BEFORE_DELETE);
 
         Set<String> remaining = namesIn(dir);
         assertEquals(30, remaining.size());
@@ -71,9 +71,9 @@ class ScheduledBackupTest {
 
     @Test
     void keepsEverythingWhenUnderTheLimit(@TempDir Path dir) throws Exception {
-        givenBackups(dir, BackupKind.SCHEDULED, 5);
+        givenBackups(dir, BackupKind.BEFORE_DELETE, 5);
 
-        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.SCHEDULED);
+        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.BEFORE_DELETE);
 
         assertEquals(5, namesIn(dir).size());
     }
@@ -81,9 +81,9 @@ class ScheduledBackupTest {
     @Test
     @DisplayName("exactly the limit is not over it")
     void keepsExactlyTheLimit(@TempDir Path dir) throws Exception {
-        givenBackups(dir, BackupKind.SCHEDULED, 30);
+        givenBackups(dir, BackupKind.BEFORE_DELETE, 30);
 
-        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.SCHEDULED);
+        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.BEFORE_DELETE);
 
         assertEquals(30, namesIn(dir).size());
     }
@@ -102,8 +102,7 @@ class ScheduledBackupTest {
         Set<String> remaining = namesIn(dir);
         scheduled.forEach(f -> assertTrue(remaining.contains(f.getName()), f.getName()));
         beforeDelete.forEach(f -> assertTrue(remaining.contains(f.getName()), f.getName()));
-        assertEquals(BackupKind.AFTER_INVOICE.keep(),
-                remaining.stream().filter(BackupKind.AFTER_INVOICE::matches).count());
+        assertEquals(10, remaining.stream().filter(BackupKind.AFTER_INVOICE::matches).count());
         assertTrue(remaining.contains(afterInvoice.getLast().getName()), "the newest after-invoice copy stays");
     }
 
@@ -174,9 +173,25 @@ class ScheduledBackupTest {
     }
 
     @Test
-    @DisplayName("the shipped limit is the documented 30")
-    void limitIsThirty() {
-        assertEquals(30, ScheduledBackup.MAX_BACKUP_FILES);
+    @DisplayName("scheduled backups are pruned by their tiered policy, not by a count")
+    void scheduledBackupsAreTiered(@TempDir Path dir) throws Exception {
+        java.time.ZoneId zone = java.time.ZoneOffset.UTC;
+        long noon = java.time.LocalDate.of(2026, 9, 14).atTime(12, 0).toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
+        List<com.hamza.account.features.backup.RetentionPolicy.Candidate> candidates = new java.util.ArrayList<>();
+        for (int day = 0; day < 90; day++) {
+            File file = dir.resolve(BackupKind.SCHEDULED.fileName("day%03d".formatted(day))).toFile();
+            Files.writeString(file.toPath(), "backup");
+            long when = noon - day * 86_400_000L;
+            assertTrue(file.setLastModified(when));
+            candidates.add(new com.hamza.account.features.backup.RetentionPolicy.Candidate(file.getName(), when));
+        }
+
+        ScheduledBackup.pruneOldBackups(dir.toFile(), BackupKind.SCHEDULED, zone);
+
+        Set<String> expected = BackupKind.SCHEDULED.retention().keep(candidates, zone);
+        assertEquals(expected, namesIn(dir), "the folder holds exactly what the policy chose");
+        assertTrue(namesIn(dir).size() > 24, "older than the recent tier, one a month survives");
+        assertTrue(namesIn(dir).contains(BackupKind.SCHEDULED.fileName("day000")));
     }
 
     @org.junit.jupiter.api.Nested
