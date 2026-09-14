@@ -8,6 +8,7 @@ import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
+import com.hamza.account.features.invoice.InvoicePrintDocument;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.InvoiceHeaderView;
 import com.hamza.account.model.base.BaseAccount;
@@ -209,15 +210,19 @@ public class ShowInvoiceController<T3 extends BaseNames, T4 extends BaseAccount>
                     , quantity, total, discount, total - discount);
             modelPrintInvoices.add(modelPrintInvoice);
         }
-        if (PropertiesName.getPrintPaperReceiptAccount()) {
-            printReports.printReceiptInvoice(modelPrintInvoices, txtName.getText(), invNum
-                    , Double.parseDouble(textInvoiceDiscount.getText()), date_insert, txtDate.getText(), 0);
-            return;
-        }
         try {
-            printReports.printInvoice(ShowInvoiceDetails.printDocument(header,
+            InvoicePrintDocument document = ShowInvoiceDetails.printDocument(header,
                     dataInterface.designInterface().documentType(), modelPrintInvoices,
-                    LocalDateTime.now().format(DATE_TIME_FORMATTER)));
+                    LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            // The invoice screen decides the format by the invoice receipt setting, and so does
+            // this one now. It read the *account* thermal setting, so the same invoice came out
+            // as a receipt on one screen and as an A4 page on the other.
+            if (PropertiesName.getPrintPaperReceiptInvoice()) {
+                printReports.printReceiptInvoice(document, header.dateInsert() == null
+                        ? "" : header.dateInsert().format(DATE_TIME_FORMATTER));
+            } else {
+                printReports.printInvoice(document);
+            }
         } catch (DaoException e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.export.generic"), e);
         }

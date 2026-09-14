@@ -1098,9 +1098,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         }
         String printedAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         try {
-            return invoicePrintService.prepare(command.lines(), command.partyName(),
-                    result.invoiceNumber(), result.payment().discount(),
-                    printedAt, command.invoiceDate(),
+            return invoicePrintService.prepare(command.lines(), printedAt,
                     getPrintPaperReceiptInvoice(),
                     lines -> ShowInvoiceDetails.printDocument(
                             dataInterface.loadInvoiceHeader(result.invoiceNumber()),
