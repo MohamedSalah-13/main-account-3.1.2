@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Signs one support-recovery request, for whoever holds the licence private key.
 #
+# The ordinary route is the "Administrator recovery" tab of AccountK-Product-Setup, which produces
+# the same bytes, checks the key against the release public key, and logs who it was signed for.
+# This script is the fallback for a machine with bash and openssl and no installed program.
+#
 #   ./sign-support-recovery.sh private_key.pem "PC-01 | A1B2C3D4E5F60718 | 2026-09-07 14:05:33"
 #
 # The argument is exactly what the customer's recovery window shows and its Copy button puts

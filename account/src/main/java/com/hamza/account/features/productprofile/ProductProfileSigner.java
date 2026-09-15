@@ -1,13 +1,11 @@
 package com.hamza.account.features.productprofile;
 
+import com.hamza.account.security.PrivateKeyFiles;
+
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.Signature;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Base64;
 
 /** Produces a profile with a private key selected by the technician; the key is never stored. */
 public final class ProductProfileSigner {
@@ -20,7 +18,7 @@ public final class ProductProfileSigner {
 
     public String sign(ProductProfileDraft draft, Path privateKeyFile) throws ProductProfileException {
         try {
-            return sign(draft, loadPrivateKey(privateKeyFile));
+            return sign(draft, PrivateKeyFiles.readRsa(privateKeyFile));
         } catch (ProductProfileException expected) {
             throw expected;
         } catch (Exception failure) {
@@ -44,21 +42,5 @@ public final class ProductProfileSigner {
         } catch (Exception failure) {
             throw new ProductProfileException("product.profile.error.signing", failure);
         }
-    }
-
-    private static PrivateKey loadPrivateKey(Path path) throws Exception {
-        if (path == null || !Files.isRegularFile(path)) {
-            throw new IllegalArgumentException("private key file is missing");
-        }
-        String pem = Files.readString(path, StandardCharsets.US_ASCII);
-        if (!pem.contains("-----BEGIN PRIVATE KEY-----")) {
-            throw new IllegalArgumentException("only PKCS#8 private keys are supported");
-        }
-        String compact = pem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s+", "");
-        byte[] decoded = Base64.getDecoder().decode(compact);
-        return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decoded));
     }
 }

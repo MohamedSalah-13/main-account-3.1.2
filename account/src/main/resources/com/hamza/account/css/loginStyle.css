@@ -65,6 +65,14 @@
 
 .login-show-password { -fx-text-fill: -app-text-muted; }
 
+.login-forgot-password {
+    -fx-text-fill: -app-primary;
+    -fx-border-color: transparent;
+    -fx-padding: 0.364em 0 0 0;
+}
+
+.login-forgot-password:visited { -fx-text-fill: -app-primary; }
+
 .login-feedback { -fx-padding: 0.182em 0; }
 
 .login-status {

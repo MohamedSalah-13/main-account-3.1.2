@@ -261,8 +261,9 @@ class AuthorizationArchitectureTest {
 
             // Fine, and the only entries here unguarded on purpose rather than because a
             // caller guarded first: emergency recovery runs when nobody can sign in, so
-            // there is no session to ask a permission of. Reachable only from the
-            // --support-recovery flag. What stands in for the guard is a challenge
+            // there is no session to ask a permission of. Reachable only before sign-in: the
+            // login screen's forgotten-password link and the --support-recovery flag, both
+            // opening SupportRecoveryView. What stands in for the guard is a challenge
             // answerable only by the private key that issues licences - which this
             // repository does not hold - plus a limit of MAX_FAILURES refused responses
             // per window and a row in support_recovery_audit for every attempt.

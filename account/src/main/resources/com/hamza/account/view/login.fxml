@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.ProgressIndicator?>
@@ -14,7 +15,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<VBox alignment="CENTER" fillWidth="false" minHeight="480.0" minWidth="420.0" prefHeight="540.0" prefWidth="460.0" styleClass="login-root" stylesheets="@../css/loginStyle.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.login.LoginController">
+<VBox alignment="CENTER" fillWidth="false" minHeight="530.0" minWidth="420.0" prefHeight="590.0" prefWidth="460.0" styleClass="login-root" stylesheets="@../css/loginStyle.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.login.LoginController">
    <children>
                 <VBox alignment="CENTER" spacing="8.0" styleClass="login-card">
                     <children>
@@ -79,6 +80,7 @@
                            </VBox.margin>
                                 </Button>
                                 <Button fx:id="btnClose" cancelButton="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" styleClass="login-button, login-button-secondary" text="%common.close" />
+                                <Hyperlink fx:id="linkForgotPassword" alignment="CENTER" maxWidth="1.7976931348623157E308" mnemonicParsing="false" styleClass="login-forgot-password" text="%login.forgot.password" />
                             </children>
                         </VBox>
                     </children>

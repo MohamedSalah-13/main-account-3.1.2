@@ -1,0 +1,51 @@
+/* Both halves of support recovery: the customer's window and support's signing tab. */
+
+.recovery-root {
+    -fx-padding: 20 24 20 24;
+    -fx-background-color: -app-bg;
+}
+
+.recovery-root .recovery-step {
+    -fx-font-weight: bold;
+    -fx-font-size: 1.136em;
+    -fx-text-fill: -app-primary-dark;
+}
+
+/* The request and the response are Latin text somebody compares by eye or reads aloud. */
+.recovery-root .recovery-code {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 1.091em;
+    -fx-text-fill: -app-text-strong;
+}
+
+.recovery-root .recovery-fields {
+    -fx-padding: 10;
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 8;
+}
+
+.recovery-root .status-success,
+.recovery-footer .status-success {
+    -fx-text-fill: -app-success;
+    -fx-font-weight: bold;
+}
+
+.recovery-root .status-warning,
+.recovery-footer .status-warning {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}
+
+.recovery-root .status-error,
+.recovery-footer .status-error {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+/* Always on screen below the scrolled steps: the answer to the button beside it. */
+.recovery-footer {
+    -fx-padding: 12 24 14 24;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1 0 0 0;
+}

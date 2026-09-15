@@ -9,10 +9,6 @@ import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.Base64;
-
 /**
  * Emergency recovery of the administrator account: explicit, audited, and answerable only
  * with a signature this program cannot produce.
@@ -53,13 +49,26 @@ public record SupportRecoveryService(DaoFactory daoFactory) {
      * <p>The row is what makes the answer usable once: redeeming marks it, and a response
      * naming a nonce that is missing, already redeemed or older than
      * {@link SupportRecoveryChallenge#VALID_FOR_MINUTES} is refused.
+     *
+     * <p><b>What is returned is the stored row, read back - not the challenge Java built.</b>
+     * The issue time support signs is the time in this row, because {@code redeem} rebuilds
+     * the signed text from the row. It used to display {@code LocalDateTime.now()} from this
+     * machine while the column took its {@code DEFAULT CURRENT_TIMESTAMP} from the server:
+     * a till whose clock was a second away from MySQL's - the ordinary case once the
+     * database lives on another computer - or an insert that crossed a second boundary
+     * produced a request whose every correctly signed answer was refused. One clock now
+     * issues the challenge and the same clock expires it.
      */
     public SupportRecoveryChallenge issueChallenge() throws DaoException {
         refuseWhileBlocked();
-        SupportRecoveryChallenge challenge =
-                SupportRecoveryChallenge.issue(MachineId.displayName(), LocalDateTime.now());
-        daoFactory.usersDao().insertRecoveryChallenge(challenge.nonce(), challenge.machineId());
-        return challenge;
+        String nonce = SupportRecoveryChallenge.newNonce();
+        daoFactory.usersDao().insertRecoveryChallenge(nonce, MachineId.displayName());
+        SupportRecoveryChallenge stored = daoFactory.usersDao()
+                .findRedeemableRecoveryChallenge(nonce, SupportRecoveryChallenge.VALID_FOR_MINUTES);
+        if (stored == null) {
+            throw new DaoException("Recovery challenge " + nonce + " was written and could not be read back");
+        }
+        return stored;
     }
 
     /**
@@ -69,16 +78,23 @@ public record SupportRecoveryService(DaoFactory daoFactory) {
      * @param signedResponse {@code BASE64(payload).BASE64(signature)} - the same shape as
      *                       {@code license.dat}, so support signs it with the procedure it
      *                       already follows.
+     * @return the administrator's user name, which whoever forgot the password may well have
+     * forgotten too - row 1 is not necessarily still called {@code admin}.
      */
-    public void redeem(String signedResponse, String newPassword) throws DaoException {
+    public String redeem(String signedResponse, String newPassword) throws DaoException {
         String machine = MachineId.displayName();
         refuseWhileBlocked();
 
-        String payload = payloadOf(signedResponse, machine);
+        SupportRecoveryResponse response = SupportRecoveryResponse.parse(signedResponse).orElse(null);
+        if (response == null || !ReleaseSigningKey.verifies(response.payload(), response.signature())) {
+            throw refuse(machine, "support.recovery.error.response");
+        }
+        String nonce = response.nonce().orElse(null);
+        if (nonce == null) throw refuse(machine, "support.recovery.error.response");
+
         SupportRecoveryChallenge challenge = daoFactory.usersDao()
-                .findRedeemableRecoveryChallenge(nonceOf(payload, machine),
-                        SupportRecoveryChallenge.VALID_FOR_MINUTES);
-        if (challenge == null || !challenge.signedText().equals(payload)) {
+                .findRedeemableRecoveryChallenge(nonce, SupportRecoveryChallenge.VALID_FOR_MINUTES);
+        if (!response.answers(challenge)) {
             // The stored challenge is what the payload is checked against, field by field,
             // rather than the payload being believed about itself. A signature over a
             // machine or a moment this row does not agree with authorises nothing here.
@@ -92,16 +108,19 @@ public record SupportRecoveryService(DaoFactory daoFactory) {
         }
 
         // The reset, the spent challenge and the audit row are one fact.
-        TransactionTemplate.execute(() -> {
+        return TransactionTemplate.execute(() -> {
             if (daoFactory.usersDao().redeemRecoveryChallenge(challenge.nonce()) != 1) {
-                // Someone answered the same challenge first. Not an error the operator
-                // caused, and not one to leave half-applied.
-                throw new DaoException("Recovery challenge " + challenge.nonce() + " was already redeemed");
+                // Someone answered the same challenge first - a double press, or a second
+                // window. Nothing half-applied, and a sentence the operator can act on rather
+                // than a reference code: TransactionTemplate rethrows a DaoException as it is.
+                throw new UserValidationException(LanguageManager.getInstance()
+                        .getString("support.recovery.error.redeemed"));
             }
             if (daoFactory.usersDao().updateAdministratorPassword(PasswordHasher.hash(newPassword)) != 1) {
                 throw new DaoException("Administrator row 1 was not updated by support recovery");
             }
-            return daoFactory.usersDao().insertRecoveryAttempt(machine, SUCCEEDED);
+            daoFactory.usersDao().insertRecoveryAttempt(machine, SUCCEEDED);
+            return daoFactory.usersDao().administratorUserName();
         });
     }
 
@@ -118,32 +137,6 @@ public record SupportRecoveryService(DaoFactory daoFactory) {
         daoFactory.usersDao().insertRecoveryAttempt(MachineId.displayName(), BLOCKED);
         throw new UserValidationException(LanguageManager.getInstance()
                 .getString("support.recovery.error.blocked", FAILURE_WINDOW_MINUTES));
-    }
-
-    /** The payload, only once this key's signature over it has been checked. */
-    private String payloadOf(String signedResponse, String machine) throws DaoException {
-        String response = signedResponse == null ? "" : signedResponse.trim().replaceAll("\\s+", "");
-        int dot = response.indexOf('.');
-        if (dot <= 0 || dot == response.length() - 1) throw refuse(machine, "support.recovery.error.response");
-        try {
-            Base64.Decoder decoder = Base64.getDecoder();
-            String payload = new String(decoder.decode(response.substring(0, dot)), StandardCharsets.UTF_8);
-            byte[] signature = decoder.decode(response.substring(dot + 1));
-            if (!ReleaseSigningKey.verifies(payload, signature)) {
-                throw refuse(machine, "support.recovery.error.response");
-            }
-            return payload;
-        } catch (IllegalArgumentException malformed) {
-            throw refuse(machine, "support.recovery.error.response");
-        }
-    }
-
-    private String nonceOf(String payload, String machine) throws DaoException {
-        String[] parts = payload.split("\\|");
-        if (parts.length != 4 || !SupportRecoveryChallenge.TAG.equals(parts[0])) {
-            throw refuse(machine, "support.recovery.error.response");
-        }
-        return parts[2];
     }
 
     /** Records the refusal before reporting it, so a run of them is visible afterwards. */

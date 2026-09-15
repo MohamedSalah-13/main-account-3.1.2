@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -62,5 +63,47 @@ class SupportRecoveryChallengeTest {
         String display = new SupportRecoveryChallenge("A1B2", "PC-01", MOMENT).displayText();
 
         assertEquals("PC-01 | A1B2 | 2026-09-07 14:05:33", display);
+    }
+
+    /**
+     * The signing screen reads the request back out of what the customer's window displayed.
+     * Whatever it parses has to rebuild the very bytes the customer's database will compare,
+     * or support signs something that is refused on arrival.
+     */
+    @Test
+    void whatTheOperatorSendsReadsBackToTheSameSignedText() {
+        SupportRecoveryChallenge sent = SupportRecoveryChallenge.issue("PC-01", MOMENT);
+
+        SupportRecoveryChallenge received = SupportRecoveryChallenge.parseDisplayText(sent.displayText()).orElseThrow();
+
+        assertEquals(sent, received);
+        assertEquals(sent.signedText(), received.signedText());
+    }
+
+    /** What a chat application does to a pasted line: spacing, surrounding blanks, case. */
+    @Test
+    void aRequestSurvivesTheWayItArrivesThroughAMessage() {
+        SupportRecoveryChallenge received = SupportRecoveryChallenge
+                .parseDisplayText("  PC-01|a1b2c3d4e5f60718 |2026-09-07 14:05:33\n").orElseThrow();
+
+        assertEquals("HAMZA_RECOVERY|PC-01|A1B2C3D4E5F60718|2026-09-07 14:05:33", received.signedText());
+    }
+
+    @Test
+    void textThatIsNotARequestIsNotRead() {
+        for (String text : new String[]{null, "", "PC-01 | A1B2C3D4E5F60718",
+                "PC-01 | A1B2C3D4E5F60718 | 2026-09-07 14:05:33 | extra",
+                " | A1B2C3D4E5F60718 | 2026-09-07 14:05:33",
+                "PC-01 | A1B2 | 2026-09-07 14:05:33",
+                "PC-01 | Z1B2C3D4E5F60718 | 2026-09-07 14:05:33",
+                "PC-01 | A1B2C3D4E5F60718 | 2026-09-07",
+                "PC-01 | A1B2C3D4E5F60718 | 07/09/2026 14:05:33"}) {
+            assertFalse(SupportRecoveryChallenge.parseDisplayText(text).isPresent(), String.valueOf(text));
+        }
+    }
+
+    @Test
+    void aNonceIsSixteenUpperCaseHexDigits() {
+        assertTrue(SupportRecoveryChallenge.newNonce().matches("[0-9A-F]{16}"));
     }
 }

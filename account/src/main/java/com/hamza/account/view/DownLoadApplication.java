@@ -150,10 +150,11 @@ public class DownLoadApplication extends Application {
             BootstrapResult result = bootstrapTask.getValue();
             showMigrationResult(result.migrationResult());
 
+            // The login screen carries the same window behind its "forgot the password" link;
+            // the flag stays for a technician's shortcut, and now goes on to the login it
+            // recovered access to rather than exiting without a word.
             if (getParameters().getRaw().contains("--support-recovery")) {
-                SupportRecoveryView.show(primaryStage, result.daoFactory());
-                Platform.exit();
-                return;
+                SupportRecoveryView.showAndWait(primaryStage, result.daoFactory());
             }
 
             ApplicationNavigator navigator = new ApplicationNavigator(primaryStage, result.daoFactory());
