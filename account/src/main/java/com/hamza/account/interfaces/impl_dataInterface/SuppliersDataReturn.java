@@ -42,7 +42,7 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
 
     private final DesignInterface designInterface = () -> DocumentType.PURCHASE_RETURN;
 
-    private final TotalDesignInterface totalDesignInterface = new TotalsPurchaseReturnImplDesign(totalBuyReturnService);
+    private final TotalDesignInterface totalDesignInterface = new TotalsPurchaseReturnImplDesign();
 
     private final InvoiceBuy<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> invoiceBuy = new PurchaseInvoiceReturn();
 

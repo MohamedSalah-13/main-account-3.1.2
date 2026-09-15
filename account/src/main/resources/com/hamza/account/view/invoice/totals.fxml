@@ -75,7 +75,9 @@
                                                     styleClass="neutral-button" text="%party.list.view" />
                                         <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
                                         <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
-                                                      styleClass="neutral-button" text="%common.select.all" />
+                                                      styleClass="neutral-button" text="%invoice.select.page" />
+                                        <Label fx:id="labelSelection" managed="false" styleClass="totals-count-badge"
+                                               visible="false" />
                                         <Button fx:id="btnDeleteSelected" mnemonicParsing="false"
                                                 styleClass="danger-button" text="%delete" />
                                         <MenuButton fx:id="menuButton" mnemonicParsing="false"

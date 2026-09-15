@@ -43,7 +43,7 @@ public class SuppliersData
 
     private final DesignInterface designInterface = () -> DocumentType.PURCHASE;
 
-    private final TotalDesignInterface totalDesignInterface = new TotalsPurchaseImplDesign(totalBuyService);
+    private final TotalDesignInterface totalDesignInterface = new TotalsPurchaseImplDesign();
 
     private final InvoiceBuy<Purchase, Total_buy, Suppliers, SupplierAccount> invoiceBuy = new PurchaseInvoice();
 

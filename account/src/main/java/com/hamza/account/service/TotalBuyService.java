@@ -1,24 +1,12 @@
 package com.hamza.account.service;
 
-import com.hamza.account.document.DocumentType;
-import com.hamza.account.features.returns.ReturnLinkGuard;
-import com.hamza.account.features.stockledger.StockMovementAssembler;
-import com.hamza.account.features.events.ChangeAnnouncer;
-import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.period.PeriodLock;
-import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.authorization.AuthorizationGuard;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.document.TotalsPage;
 import com.hamza.account.document.TotalsSummaryRow;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.TransactionTemplate;
-import com.hamza.account.features.shift.ShiftDocumentDeletionJournal;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -52,34 +40,6 @@ public record TotalBuyService(DaoFactory daoFactory) {
 
         return getTotalsBuyDao().loadDataBetweenDate(dateFrom, dateTo);
 
-    }
-
-    /** Refused whole if any of them falls inside a closed period - see TotalSalesService. */
-    public int deleteMultiData(Integer[] ids) throws DaoException {
-        return deleteMultiData(ids, null);
-    }
-
-    public int deleteMultiData(Integer[] ids, String correctionReason) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.PURCHASE_DELETE);
-        PeriodLock.require(PeriodLockRegistry.PURCHASE_INVOICE, List.of(ids));
-        // As on the sales side: a purchase that has been returned against cannot go, or
-        // its return's stock-out is left with nothing to reverse.
-        ReturnLinkGuard.requireNoReturns(DocumentType.PURCHASE, ids);
-        return TransactionTemplate.execute(() -> {
-            var journal = new ShiftDocumentDeletionJournal(daoFactory).capture(DocumentType.PURCHASE, ids);
-            daoFactory.stockMovementDao().deleteByReferences(
-                    StockMovementAssembler.referenceTypeFor(DocumentType.PURCHASE), ids);
-            int rows = getTotalsBuyDao().deleteInvoicesInRange(ids);
-            journal.appendReversals(rows, correctionReason);
-            if (rows > 0) {
-                ChangeAnnouncer.jdbc().announce(new InvoiceSaved(DocumentType.PURCHASE.side()));
-            }
-            return rows;
-        });
-    }
-
-    public int deleteById(int id) throws DaoException {
-        return deleteMultiData(new Integer[]{id});
     }
 
     public List<Total_buy> getTotalBuyBySupId(int customer_id) throws DaoException {

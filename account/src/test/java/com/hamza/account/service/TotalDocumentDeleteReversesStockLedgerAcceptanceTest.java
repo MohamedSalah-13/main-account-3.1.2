@@ -4,6 +4,8 @@ import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.documentdelete.BackupBeforeDelete;
+import com.hamza.account.features.documentdelete.DocumentDeletionService;
 import com.hamza.account.features.stockledger.MovementType;
 import com.hamza.account.features.stockledger.StockMovement;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
@@ -36,10 +38,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * CASCADE} while leaving its {@code stock_movements} rows behind forever. Real-MySQL
  * acceptance; opt in with {@code -Daccount.db.acceptance=true}.
  * <p>
- * Each of the four {@code TotalXxxService.deleteMultiData} methods is exercised for real
- * (not mocked - none of the four record services has an injectable seam), inside one
- * transaction that is always rolled back. A second, undeleted document per type proves
- * the fix is scoped to what was actually deleted, not a blanket wipe.
+ * {@code DocumentDeletionService} is exercised for real against each of the four families,
+ * through its JDBC repository rather than a mock, inside one transaction that is always
+ * rolled back - which is also why it takes no backup. A second, undeleted document per type
+ * proves the fix is scoped to what was actually deleted, not a blanket wipe.
  */
 @EnabledIfSystemProperty(named = "account.db.acceptance", matches = "true")
 class TotalDocumentDeleteReversesStockLedgerAcceptanceTest {
@@ -76,25 +78,30 @@ class TotalDocumentDeleteReversesStockLedgerAcceptanceTest {
     @Test
     void deletingAPurchaseRemovesOnlyItsOwnMovements() throws Exception {
         runScenario("total_buy", "invoice_number", "purchase", "num", DocumentType.PURCHASE,
-                (kept, deleted) -> new TotalBuyService(FACTORY).deleteMultiData(new Integer[]{deleted}));
+                (kept, deleted) -> delete(DocumentType.PURCHASE, deleted));
     }
 
     @Test
     void deletingASaleRemovesOnlyItsOwnMovements() throws Exception {
         runScenario("total_sales", "invoice_number", "sales", "num", DocumentType.SALES,
-                (kept, deleted) -> new TotalSalesService(FACTORY).deleteMultiData(new Integer[]{deleted}));
+                (kept, deleted) -> delete(DocumentType.SALES, deleted));
     }
 
     @Test
     void deletingASalesReturnRemovesOnlyItsOwnMovements() throws Exception {
         runScenario("total_sales_re", "id", "sales_re", "item_id", DocumentType.SALES_RETURN,
-                (kept, deleted) -> new TotalSalesReturnService(FACTORY).deleteMultiData(new Integer[]{deleted}));
+                (kept, deleted) -> delete(DocumentType.SALES_RETURN, deleted));
     }
 
     @Test
     void deletingAPurchaseReturnRemovesOnlyItsOwnMovements() throws Exception {
         runScenario("total_buy_re", "id", "purchase_re", "item_id", DocumentType.PURCHASE_RETURN,
-                (kept, deleted) -> new TotalBuyReturnService(FACTORY).deleteMultiData(new Integer[]{deleted}));
+                (kept, deleted) -> delete(DocumentType.PURCHASE_RETURN, deleted));
+    }
+
+    private static int delete(DocumentType type, int id) throws Exception {
+        return DocumentDeletionService.jdbc(FACTORY, BackupBeforeDelete.NONE)
+                .delete(type, java.util.List.of(id), null).deleted();
     }
 
     @FunctionalInterface
