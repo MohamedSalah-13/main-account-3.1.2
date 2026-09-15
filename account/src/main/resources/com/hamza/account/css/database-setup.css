@@ -16,19 +16,41 @@
     -fx-padding: 10;
 }
 
-.dbsetup-root .status-success {
+/* Always on screen, below the scrolled form: the answer to every button. */
+.dbsetup-footer {
+    -fx-padding: 12 24 14 24;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Empty (no class) takes no room; a result is a coloured strip that cannot be missed. */
+.dbsetup-status.status-success,
+.dbsetup-status.status-warning,
+.dbsetup-status.status-error {
+    -fx-font-weight: bold;
+    -fx-padding: 8 12;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.dbsetup-status.status-success {
     -fx-text-fill: -app-success;
-    -fx-font-weight: bold;
+    -fx-background-color: -app-success-soft;
+    -fx-border-color: -app-success-border;
 }
 
-.dbsetup-root .status-warning {
+.dbsetup-status.status-warning {
     -fx-text-fill: -app-warning;
-    -fx-font-weight: bold;
+    -fx-background-color: -app-warning-soft;
+    -fx-border-color: -app-warning-border;
 }
 
-.dbsetup-root .status-error {
+.dbsetup-status.status-error {
     -fx-text-fill: -app-danger;
-    -fx-font-weight: bold;
+    -fx-background-color: -app-danger-soft;
+    -fx-border-color: -app-danger-border;
 }
 
 .server-provisioning-card {

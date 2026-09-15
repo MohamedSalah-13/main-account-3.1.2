@@ -5,6 +5,7 @@ import com.hamza.account.features.dbsetup.DatabaseConnectionSettings;
 import com.hamza.account.features.dbsetup.DatabaseProbeResult;
 import com.hamza.account.features.dbsetup.DatabaseSetupException;
 import com.hamza.account.features.dbsetup.DatabaseSetupService;
+import com.hamza.account.features.dbsetup.DatabaseSetupStatus;
 import com.hamza.account.features.dbsetup.DatabaseServerProvisioningRequest;
 import com.hamza.account.features.dbsetup.DatabaseServerProvisioningResult;
 import com.hamza.account.features.dbsetup.DatabaseServerSetupService;
@@ -25,6 +26,7 @@ import javafx.scene.layout.VBox;
 
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
@@ -45,6 +47,7 @@ public final class DatabaseSetupController {
     @FXML private PasswordField provisionPasswordField;
     @FXML private TextField allowedHostField;
     @FXML private CheckBox resetExistingPasswordBox;
+    @FXML private CheckBox allowStoredProgramsBox;
     @FXML private Button testButton;
     @FXML private Button saveButton;
     @FXML private Button provisionButton;
@@ -63,11 +66,16 @@ public final class DatabaseSetupController {
         portField.setText("3306");
         databaseField.setText("account_system_db");
         administratorUsernameField.setText("root");
-        provisionUsernameField.setText("account_main");
+        // One name on every device: without PROCESS an account sees only its own name's
+        // connections, and the restore guard (ConnectedMachines) is blind to any other.
+        provisionUsernameField.setText("account_app");
         allowedHostField.setText("localhost");
         portField.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("\\d{0,5}") ? change : null));
         locationLabel.setText(DatabaseConfigFiles.preferred().directory().toString());
+        // The status strip sits in the fixed footer; empty, it gives its height back to the form.
+        statusLabel.visibleProperty().bind(statusLabel.textProperty().isNotEmpty());
+        statusLabel.managedProperty().bind(statusLabel.visibleProperty());
 
         mainDevice.selectedProperty().addListener((observable, oldValue, selected) -> updateDeviceType());
         clientDevice.selectedProperty().addListener((observable, oldValue, selected) -> updateDeviceType());
@@ -134,7 +142,7 @@ public final class DatabaseSetupController {
                     databaseField.getText(), administratorUsernameField.getText(),
                     administratorPasswordField.getText(), provisionUsernameField.getText(),
                     provisionPasswordField.getText(), allowedHostField.getText(),
-                    resetExistingPasswordBox.isSelected());
+                    resetExistingPasswordBox.isSelected(), allowStoredProgramsBox.isSelected());
         } catch (DatabaseSetupException invalid) {
             showStatus(invalid.messageKey(), "status-error");
             return;
@@ -157,21 +165,13 @@ public final class DatabaseSetupController {
             usernameField.setText(request.applicationUsername());
             passwordField.setText(request.applicationPassword());
         }
-        String key = switch (result.password()) {
-            case CREATED -> "dbsetup.provision.success";
-            case RESET -> "dbsetup.provision.success.password.reset";
-            case UNCHANGED -> "dbsetup.provision.success.password.unchanged";
-        };
-        showStatus(key, passwordIsKnown ? "status-success" : "status-warning",
-                result.database(), result.account());
+        showStatus(DatabaseSetupStatus.afterProvisioning(result));
     }
 
     private void connectionSucceeded(DatabaseConnectionSettings settings, DatabaseProbeResult result) {
         lastTested = settings;
         saveButton.setDisable(false);
-        showStatus(result.databaseExists()
-                ? "dbsetup.test.success" : "dbsetup.test.success.database.missing",
-                result.databaseExists() ? "status-success" : "status-warning");
+        showStatus(DatabaseSetupStatus.afterConnectionTest(result));
     }
 
     private DatabaseConnectionSettings settingsOrShowError() {
@@ -227,7 +227,20 @@ public final class DatabaseSetupController {
     }
 
     private void showStatus(String key, String styleClass, Object... arguments) {
-        statusLabel.setText(LanguageManager.getInstance().getString(key, arguments));
+        showText(LanguageManager.getInstance().getString(key, arguments), styleClass);
+    }
+
+    private void showStatus(DatabaseSetupStatus status) {
+        LanguageManager language = LanguageManager.getInstance();
+        String text = status.sentences().stream()
+                .map(sentence -> language.getString(sentence.key(), sentence.arguments().toArray()))
+                .collect(Collectors.joining("\n"));
+        showText(text, status.severity() == DatabaseSetupStatus.Severity.SUCCESS
+                ? "status-success" : "status-warning");
+    }
+
+    private void showText(String text, String styleClass) {
+        statusLabel.setText(text);
         statusLabel.getStyleClass().removeAll("status-success", "status-warning", "status-error");
         statusLabel.getStyleClass().add(styleClass);
     }

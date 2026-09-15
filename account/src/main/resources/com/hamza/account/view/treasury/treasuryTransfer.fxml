@@ -1,88 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:id="root"
-            fx:controller="com.hamza.account.controller.convert_treasury.TreasuryTransferController"
-            styleClass="app-root">
+<BorderPane fx:id="root" styleClass="app-root" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21" fx:controller="com.hamza.account.controller.convert_treasury.TreasuryTransferController">
 
     <top>
-        <VBox spacing="18" styleClass="page-container">
+        <VBox spacing="10.0" styleClass="page-container">
             <padding>
-                <Insets top="24" right="28" bottom="18" left="28"/>
+                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
             </padding>
 
             <VBox spacing="6">
-                <Label text="%treasury.transfer.title" styleClass="page-title"/>
-                <Label text="%treasury.transfer.subtitle" styleClass="page-subtitle"/>
+                <Label styleClass="page-title" text="%treasury.transfer.title" />
+                <Label styleClass="page-subtitle" text="%treasury.transfer.subtitle" />
             </VBox>
 
-            <VBox spacing="16" styleClass="app-card">
+            <VBox spacing="5.0" styleClass="app-card">
                 <GridPane hgap="18" vgap="14">
                     <columnConstraints>
-                        <ColumnConstraints minWidth="130" prefWidth="140"/>
-                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
-                        <ColumnConstraints minWidth="130" prefWidth="140"/>
-                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                        <ColumnConstraints minWidth="130" prefWidth="140" />
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="260" />
+                        <ColumnConstraints minWidth="130" prefWidth="140" />
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="260" />
                     </columnConstraints>
 
-                    <Label text="%treasury.transfer.field.from" styleClass="form-label"
-                           GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                    <ComboBox fx:id="fromCombo" maxWidth="Infinity" styleClass="modern-input"
-                              GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                    <Label styleClass="form-label" text="%treasury.transfer.field.from" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <ComboBox fx:id="fromCombo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                    <Label text="%treasury.transfer.field.to" styleClass="form-label"
-                           GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                    <ComboBox fx:id="toCombo" maxWidth="Infinity" styleClass="modern-input"
-                              GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+                    <Label styleClass="form-label" text="%treasury.transfer.field.to" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                    <ComboBox fx:id="toCombo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="0" />
 
-                    <Label text="%treasury.transfer.field.amount" styleClass="form-label"
-                           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                    <TextField fx:id="amountField" styleClass="modern-input"
-                               GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    <Label styleClass="form-label" text="%treasury.transfer.field.amount" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <TextField fx:id="amountField" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                    <Label text="%treasury.transfer.field.date" styleClass="form-label"
-                           GridPane.rowIndex="1" GridPane.columnIndex="2"/>
-                    <DatePicker fx:id="datePicker" maxWidth="Infinity" styleClass="modern-input"
-                                GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+                    <Label styleClass="form-label" text="%treasury.transfer.field.date" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                    <DatePicker fx:id="datePicker" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                    <Label text="%treasury.transfer.field.notes" styleClass="form-label"
-                           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                    <TextField fx:id="notesField" styleClass="modern-input"
-                               GridPane.rowIndex="2" GridPane.columnIndex="1"
-                               GridPane.columnSpan="3"/>
+                    <Label styleClass="form-label" text="%treasury.transfer.field.notes" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <TextField fx:id="notesField" styleClass="modern-input" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2" />
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
                 </GridPane>
 
-                <Label fx:id="availableLabel" styleClass="page-subtitle"/>
+                <Label fx:id="availableLabel" styleClass="page-subtitle" />
 
-                <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Button text="%treasury.transfer.btn.save" onAction="#saveTransfer"
-                            styleClass="primary-button"/>
-                    <Button text="%common.delete" onAction="#deleteTransfer"
-                            styleClass="warning-button"/>
-                    <Button text="%common.refresh" onAction="#reload"
-                            styleClass="neutral-button"/>
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Button onAction="#saveTransfer" styleClass="primary-button" text="%treasury.transfer.btn.save" />
+                    <Button onAction="#deleteTransfer" styleClass="warning-button" text="%common.delete" />
+                    <Button onAction="#reload" styleClass="neutral-button" text="%common.refresh" />
                 </HBox>
             </VBox>
         </VBox>
     </top>
 
     <center>
-        <VBox spacing="12" styleClass="table-section">
+        <VBox spacing="5.0" styleClass="table-section">
             <padding>
-                <Insets top="8" right="28" bottom="28" left="28"/>
+                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
             </padding>
-
-            <HBox alignment="CENTER_RIGHT">
-                <Label text="%treasury.transfer.section.recent" styleClass="section-title"/>
-            </HBox>
 
             <!-- Columns are built in the controller with Columns.*, never with a field-name
                  string: rule 1 of section 5 in docs/new-code-rules.md. -->
-            <TableView fx:id="transfersTable" styleClass="app-table" VBox.vgrow="ALWAYS"/>
+            <TableView fx:id="transfersTable" styleClass="app-table" VBox.vgrow="ALWAYS" />
         </VBox>
     </center>
 

@@ -6,8 +6,8 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
@@ -25,13 +25,13 @@
 
 <StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.invoice.BuyController2">
     <children>
-        <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED" styleClass="invoice-scroll">
+        <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" styleClass="invoice-scroll" vbarPolicy="AS_NEEDED">
             <content>
         <BorderPane styleClass="app-container">
             <top>
             <VBox spacing="5.0">
                <children>
-                      <FlowPane fx:id="invoiceTopBar" alignment="CENTER_LEFT" hgap="8.0" vgap="5.0" prefWrapLength="1000.0" styleClass="app-card, invoice-command-bar">
+                      <FlowPane fx:id="invoiceTopBar" alignment="CENTER_LEFT" hgap="8.0" prefWrapLength="1000.0" styleClass="app-card, invoice-command-bar" vgap="5.0">
                           <children>
                               <VBox alignment="CENTER_LEFT" spacing="3.0">
                                   <children>
@@ -39,16 +39,15 @@
                                       <Label styleClass="app-subtitle" text="%invoice.subtitle" />
                                   </children>
                               </VBox>
-                              <Label fx:id="labelReturnedBadge" styleClass="warning-button" visible="false" managed="false" />
+                              <Label fx:id="labelReturnedBadge" managed="false" styleClass="warning-button" visible="false" />
                               <Region fx:id="invoiceTopBarSpacer" />
                               <Button fx:id="btnNew" mnemonicParsing="false" styleClass="primary-button" text="جديد" />
                               <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="neutral-button" text="بحث" />
-                              <Button fx:id="btnReturnFromInvoice" mnemonicParsing="false" styleClass="neutral-button" text="ارتجاع من فاتورة" visible="false" managed="false" />
+                              <Button fx:id="btnReturnFromInvoice" managed="false" mnemonicParsing="false" styleClass="neutral-button" text="ارتجاع من فاتورة" visible="false" />
                               <Button fx:id="btnQuickMode" mnemonicParsing="false" styleClass="neutral-button" text="%invoice.screen.quick" />
                               <Separator orientation="VERTICAL" />
                               <Button fx:id="btnSave" mnemonicParsing="false" styleClass="success-button" text="حفظ" />
                               <Button fx:id="btnPrintSave" mnemonicParsing="false" styleClass="primary-button" text="حفظ وطباعة" />
-                              <Button fx:id="btnUpdateItem" mnemonicParsing="false" styleClass="warning-button" text="تعديل الصنف" />
                           </children>
                       </FlowPane>
                           <HBox styleClass="app-card">
@@ -113,7 +112,7 @@
                                           <TextField fx:id="txtNum" editable="false" promptText="%invoice.number" GridPane.columnIndex="1" />
                                           <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3" />
                                           <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                                          <ComboBox fx:id="comboTreasury"  maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
+                                          <ComboBox fx:id="comboTreasury" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
                                           <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" GridPane.rowIndex="1" />
                                           <TextField fx:id="txtItemBalance" editable="false" promptText="balance" GridPane.columnIndex="5" GridPane.rowIndex="2" />
                                           <TextField fx:id="txtBarcode" promptText="باركود الصنف" GridPane.columnIndex="1" GridPane.rowIndex="2" />

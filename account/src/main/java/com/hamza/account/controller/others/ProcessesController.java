@@ -4,25 +4,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
-import com.hamza.account.features.audit.AuditActionFilter;
-import com.hamza.account.features.audit.AuditExportFormat;
-import com.hamza.account.features.audit.AuditExportResult;
-import com.hamza.account.features.audit.AuditDiffRow;
-import com.hamza.account.features.audit.AuditDiffKind;
-import com.hamza.account.features.audit.AuditJsonDiff;
-import com.hamza.account.features.audit.AuditLogEntry;
-import com.hamza.account.features.audit.AuditLogExportService;
-import com.hamza.account.features.audit.AuditLogOptions;
-import com.hamza.account.features.audit.AuditLogPage;
-import com.hamza.account.features.audit.AuditLogQuery;
-import com.hamza.account.features.audit.AuditLogService;
-import com.hamza.account.features.audit.AuditLogSort;
-import com.hamza.account.features.audit.AuditSourceFilter;
-import com.hamza.account.features.audit.AuditTableLabels;
-import com.hamza.account.features.audit.AuditUserOption;
-import com.hamza.account.features.audit.AuditRetentionPolicy;
-import com.hamza.account.features.audit.AuditRetentionPreview;
-import com.hamza.account.features.audit.AuditRetentionService;
+import com.hamza.account.features.audit.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AuditAdminEventsApplication;
@@ -34,24 +16,8 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.Pagination;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
@@ -65,7 +31,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 
-/** A paged, index-backed browser for the database audit trail. */
+/**
+ * A paged, index-backed browser for the database audit trail.
+ */
 @FxmlPath(pathFile = "process-view.fxml")
 public final class ProcessesController {
 
@@ -84,22 +52,110 @@ public final class ProcessesController {
     private boolean syncing;
     private boolean optionsLoaded;
 
-    @FXML private StackPane root;
-    @FXML private Label labelTitle, labelTotal, labelInserts, labelUpdates, labelDeletes;
-    @FXML private Label labelStatus, labelSelection;
-    @FXML private TextField txtSearch;
-    @FXML private DatePicker dateFrom, dateTo;
-    @FXML private ComboBox<AuditUserOption> comboUser;
-    @FXML private ComboBox<AuditActionFilter> comboAction;
-    @FXML private ComboBox<String> comboTable;
-    @FXML private ComboBox<AuditSourceFilter> comboSource;
-    @FXML private ComboBox<AuditLogSort> comboSort;
-    @FXML private Pagination pagination;
-    @FXML private ProgressIndicator progress;
-    @FXML private StackPane diffHost;
-    @FXML private CheckBox chkChangedOnly;
-    @FXML private Button btnApply, btnClear, btnRefresh, btnDelete, btnClose;
-    @FXML private Button btnExportExcel, btnExportPdf, btnRetention, btnAdminEvents;
+    @FXML
+    private StackPane root;
+    @FXML
+    private Label labelTitle, labelTotal, labelInserts, labelUpdates, labelDeletes;
+    @FXML
+    private Label labelStatus, labelSelection;
+    @FXML
+    private TextField txtSearch;
+    @FXML
+    private DatePicker dateFrom, dateTo;
+    @FXML
+    private ComboBox<AuditUserOption> comboUser;
+    @FXML
+    private ComboBox<AuditActionFilter> comboAction;
+    @FXML
+    private ComboBox<String> comboTable;
+    @FXML
+    private ComboBox<AuditSourceFilter> comboSource;
+    @FXML
+    private ComboBox<AuditLogSort> comboSort;
+    @FXML
+    private Pagination pagination;
+    @FXML
+    private ProgressIndicator progress;
+    @FXML
+    private StackPane diffHost;
+    @FXML
+    private CheckBox chkChangedOnly;
+    @FXML
+    private Button btnApply, btnClear, btnRefresh, btnDelete;
+    @FXML
+    private Button btnExportExcel, btnExportPdf, btnRetention, btnAdminEvents;
+
+    private static TableColumn<AuditLogEntry, String> column(String id, String titleKey, double width,
+                                                             Function<AuditLogEntry, String> value) {
+        TableColumn<AuditLogEntry, String> column = new TableColumn<>(text(titleKey));
+        column.setId(id);
+        column.setPrefWidth(width);
+        column.setSortable(false);
+        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
+        return column;
+    }
+
+    private static TableColumn<AuditDiffRow, String> diffColumn(String id, String titleKey, double width,
+                                                                Function<AuditDiffRow, String> value) {
+        TableColumn<AuditDiffRow, String> column = new TableColumn<>(text(titleKey));
+        column.setId(id);
+        column.setPrefWidth(width);
+        column.setSortable(false);
+        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                Objects.toString(value.apply(cell.getValue()), "")));
+        return column;
+    }
+
+    private static File ensureExtension(File selected, AuditExportFormat format) {
+        String extension = "." + format.extension().toLowerCase(Locale.ROOT);
+        if (selected.getName().toLowerCase(Locale.ROOT).endsWith(extension)) return selected;
+        return new File(selected.getParentFile(), selected.getName() + extension);
+    }
+
+    private static void permissionVisibility(Button button, com.hamza.account.authorization.PermissionKey permission) {
+        boolean visible = AuthorizationGuard.isGranted(permission);
+        button.setVisible(visible);
+        button.setManaged(visible);
+    }
+
+    private static void start(Task<?> task, String name) {
+        Thread thread = new Thread(task, name);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private static String tableLabel(String tableName) {
+        String key = AuditTableLabels.keyFor(tableName);
+        return key == null ? tableName : text(key);
+    }
+
+    private static void prepareDialog(Dialog<?> dialog) {
+        dialog.getDialogPane().setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
+        Button ok = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        ok.setText(text("ok"));
+        cancel.setText(text("cancel"));
+        ThemeManager.apply(dialog.getDialogPane().getScene());
+    }
+
+    private static <T> StringConverter<T> converter(Function<T, String> display, T fallback) {
+        return new StringConverter<>() {
+            @Override
+            public String toString(T value) {
+                return display.apply(value);
+            }
+
+            @Override
+            public T fromString(String value) {
+                return fallback;
+            }
+        };
+    }
+
+    private static String text(String key, Object... arguments) {
+        return arguments.length == 0 ? LanguageManager.getInstance().getString(key)
+                : LanguageManager.getInstance().getString(key, arguments);
+    }
 
     @FXML
     public void initialize() {
@@ -124,7 +180,8 @@ public final class ProcessesController {
                         row -> text(row.kind().labelKey())));
         diffTable.setPlaceholder(new Label(text("audit.diff.placeholder.empty")));
         diffTable.setRowFactory(ignored -> new TableRow<>() {
-            @Override protected void updateItem(AuditDiffRow row, boolean empty) {
+            @Override
+            protected void updateItem(AuditDiffRow row, boolean empty) {
                 super.updateItem(row, empty);
                 getStyleClass().removeAll("audit-diff-added", "audit-diff-removed",
                         "audit-diff-changed", "audit-diff-unchanged");
@@ -154,7 +211,8 @@ public final class ProcessesController {
                 column("auditNotes", "audit.log.column.notes", 210, AuditLogEntry::notes));
         tableView.setPlaceholder(new Label(text("audit.log.placeholder.empty")));
         tableView.setRowFactory(ignored -> new TableRow<>() {
-            @Override protected void updateItem(AuditLogEntry row, boolean empty) {
+            @Override
+            protected void updateItem(AuditLogEntry row, boolean empty) {
                 super.updateItem(row, empty);
                 getStyleClass().removeAll("audit-row-insert", "audit-row-update", "audit-row-delete");
                 if (!empty && row != null) {
@@ -169,27 +227,6 @@ public final class ProcessesController {
         tableView.getSelectionModel().getSelectedItems().addListener(
                 (javafx.collections.ListChangeListener<AuditLogEntry>) change -> showSelection());
         TableSetting.tableMenuSetting(getClass(), tableView);
-    }
-
-    private static TableColumn<AuditLogEntry, String> column(String id, String titleKey, double width,
-                                                              Function<AuditLogEntry, String> value) {
-        TableColumn<AuditLogEntry, String> column = new TableColumn<>(text(titleKey));
-        column.setId(id);
-        column.setPrefWidth(width);
-        column.setSortable(false);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        return column;
-    }
-
-    private static TableColumn<AuditDiffRow, String> diffColumn(String id, String titleKey, double width,
-                                                                Function<AuditDiffRow, String> value) {
-        TableColumn<AuditDiffRow, String> column = new TableColumn<>(text(titleKey));
-        column.setId(id);
-        column.setPrefWidth(width);
-        column.setSortable(false);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
-                Objects.toString(value.apply(cell.getValue()), "")));
-        return column;
     }
 
     private void configureFilters() {
@@ -235,7 +272,6 @@ public final class ProcessesController {
         btnRetention.setGraphic(AppIcon.SETTINGS.graphic());
         btnAdminEvents.setGraphic(AppIcon.SHOW.graphic());
         btnDelete.setGraphic(AppIcon.DELETE.graphic());
-        btnClose.setGraphic(AppIcon.CLOSE.graphic());
 
         btnApply.setOnAction(event -> applyFilters());
         btnClear.setOnAction(event -> clearFilters());
@@ -245,7 +281,6 @@ public final class ProcessesController {
         btnRetention.setOnAction(event -> openRetention());
         btnAdminEvents.setOnAction(event -> openAdminEvents());
         btnDelete.setOnAction(event -> deleteSelected());
-        btnClose.setOnAction(event -> ((Stage) btnClose.getScene().getWindow()).close());
         btnDelete.setDisable(true);
         permissionVisibility(btnExportExcel, AppPermissions.AUDIT_EXPORT);
         permissionVisibility(btnExportPdf, AppPermissions.AUDIT_EXPORT);
@@ -292,7 +327,8 @@ public final class ProcessesController {
         boolean loadOptions = !optionsLoaded;
         setBusy(true);
         Task<LoadResult> task = new Task<>() {
-            @Override protected LoadResult call() throws Exception {
+            @Override
+            protected LoadResult call() throws Exception {
                 AuditLogOptions options = loadOptions ? auditLogService.options() : null;
                 return new LoadResult(auditLogService.load(next), options);
             }
@@ -371,7 +407,7 @@ public final class ProcessesController {
         labelSelection.setText(selected.size() == 1
                 ? text("audit.log.details.selected.one", row.id(), tableLabel(row.tableName()), row.recordId())
                 : text("audit.log.details.selected.many", selected.size(), row.id(),
-                        tableLabel(row.tableName()), row.recordId()));
+                tableLabel(row.tableName()), row.recordId()));
         currentDiff = AuditJsonDiff.compare(row.oldData(), row.newData());
         showDiff();
     }
@@ -379,7 +415,7 @@ public final class ProcessesController {
     private void showDiff() {
         List<AuditDiffRow> visible = chkChangedOnly.isSelected()
                 ? currentDiff.stream().filter(row -> row.kind() != AuditDiffKind.UNCHANGED)
-                        .toList()
+                .toList()
                 : currentDiff;
         diffTable.setItems(FXCollections.observableArrayList(visible));
     }
@@ -415,7 +451,10 @@ public final class ProcessesController {
 
         setBusy(true);
         Task<Integer> task = new Task<>() {
-            @Override protected Integer call() throws Exception { return auditLogService.delete(ids, reason); }
+            @Override
+            protected Integer call() throws Exception {
+                return auditLogService.delete(ids, reason);
+            }
         };
         task.setOnSucceeded(event -> {
             setBusy(false);
@@ -477,7 +516,8 @@ public final class ProcessesController {
 
         setBusy(true);
         Task<AuditExportResult> task = new Task<>() {
-            @Override protected AuditExportResult call() throws Exception {
+            @Override
+            protected AuditExportResult call() throws Exception {
                 return exportService.export(query, format, target.toPath());
             }
         };
@@ -493,18 +533,15 @@ public final class ProcessesController {
         start(task, "audit-log-export-" + format.name().toLowerCase());
     }
 
-    private static File ensureExtension(File selected, AuditExportFormat format) {
-        String extension = "." + format.extension().toLowerCase(Locale.ROOT);
-        if (selected.getName().toLowerCase(Locale.ROOT).endsWith(extension)) return selected;
-        return new File(selected.getParentFile(), selected.getName() + extension);
-    }
-
     private void openRetention() {
         if (retentionService == null
                 || !AuthorizationGuard.isGranted(AppPermissions.AUDIT_RETENTION_MANAGE)) return;
         setBusy(true);
         Task<AuditRetentionPolicy> task = new Task<>() {
-            @Override protected AuditRetentionPolicy call() throws Exception { return retentionService.policy(); }
+            @Override
+            protected AuditRetentionPolicy call() throws Exception {
+                return retentionService.policy();
+            }
         };
         task.setOnSucceeded(event -> {
             setBusy(false);
@@ -533,7 +570,8 @@ public final class ProcessesController {
     private void previewRetention(AuditRetentionDialog.Request request, String reason) {
         setBusy(true);
         Task<AuditRetentionPreview> task = new Task<>() {
-            @Override protected AuditRetentionPreview call() throws Exception {
+            @Override
+            protected AuditRetentionPreview call() throws Exception {
                 return retentionService.preview(request.days());
             }
         };
@@ -565,7 +603,8 @@ public final class ProcessesController {
     private void saveRetention(AuditRetentionDialog.Request request, String reason) {
         setBusy(true);
         Task<Void> task = new Task<>() {
-            @Override protected Void call() throws Exception {
+            @Override
+            protected Void call() throws Exception {
                 retentionService.save(request.enabled(), request.days(), reason);
                 return null;
             }
@@ -586,7 +625,10 @@ public final class ProcessesController {
     private void cleanRetention(int days, String reason) {
         setBusy(true);
         Task<Integer> task = new Task<>() {
-            @Override protected Integer call() throws Exception { return retentionService.cleanNow(days, reason); }
+            @Override
+            protected Integer call() throws Exception {
+                return retentionService.cleanNow(days, reason);
+            }
         };
         task.setOnSucceeded(event -> {
             setBusy(false);
@@ -610,18 +652,6 @@ public final class ProcessesController {
         AllAlerts.handleError(text(titleKey), failure);
     }
 
-    private static void permissionVisibility(Button button, com.hamza.account.authorization.PermissionKey permission) {
-        boolean visible = AuthorizationGuard.isGranted(permission);
-        button.setVisible(visible);
-        button.setManaged(visible);
-    }
-
-    private static void start(Task<?> task, String name) {
-        Thread thread = new Thread(task, name);
-        thread.setDaemon(true);
-        thread.start();
-    }
-
     private String actorLabel(AuditLogEntry row) {
         if (!row.actorName().isBlank()) return row.actorName();
         return text("SYSTEM".equalsIgnoreCase(row.source())
@@ -642,34 +672,8 @@ public final class ProcessesController {
         };
     }
 
-    private static String tableLabel(String tableName) {
-        String key = AuditTableLabels.keyFor(tableName);
-        return key == null ? tableName : text(key);
-    }
-
     private void validation(String key) {
         AllAlerts.handleError(text("audit.log.title"), new UserValidationException(text(key)));
-    }
-
-    private static void prepareDialog(Dialog<?> dialog) {
-        dialog.getDialogPane().setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
-        Button ok = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
-        ok.setText(text("ok"));
-        cancel.setText(text("cancel"));
-        ThemeManager.apply(dialog.getDialogPane().getScene());
-    }
-
-    private static <T> StringConverter<T> converter(Function<T, String> display, T fallback) {
-        return new StringConverter<>() {
-            @Override public String toString(T value) { return display.apply(value); }
-            @Override public T fromString(String value) { return fallback; }
-        };
-    }
-
-    private static String text(String key, Object... arguments) {
-        return arguments.length == 0 ? LanguageManager.getInstance().getString(key)
-                : LanguageManager.getInstance().getString(key, arguments);
     }
 
     private record LoadResult(AuditLogPage page, AuditLogOptions options) {

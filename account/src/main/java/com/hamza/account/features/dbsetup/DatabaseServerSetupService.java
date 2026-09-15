@@ -30,7 +30,7 @@ public final class DatabaseServerSetupService {
             String allowedHost
     ) throws DatabaseSetupException {
         return validate(serverHost, port, database, administratorUsername, administratorPassword,
-                applicationUsername, applicationPassword, allowedHost, false);
+                applicationUsername, applicationPassword, allowedHost, false, true);
     }
 
     public DatabaseServerProvisioningRequest validate(
@@ -42,7 +42,8 @@ public final class DatabaseServerSetupService {
             String applicationUsername,
             String applicationPassword,
             String allowedHost,
-            boolean resetExistingPassword
+            boolean resetExistingPassword,
+            boolean allowStoredPrograms
     ) throws DatabaseSetupException {
         String cleanServerHost = clean(serverHost);
         String cleanDatabase = clean(database);
@@ -75,7 +76,7 @@ public final class DatabaseServerSetupService {
 
         return new DatabaseServerProvisioningRequest(cleanServerHost, parsedPort, cleanDatabase,
                 cleanAdministrator, administratorPassword, cleanApplicationUser, applicationPassword,
-                mysqlHostPattern(clean(allowedHost)), resetExistingPassword);
+                mysqlHostPattern(clean(allowedHost)), resetExistingPassword, allowStoredPrograms);
     }
 
     public DatabaseServerProvisioningResult provision(DatabaseServerProvisioningRequest request)

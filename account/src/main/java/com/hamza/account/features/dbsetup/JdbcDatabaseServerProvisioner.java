@@ -21,8 +21,45 @@ public final class JdbcDatabaseServerProvisioner implements DatabaseServerProvis
             execute(connection, createDatabaseSql(request.database()));
             PasswordOutcome password = createOrKeepAccount(connection, request, account);
             execute(connection, grantSql(request.database(), account));
-            return new DatabaseServerProvisioningResult(request.database(), account, password);
+            return new DatabaseServerProvisioningResult(request.database(), account, password,
+                    allowStoredPrograms(connection, request.allowStoredPrograms()));
         }
+    }
+
+    /**
+     * Makes sure the account just prepared can create the migrations' triggers - see
+     * {@link StoredProgramLogging}. This is the one server-wide change the tool makes, and
+     * it is made here because this is the only step holding an administrator's connection.
+     *
+     * <p>{@code SET PERSIST} rather than {@code SET GLOBAL}: a global setting is lost at the
+     * next restart of MySQL, and the program re-runs its repeatable trigger migration
+     * whenever an update changes it, so the failure would come back on a day nobody is
+     * running this tool. An administrator without the privilege, or a server without
+     * {@code PERSIST}, is reported as {@link StoredProgramLogging#BLOCKED} rather than
+     * failing the whole run: the schema and the account are still correct, and the screen
+     * then says exactly which statement is left to run by hand.
+     *
+     * <p>It is only done when the technician left "allow" ticked. Replacing a password on an
+     * existing account already needs a deliberate tick, and this is the wider change of the
+     * two: it relaxes a safety check for every schema on the server, for good. Unticked, the
+     * state is still read, so the screen can say the program will fail rather than succeed
+     * quietly.
+     */
+    static StoredProgramLogging allowStoredPrograms(Connection connection, boolean allowed) {
+        StoredProgramLogging current = JdbcDatabaseConnectionProbe.readStoredProgramLogging(connection);
+        if (!current.blocksTriggers()) {
+            return current;
+        }
+        if (!allowed) {
+            return StoredProgramLogging.DECLINED;
+        }
+        try {
+            execute(connection, StoredProgramLogging.ENABLE_SQL);
+        } catch (SQLException refused) {
+            return StoredProgramLogging.BLOCKED;
+        }
+        return JdbcDatabaseConnectionProbe.readStoredProgramLogging(connection).blocksTriggers()
+                ? StoredProgramLogging.BLOCKED : StoredProgramLogging.ENABLED;
     }
 
     static String createDatabaseSql(String database) {

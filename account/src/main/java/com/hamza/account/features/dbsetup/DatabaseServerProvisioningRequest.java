@@ -11,6 +11,12 @@ package com.hamza.account.features.dbsetup;
  *                               password replaced. Off by default because the account is
  *                               shared: every till already configured holds the old
  *                               password, and rotating it here signs all of them out
+ * @param allowStoredPrograms    whether the run may persist
+ *                               {@code log_bin_trust_function_creators = 1} on the server
+ *                               when it would refuse the application's triggers. It is a
+ *                               permanent, server-wide relaxation, so it is the technician's
+ *                               decision on screen - ticked by default, because without it
+ *                               the program cannot finish its first start
  */
 public record DatabaseServerProvisioningRequest(
         String serverHost,
@@ -21,7 +27,8 @@ public record DatabaseServerProvisioningRequest(
         String applicationUsername,
         String applicationPassword,
         String allowedHost,
-        boolean resetExistingPassword
+        boolean resetExistingPassword,
+        boolean allowStoredPrograms
 ) {
 
     @Override
@@ -34,6 +41,7 @@ public record DatabaseServerProvisioningRequest(
                 + ", applicationUsername=" + applicationUsername
                 + ", applicationPassword=<hidden>"
                 + ", allowedHost=" + allowedHost
-                + ", resetExistingPassword=" + resetExistingPassword + "]";
+                + ", resetExistingPassword=" + resetExistingPassword
+                + ", allowStoredPrograms=" + allowStoredPrograms + "]";
     }
 }

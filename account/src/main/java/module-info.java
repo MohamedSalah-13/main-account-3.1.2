@@ -176,4 +176,9 @@ module com.hamza.account {
     exports com.hamza.account.document;
     exports com.hamza.account.view;
     opens com.hamza.account.view to javafx.fxml;
+    // The 80mm receipt's rows (InvoiceReceiptLayout.Line/Row) are read by Jasper through
+    // commons-beanutils, which calls their public getters: without this export, printing a
+    // receipt under the module launch fails with IllegalAccessException. Public getters need
+    // an export, not an opens, so the package is not opened to reflection.
+    exports com.hamza.account.features.invoice;
 }
