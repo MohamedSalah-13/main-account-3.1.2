@@ -17,6 +17,7 @@
     -app-primary: #3b82f6;
     -app-primary-dark: #2563eb;
     -app-primary-darker: #1d4ed8;
+    -app-primary-soft: rgba(59, 130, 246, 0.28);
     -app-focus-shadow: rgba(59, 130, 246, 0.30);
 
     -app-input-bg: #111827;

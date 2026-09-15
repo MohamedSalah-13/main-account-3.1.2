@@ -107,9 +107,21 @@ class DatabaseServerSetupServiceTest {
         var service = serviceThatSucceeds();
 
         var request = service.validate("localhost", "3306", "accounts", "root", "admin",
-                "account_pc01", "app-secret-2026", "localhost", true);
+                "account_pc01", "app-secret-2026", "localhost", true, true);
 
         assertEquals(true, request.resetExistingPassword());
+    }
+
+    /** The server-wide setting is the technician's tick, carried through as typed either way. */
+    @Test
+    void carriesTheStoredProgramDecisionThroughToTheProvisioner() throws Exception {
+        var service = serviceThatSucceeds();
+
+        assertEquals(false, service.validate("localhost", "3306", "accounts", "root", "admin",
+                "account_pc01", "app-secret-2026", "localhost", false, false).allowStoredPrograms());
+        assertEquals(true, service.validate("localhost", "3306", "accounts", "root", "admin",
+                "account_pc01", "app-secret-2026", "localhost").allowStoredPrograms(),
+                "the short form follows the screen's default, which is ticked");
     }
 
     @Test
@@ -175,6 +187,6 @@ class DatabaseServerSetupServiceTest {
 
     private static DatabaseServerProvisioningRequest request() {
         return new DatabaseServerProvisioningRequest("localhost", 3306, "accounts",
-                "root", "admin", "account_pc01", "app-secret-2026", "localhost", false);
+                "root", "admin", "account_pc01", "app-secret-2026", "localhost", false, true);
     }
 }

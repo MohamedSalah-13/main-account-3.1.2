@@ -1,8 +1,20 @@
 package com.hamza.account.features.dbsetup;
 
+import java.util.Objects;
+
 /** The non-secret result shown after a database account is prepared. */
 public record DatabaseServerProvisioningResult(String database, String account,
-                                               PasswordOutcome password) {
+                                               PasswordOutcome password,
+                                               StoredProgramLogging storedPrograms) {
+
+    public DatabaseServerProvisioningResult {
+        Objects.requireNonNull(password);
+        Objects.requireNonNull(storedPrograms);
+    }
+
+    public DatabaseServerProvisioningResult(String database, String account, PasswordOutcome password) {
+        this(database, account, password, StoredProgramLogging.NOT_REQUIRED);
+    }
 
     /**
      * What happened to the account's password, which is the one thing the technician
