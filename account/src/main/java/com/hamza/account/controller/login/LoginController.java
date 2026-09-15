@@ -16,6 +16,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
@@ -27,8 +28,10 @@ import javafx.util.Duration;
 
 import java.net.URL;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
@@ -50,15 +53,24 @@ public class LoginController extends LoginService implements Initializable {
     private Label loginStatus;
     @FXML
     private ProgressIndicator loginProgress;
+    @FXML
+    private Hyperlink linkForgotPassword;
 
     private final Consumer<Users> onLoginSuccess;
+    private final Supplier<Optional<String>> supportRecovery;
     private final BooleanProperty busy = new SimpleBooleanProperty();
     private final BooleanProperty coolingDown = new SimpleBooleanProperty();
     private int failedAttempts;
 
-    public LoginController(ActionLogin actionLogin, Consumer<Users> onLoginSuccess) {
+    /**
+     * @param supportRecovery opens administrator recovery and answers the administrator's user
+     *                        name when it succeeded - see {@code SupportRecoveryView}.
+     */
+    public LoginController(ActionLogin actionLogin, Consumer<Users> onLoginSuccess,
+                           Supplier<Optional<String>> supportRecovery) {
         super(actionLogin);
         this.onLoginSuccess = onLoginSuccess;
+        this.supportRecovery = supportRecovery;
     }
 
     @Override
@@ -77,6 +89,11 @@ public class LoginController extends LoginService implements Initializable {
 
         btnEnter.setOnAction(event -> authenticate());
         btnClose.setOnAction(event -> Platform.exit());
+        linkForgotPassword.disableProperty().bind(busy);
+        linkForgotPassword.setOnAction(event -> {
+            linkForgotPassword.setVisited(false);
+            supportRecovery.get().ifPresent(this::afterRecovery);
+        });
 
         resetAllDataProperty().addListener((observableValue, oldValue, reset) -> {
             if (reset) resetAll();
@@ -123,6 +140,15 @@ public class LoginController extends LoginService implements Initializable {
         Thread thread = new Thread(task, "login-authentication");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /** The recovered account is the one about to be signed in to: name in, caret on the password. */
+    private void afterRecovery(String administratorUserName) {
+        txtUsername.setText(administratorUserName);
+        pass.clear();
+        loginStatus.setText("");
+        failedAttempts = 0;
+        pass.requestFocus();
     }
 
     private void applyRetryDelay() {

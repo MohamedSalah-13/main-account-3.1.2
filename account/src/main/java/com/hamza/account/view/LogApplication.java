@@ -40,7 +40,8 @@ public final class LogApplication {
     public void show(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("login.fxml"),
                 LanguageManager.getInstance().getResourceBundle());
-        LoginController controller = new LoginController(this::authenticate, this::continueAfterAuthentication);
+        LoginController controller = new LoginController(this::authenticate, this::continueAfterAuthentication,
+                () -> SupportRecoveryView.showAndWait(stage, daoFactory));
         loader.setControllerFactory(type -> controller);
 
         Scene scene = new Scene(loader.load());

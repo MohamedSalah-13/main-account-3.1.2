@@ -208,6 +208,17 @@ public class UsersDao extends AbstractDao<Users> {
                 """, passwordHash);
     }
 
+    /** Row 1's name, told to whoever has just recovered it - it need not still be "admin". */
+    public String administratorUserName() throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement("SELECT user_name FROM users WHERE id = 1");
+                 ResultSet row = statement.executeQuery()) {
+                if (!row.next()) throw new SQLException("Administrator row 1 is missing");
+                return row.getString(1);
+            }
+        });
+    }
+
     /** A challenge is answerable once; the row is what remembers that - see {@code V45}. */
     public int insertRecoveryChallenge(String nonce, String machineId) throws DaoException {
         return executeUpdate("""

@@ -407,7 +407,8 @@ writes that column, and the edit screen has no control for it, so it was sending
 reactivating every deactivated account it touched.
 
 **Emergency recovery is the one write path with no permission guard, deliberately.**
-`--support-recovery` opens `SupportRecoveryView` before any login, because it exists for the case
+The login screen's "forgot the administrator's password" link (and `--support-recovery`) opens
+`SupportRecoveryView` before any login, because it exists for the case
 where nobody can sign in and there is no session to ask a permission of. What stands in for the
 guard is a **signed challenge**: the machine issues `HAMZA_RECOVERY|<machine>|<nonce>|<issued>`
 (`support_recovery_challenge`, `V45`) and accepts only a `BASE64(payload).BASE64(signature)`
@@ -432,6 +433,16 @@ WHERE redeemed_at IS NULL` is the whole race); and the **issue time**, so an unu
 verify here. `SupportRecoveryChallengeTest` pins it. The public key lives once, in
 `ReleaseSigningKey`; `TrialManager` reads it from there. Full contract, including what support
 runs to sign: `docs/users-and-recovery-plan.md` §6.
+
+**The challenge shown is the row read back, never Java's clock.** `redeem` rebuilds the signed text
+from `support_recovery_challenge`, whose `issued_at` is MySQL's `CURRENT_TIMESTAMP`; the window used
+to display `LocalDateTime.now()`, so a till one second away from the server - or an insert crossing a
+second - made every correctly signed response unanswerable. Support signs from a GUI tab in
+`AccountK-Product-Setup` (`SupportRecoverySignerPane`), which checks the response against
+`ReleaseSigningKey` before handing it over and will not sign until a customer is named and the caller
+is confirmed verified - the weak point of a signed challenge is the phone call, since anyone at the
+customer's login screen can issue a request. The script stays as a byte-identical fallback. The review,
+and what is still unrun: `docs/users-and-recovery-plan.md` §11.
 
 **Three contracts in `DialogApplication`/`OpenApplication` break a new screen silently**, and the
 user-management screen broke on all three before it was ever opened:
