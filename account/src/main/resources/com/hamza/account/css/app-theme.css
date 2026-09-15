@@ -2635,3 +2635,607 @@
 .rbac-root .split-pane-divider {
     -fx-padding: 0 1 0 1;
 }
+
+/* Saved invoice details: a document-like header, readable financial hierarchy and a
+   compact footer that can wrap instead of clipping on smaller windows. */
+.invoice-details {
+    -fx-background-color: -app-bg;
+}
+
+.invoice-details .invoice-details-header {
+    -fx-border-width: 0.091em 0.091em 0.273em 0.091em;
+}
+
+.invoice-details-title-row {
+    -fx-min-height: 3.636em;
+}
+
+.invoice-payment-badge {
+    -fx-padding: 0.273em 0.818em;
+    -fx-background-radius: 1.091em;
+    -fx-border-radius: 1.091em;
+    -fx-font-weight: bold;
+}
+
+.invoice-payment-badge.invoice-payment-cash {
+    -fx-background-color: -app-success-soft;
+    -fx-border-color: -app-success-border;
+    -fx-text-fill: -app-success;
+}
+
+.invoice-payment-badge.invoice-payment-deferred {
+    -fx-background-color: -app-warning-soft;
+    -fx-border-color: -app-warning-border;
+    -fx-text-fill: -app-warning;
+}
+
+.invoice-meta-field {
+    -fx-min-width: 10.909em;
+    -fx-pref-width: 12.727em;
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.818em;
+    -fx-padding: 0.636em 0.818em;
+}
+
+.invoice-meta-field-wide {
+    -fx-min-width: 16.364em;
+    -fx-pref-width: 18.182em;
+}
+
+.invoice-meta-caption,
+.invoice-kpi-caption {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 1em;
+    -fx-font-weight: bold;
+}
+
+.invoice-meta-value {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.182em;
+    -fx-font-weight: bold;
+}
+
+.invoice-kpi-card {
+    -fx-min-width: 13.636em;
+    -fx-pref-width: 16.364em;
+    -fx-background-color: -app-surface-2;
+    -fx-background-radius: 0.909em;
+    -fx-border-radius: 0.909em;
+    -fx-border-width: 0 0 0.273em 0;
+    -fx-padding: 0.727em 1em;
+}
+
+.invoice-kpi-value {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.636em;
+    -fx-font-weight: bold;
+}
+
+.invoice-kpi-primary { -fx-border-color: -app-primary; }
+.invoice-kpi-success { -fx-border-color: -app-success; }
+.invoice-kpi-danger { -fx-border-color: -app-danger; }
+.invoice-kpi-danger .invoice-kpi-value { -fx-text-fill: -app-danger; }
+
+.invoice-search-bar {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 0.909em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 0.909em;
+    -fx-border-width: 0.091em;
+    -fx-padding: 0.636em 0.818em;
+}
+
+.invoice-search-label {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.091em;
+    -fx-font-weight: bold;
+}
+
+.invoice-search-label .icon-graphic {
+    -fx-icon-color: -app-primary;
+}
+
+.invoice-search-field {
+    -fx-pref-width: 24.545em;
+}
+
+.invoice-search-result {
+    -fx-min-width: 8.182em;
+    -fx-text-fill: -app-text-muted;
+    -fx-font-weight: bold;
+}
+
+.invoice-details-table {
+    -fx-min-height: 18.182em;
+    -fx-background-radius: 1em;
+    -fx-border-radius: 1em;
+}
+
+.invoice-state-pane {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 1em;
+    -fx-padding: 1.455em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 12, 0.14, 0, 4);
+}
+
+.invoice-state-message {
+    -fx-text-fill: -app-text;
+    -fx-font-size: 1.091em;
+    -fx-font-weight: bold;
+}
+
+.invoice-details-summary {
+    -fx-hgap: 0.727em;
+    -fx-vgap: 0.727em;
+}
+
+.invoice-summary-item {
+    -fx-min-width: 9.091em;
+    -fx-background-color: -app-side-button;
+    -fx-background-radius: 0.636em;
+    -fx-border-color: -app-side-border;
+    -fx-border-radius: 0.636em;
+    -fx-border-width: 0.091em;
+    -fx-padding: 0.455em 0.727em;
+}
+
+/* These selectors are intentionally scoped and more specific than the shared label
+   styles and the optional glass theme. The footer is a dark document strip; inheriting
+   -app-text from a later stylesheet makes both captions and figures nearly disappear. */
+.invoice-details .invoice-details-summary .summary-label {
+    -fx-text-fill: -app-side-muted;
+    -fx-font-size: 1em;
+    -fx-font-weight: bold;
+}
+
+.invoice-details .invoice-details-summary .summary-value {
+    -fx-text-fill: white;
+    -fx-font-size: 1.364em;
+    -fx-font-weight: bold;
+}
+
+.invoice-details-sales .invoice-details-header { -fx-border-color: -app-primary; }
+.invoice-details-sales-return .invoice-details-header { -fx-border-color: -app-warning-border; }
+.invoice-details-purchase .invoice-details-header { -fx-border-color: -app-success-border; }
+.invoice-details-purchase-return .invoice-details-header { -fx-border-color: -app-danger-border; }
+
+/* ---------- Item card ----------
+   A data-dense inventory screen with one flexible surface: filters wrap, the table owns
+   the remaining height, and the two detail groups share a compact tabbed footer. */
+
+.item-card-root {
+    -fx-background-color: -app-bg;
+}
+
+.item-card-shell {
+    -fx-background-color: transparent;
+    -fx-padding: 1.091em;
+}
+
+.item-card-hero {
+    -fx-background-color: linear-gradient(to right, -app-primary-darker, -app-primary);
+    -fx-background-radius: 1.273em;
+    -fx-border-radius: 1.273em;
+    -fx-padding: 1.091em 1.364em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 14, 0.18, 0, 4);
+}
+
+.item-card-hero-icon {
+    -fx-min-width: 4.091em;
+    -fx-min-height: 4.091em;
+    -fx-max-width: 4.091em;
+    -fx-max-height: 4.091em;
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-radius: 2.045em;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-radius: 2.045em;
+}
+
+.item-card-hero .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.item-card-title {
+    -fx-font-size: 1.727em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.item-card-subtitle,
+.item-card-meta-caption {
+    -fx-text-fill: rgba(255, 255, 255, 0.82);
+}
+
+.item-card-identity {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-background-radius: 0.909em;
+    -fx-border-color: rgba(255, 255, 255, 0.24);
+    -fx-border-radius: 0.909em;
+    -fx-padding: 0.727em 1em;
+}
+
+.item-card-item-name {
+    -fx-font-size: 1.364em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.item-card-meta-value {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.item-card-filter-card {
+    -fx-padding: 0.818em 1em;
+}
+
+.item-card-filter-card .filter-chip .icon-graphic {
+    -fx-icon-color: -app-text-muted;
+}
+
+.item-card-filter-card .filter-chip:hover .icon-graphic {
+    -fx-icon-color: -app-primary;
+}
+
+.item-card-table-heading {
+    -fx-padding: 0.727em 0.273em 0 0.273em;
+}
+
+.item-card-status {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-primary-dark;
+}
+
+.item-card-table-hint {
+    -fx-text-fill: -app-text-muted;
+}
+
+.item-card-table {
+    -fx-min-height: 18.182em;
+    -fx-background-radius: 1em;
+    -fx-border-radius: 1em;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+}
+
+.item-card-loading {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 1em;
+}
+
+.item-card-loading-text {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-muted;
+}
+
+.item-card-summary {
+    -fx-padding: 0.727em 0 0 0;
+}
+
+.item-card-metric-card,
+.item-card-detail-card {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 0.818em;
+    -fx-border-radius: 0.818em;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-padding: 0.636em 0.909em;
+}
+
+.item-card-metric-card {
+    -fx-border-width: 0 0 0.273em 0;
+}
+
+.item-card-metric-opening { -fx-border-color: -app-primary; }
+.item-card-metric-net { -fx-border-color: -app-warning; }
+.item-card-metric-closing { -fx-border-color: -app-success; }
+
+.item-card-metric-caption,
+.item-card-detail-caption {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-weight: bold;
+}
+
+.item-card-metric-value {
+    -fx-font-size: 1.636em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.item-card-detail-value {
+    -fx-font-size: 1.182em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.item-card-profit-card {
+    -fx-border-color: -app-success-border;
+    -fx-background-color: -app-success-soft;
+}
+
+.item-card-summary-tabs > .tab-header-area {
+    -fx-padding: 0;
+}
+
+.item-card-summary-tabs > .tab-header-area > .headers-region > .tab {
+    -fx-background-radius: 0.727em 0.727em 0 0;
+    -fx-padding: 0.364em 1em;
+}
+
+.item-card-summary-tabs > .tab-content-area {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0 0.818em 0.818em 0.818em;
+    -fx-padding: 0.636em;
+}
+
+.item-card-root .table-row-cell:depleted > .table-cell {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+    -fx-background-color: -app-warning-soft;
+}
+
+.items-footer {
+    -fx-padding: 0.636em 0.818em;
+}
+
+/* ---------- Customer / supplier account statement ---------- */
+
+.party-statement-root {
+    -fx-background-color: -app-bg;
+}
+
+.party-statement-shell {
+    -fx-background-color: transparent;
+    -fx-padding: 1.091em;
+}
+
+.party-statement-hero {
+    -fx-background-color: linear-gradient(to right, -app-primary-darker, -app-primary);
+    -fx-background-radius: 1.273em;
+    -fx-border-radius: 1.273em;
+    -fx-padding: 1.091em 1.364em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 14, 0.18, 0, 4);
+}
+
+.party-statement-icon-box {
+    -fx-min-width: 4.091em;
+    -fx-min-height: 4.091em;
+    -fx-max-width: 4.091em;
+    -fx-max-height: 4.091em;
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-radius: 2.045em;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-radius: 2.045em;
+}
+
+.party-statement-hero .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.party-statement-party-type {
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-radius: 1em;
+    -fx-padding: 0.182em 0.727em;
+    -fx-text-fill: rgba(255, 255, 255, 0.88);
+    -fx-font-weight: bold;
+}
+
+.party-statement-hero .party-statement-title {
+    -fx-font-size: 1.727em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 2, 0.15, 0, 1);
+}
+
+.party-statement-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.82);
+}
+
+.party-statement-actions {
+    -fx-padding: 0.273em 0 0 0;
+}
+
+.party-statement-actions .check-box {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 0.455em 0.727em;
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-background-radius: 0.636em;
+}
+
+.party-statement-primary-action {
+    -fx-font-weight: bold;
+}
+
+.party-statement-metrics {
+    -fx-padding: 0.091em 0;
+}
+
+.party-statement-metric {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 0.818em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 0.818em;
+    -fx-border-width: 0 0 0.273em 0;
+    -fx-padding: 0.636em 0.909em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 8, 0.10, 0, 2);
+}
+
+.party-statement-metric-opening { -fx-border-color: -app-primary; }
+.party-statement-metric-debit { -fx-border-color: -app-danger; }
+.party-statement-metric-credit { -fx-border-color: -app-success; }
+.party-statement-metric-net { -fx-border-color: -app-warning; }
+.party-statement-metric-closing { -fx-border-color: -app-primary-dark; }
+.party-statement-metric-limit { -fx-border-color: -app-warning; }
+
+.party-statement-metric-title {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-weight: bold;
+}
+
+.party-statement-metric .stat-value {
+    -fx-font-size: 1.455em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.party-statement-metric .stat-value:negative-amount {
+    -fx-text-fill: -app-danger;
+}
+
+.party-statement-filter-card {
+    -fx-padding: 0.818em 1em;
+}
+
+.party-statement-filter-toolbar {
+    -fx-padding: 0;
+}
+
+.party-statement-filter-toggle:selected {
+    -fx-background-color: -app-primary-soft;
+    -fx-border-color: -app-primary;
+    -fx-text-fill: -app-primary-dark;
+    -fx-font-weight: bold;
+}
+
+.party-statement-filter-panel {
+    -fx-border-color: -app-border transparent transparent transparent;
+    -fx-border-width: 0.091em 0 0 0;
+    -fx-padding: 0.727em 0 0 0;
+}
+
+.party-balances-filter-toggle:selected {
+    -fx-background-color: -app-primary-soft;
+    -fx-border-color: -app-primary;
+    -fx-text-fill: -app-primary-dark;
+    -fx-font-weight: bold;
+}
+
+.party-balances-filter-panel {
+    -fx-border-color: -app-border transparent transparent transparent;
+    -fx-border-width: 0.091em 0 0 0;
+    -fx-padding: 0.727em 0 0 0;
+}
+
+.party-statement-section-title {
+    -fx-font-size: 1.182em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.party-statement-section-hint {
+    -fx-text-fill: -app-text-muted;
+}
+
+.party-statement-period-row,
+.party-statement-filter-rows {
+    -fx-padding: 0.182em 0 0 0;
+}
+
+.party-statement-period-button {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 1em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 1em;
+    -fx-padding: 0.364em 0.818em;
+    -fx-text-fill: -app-text;
+}
+
+.party-statement-period-button:hover,
+.party-statement-period-button:selected {
+    -fx-background-color: -app-primary-soft;
+    -fx-border-color: -app-primary;
+    -fx-text-fill: -app-primary-dark;
+    -fx-font-weight: bold;
+}
+
+.party-statement-table-card {
+    -fx-min-height: 18.182em;
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 1em;
+    -fx-border-width: 0.091em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 10, 0.10, 0, 2);
+}
+
+.party-statement-table {
+    -fx-background-color: transparent;
+    -fx-background-radius: 1em;
+    -fx-border-color: transparent;
+    -fx-border-radius: 1em;
+}
+
+.party-statement-loading-overlay {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1em;
+    -fx-opacity: 0.94;
+}
+
+.party-statement-loading-text {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-muted;
+}
+
+.party-statement-root .tree-table-row-cell:document-row {
+    -fx-background-color: -app-table-row-alt;
+}
+
+.party-statement-root .tree-table-row-cell:document-row:hover {
+    -fx-background-color: -app-primary-soft;
+}
+
+.party-statement-root .tree-table-row-cell:document-detail-row > .tree-table-cell {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text-muted;
+    -fx-font-style: italic;
+}
+
+.party-statement-debit-cell {
+    -fx-alignment: CENTER-RIGHT;
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.party-statement-credit-cell {
+    -fx-alignment: CENTER-RIGHT;
+    -fx-text-fill: -app-success;
+    -fx-font-weight: bold;
+}
+
+.party-statement-balance-cell {
+    -fx-alignment: CENTER-RIGHT;
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.party-statement-footer {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 0.818em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 0.818em;
+    -fx-padding: 0.636em 0.818em;
+}
+
+.party-statement-status,
+.party-statement-page-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-primary-dark;
+}
+
+.party-statement-page-label {
+    -fx-min-width: 5.455em;
+    -fx-alignment: CENTER;
+}
+
+.party-statement-narrowed {
+    -fx-background-color: -app-warning-soft;
+    -fx-background-radius: 0.636em;
+    -fx-padding: 0.273em 0.636em;
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}

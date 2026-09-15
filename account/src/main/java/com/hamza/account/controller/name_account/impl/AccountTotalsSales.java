@@ -5,9 +5,10 @@ import com.hamza.account.controller.name_account.AccountDetailsInterface;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.SalesService;
-import javafx.scene.control.TreeItem;
 
-import static com.hamza.account.controller.name_account.impl.AccountTotalsPurchase.addPurchaseItemsToTree;
+import java.util.List;
+
+import static com.hamza.account.controller.name_account.impl.AccountTotalsPurchase.purchaseItems;
 
 /**
  * The customer side: a statement row that is a document is a sales invoice or a sales
@@ -24,14 +25,12 @@ public class AccountTotalsSales implements AccountDetailsInterface {
     private final SalesReService salesReService = ServiceRegistry.get(SalesReService.class);
 
     @Override
-    public void addTreeItemTotals(AccountCard row, TreeItem<AccountCard> treeItem) throws Exception {
+    public List<AccountCard> documentLines(AccountCard row) throws Exception {
         // The kind, not a translated label. An invoice row's id is its invoice number.
-        switch (row.getKind()) {
-            case INVOICE -> addPurchaseItemsToTree(salesService.fetchByInvoiceNumber(row.getId()), treeItem);
-            case RETURN -> addPurchaseItemsToTree(salesReService.fetchByInvoiceNumber(row.getId()), treeItem);
-            default -> {
-                // An opening balance and a payment have no lines; the caller does not ask.
-            }
-        }
+        return switch (row.getKind()) {
+            case INVOICE -> purchaseItems(salesService.fetchByInvoiceNumber(row.getId()));
+            case RETURN -> purchaseItems(salesReService.fetchByInvoiceNumber(row.getId()));
+            default -> List.of();
+        };
     }
 }

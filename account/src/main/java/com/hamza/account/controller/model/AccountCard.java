@@ -31,6 +31,7 @@ public class AccountCard {
     private double details;
     private String notes;
     private String information;
+    private String userName;
 
     /** What this row is. Null on the synthetic total row and on a lazy-load placeholder. */
     private PartyMovementKind kind;

@@ -7,7 +7,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.service.PurchaseReService;
 import com.hamza.account.service.PurchaseService;
 import com.hamza.controlsfx.language.LanguageManager;
-import javafx.scene.control.TreeItem;
+import com.hamza.controlsfx.table.Columns;
 
 import java.util.List;
 
@@ -22,16 +22,15 @@ public class AccountTotalsPurchase implements AccountDetailsInterface {
     private final PurchaseService purchaseService = ServiceRegistry.get(PurchaseService.class);
     private final PurchaseReService purchaseReService = ServiceRegistry.get(PurchaseReService.class);
 
-    public static <T extends BasePurchasesAndSales> void addPurchaseItemsToTree(
-            List<T> lines, TreeItem<AccountCard> treeItem) {
+    public static <T extends BasePurchasesAndSales> List<AccountCard> purchaseItems(List<T> lines) {
         String count = LanguageManager.getInstance().getString("party.statement.line.count");
-        lines.forEach(line -> {
+        return lines.stream().map(line -> {
             var card = new AccountCard();
-            card.setDetails(line.getTotal());
             card.setNotes(count + " ( " + formatQuantity(line.getQuantity()) + " ) "
-                    + line.getItems().getNameItem() + " - " + line.getTotal());
-            treeItem.getChildren().add(new TreeItem<>(card));
-        });
+                    + line.getItems().getNameItem() + " — "
+                    + Columns.money(java.math.BigDecimal.valueOf(line.getTotal())));
+            return card;
+        }).toList();
     }
 
     private static String formatQuantity(double quantity) {
@@ -42,13 +41,11 @@ public class AccountTotalsPurchase implements AccountDetailsInterface {
     }
 
     @Override
-    public void addTreeItemTotals(AccountCard row, TreeItem<AccountCard> treeItem) throws Exception {
-        switch (row.getKind()) {
-            case INVOICE -> addPurchaseItemsToTree(purchaseService.fetchByInvoiceNumber(row.getId()), treeItem);
-            case RETURN -> addPurchaseItemsToTree(purchaseReService.fetchByInvoiceNumber(row.getId()), treeItem);
-            default -> {
-                // Nothing underneath an opening balance or a payment.
-            }
-        }
+    public List<AccountCard> documentLines(AccountCard row) throws Exception {
+        return switch (row.getKind()) {
+            case INVOICE -> purchaseItems(purchaseService.fetchByInvoiceNumber(row.getId()));
+            case RETURN -> purchaseItems(purchaseReService.fetchByInvoiceNumber(row.getId()));
+            default -> List.of();
+        };
     }
 }

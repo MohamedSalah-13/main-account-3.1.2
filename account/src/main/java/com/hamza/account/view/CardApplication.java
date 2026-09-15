@@ -1,6 +1,5 @@
 package com.hamza.account.view;
 
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.items.CardController;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
@@ -24,9 +23,10 @@ public class CardApplication extends Application {
         Scene scene = new SceneAll(new OpenFxmlApplication(cardController).getPane());
         stage.setScene(scene);
         stage.setTitle(LanguageManager.getInstance().getString("item.card.title"));
-        stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().itemWhite));
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.setResizable(true);
+        stage.setMinWidth(900);
+        stage.setMinHeight(650);
         stage.show();
 //        StageDimensions.stageDimensions(getClass(), stage);
     }

@@ -4,141 +4,257 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
 
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.CardController">
+<StackPane fx:id="root" styleClass="app-root,item-card-root"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.items.CardController">
     <children>
-        <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-            <bottom>
-
-                <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+        <BorderPane styleClass="item-card-shell">
+            <top>
+                <VBox spacing="12.0" BorderPane.alignment="CENTER">
                     <children>
-                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
-                            <columnConstraints>
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                            </columnConstraints>
-
+                        <FlowPane alignment="CENTER_LEFT" hgap="16.0" prefWrapLength="900.0" vgap="12.0"
+                                  styleClass="item-card-hero">
                             <children>
-                                <Label fx:id="labelPurchase" styleClass="summary-label" text="Purchase" />
-                                <Text fx:id="textPurchase" styleClass="summary-value" text="0.0" GridPane.columnIndex="1" />
-
-                                <Label fx:id="labelSales" styleClass="summary-label" text="Sales" GridPane.columnIndex="2" />
-                                <Text fx:id="textSales" styleClass="summary-value" text="0.0" GridPane.columnIndex="3" />
-
-                                <Label fx:id="labelRePurchase" styleClass="summary-label" text="Return Purchase" GridPane.columnIndex="4" />
-                                <Text fx:id="textRePurchase" styleClass="summary-value" text="0.0" GridPane.columnIndex="5" />
-
-                                <Label fx:id="labelReSales" styleClass="summary-label" text="Return Sales" GridPane.columnIndex="6" />
-                                <Text fx:id="textReSales" styleClass="summary-value" text="0.0" GridPane.columnIndex="7" />
-
-                                <Label styleClass="summary-label" text="%item.card.total.quantity" GridPane.columnIndex="8" />
-                                <Text fx:id="textCountTotals" styleClass="summary-value" text="0.0" GridPane.columnIndex="9" />
-
-                                <Label styleClass="summary-label" text="%item.card.total.purchase.cost" GridPane.rowIndex="1" />
-                                <Text fx:id="textCostPurchase" styleClass="summary-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-
-                                <Label styleClass="summary-label" text="%item.card.total.sales.cost" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                <Text fx:id="textCostSales" styleClass="summary-value" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-
-                                <Label styleClass="summary-label" text="%item.card.total.purchase.return" GridPane.columnIndex="4" GridPane.rowIndex="1" />
-                                <Text fx:id="textCostPurchaseRe" styleClass="summary-value" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="1" />
-
-                                <Label styleClass="summary-label" text="%item.card.total.sales.return" GridPane.columnIndex="6" GridPane.rowIndex="1" />
-                                <Text fx:id="textCostSalesRe" styleClass="summary-value" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1" />
-
-                                <Label styleClass="summary-label" text="%item.card.profit" GridPane.columnIndex="8" GridPane.rowIndex="1" />
-                                <Text fx:id="textCostTotals" styleClass="summary-value" text="0.0" GridPane.columnIndex="9" GridPane.rowIndex="1" />
-
-                                <Label styleClass="summary-label" text="%item.card.opening.balance" GridPane.rowIndex="2" />
-                                <Text fx:id="textOpeningBalance" styleClass="summary-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-
-                                <Label styleClass="summary-label" text="%item.card.closing.balance" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                <Text fx:id="textClosingBalance" styleClass="summary-value" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                            </children>
-                            <rowConstraints>
-                                <RowConstraints />
-                                <RowConstraints />
-                                <RowConstraints />
-                                <RowConstraints />
-                            </rowConstraints>
-                        </GridPane>
-                    </children>
-                </HBox>
-            </bottom>
-            <center>
-                <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-                    <content>
-                        <VBox fx:id="box" spacing="5.0">
-                            <children>
-                                <VBox styleClass="app-card">
+                                <HBox alignment="CENTER_LEFT" minWidth="370.0" spacing="12.0">
                                     <children>
-                                        <GridPane hgap="5.0" minHeight="-Infinity" minWidth="-Infinity" vgap="5.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints maxWidth="-Infinity" />
-                                                <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" />
-                                                <ColumnConstraints maxWidth="-Infinity" />
-                                                <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" />
-                                            </columnConstraints>
-
+                                        <StackPane fx:id="headerIconHost" styleClass="item-card-hero-icon" />
+                                        <VBox spacing="3.0">
                                             <children>
-                                                <Label fx:id="labelName" styleClass="form-label" text="Name" />
-                                                <TextField fx:id="textName" editable="false" GridPane.columnIndex="1" />
-
-                                                <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="2" />
-                                                <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
-
-                                                <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="1" />
-                                                <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-
-                                                <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-
-                                                <Label styleClass="form-label" text="%item.card.base.unit" GridPane.rowIndex="2" />
-                                                <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-
-                                                <Label styleClass="form-label" text="%invoice.stock" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                                <HBox alignment="CENTER_LEFT" spacing="8.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
-                                                    <children>
-                                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="Search" />
-                                                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="Print" />
-                                                    </children>
-                                                </HBox>
+                                                <Label styleClass="item-card-title" text="%item.card.title" />
+                                                <Label maxWidth="620.0" styleClass="item-card-subtitle"
+                                                       text="%item.card.subtitle" wrapText="true" />
                                             </children>
-                                            <rowConstraints>
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                            </rowConstraints>
-                                        </GridPane>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <VBox minWidth="260.0" spacing="5.0" styleClass="item-card-identity">
+                                    <children>
+                                        <Label fx:id="labelItemName" styleClass="item-card-item-name" />
+                                        <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                            <children>
+                                                <Label styleClass="item-card-meta-caption" text="%item.card.base.unit" />
+                                                <Label fx:id="labelBaseUnit" styleClass="item-card-meta-value" />
+                                            </children>
+                                        </HBox>
                                     </children>
                                 </VBox>
+                            </children>
+                        </FlowPane>
 
-                                <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                        <VBox spacing="10.0" styleClass="app-card,item-card-filter-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                    <children>
+                                        <Label styleClass="app-section-title" text="%item.card.filter.title" />
+                                        <Button fx:id="btnToday" mnemonicParsing="false" styleClass="filter-chip"
+                                                text="%item.card.period.today" />
+                                        <Button fx:id="btnThisMonth" mnemonicParsing="false" styleClass="filter-chip"
+                                                text="%item.card.period.month" />
+                                        <Button fx:id="btnAllHistory" mnemonicParsing="false" styleClass="filter-chip"
+                                                text="%item.card.period.all" />
+                                    </children>
+                                </HBox>
+                                <FlowPane alignment="CENTER_LEFT" hgap="12.0" prefWrapLength="930.0" vgap="10.0">
+                                    <children>
+                                        <VBox minWidth="165.0" prefWidth="190.0" spacing="4.0">
+                                            <children>
+                                                <Label styleClass="form-label" text="%from" />
+                                                <DatePicker fx:id="dateFrom" editable="false"
+                                                            maxWidth="1.7976931348623157E308" />
+                                            </children>
+                                        </VBox>
+                                        <VBox minWidth="165.0" prefWidth="190.0" spacing="4.0">
+                                            <children>
+                                                <Label styleClass="form-label" text="%to" />
+                                                <DatePicker fx:id="dateTo" editable="false"
+                                                            maxWidth="1.7976931348623157E308" />
+                                            </children>
+                                        </VBox>
+                                        <VBox minWidth="180.0" prefWidth="215.0" spacing="4.0">
+                                            <children>
+                                                <Label styleClass="form-label" text="%invoice.stock" />
+                                                <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" />
+                                            </children>
+                                        </VBox>
+                                        <VBox minWidth="180.0" prefWidth="215.0" spacing="4.0">
+                                            <children>
+                                                <Label styleClass="form-label" text="%item.card.invoice.type" />
+                                                <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" />
+                                            </children>
+                                        </VBox>
+                                        <HBox alignment="BOTTOM_LEFT" spacing="8.0">
+                                            <children>
+                                                <Button fx:id="btnSearch" defaultButton="true" mnemonicParsing="false"
+                                                        styleClass="primary-button" text="%search" />
+                                                <Button fx:id="btnPrint" mnemonicParsing="false"
+                                                        styleClass="neutral-button" text="%print" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </FlowPane>
                             </children>
                         </VBox>
-                    </content>
-                </ScrollPane>
+                    </children>
+                </VBox>
+            </top>
+
+            <center>
+                <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="item-card-table-heading">
+                            <children>
+                                <Label fx:id="labelStatus" styleClass="item-card-status"
+                                       text="%item.card.status.loading" />
+                                <Label styleClass="item-card-table-hint" text="%item.card.table.hint" />
+                            </children>
+                        </HBox>
+                        <StackPane fx:id="tableHost" VBox.vgrow="ALWAYS">
+                            <children>
+                                <TableView fx:id="tableView" styleClass="app-table,item-card-table" />
+                                <StackPane fx:id="loadingPane" managed="false" styleClass="item-card-loading"
+                                           visible="false">
+                                    <children>
+                                        <VBox alignment="CENTER" spacing="8.0">
+                                            <children>
+                                                <ProgressIndicator fx:id="progress" maxHeight="34.0" maxWidth="34.0"
+                                                                   visible="false" />
+                                                <Label styleClass="item-card-loading-text"
+                                                       text="%item.card.status.loading" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </StackPane>
+                            </children>
+                        </StackPane>
+                    </children>
+                </VBox>
             </center>
+
+            <bottom>
+                <VBox spacing="8.0" styleClass="item-card-summary" BorderPane.alignment="CENTER">
+                    <children>
+                        <FlowPane alignment="CENTER_LEFT" hgap="10.0" prefWrapLength="930.0" vgap="8.0">
+                            <children>
+                                <VBox minWidth="150.0" spacing="3.0"
+                                      styleClass="item-card-metric-card,item-card-metric-opening">
+                                    <children>
+                                        <Label styleClass="item-card-metric-caption"
+                                               text="%item.card.opening.balance" />
+                                        <Label fx:id="textOpeningBalance" styleClass="item-card-metric-value" text="0" />
+                                    </children>
+                                </VBox>
+                                <VBox minWidth="150.0" spacing="3.0"
+                                      styleClass="item-card-metric-card,item-card-metric-net">
+                                    <children>
+                                        <Label styleClass="item-card-metric-caption"
+                                               text="%item.card.net.movement" />
+                                        <Label fx:id="textCountTotals" styleClass="item-card-metric-value" text="0" />
+                                    </children>
+                                </VBox>
+                                <VBox minWidth="150.0" spacing="3.0"
+                                      styleClass="item-card-metric-card,item-card-metric-closing">
+                                    <children>
+                                        <Label styleClass="item-card-metric-caption"
+                                               text="%item.card.closing.balance" />
+                                        <Label fx:id="textClosingBalance" styleClass="item-card-metric-value" text="0" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </FlowPane>
+
+                        <TabPane tabClosingPolicy="UNAVAILABLE" styleClass="item-card-summary-tabs">
+                            <tabs>
+                                <Tab text="%item.card.summary.quantities">
+                                    <content>
+                                        <FlowPane alignment="CENTER_LEFT" hgap="8.0" prefWrapLength="930.0" vgap="8.0">
+                                            <children>
+                                                <VBox minWidth="135.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%pur" />
+                                                        <Label fx:id="textPurchase" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="135.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%sales" />
+                                                        <Label fx:id="textSales" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="155.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%RePur" />
+                                                        <Label fx:id="textRePurchase" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="155.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%ReSal" />
+                                                        <Label fx:id="textReSales" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </FlowPane>
+                                    </content>
+                                </Tab>
+                                <Tab text="%item.card.summary.values">
+                                    <content>
+                                        <FlowPane alignment="CENTER_LEFT" hgap="8.0" prefWrapLength="930.0" vgap="8.0">
+                                            <children>
+                                                <VBox minWidth="150.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption"
+                                                               text="%item.card.total.purchase.cost" />
+                                                        <Label fx:id="textCostPurchase" styleClass="item-card-detail-value" text="0.00" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="150.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption"
+                                                               text="%item.card.total.sales.cost" />
+                                                        <Label fx:id="textCostSales" styleClass="item-card-detail-value" text="0.00" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="175.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption"
+                                                               text="%item.card.total.purchase.return" />
+                                                        <Label fx:id="textCostPurchaseRe" styleClass="item-card-detail-value" text="0.00" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="175.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption"
+                                                               text="%item.card.total.sales.return" />
+                                                        <Label fx:id="textCostSalesRe" styleClass="item-card-detail-value" text="0.00" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="145.0" spacing="2.0"
+                                                      styleClass="item-card-detail-card,item-card-profit-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption"
+                                                               text="%item.card.profit" />
+                                                        <Label fx:id="textCostTotals" styleClass="item-card-detail-value" text="0.00" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </FlowPane>
+                                    </content>
+                                </Tab>
+                            </tabs>
+                        </TabPane>
+                    </children>
+                </VBox>
+            </bottom>
         </BorderPane>
     </children>
-</AnchorPane>
+</StackPane>

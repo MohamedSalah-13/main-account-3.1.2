@@ -8,6 +8,8 @@ import com.hamza.account.features.party.statement.PartyStatementOptions;
 import com.hamza.account.features.party.statement.PartyStatementTreasuryOption;
 import com.hamza.account.features.party.statement.PartyStatementUserOption;
 import com.hamza.account.features.party.statement.StatementPeriod;
+import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
@@ -18,16 +20,21 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.prefs.Preferences;
@@ -70,6 +77,12 @@ public final class PartyStatementFilterBar extends VBox {
     private final TextField amountTo = new TextField();
     private final TextField search = new TextField();
     private final CheckBox deferredOnly = new CheckBox(text("party.statement.filter.deferred"));
+    private final ToggleGroup periodGroup = new ToggleGroup();
+    private final Map<StatementPeriod, ToggleButton> periodButtons =
+            new EnumMap<>(StatementPeriod.class);
+    private final ToggleButton filtersToggle = new ToggleButton(
+            text("invoice.search.filters"), AppIcon.FILTER.graphic());
+    private final VBox filtersPanel = new VBox(8);
 
     /** Replaced when the period is ALL: the party's first movement, which only the database knows. */
     private LocalDate earliestMovement = LocalDate.now();
@@ -82,8 +95,14 @@ public final class PartyStatementFilterBar extends VBox {
         this.kind = kind;
         this.partyId = partyId;
         setId("party-statement-filters");
-        getStyleClass().add("app-card");
-        getChildren().addAll(periodRow(), filterRow());
+        getStyleClass().addAll("app-card", "party-statement-filter-card");
+        filtersToggle.setId("statement-filters-toggle");
+        filtersToggle.getStyleClass().addAll("app-neutral-button", "party-statement-filter-toggle");
+        filtersToggle.setOnAction(event -> setPanelVisible(filtersToggle.isSelected()));
+        filtersPanel.getStyleClass().add("party-statement-filter-panel");
+        filtersPanel.getChildren().addAll(periodRow(), filterRows());
+        getChildren().addAll(filterToolbar(), filtersPanel);
+        setPanelVisible(false);
     }
 
     /** Called whenever the user asks for a different set of rows. */
@@ -117,9 +136,6 @@ public final class PartyStatementFilterBar extends VBox {
     public PartyStatementFilter filter(int page, int pageSize) {
         LocalDate from = dateFrom.getValue() == null ? earliestMovement : dateFrom.getValue();
         LocalDate to = dateTo.getValue() == null ? LocalDate.now() : dateTo.getValue();
-        if (from.isAfter(to)) {
-            from = to;
-        }
         Set<PartyMovementKind> kinds = comboKind.getValue() == null
                 ? Set.of() : Set.of(comboKind.getValue());
         return new PartyStatementFilter(kind, partyId, from, to, kinds,
@@ -155,6 +171,10 @@ public final class PartyStatementFilterBar extends VBox {
         } finally {
             loading = false;
         }
+        ToggleButton button = periodButtons.get(period);
+        if (button != null) {
+            button.setSelected(true);
+        }
         preferences.put(REMEMBERED_PERIOD, period.name());
         fire();
     }
@@ -171,11 +191,14 @@ public final class PartyStatementFilterBar extends VBox {
     private FlowPane periodRow() {
         FlowPane row = new FlowPane(8, 8);
         row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("party-statement-period-row");
         for (StatementPeriod period : StatementPeriod.values()) {
-            Button button = new Button(text(period.messageKey()));
-            button.getStyleClass().add("app-neutral-button");
+            ToggleButton button = new ToggleButton(text(period.messageKey()));
+            button.setToggleGroup(periodGroup);
+            button.getStyleClass().add("party-statement-period-button");
             button.setId("period-" + period.name().toLowerCase(java.util.Locale.ROOT));
             button.setOnAction(event -> applyPeriod(period));
+            periodButtons.put(period, button);
             row.getChildren().add(button);
         }
 
@@ -183,15 +206,14 @@ public final class PartyStatementFilterBar extends VBox {
         DateSetting.dateAction(dateTo);
         dateFrom.setId("statement-date-from");
         dateTo.setId("statement-date-to");
-        dateFrom.setOnAction(event -> fire());
-        dateTo.setOnAction(event -> fire());
+        dateFrom.setOnAction(event -> customPeriod());
+        dateTo.setOnAction(event -> customPeriod());
 
-        row.getChildren().addAll(new Label(text("from")), dateFrom,
-                new Label(text("to")), dateTo);
+        row.getChildren().addAll(caption("from"), dateFrom, caption("to"), dateTo);
         return row;
     }
 
-    private FlowPane filterRow() {
+    private VBox filterRows() {
         comboKind.getItems().add(null);
         comboKind.getItems().addAll(PartyMovementKind.values());
         comboKind.setConverter(converter(value ->
@@ -213,6 +235,12 @@ public final class PartyStatementFilterBar extends VBox {
         amountTo.setPromptText(text("party.statement.filter.amount.to"));
         search.setPromptText(text("party.statement.filter.text"));
         search.setId("statement-search");
+
+        comboKind.setPrefWidth(150);
+        comboTreasury.setPrefWidth(170);
+        comboUser.setPrefWidth(170);
+        amountFrom.setPrefWidth(125);
+        amountTo.setPrefWidth(125);
 
         comboKind.setOnAction(event -> fire());
         comboTreasury.setOnAction(event -> fire());
@@ -248,20 +276,84 @@ public final class PartyStatementFilterBar extends VBox {
         // A FlowPane, not an HBox: in a dialog narrower than the main window an HBox squeezes its
         // labels until they read "نوع الحر..." and "المستخ...", which is a filter bar nobody can
         // use. Wrapping keeps every caption whole at any width.
-        FlowPane row = new FlowPane(8, 8,
-                new Label(text("party.statement.filter.kind")), comboKind,
-                new Label(text("party.statement.filter.treasury")), comboTreasury,
-                new Label(text("party.statement.filter.user")), comboUser,
-                amountFrom, amountTo, search, deferredOnly, apply, clear);
-        row.setAlignment(Pos.CENTER_LEFT);
+        FlowPane first = new FlowPane(8, 8,
+                caption("party.statement.filter.kind"), comboKind,
+                caption("party.statement.filter.treasury"), comboTreasury,
+                caption("party.statement.filter.user"), comboUser,
+                deferredOnly);
+        first.setAlignment(Pos.CENTER_LEFT);
+
+        FlowPane second = new FlowPane(8, 8,
+                amountFrom, amountTo, search, apply, clear);
+        second.setAlignment(Pos.CENTER_LEFT);
         search.setPrefWidth(240);
-        return row;
+        VBox rows = new VBox(8, first, second);
+        rows.getStyleClass().add("party-statement-filter-rows");
+        return rows;
     }
 
     private void fire() {
-        if (!loading) {
-            onSearch.accept(filter(0, PartyStatementFilter.DEFAULT_PAGE_SIZE));
+        if (loading) {
+            return;
         }
+        String validationKey = validationKey();
+        if (validationKey != null) {
+            AllAlerts.handleError(text("party.statement.title"),
+                    new UserValidationException(text(validationKey)));
+            return;
+        }
+        onSearch.accept(filter(0, PartyStatementFilter.DEFAULT_PAGE_SIZE));
+    }
+
+    private String validationKey() {
+        LocalDate from = dateFrom.getValue();
+        LocalDate to = dateTo.getValue();
+        if (from != null && to != null && from.isAfter(to)) {
+            return "party.statement.validation.period.reversed";
+        }
+        BigDecimal minimum = amount(amountFrom);
+        BigDecimal maximum = amount(amountTo);
+        if (minimum != null && maximum != null && minimum.compareTo(maximum) > 0) {
+            return "party.statement.validation.amount.reversed";
+        }
+        return null;
+    }
+
+    private void customPeriod() {
+        periodGroup.selectToggle(null);
+        fire();
+    }
+
+    private VBox titleBlock() {
+        Label title = new Label(text("party.statement.filter.title"));
+        title.getStyleClass().add("party-statement-section-title");
+        Label hint = new Label(text("party.statement.filter.hint"));
+        hint.getStyleClass().add("party-statement-section-hint");
+        hint.setWrapText(true);
+        return new VBox(2, title, hint);
+    }
+
+    private HBox filterToolbar() {
+        VBox heading = titleBlock();
+        HBox.setHgrow(heading, Priority.ALWAYS);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox toolbar = new HBox(8, heading, spacer, filtersToggle);
+        toolbar.setAlignment(Pos.CENTER_LEFT);
+        toolbar.getStyleClass().add("party-statement-filter-toolbar");
+        return toolbar;
+    }
+
+    private void setPanelVisible(boolean visible) {
+        filtersPanel.setVisible(visible);
+        filtersPanel.setManaged(visible);
+        filtersToggle.setSelected(visible);
+    }
+
+    private static Label caption(String key) {
+        Label label = new Label(text(key));
+        label.getStyleClass().add("form-label");
+        return label;
     }
 
     private static Integer idOrNull(int id) {

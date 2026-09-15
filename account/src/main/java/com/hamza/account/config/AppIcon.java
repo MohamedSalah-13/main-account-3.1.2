@@ -71,6 +71,10 @@ public enum AppIcon {
     TREE(Feather.LIST),
     /** A code to be scanned. */
     BARCODE(Feather.HASH),
+    /** Choosing a day or a date range. */
+    CALENDAR(Feather.CALENDAR),
+    /** Returning to the complete chronological record. */
+    HISTORY(Feather.CLOCK),
     /** The current header choice becomes the local default for future invoices. */
     PIN(Feather.MAP_PIN),
     /** Selecting rows in bulk. */

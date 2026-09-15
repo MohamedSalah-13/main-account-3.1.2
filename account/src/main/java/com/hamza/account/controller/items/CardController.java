@@ -1,12 +1,13 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.DefaultStock;
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StocksChanged;
+import com.hamza.account.features.itemcard.ItemCardFilter;
 import com.hamza.account.features.itemcard.ItemCardRunningBalance;
 import com.hamza.account.features.itemcard.ItemCardTotals;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -15,119 +16,120 @@ import com.hamza.account.interfaces.impl_dataInterface.CustomDataReturn;
 import com.hamza.account.interfaces.impl_dataInterface.SuppliersData;
 import com.hamza.account.interfaces.impl_dataInterface.SuppliersDataReturn;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.dao.CardItemDao;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.*;
+import com.hamza.account.model.domain.CardItems;
+import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.Stock;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.TablePdfLayout;
-import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.service.CardItemService;
 import com.hamza.account.service.StockService;
+import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.api.ButtonColumnI;
-import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Columns;
-import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
+import javafx.concurrent.Task;
+import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
-import javafx.scene.text.Text;
+import javafx.scene.layout.StackPane;
+import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.text.DecimalFormat;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.io.File;
-import java.math.BigDecimal;
+import java.util.Set;
 
-import static com.hamza.account.type.TypeList.processTypeList;
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 import static com.hamza.controlsfx.table.Table_Setting.column_number;
 
 /**
- * One item's stock card: every movement of it in a period, what the period moved, and
- * what the item's balance was before and after it.
- * <p>
- * Three things about the numbers on this screen are worth knowing before changing it:
- * <ul>
- *   <li><b>Quantities are in the item's base unit.</b> A line is scaled by the factor
- *       the line itself stored, which is what {@code quantity_items_table} counts with.
- *       It used to be scaled by {@code units.value_d} - one factor for the whole
- *       database - so an item sold by the carton was counted as though every carton in
- *       the shop held the same number.</li>
- *   <li><b>The opening and closing balances come from the database, not from the
- *       rows.</b> A posted stock count moves the balance without producing a card
- *       line, so a card that derived its closing balance by adding up its own rows
- *       would disagree with every other screen after the first inventory.</li>
- *   <li><b>The period is a query, not a filter.</b> The rows are read for the dates
- *       asked for; the screen no longer loads the item's whole history to show a month
- *       of it.</li>
- * </ul>
+ * One item's stock card: a responsive, non-blocking view of every movement in a period.
+ *
+ * <p>Quantities are always shown in the item's base unit. Opening and closing balances are
+ * read from the database because a posted stock count can change a balance without producing
+ * a document line. The rows, totals and printed extract therefore all describe the same
+ * requested period rather than filtering a history already loaded in memory.</p>
  */
 @Log4j2
 @FxmlPath(pathFile = "items/cardItem-view.fxml")
-public class CardController extends LoadData implements Initializable, AppSettingInterface {
+public class CardController extends LoadData implements AppSettingInterface {
 
-    /** Enough decimals for a fractional quantity, without printing 12.000000000002. */
-    private static final DecimalFormat NUMBER = new DecimalFormat("#,##0.##");
+    private static final String ACTIONS_COLUMN = "item-card-actions";
+    private static final String ROW_NUMBER_COLUMN = "item-card-row";
+    private static final Set<String> SCREEN_ONLY_COLUMNS = Set.of(ACTIONS_COLUMN, ROW_NUMBER_COLUMN);
+    private static final Set<String> MONEY_COLUMNS = Set.of(
+            "item-card-price", "item-card-discount", "item-card-total");
+    private static final Set<String> QUANTITY_COLUMNS = Set.of(
+            "item-card-quantity", "item-card-balance");
+    private static final PseudoClass DEPLETED = PseudoClass.getPseudoClass("depleted");
 
     private final int numItem;
-
     private final ItemsModel itemsModel;
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final ObservableList<CardItems> rows = FXCollections.observableArrayList();
+    private final ContentSizedColumns<CardItems> sizing = new ContentSizedColumns<>();
+
     private int stockId = DefaultStock.ID;
+    private long loadToken;
+    private Task<CardLoadResult> activeLoad;
+    private ItemCardTotals totals = ItemCardTotals.EMPTY;
+    private ItemCardFilter loadedFilter;
+    private double openingBalance;
+    private double closingBalance;
+    private boolean balanceShown = true;
+
+    @FXML
+    private StackPane root, headerIconHost, tableHost, loadingPane;
     @FXML
     private TableView<CardItems> tableView;
     @FXML
-    private ComboBox<String> comboBox;
+    private ComboBox<MovementChoice> comboBox;
     @FXML
     private ComboBox<Stock> comboStock;
     @FXML
-    private Text textPurchase, textSales, textRePurchase, textReSales, textCountTotals, textCostPurchase, textCostSales, textCostSalesRe, textCostPurchaseRe, textCostTotals, textType, textOpeningBalance, textClosingBalance;
+    private Label labelItemName, labelBaseUnit, labelStatus;
     @FXML
-    private Label labelPurchase, labelSales, labelRePurchase, labelReSales, labelFrom, labelTo, labelType, labelName;
+    private Label textPurchase, textSales, textRePurchase, textReSales, textCountTotals;
     @FXML
-    private Button btnSearch, btnPrint;
+    private Label textCostPurchase, textCostSales, textCostSalesRe, textCostPurchaseRe, textCostTotals;
     @FXML
-    private TextField textName;
+    private Label textOpeningBalance, textClosingBalance;
+    @FXML
+    private Button btnSearch, btnPrint, btnToday, btnThisMonth, btnAllHistory;
     @FXML
     private DatePicker dateFrom, dateTo;
-
-    /** The rows behind the table, in movement order - the order the balance runs in. */
-    private final ObservableList<CardItems> rows = FXCollections.observableArrayList();
-    private ItemCardTotals totals = ItemCardTotals.EMPTY;
-    private double openingBalance;
-    private double closingBalance;
-    /**
-     * The period and the document kind the rows on screen were read for - not what the
-     * pickers say now. Changing a date without pressing search must not print a report
-     * for one period with the totals of another, which is what reading the controls at
-     * print time did.
-     */
-    private LocalDate loadedFrom;
-    private LocalDate loadedTo;
-    private ProcessType loadedProcessType;
-    /** Whether the rows on screen carry a running balance - see {@link #loadCard()}. */
-    private boolean balanceShown = true;
+    @FXML
+    private ProgressIndicator progress;
 
     public CardController(ItemsModel itemsModel, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -135,7 +137,8 @@ public class CardController extends LoadData implements Initializable, AppSettin
         this.itemsModel = itemsModel;
     }
 
-    public static DataInterface<? extends BasePurchasesAndSales, ?, ?, ?> dataInterface(ProcessType processType, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
+    public static DataInterface<? extends BasePurchasesAndSales, ?, ?, ?> dataInterface(
+            ProcessType processType, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         if (processType == null) return null;
         return switch (processType) {
             case PURCHASE -> new SuppliersData(daoFactory, dataPublisher);
@@ -145,253 +148,330 @@ public class CardController extends LoadData implements Initializable, AppSettin
         };
     }
 
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        getTable();
-        otherSetting();
-        addColumnShowInvoice();
-        action();
-        applyRowColoringForBalance();
-        loadCard();
+    @FXML
+    public void initialize() {
+        root.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
+        configureHeader();
+        configureTable();
+        configureFilters();
+        configureActions();
+        subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
+        subscriptions.disposeWith(root);
+        loadWholeHistory();
     }
 
-    private void getTable() {
-        TableColumn<CardItems, Number> balanceColumn = Columns.number(NamesTables.BALANCE, CardItems::getBalance);
-        balanceColumn.setId("balance");
-        tableView.getColumns().addAll(
-                Columns.number(NamesTables.CODE_INVOICE, CardItems::getInvoice_num),
-                Columns.date(NamesTables.DATE, CardItems::getInvoice_date),
-                Columns.text(NamesTables.NAME, CardItems::getName_account),
-                Columns.text(NamesTables.TYPE, CardItems::getType_name),
-                Columns.number(NamesTables.QUANTITY, CardItems::getQuantity),
-                Columns.number(NamesTables.PRICE, CardItems::getPrice),
-                Columns.number(NamesTables.DISCOUNT, CardItems::getDiscount),
-                Columns.number(NamesTables.TOTAL, CardItems::getTotals),
+    private void configureHeader() {
+        headerIconHost.getChildren().setAll(AppIcon.ITEM.graphic(30));
+        labelItemName.setText(itemsModel.getNameItem());
+        labelBaseUnit.setText(itemsModel.getUnitsType().getUnit_name());
+    }
+
+    private void configureTable() {
+        TableColumn<CardItems, Number> balanceColumn = named("item-card-balance",
+                Columns.asQuantity(Columns.number(NamesTables.BALANCE, CardItems::getBalance)));
+        tableView.getColumns().setAll(
+                named(ACTIONS_COLUMN, RowActionsColumn.of("column.actions", List.of(
+                        RowAction.of("row.action.show", AppIcon.SHOW, "app-neutral-button", null,
+                                this::openInvoice)))),
+                named(ROW_NUMBER_COLUMN, column_number()),
+                named("item-card-invoice", Columns.number(NamesTables.CODE_INVOICE, CardItems::getInvoice_num)),
+                named("item-card-date", Columns.date(NamesTables.DATE, CardItems::getInvoice_date)),
+                named("item-card-party", Columns.text(NamesTables.NAME, CardItems::getName_account)),
+                named("item-card-unit", Columns.text(NamesTables.TYPE, CardItems::getType_name)),
+                named("item-card-quantity",
+                        Columns.asQuantity(Columns.number(NamesTables.QUANTITY, CardItems::getQuantity))),
+                named("item-card-price", Columns.asMoney(Columns.number(NamesTables.PRICE, CardItems::getPrice))),
+                named("item-card-discount",
+                        Columns.asMoney(Columns.number(NamesTables.DISCOUNT, CardItems::getDiscount))),
+                named("item-card-total", Columns.asMoney(Columns.number(NamesTables.TOTAL, CardItems::getTotals))),
                 balanceColumn,
-                Columns.text(NamesTables.PROCESS_TYPE, CardItems::getProcessTypeName),
-                Columns.text(NamesTables.DELEGATE, CardItems::getDelegate_name)
+                named("item-card-process", Columns.text(NamesTables.PROCESS_TYPE, CardItems::getProcessTypeName)),
+                named("item-card-delegate", Columns.text(NamesTables.DELEGATE, CardItems::getDelegate_name))
         );
-        tableView.getColumns().addFirst(column_number());
-        SortedList<CardItems> sortedList = new SortedList<>(rows);
-        sortedList.comparatorProperty().bind(tableView.comparatorProperty());
-        tableView.setItems(sortedList);
+
+        SortedList<CardItems> sorted = new SortedList<>(rows);
+        sorted.comparatorProperty().bind(tableView.comparatorProperty());
+        tableView.setItems(sorted);
+        tableView.setPlaceholder(new Label(text("item.card.empty")));
+        tableView.setRowFactory(ignored -> depletedRow());
+        tableView.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                CardItems selected = tableView.getSelectionModel().getSelectedItem();
+                if (selected != null) openInvoice(selected);
+            }
+        });
 
         TableSetting.tableMenuSetting(getClass(), tableView);
+        sizing.install(tableView);
     }
 
-    private void otherSetting() {
-        var lm = LanguageManager.getInstance();
-        btnSearch.setText(lm.getString("search"));
-        btnPrint.setText(lm.getString("print"));
-        labelPurchase.setText(lm.getString("pur"));
-        labelSales.setText(lm.getString("sales"));
-        labelRePurchase.setText(lm.getString("RePur"));
-        labelReSales.setText(lm.getString("ReSal"));
-        labelFrom.setText(lm.getString("from"));
-        labelTo.setText(lm.getString("to"));
-        labelType.setText(lm.getString("item.card.invoice.type"));
-        labelName.setText(lm.getString("column.name_item"));
+    private TableRow<CardItems> depletedRow() {
+        return new TableRow<>() {
+            @Override
+            protected void updateItem(CardItems item, boolean empty) {
+                super.updateItem(item, empty);
+                pseudoClassStateChanged(DEPLETED,
+                        !empty && item != null && balanceShown && item.getBalance() <= 0.0);
+            }
+        };
+    }
 
-        comboBox.getItems().add(lm.getString("all"));
-        comboBox.getItems().addAll(processTypeList);
-        comboBox.getSelectionModel().select(0);
-        comboStock.setConverter(new javafx.util.StringConverter<>() {
-            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
-            @Override public Stock fromString(String value) { return null; }
+    private void configureFilters() {
+        comboBox.getItems().setAll(
+                new MovementChoice(null, text("all")),
+                new MovementChoice(ProcessType.PURCHASE, text("pur")),
+                new MovementChoice(ProcessType.PURCHASE_RETURN, text("RePur")),
+                new MovementChoice(ProcessType.SALES, text("sales")),
+                new MovementChoice(ProcessType.SALES_RETURN, text("ReSal")));
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(MovementChoice choice) {
+                return choice == null ? "" : choice.label();
+            }
+
+            @Override
+            public MovementChoice fromString(String value) {
+                return comboBox.getValue();
+            }
+        });
+        comboBox.getSelectionModel().selectFirst();
+
+        comboStock.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Stock stock) {
+                return stock == null ? "" : stock.getName();
+            }
+
+            @Override
+            public Stock fromString(String value) {
+                return comboStock.getValue();
+            }
         });
         reloadStockItems();
-        comboStock.valueProperty().addListener((obs, oldStock, newStock) -> { if (newStock != null) { stockId = newStock.getId(); loadCard(); } });
-        subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
-        subscriptions.disposeWith(tableView);
 
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
-        dateFrom.setValue(firstMovementDate());
-        textType.setText(itemsModel.getUnitsType().getUnit_name());
-        textName.setText(itemsModel.getNameItem());
+        dateFrom.setValue(LocalDate.now());
+        dateTo.setValue(LocalDate.now());
+        whenEnterPressed(dateFrom, dateTo, comboStock, comboBox, btnSearch);
+
+        comboBox.valueProperty().addListener((obs, oldChoice, newChoice) -> loadCard());
+        comboStock.valueProperty().addListener((obs, oldStock, newStock) -> {
+            if (newStock != null && newStock.getId() != stockId) {
+                stockId = newStock.getId();
+                loadCard();
+            }
+        });
     }
 
-    /**
-     * (Re)reads the warehouse list, keeping the current selection - a warehouse
-     * created after this screen was built is otherwise never offered, since
-     * {@code ItemsButtons} constructs it once per session.
-     */
+    private void configureActions() {
+        btnSearch.setGraphic(AppIcon.SEARCH.graphic());
+        btnPrint.setGraphic(AppIcon.PRINT.graphic());
+        btnToday.setGraphic(AppIcon.CALENDAR.graphic());
+        btnThisMonth.setGraphic(AppIcon.CALENDAR.graphic());
+        btnAllHistory.setGraphic(AppIcon.HISTORY.graphic());
+
+        btnSearch.setOnAction(event -> loadCard());
+        btnPrint.setOnAction(event -> print());
+        btnToday.setOnAction(event -> usePeriod(ItemCardFilter.today(LocalDate.now())));
+        btnThisMonth.setOnAction(event -> usePeriod(ItemCardFilter.monthToDate(LocalDate.now())));
+        btnAllHistory.setOnAction(event -> loadWholeHistory());
+    }
+
+    private void usePeriod(ItemCardFilter.DateRange range) {
+        dateFrom.setValue(range.from());
+        dateTo.setValue(range.to());
+        loadCard();
+    }
+
+    /** Refreshes the small warehouse list and retains the active warehouse where possible. */
     private void reloadStockItems() {
         try {
             int keep = stockId;
             comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
-            comboStock.getItems().stream().filter(s -> s.getId() == keep).findFirst()
-                    .or(() -> comboStock.getItems().stream().filter(s -> s.getId() == DefaultStock.ID).findFirst())
+            comboStock.getItems().stream().filter(stock -> stock.getId() == keep).findFirst()
+                    .or(() -> comboStock.getItems().stream()
+                            .filter(stock -> stock.getId() == DefaultStock.ID).findFirst())
                     .ifPresent(comboStock.getSelectionModel()::select);
-        } catch (Exception e) {
-            logError(e);
+        } catch (Exception error) {
+            reportError(error);
         }
     }
 
-    /**
-     * The card opens on the item's whole history, as it always has - but the range is
-     * asked of the database rather than discovered by loading every line the item was
-     * ever on. An item that has never moved opens on today.
-     */
-    private LocalDate firstMovementDate() {
-        try {
-            LocalDate first = cardItemService.firstMovementDate(stockId, numItem);
-            if (first != null) return first;
-        } catch (Exception e) {
-            logError(e);
-        }
-        return LocalDate.now();
-    }
-
-    private void action() {
-        var image = new Image_Setting();
-        btnSearch.setGraphic(ImageChoose.createIcon(image.search));
-        btnPrint.setGraphic(ImageChoose.createIcon(image.print));
-        btnSearch.setOnAction(actionEvent -> loadCard());
-        btnPrint.setOnAction(actionEvent -> print());
-    }
-
-    /**
-     * Reads the card for the period on screen and shows what it adds up to.
-     * <p>
-     * Both balances are read for the period asked for, so the totals, the running
-     * balance column and the printed report are all answering the same question.
-     */
-    private void loadCard() {
-        LocalDate from = dateFrom.getValue();
-        LocalDate to = dateTo.getValue();
-        if (from == null || to == null) {
-            AllAlerts.alertError(LanguageManager.getInstance().getString("item.card.date.required"));
-            return;
-        }
-        if (from.isAfter(to)) {
-            AllAlerts.alertError(LanguageManager.getInstance().getString("item.card.date.range.invalid"));
-            return;
-        }
-        try {
-            ProcessType selected = selectedProcessType();
-            List<CardItems> loaded = new ArrayList<>(cardItemService.cardRows(stockId, numItem, from, to, selected));
-            openingBalance = cardItemService.balanceBefore(stockId, numItem, from);
-            closingBalance = cardItemService.balanceOn(stockId, numItem, to);
-            // A running total over one kind of document is not a balance of anything -
-            // the sales alone never put anything back on the shelf - so a card narrowed
-            // to one kind has no balance column and no rows flagged by it.
-            balanceShown = selected == null;
-            if (balanceShown) ItemCardRunningBalance.apply(loaded, openingBalance);
-
-            rows.setAll(loaded);
-            totals = ItemCardTotals.of(loaded);
-            loadedFrom = from;
-            loadedTo = to;
-            loadedProcessType = selected;
-            showTotals();
-            balanceColumn().ifPresent(column -> column.setVisible(balanceShown));
-        } catch (Exception e) {
-            logError(e);
-        }
-    }
-
-    private Optional<TableColumn<CardItems, ?>> balanceColumn() {
-        return tableView.getColumns().stream().filter(column -> "balance".equals(column.getId())).findFirst();
-    }
-
-    /** The kind of document the combo is narrowed to, or null for all four. */
     private ProcessType selectedProcessType() {
-        int index = comboBox.getSelectionModel().getSelectedIndex();
-        // Index 0 is "all"; the rest follow processTypeList, which is the enum in order.
-        if (index <= 0) return null;
-        return ProcessType.values()[index - 1];
+        MovementChoice choice = comboBox.getValue();
+        return choice == null ? null : choice.processType();
+    }
+
+    private void loadCard() {
+        ItemCardFilter filter;
+        try {
+            filter = new ItemCardFilter(dateFrom.getValue(), dateTo.getValue(), selectedProcessType());
+        } catch (IllegalArgumentException error) {
+            AllAlerts.alertError(text(error.getMessage()));
+            return;
+        }
+        startLoad(stockId, filter);
+    }
+
+    /** Loads the first movement date and the matching rows together, away from the UI thread. */
+    private void loadWholeHistory() {
+        int requestedStock = stockId;
+        ProcessType requestedType = selectedProcessType();
+        long token = beginLoad();
+        Task<CardLoadResult> task = new Task<>() {
+            @Override
+            protected CardLoadResult call() throws Exception {
+                LocalDate today = LocalDate.now();
+                LocalDate first = cardItemService.firstMovementDate(requestedStock, numItem);
+                ItemCardFilter.DateRange range = ItemCardFilter.wholeHistory(first, today);
+                return readCard(requestedStock,
+                        new ItemCardFilter(range.from(), range.to(), requestedType));
+            }
+        };
+        start(task, token, true);
+    }
+
+    private void startLoad(int requestedStock, ItemCardFilter filter) {
+        long token = beginLoad();
+        Task<CardLoadResult> task = new Task<>() {
+            @Override
+            protected CardLoadResult call() throws Exception {
+                return readCard(requestedStock, filter);
+            }
+        };
+        start(task, token, false);
+    }
+
+    private CardLoadResult readCard(int requestedStock, ItemCardFilter filter) throws Exception {
+        List<CardItems> loaded = new ArrayList<>(cardItemService.cardRows(
+                requestedStock, numItem, filter.from(), filter.to(), filter.processType()));
+        double opening = cardItemService.balanceBefore(requestedStock, numItem, filter.from());
+        double closing = cardItemService.balanceOn(requestedStock, numItem, filter.to());
+        boolean showBalance = filter.processType() == null;
+        if (showBalance) ItemCardRunningBalance.apply(loaded, opening);
+        return new CardLoadResult(filter, loaded, ItemCardTotals.of(loaded), opening, closing, showBalance);
+    }
+
+    private long beginLoad() {
+        if (activeLoad != null) activeLoad.cancel(true);
+        long token = ++loadToken;
+        setBusy(true);
+        return token;
+    }
+
+    private void start(Task<CardLoadResult> task, long token, boolean updateDates) {
+        activeLoad = task;
+        task.setOnSucceeded(event -> {
+            if (token != loadToken) return;
+            setBusy(false);
+            CardLoadResult result = task.getValue();
+            if (updateDates) {
+                dateFrom.setValue(result.filter().from());
+                dateTo.setValue(result.filter().to());
+            }
+            showResult(result);
+        });
+        task.setOnFailed(event -> {
+            if (token != loadToken) return;
+            setBusy(false);
+            reportError(task.getException());
+        });
+        Thread thread = new Thread(task, "item-card-load-" + token);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showResult(CardLoadResult result) {
+        balanceShown = result.balanceShown();
+        openingBalance = result.openingBalance();
+        closingBalance = result.closingBalance();
+        totals = result.totals();
+        loadedFilter = result.filter();
+        rows.setAll(result.rows());
+        showTotals();
+        tableView.getColumns().stream()
+                .filter(column -> "item-card-balance".equals(column.getId()))
+                .findFirst().ifPresent(column -> column.setVisible(balanceShown));
+        tableView.refresh();
+        sizing.layout(tableView);
+        labelStatus.setText(text("item.card.status.ready", result.rows().size()));
+        btnPrint.setDisable(result.rows().isEmpty());
+    }
+
+    private void setBusy(boolean busy) {
+        progress.setVisible(busy);
+        loadingPane.setVisible(busy);
+        loadingPane.setManaged(busy);
+        tableView.setMouseTransparent(busy);
+        btnSearch.setDisable(busy);
+        btnToday.setDisable(busy);
+        btnThisMonth.setDisable(busy);
+        btnAllHistory.setDisable(busy);
+        btnPrint.setDisable(busy || rows.isEmpty());
+        if (busy) labelStatus.setText(text("item.card.status.loading"));
     }
 
     private void showTotals() {
-        textPurchase.setText(NUMBER.format(totals.purchase()));
-        textSales.setText(NUMBER.format(totals.sales()));
-        textRePurchase.setText(NUMBER.format(totals.purchaseReturn()));
-        textReSales.setText(NUMBER.format(totals.salesReturn()));
-        textCountTotals.setText(NUMBER.format(totals.netQuantity()));
+        textPurchase.setText(quantity(totals.purchase()));
+        textSales.setText(quantity(totals.sales()));
+        textRePurchase.setText(quantity(totals.purchaseReturn()));
+        textReSales.setText(quantity(totals.salesReturn()));
+        textCountTotals.setText(quantity(totals.netQuantity()));
 
-        textCostPurchase.setText(NUMBER.format(totals.costPurchase()));
-        textCostSales.setText(NUMBER.format(totals.costSales()));
-        textCostSalesRe.setText(NUMBER.format(totals.costSalesReturn()));
-        textCostPurchaseRe.setText(NUMBER.format(totals.costPurchaseReturn()));
-        textCostTotals.setText(NUMBER.format(totals.profit()));
+        textCostPurchase.setText(money(totals.costPurchase()));
+        textCostSales.setText(money(totals.costSales()));
+        textCostSalesRe.setText(money(totals.costSalesReturn()));
+        textCostPurchaseRe.setText(money(totals.costPurchaseReturn()));
+        textCostTotals.setText(money(totals.profit()));
 
-        textOpeningBalance.setText(NUMBER.format(openingBalance));
-        textClosingBalance.setText(NUMBER.format(closingBalance));
+        textOpeningBalance.setText(quantity(openingBalance));
+        textClosingBalance.setText(quantity(closingBalance));
     }
 
-    /** Prints exactly what is on screen - the same period, the same rows, the same totals. */
+    /** Prints the rows in their visible sort order and only the columns currently visible. */
     private void print() {
-        if (loadedFrom == null || loadedTo == null) return;
-        String title = LanguageManager.getInstance().getString("item.card.title");
+        if (loadedFilter == null || tableView.getItems().isEmpty()) return;
+        String title = text("item.card.title");
         File target = TablePdfReport.chooseTarget(tableView.getScene().getWindow(), title);
         if (target == null) return;
-        String[] headers = {
-                LanguageManager.getInstance().getString(NamesTables.CODE_INVOICE),
-                LanguageManager.getInstance().getString(NamesTables.DATE),
-                LanguageManager.getInstance().getString(NamesTables.NAME),
-                LanguageManager.getInstance().getString(NamesTables.TYPE),
-                LanguageManager.getInstance().getString(NamesTables.QUANTITY),
-                LanguageManager.getInstance().getString(NamesTables.PRICE),
-                LanguageManager.getInstance().getString(NamesTables.DISCOUNT),
-                LanguageManager.getInstance().getString(NamesTables.TOTAL),
-                LanguageManager.getInstance().getString(NamesTables.BALANCE),
-                LanguageManager.getInstance().getString(NamesTables.PROCESS_TYPE),
-                LanguageManager.getInstance().getString(NamesTables.DELEGATE)
-        };
-        float[] widths = {70, 85, 125, 95, 70, 75, 70, 85, 85, 110, 100};
-        List<String[]> reportRows = rows.stream().map(row -> new String[]{
-                String.valueOf(row.getInvoice_num()), row.getInvoice_date() == null ? "" : row.getInvoice_date().toString(),
-                row.getName_account(), row.getType_name(), Columns.quantity(BigDecimal.valueOf(row.getQuantity())),
-                Columns.money(BigDecimal.valueOf(row.getPrice())), Columns.money(BigDecimal.valueOf(row.getDiscount())),
-                Columns.money(BigDecimal.valueOf(row.getTotals())), Columns.quantity(BigDecimal.valueOf(row.getBalance())),
-                row.getProcessTypeName(), row.getDelegate_name()
-        }).toList();
-        String subtitle = LanguageManager.getInstance().getString("from") + ": " + loadedFrom
-                + "  |  " + LanguageManager.getInstance().getString("to") + ": " + loadedTo;
-        TablePdfReport.write(target, title, subtitle,
-                new TablePdfLayout(headers, widths, reportRows, null), () -> { });
+        List<CardItems> displayedRows = new ArrayList<>(tableView.getItems());
+        TablePdfLayout layout = TablePdfLayout.from(tableView, displayedRows,
+                SCREEN_ONLY_COLUMNS, Set.of(), null,
+                new TablePdfLayout.NumberFormats(MONEY_COLUMNS, QUANTITY_COLUMNS));
+        String kind = loadedFilter.processType() == null
+                ? text("all") : loadedFilter.processType().getType();
+        String subtitle = text("item.card.print.subtitle", itemsModel.getNameItem(),
+                loadedFilter.from(), loadedFilter.to(), kind);
+        TablePdfReport.write(target, title, subtitle, layout, () -> { });
     }
 
-    /** Flags a movement that left the item at or below nothing on the shelf. */
-    private void applyRowColoringForBalance() {
-        tableView.setRowFactory(itemsModelTableView -> {
-            TableRow<CardItems> row = new TableRow<>();
-            row.itemProperty().addListener((observable, oldValue, newValue) ->
-                    row.setStyle(newValue != null && balanceShown && newValue.getBalance() <= 0.0
-                            ? "-fx-background-color: rgba(243,253,163,0.62)"
-                            : ""));
-            return row;
-        });
+    private void openInvoice(CardItems cardItem) {
+        try {
+            new ShowInvoiceApplication(dataPublisher,
+                    dataInterface(cardItem.getProcessType(), daoFactory, dataPublisher),
+                    daoFactory, cardItem.getInvoice_num(), cardItem.getNameItem());
+        } catch (Exception error) {
+            reportError(error);
+        }
     }
 
-    private void addColumnShowInvoice() {
-        tableView.getColumns().add(new ButtonColumn<>(new ButtonColumnI() {
-            @Override
-            public void action(int index) {
-                try {
-                    CardItems cardItems = tableView.getItems().get(index);
-                    int id = cardItems.getInvoice_num();
-                    String name = cardItems.getNameItem();
-                    ProcessType processType = cardItems.getProcessType();
-                    new ShowInvoiceApplication(dataPublisher, dataInterface(processType, daoFactory, dataPublisher), daoFactory, id, name);
-                } catch (Exception e) {
-                    logError(e);
-                }
-            }
+    private static <S, T> TableColumn<S, T> named(String id, TableColumn<S, T> column) {
+        column.setId(id);
+        return column;
+    }
 
-            @NotNull
-            @Override
-            public String columnTitle() {
-                return "";
-            }
+    private static String quantity(double value) {
+        return Columns.quantity(BigDecimal.valueOf(value));
+    }
 
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("show");
-            }
-        }));
+    private static String money(double value) {
+        return Columns.money(BigDecimal.valueOf(value));
+    }
+
+    private static String text(String key, Object... arguments) {
+        LanguageManager language = LanguageManager.getInstance();
+        return arguments.length == 0 ? language.getString(key) : language.getString(key, arguments);
     }
 
     @Override
@@ -401,7 +481,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
 
     @Override
     public String title() {
-        return LanguageManager.getInstance().getString("item.card.title");
+        return text("item.card.title");
     }
 
     @Override
@@ -409,7 +489,14 @@ public class CardController extends LoadData implements Initializable, AppSettin
         return true;
     }
 
-    private void logError(Exception e) {
-        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.card.title"), e);
+    private void reportError(Throwable error) {
+        AllAlerts.handleError(text("item.dialog.card.title"), error);
+    }
+
+    private record MovementChoice(ProcessType processType, String label) {
+    }
+
+    private record CardLoadResult(ItemCardFilter filter, List<CardItems> rows, ItemCardTotals totals,
+                                  double openingBalance, double closingBalance, boolean balanceShown) {
     }
 }

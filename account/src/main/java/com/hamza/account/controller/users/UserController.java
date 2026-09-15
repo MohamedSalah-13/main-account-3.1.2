@@ -16,6 +16,8 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableColumnViews;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -40,16 +42,18 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
+import java.util.List;
 import java.util.Set;
 import java.util.prefs.Preferences;
 
 /** A dedicated, credential-safe user-management screen. */
 @FxmlPath(pathFile = "users-management.fxml")
 public final class UserController implements AppSettingInterface {
+
+    private static final String ACTIONS_COLUMN = "users-actions";
 
     private final UsersManagementService managementService = ServiceRegistry.get(UsersManagementService.class);
     private final UsersService usersService = ServiceRegistry.get(UsersService.class);
@@ -74,7 +78,7 @@ public final class UserController implements AppSettingInterface {
     @FXML private Pagination pagination;
     @FXML private Label labelTotal, labelActive, labelInactive, labelKiosk, labelStatus;
     @FXML private ProgressIndicator progress;
-    @FXML private Button btnNew, btnEdit, btnToggle, btnPermissions, btnRefresh, btnClose;
+    @FXML private Button btnNew, btnRefresh;
     @FXML private MenuButton viewMenu;
 
     @FXML
@@ -101,11 +105,13 @@ public final class UserController implements AppSettingInterface {
                 column("colStatus", "user.management.column.status", 110, row -> text(row.active()
                         ? "user.management.status.active" : "user.management.status.inactive")),
                 column("colAvailable", "user.management.column.availability", 110, row -> text(row.available()
-                        ? "user.management.availability.online" : "user.management.availability.offline")));
+                        ? "user.management.availability.online" : "user.management.availability.offline")),
+                actionsColumn());
         tableUsers.setPlaceholder(new Label(text("user.management.placeholder.empty")));
-        tableUsers.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> updateActions());
         tableUsers.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2 && tableUsers.getSelectionModel().getSelectedItem() != null) editSelected();
+            if (event.getClickCount() == 2 && tableUsers.getSelectionModel().getSelectedItem() != null) {
+                edit(tableUsers.getSelectionModel().getSelectedItem());
+            }
         });
         TableSetting.tableMenuSetting(getClass(), tableUsers);
         // Match the customers list: named views first, then a remembered choice of
@@ -114,8 +120,25 @@ public final class UserController implements AppSettingInterface {
         TableColumnViews.styleMenuButton(viewMenu);
         new TableColumnViews<UserSummary>(Preferences.userNodeForPackage(getClass())
                 .node("users-management-list"), "view.mode", TableColumnViews.Preset.FULL,
-                Set.of("colCode", "colUsername", "colRoles", "colStatus"), Set.of())
+                Set.of("colCode", "colUsername", "colRoles", "colStatus"), Set.of(ACTIONS_COLUMN))
                 .install(viewMenu, tableUsers);
+    }
+
+    private TableColumn<UserSummary, Void> actionsColumn() {
+        List<RowAction<UserSummary>> actions = RowAction.permitted(List.of(
+                new RowAction<>("user.management.action.edit", AppIcon.EDIT, "app-neutral-button",
+                        AppPermissions.USERS_MANAGE, UserController::canManageRow, this::edit),
+                new RowAction<>("user.management.action.status", AppIcon.CONFIRM, "warning-action-button",
+                        AppPermissions.USERS_MANAGE, UserController::canManageRow, this::toggle),
+                new RowAction<>("user.management.action.permissions", AppIcon.SETTINGS, "app-primary-button",
+                        AppPermissions.ROLES_MANAGE, UserController::canManageRow, this::openPermissions)));
+        TableColumn<UserSummary, Void> column = RowActionsColumn.of("column.actions", actions);
+        column.setId(ACTIONS_COLUMN);
+        return column;
+    }
+
+    private static boolean canManageRow(UserSummary user) {
+        return user != null && user.id() != 1;
     }
 
     /** An id is given so {@link TableSetting} remembers a width against the column, not an index. */
@@ -157,23 +180,14 @@ public final class UserController implements AppSettingInterface {
 
     private void configureActions() {
         btnNew.setGraphic(AppIcon.ADD.graphic());
-        btnEdit.setGraphic(AppIcon.EDIT.graphic());
-        btnToggle.setGraphic(AppIcon.CONFIRM.graphic());
-        btnPermissions.setGraphic(AppIcon.SETTINGS.graphic());
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
-        btnClose.setGraphic(AppIcon.CLOSE.graphic());
-        btnClose.setOnAction(event -> ((Stage) btnClose.getScene().getWindow()).close());
         btnNew.setOnAction(event -> openEditor(0));
-        btnEdit.setOnAction(event -> editSelected());
-        btnToggle.setOnAction(event -> toggleSelected());
-        btnPermissions.setOnAction(event -> openPermissions());
         btnRefresh.setOnAction(event -> reload());
         updateActions();
     }
 
-    private void editSelected() {
-        UserSummary selected = tableUsers.getSelectionModel().getSelectedItem();
-        if (selected != null && selected.id() != 1 && AuthorizationGuard.isGranted(AppPermissions.USERS_MANAGE)) {
+    private void edit(UserSummary selected) {
+        if (canManageRow(selected) && AuthorizationGuard.isGranted(AppPermissions.USERS_MANAGE)) {
             openEditor(selected.id());
         }
     }
@@ -186,9 +200,8 @@ public final class UserController implements AppSettingInterface {
         }
     }
 
-    private void toggleSelected() {
-        UserSummary selected = tableUsers.getSelectionModel().getSelectedItem();
-        if (selected == null || selected.id() == 1) return;
+    private void toggle(UserSummary selected) {
+        if (!canManageRow(selected) || !AuthorizationGuard.isGranted(AppPermissions.USERS_MANAGE)) return;
         try {
             usersService.updateActive(selected.id(), !selected.active());
             if (eventBus != null) eventBus.publish(new UsersChanged());
@@ -198,9 +211,8 @@ public final class UserController implements AppSettingInterface {
         }
     }
 
-    private void openPermissions() {
-        UserSummary selected = tableUsers.getSelectionModel().getSelectedItem();
-        if (selected == null || selected.id() == 1
+    private void openPermissions(UserSummary selected) {
+        if (!canManageRow(selected)
                 || !AuthorizationGuard.isGranted(AppPermissions.ROLES_MANAGE)) return;
         try {
             new OpenApplication<>(new UserPermissionController(selected.id(), selected.username(), rbacService));
@@ -210,19 +222,7 @@ public final class UserController implements AppSettingInterface {
     }
 
     private void updateActions() {
-        UserSummary selected = tableUsers == null ? null : tableUsers.getSelectionModel().getSelectedItem();
-        boolean canManage = AuthorizationGuard.isGranted(AppPermissions.USERS_MANAGE);
-        boolean protectedAdmin = selected != null && selected.id() == 1;
-        btnNew.setDisable(!canManage);
-        btnEdit.setDisable(!canManage || selected == null || protectedAdmin);
-        btnToggle.setDisable(!canManage || selected == null || protectedAdmin);
-        // Row 1 is refused here as it is for edit and toggle: UserSessionContext treats it
-        // as the system administrator and bypasses every permission, so a role saved
-        // against it changes nothing and reads as though it had.
-        btnPermissions.setDisable(!AuthorizationGuard.isGranted(AppPermissions.ROLES_MANAGE)
-                || selected == null || protectedAdmin);
-        btnToggle.setText(text(selected != null && selected.active()
-                ? "user.management.action.deactivate" : "user.management.action.activate"));
+        btnNew.setDisable(!AuthorizationGuard.isGranted(AppPermissions.USERS_MANAGE));
     }
 
     private void reload() { load(query); }

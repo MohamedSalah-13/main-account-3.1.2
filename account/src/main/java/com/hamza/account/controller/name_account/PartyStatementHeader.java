@@ -41,21 +41,22 @@ final class PartyStatementHeader extends FlowPane {
     private final VBox limitBox;
 
     PartyStatementHeader() {
-        super(18, 10);
+        super(12, 10);
         setAlignment(Pos.CENTER_LEFT);
-        getStyleClass().add("app-card");
+        setPrefWrapLength(960);
+        getStyleClass().add("party-statement-metrics");
         setId("party-statement-header");
 
         limitBar.setPrefWidth(160);
-        limitBox = figure("party.statement.limit.used", limitValue);
+        limitBox = figure("party.statement.limit.used", limitValue, "limit");
         limitBox.getChildren().add(limitBar);
 
         getChildren().addAll(
-                figure("party.statement.opening", opening),
-                figure("party.statement.total.debit", debit),
-                figure("party.statement.total.credit", credit),
-                figure("party.statement.net", net),
-                figure("party.statement.closing", closing),
+                figure("party.statement.opening", opening, "opening"),
+                figure("party.statement.total.debit", debit, "debit"),
+                figure("party.statement.total.credit", credit, "credit"),
+                figure("party.statement.net", net, "net"),
+                figure("party.statement.closing", closing, "closing"),
                 limitBox);
     }
 
@@ -66,6 +67,8 @@ final class PartyStatementHeader extends FlowPane {
         credit.setText(Columns.money(summary.totalCredit()));
         net.setText(Columns.money(summary.netMovement()));
         closing.setText(Columns.money(summary.closingBalance()));
+        net.pseudoClassStateChanged(Columns.NEGATIVE, summary.netMovement().signum() < 0);
+        closing.pseudoClassStateChanged(Columns.NEGATIVE, summary.closingBalance().signum() < 0);
     }
 
     /**
@@ -92,11 +95,13 @@ final class PartyStatementHeader extends FlowPane {
         limitValue.pseudoClassStateChanged(OVER_LIMIT, fraction > 1);
     }
 
-    private static VBox figure(String titleKey, Label value) {
+    private static VBox figure(String titleKey, Label value, String variant) {
         Label caption = new Label(LanguageManager.getInstance().getString(titleKey));
-        caption.getStyleClass().add("form-label");
+        caption.getStyleClass().add("party-statement-metric-title");
         VBox box = new VBox(2, caption, value);
         box.setAlignment(Pos.CENTER_LEFT);
+        box.setMinWidth(148);
+        box.getStyleClass().addAll("party-statement-metric", "party-statement-metric-" + variant);
         return box;
     }
 

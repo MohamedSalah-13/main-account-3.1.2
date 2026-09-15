@@ -8,8 +8,9 @@ import com.hamza.account.controller.model.AccountCard;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.PartyKind;
-import com.hamza.account.features.party.statement.PartyMovementKind;
 import com.hamza.account.features.party.statement.PartyStatementFilter;
+import com.hamza.account.features.party.statement.PartyStatementOptions;
+import com.hamza.account.features.party.statement.PartyStatementPage;
 import com.hamza.account.features.party.statement.PartyStatementPrintData;
 import com.hamza.account.features.party.statement.PartyStatementRow;
 import com.hamza.account.features.party.statement.PartyStatementService;
@@ -18,6 +19,7 @@ import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -27,8 +29,6 @@ import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
-import com.hamza.account.table.TablePdfLayout;
-import com.hamza.account.table.TablePdfReport;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
@@ -36,17 +36,24 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableRow;
 import javafx.scene.control.TreeTableView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -59,36 +66,36 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
- * A party's account statement.
- * <p>
- * <b>Built in code, not from FXML, and every reason is a defect the old screen had.</b>
- * {@code accountDetailsTreeTableView.fxml} carried English captions the controller overwrote at
- * runtime - so three {@code CheckMenuItem}s shipped reading {@code "Unspecified Action"} and every
- * open flashed English first; its columns were bound by field-name strings through
- * {@code PropertyValueFactory}, which answers a renamed field with a silently empty column; its
- * {@code TreeTableView} sat inside a {@code ScrollPane} with a fixed preferred height, so the table
- * never grew and the page had two scrollbars; and its header showed two figures, one labelled as
- * something else and one that nothing ever wrote. A screen assembled here cannot have a caption
- * nobody set or a field nobody fills: there is no second file to fall out of step with.
- * <p>
- * <b>Where the numbers come from.</b> {@link PartyStatementService}, and nowhere else. This screen
- * used to assemble the statement itself from four queries and got the deferred return wrong - see
- * that service for what that cost. It reads through {@code forPrint} rather than {@code search}
- * because it shows the whole filtered statement rather than a page of it, which is also what makes
- * the table, the print and the export one set of rows by construction.
- * <p>
- * What is kept from the old screen is the part that was good: expanding a document row to show its
- * lines, loaded only when the row is opened. A party with two thousand invoices must not read two
- * thousand line tables to render.
+ * The responsive account statement shared by customers and suppliers.
+ *
+ * <p>The statement arithmetic stays in {@link PartyStatementService}. This controller owns only
+ * presentation state: one page of rows, the active filter, asynchronous loading and the lazy
+ * document-line tree. Printing and exports ask the service for the complete filtered extract, so
+ * paging the screen never cuts the document handed to the user.</p>
  */
 @Log4j2
 public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T3, T4> implements AppSettingInterface {
 
-    /** Set on a document row, which is the one kind that can be expanded. Styled in the theme. */
     private static final PseudoClass DOCUMENT_ROW = PseudoClass.getPseudoClass("document-row");
+    private static final PseudoClass DETAIL_ROW = PseudoClass.getPseudoClass("document-detail-row");
+
+    /** Statement queries never wait behind a page whose invoice details are being expanded. */
+    private static final ExecutorService STATEMENT_READER = Executors.newFixedThreadPool(2, runnable -> {
+        Thread thread = new Thread(runnable, "party-statement-reader");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private static final ExecutorService DETAIL_READER = Executors.newFixedThreadPool(2, runnable -> {
+        Thread thread = new Thread(runnable, "party-statement-detail-reader");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final String partyName;
     private final int partyId;
@@ -96,36 +103,37 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     private final PartyStatementService statementService = new PartyStatementService();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
 
-    /** Rows already expanded, by identity: a second expand must not read the lines again. */
     private final Set<TreeItem<AccountCard>> expanded =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<TreeItem<AccountCard>> loadingDetails =
             Collections.newSetFromMap(new IdentityHashMap<>());
 
     private final TreeTableView<AccountCard> treeView = new TreeTableView<>();
     private final TreeItem<AccountCard> root = new TreeItem<>(new AccountCard());
     private final PartyStatementHeader header = new PartyStatementHeader();
     private final PartyStatementFilterBar filters;
+
     private final Label status = new Label();
+    private final Label pageLabel = new Label();
     private final Label narrowed = new Label(text("party.statement.narrowed"));
-    private final CheckBox expandAll = new CheckBox(text("party.check.show.all"));
-    private final CheckBox printDetails = new CheckBox(text("party.check.show.print.details"));
+    private final Label busyMessage = new Label();
     private final ProgressIndicator progress = new ProgressIndicator();
+    private final VBox busyPane = new VBox(10, progress, busyMessage);
     private final StackPane content = new StackPane();
 
-    /** The statement on screen, so the print and both exports describe exactly what is shown. */
-    private PartyStatementPrintData statement =
-            new PartyStatementPrintData(List.of(), PartyStatementSummary.EMPTY, false);
+    private final CheckBox showDetails = new CheckBox(text("party.statement.details.current.page"));
+    private final Button previous = button("party.statement.previous", null, this::previousPage);
+    private final Button next = button("party.statement.next", null, this::nextPage);
+    private final java.util.ArrayList<Control> busySensitive = new java.util.ArrayList<>();
 
-    /** Discards the answer to a search the user has already replaced. */
+    private PartyStatementFilter currentFilter;
+    private PartyStatementPage currentPage = new PartyStatementPage(
+            List.of(), PartyStatementSummary.EMPTY, 0, false, false);
+    private BigDecimal creditLimit;
+    private Task<?> activeTask;
     private int generation;
+    private boolean detailErrorReported;
 
-    /**
-     * Opens the statement of one party.
-     * <p>
-     * It takes the party's id and name rather than a {@code T4} movement to read them out of.
-     * The caller had to fabricate a movement to satisfy the old signature - one carrying an id
-     * and nothing else - so {@code accountData.getName(...)} answered null and the window opened
-     * titled "كشف حساب - null". A screen that needs a party should ask for a party.
-     */
     public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher,
                                              DataInterface<?, ?, T3, T4> dataInterface,
                                              int partyId, String partyName,
@@ -138,32 +146,36 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         this.filters = new PartyStatementFilterBar(partyKind(), partyId);
     }
 
-    // ---- the screen ------------------------------------------------------------------
-
     @Override
     public Pane pane() {
         buildTree();
         filters.setOnSearch(this::load);
+        filters.setDisable(true);
+
+        content.getStyleClass().add("party-statement-table-card");
+        content.getChildren().addAll(treeView, busyPane);
+        BorderPane.setMargin(content, new Insets(10, 0, 10, 0));
+
+        busyPane.setAlignment(Pos.CENTER);
+        busyPane.getStyleClass().add("party-statement-loading-overlay");
+        busyPane.setVisible(false);
+        busyPane.setManaged(false);
+        progress.setMaxSize(46, 46);
+        busyMessage.getStyleClass().add("party-statement-loading-text");
 
         BorderPane layout = new BorderPane();
-        layout.getStyleClass().add("app-container");
-        layout.setTop(new VBox(8, toolbar(), header, filters));
+        layout.getStyleClass().addAll("app-container", "party-statement-shell");
+        layout.setTop(new VBox(10, hero(), header, filters));
         layout.setCenter(content);
         layout.setBottom(footer());
-        BorderPane.setMargin(content, new Insets(8, 0, 8, 0));
-
-        progress.setMaxSize(48, 48);
-        progress.setVisible(false);
-        content.getChildren().addAll(treeView, progress);
 
         StackPane screen = new StackPane(layout);
-        screen.getStyleClass().add("app-root");
+        screen.getStyleClass().addAll("app-root", "party-statement-root");
+        screen.setMinSize(840, 560);
+        screen.setPrefSize(880, 560);
         screen.getStylesheets().add(ThemeManager.getStylesheet());
         screen.setId("party-statement");
 
-        // Subscribed here, where the node exists: a movement saved or deleted anywhere must reach
-        // an open statement. The old screen published AccountChanged on delete and subscribed to
-        // nothing, so a deleted row stayed on the page until it was closed and reopened.
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(AccountChanged.class, event -> {
                 if (event.kind() == partyKind()) {
@@ -172,199 +184,259 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
             }));
             subscriptions.disposeWith(screen);
         }
-        Platform.runLater(this::openOnTheWholeHistory);
+        Platform.runLater(this::initialise);
         return screen;
     }
 
-    private FlowPane toolbar() {
+    private VBox hero() {
+        HBox iconBox = new HBox(AppIcon.REPORT.graphic(34));
+        iconBox.setAlignment(Pos.CENTER);
+        iconBox.getStyleClass().add("party-statement-icon-box");
+
+        Label type = new Label(text(partyKind() == PartyKind.CUSTOMER ? "customers" : "suppliers"));
+        type.getStyleClass().add("party-statement-party-type");
+        Label title = new Label(text("party.statement.title") + " — " + partyName);
+        title.getStyleClass().add("party-statement-title");
+        Label subtitle = new Label(text("party.statement.subtitle"));
+        subtitle.getStyleClass().add("party-statement-subtitle");
+        subtitle.setWrapText(true);
+
+        VBox identityText = new VBox(3, type, title, subtitle);
+        HBox.setHgrow(identityText, Priority.ALWAYS);
+        HBox identity = new HBox(14, iconBox, identityText);
+        identity.setAlignment(Pos.CENTER_LEFT);
+
         Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
         Button print = button("print", AppIcon.PRINT, this::print);
+        print.getStyleClass().setAll("button", "app-primary-button", "party-statement-primary-action");
         Button pdf = button("party.btn.export.pdf", AppIcon.EXPORT, this::exportPdf);
-        pdf.getStyleClass().setAll("pdf-button");
+        pdf.getStyleClass().setAll("button", "pdf-button");
         Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
-        excel.getStyleClass().setAll("excel-button");
+        excel.getStyleClass().setAll("button", "excel-button");
 
-        Label name = new Label(partyName);
-        name.getStyleClass().add("app-section-title");
-        name.setId("statement-party-name");
+        showDetails.setTooltip(new Tooltip(text("party.statement.details.hint")));
+        showDetails.setOnAction(event -> setAllExpanded(showDetails.isSelected()));
 
-        expandAll.setOnAction(event -> {
-            if (expandAll.isSelected()) {
-                root.getChildren().forEach(child -> child.setExpanded(true));
-            }
-        });
+        FlowPane actions = new FlowPane(8, 8, showDetails, refresh, print, pdf, excel);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        actions.getStyleClass().add("party-statement-actions");
+        busySensitive.addAll(List.of(showDetails, refresh, print, pdf, excel));
 
-        // A FlowPane for the same reason as the filter row: in a dialog narrower than the main
-        // window an HBox squeezed the two checkboxes into each other, so they overlapped and read
-        // as one unintelligible caption. Wrapping keeps every control whole at any width.
-        FlowPane bar = new FlowPane(8, 8, name, expandAll, printDetails, refresh, print, pdf, excel);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.getStyleClass().add("app-card");
-        return bar;
+        VBox hero = new VBox(10, identity, actions);
+        hero.getStyleClass().add("party-statement-hero");
+        return hero;
     }
 
     private HBox footer() {
         status.setId("statement-status");
-        status.getStyleClass().add("status-label");
-        narrowed.getStyleClass().add("form-label");
+        status.getStyleClass().add("party-statement-status");
+        pageLabel.getStyleClass().add("party-statement-page-label");
+        narrowed.getStyleClass().add("party-statement-narrowed");
         narrowed.setVisible(false);
         narrowed.setManaged(false);
-        HBox bar = new HBox(14, status, narrowed);
+
+        previous.setId("statement-previous");
+        next.setId("statement-next");
+        busySensitive.addAll(List.of(previous, next));
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox bar = new HBox(10, status, narrowed, spacer, previous, pageLabel, next);
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.getStyleClass().add("summary-card");
+        bar.getStyleClass().add("party-statement-footer");
+        updateNavigation();
         return bar;
     }
 
-    /**
-     * The columns, built in code.
-     * <p>
-     * Each one names a method rather than a field, so the compiler checks it - rule ق-ل1 of
-     * {@code docs/new-code-rules.md}. The amounts are {@code Columns.money}, which is the one
-     * definition of how a figure is written here: two decimals, thousands separated, right-aligned,
-     * negatives red. The old columns printed whatever {@code Double.toString} produced.
-     */
     private void buildTree() {
         treeView.setId("statement-table");
+        treeView.getStyleClass().add("party-statement-table");
         treeView.setShowRoot(false);
         treeView.setRoot(root);
         treeView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         treeView.setPlaceholder(new Label(text("party.statement.empty")));
         root.setExpanded(true);
-        VBox.setVgrow(treeView, Priority.ALWAYS);
 
         treeView.getColumns().setAll(List.of(
-                tree("date", AccountCard::getDate),
-                kindColumn(),
-                tree("party.statement.column.reference", card -> card.getId() == 0
-                        ? "" : String.valueOf(card.getId())),
-                money("common.debtor", AccountCard::getPurchase),
-                money("common.creditor", AccountCard::getPaid),
-                money("party.statement.column.running", AccountCard::getDetails),
-                tree("party.statement.column.treasury", AccountCard::getName),
-                tree("column.notes", AccountCard::getNotes)));
+                named("statement-date", tree("date", AccountCard::getDate, 108)),
+                named("statement-kind", kindColumn()),
+                named("statement-reference", tree("party.statement.column.reference",
+                        card -> card.getId() == 0 ? "" : String.valueOf(card.getId()), 92)),
+                named("statement-debit", money("common.debtor", AccountCard::getPurchase,
+                        "party-statement-debit-cell")),
+                named("statement-credit", money("common.creditor", AccountCard::getPaid,
+                        "party-statement-credit-cell")),
+                named("statement-balance", money("party.statement.column.running", AccountCard::getDetails,
+                        "party-statement-balance-cell")),
+                named("statement-treasury", tree("party.statement.column.treasury", AccountCard::getName, 130)),
+                named("statement-user", tree("party.statement.column.user", AccountCard::getUserName, 120)),
+                named("statement-notes", tree("column.notes", AccountCard::getNotes, 260))));
 
         treeView.setRowFactory(view -> new TreeTableRow<>() {
             @Override
             protected void updateItem(AccountCard card, boolean empty) {
                 super.updateItem(card, empty);
+                TreeItem<AccountCard> item = getTreeItem();
+                boolean detail = !empty && item != null && item.getParent() != null
+                        && item.getParent() != root;
                 pseudoClassStateChanged(DOCUMENT_ROW,
                         !empty && card != null && card.hasDocumentLines());
+                pseudoClassStateChanged(DETAIL_ROW, detail);
+            }
+        });
+        treeView.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                toggleSelectedDocument();
+            }
+        });
+        treeView.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                toggleSelectedDocument();
+                event.consume();
             }
         });
         TableSetting.tableMenuSetting(getClass(), treeView);
     }
 
-    /**
-     * The movement's kind, as a translated label from the enum.
-     * <p>
-     * The old screen decided what to colour and what could be expanded by comparing this column's
-     * text against the Arabic literals {@code "المبيعات"} and {@code "مرتجع المبيعات"} - so a user
-     * on the English bundle got neither. The text is for reading; {@link AccountCard#getKind()} is
-     * what anything decides on.
-     */
-    private TreeTableColumn<AccountCard, String> kindColumn() {
-        return tree("party.statement.column.kind", card -> card.getKind() == null
-                ? "" : text(card.getKind().messageKey()));
+    private void toggleSelectedDocument() {
+        TreeItem<AccountCard> selected = treeView.getSelectionModel().getSelectedItem();
+        if (selected != null && selected.getValue() != null
+                && selected.getValue().hasDocumentLines()) {
+            selected.setExpanded(!selected.isExpanded());
+        }
     }
 
-    // ---- loading ---------------------------------------------------------------------
+    // ---- loading -------------------------------------------------------------------------
 
-    private void openOnTheWholeHistory() {
-        try {
-            filters.initialise(statementService.options(partyKind()),
-                    statementService.earliestMovement(partyKind(), partyId));
-        } catch (Exception e) {
-            report(e);
+    private void initialise() {
+        Task<StatementSetup> setup = new Task<>() {
+            @Override
+            protected StatementSetup call() throws Exception {
+                PartyStatementOptions options = statementService.options(partyKind());
+                LocalDate earliest = statementService.earliestMovement(partyKind(), partyId);
+                return new StatementSetup(options, earliest, readCreditLimit());
+            }
+        };
+        startPrimary(setup, "party.statement.status.initialising", value -> {
+            creditLimit = value.creditLimit();
+            filters.setDisable(false);
+            filters.initialise(value.options(), value.earliest());
+        }, "party.error.load.account.details.items");
+    }
+
+    private BigDecimal readCreditLimit() throws Exception {
+        if (partyKind() != PartyKind.CUSTOMER) {
+            return null;
         }
+        T3 party = nameAndAccountInterface.getNameById(partyId);
+        return BigDecimal.valueOf(nameService.getCredit(List.of(party), partyId));
     }
 
     private void reload() {
-        load(filters.filter(0, PartyStatementFilter.DEFAULT_PAGE_SIZE));
+        if (currentFilter != null) {
+            load(currentFilter);
+        }
     }
 
-    /**
-     * Reads the statement for a filter, off the JavaFX thread.
-     * <p>
-     * The old screen read it inline, so a party with a long history froze the window while the four
-     * queries ran. A {@code generation} token discards the answer to a search the user has already
-     * replaced - the same guard {@code MasterDataPane} and {@code ItemSuggestionField} use, and
-     * without it a slow query can overwrite the result of a faster, later one.
-     */
+    private void previousPage() {
+        if (currentFilter != null && currentPage.hasPrevious()) {
+            load(currentFilter.onPage(currentFilter.page() - 1));
+        }
+    }
+
+    private void nextPage() {
+        if (currentFilter != null && currentPage.hasNext()) {
+            load(currentFilter.onPage(currentFilter.page() + 1));
+        }
+    }
+
     private void load(PartyStatementFilter filter) {
-        int token = ++generation;
-        progress.setVisible(true);
-        Task<PartyStatementPrintData> task = new Task<>() {
+        Task<PartyStatementPage> task = new Task<>() {
             @Override
-            protected PartyStatementPrintData call() throws Exception {
-                return statementService.forPrint(filter);
+            protected PartyStatementPage call() throws Exception {
+                return statementService.search(filter);
             }
         };
-        task.setOnSucceeded(event -> {
-            if (token == generation) {
-                progress.setVisible(false);
-                show(task.getValue(), filter);
-            }
-        });
-        task.setOnFailed(event -> {
-            if (token == generation) {
-                progress.setVisible(false);
-                report(task.getException());
-            }
-        });
-        Thread thread = new Thread(task, "party-statement-load");
-        thread.setDaemon(true);
-        thread.start();
+        startPrimary(task, "party.statement.status.loading", page -> show(page, filter),
+                "party.error.load.account.details.items");
     }
 
-    private void show(PartyStatementPrintData loaded, PartyStatementFilter filter) {
-        statement = loaded;
-        header.show(loaded.summary());
-        showCreditLimit(loaded.summary());
-        buildRows(loaded.rowsOldestFirst());
+    private void show(PartyStatementPage page, PartyStatementFilter filter) {
+        currentFilter = filter;
+        currentPage = page;
+        header.show(page.summary());
+        header.showCreditLimit(creditLimit, page.summary().closingBalance());
+        buildRows(page.rows());
 
-        status.setText(LanguageManager.getInstance()
-                .getString("party.statement.rows", loaded.rows().size()));
-        boolean hidden = filter.narrowsRows() && !loaded.summary().rowsExplainTheBalance();
+        status.setText(text("party.statement.page.status", page.rows().size()));
+        pageLabel.setText(text("party.statement.page.number", page.page() + 1));
+        boolean hidden = filter.narrowsRows() && !page.summary().rowsExplainTheBalance();
         narrowed.setVisible(hidden);
         narrowed.setManaged(hidden);
+        updateNavigation();
+    }
 
-        if (loaded.truncated()) {
-            AllAlerts.handleError(text("party.statement.title"), new UserValidationException(
-                    LanguageManager.getInstance().getString("party.statement.truncated",
-                            PartyStatementService.PRINT_LIMIT)));
+    private <R> void startPrimary(Task<R> task, String statusKey, Consumer<R> onSuccess,
+                                  String errorContextKey) {
+        int token = ++generation;
+        if (activeTask != null) {
+            activeTask.cancel();
+        }
+        activeTask = task;
+        setBusy(true, statusKey);
+        task.setOnSucceeded(event -> {
+            if (token != generation) {
+                return;
+            }
+            activeTask = null;
+            setBusy(false, null);
+            onSuccess.accept(task.getValue());
+        });
+        task.setOnFailed(event -> {
+            if (token != generation) {
+                return;
+            }
+            activeTask = null;
+            setBusy(false, null);
+            report(errorContextKey, task.getException());
+        });
+        task.setOnCancelled(event -> {
+            if (token == generation) {
+                activeTask = null;
+                setBusy(false, null);
+            }
+        });
+        STATEMENT_READER.execute(task);
+    }
+
+    private void setBusy(boolean busy, String statusKey) {
+        busyPane.setVisible(busy);
+        busyPane.setManaged(busy);
+        treeView.setDisable(busy);
+        busySensitive.forEach(control -> control.setDisable(busy));
+        if (busy && statusKey != null) {
+            busyMessage.setText(text(statusKey));
+        }
+        if (!busy) {
+            updateNavigation();
         }
     }
 
-    private void showCreditLimit(PartyStatementSummary summary) {
-        if (partyKind() != PartyKind.CUSTOMER) {
-            header.showCreditLimit(null, null);
-            return;
-        }
-        try {
-            T3 party = nameAndAccountInterface.getNameById(partyId);
-            header.showCreditLimit(
-                    BigDecimal.valueOf(nameService.getCredit(List.of(party), partyId)),
-                    summary.closingBalance());
-        } catch (Exception e) {
-            report(e);
-        }
+    private void updateNavigation() {
+        previous.setDisable(activeTask != null || !currentPage.hasPrevious());
+        next.setDisable(activeTask != null || !currentPage.hasNext());
     }
 
-    /**
-     * One tree row per statement row, oldest first.
-     * <p>
-     * Oldest first because that is the order the running balance was accumulated in, so each row's
-     * balance follows from the one above rather than contradicting it.
-     */
     private void buildRows(List<PartyStatementRow> rows) {
         expanded.clear();
+        loadingDetails.clear();
+        detailErrorReported = false;
         root.getChildren().clear();
         for (PartyStatementRow row : rows) {
             TreeItem<AccountCard> item = new TreeItem<>(toCard(row));
             root.getChildren().add(item);
             if (row.hasDocumentLines()) {
-                // A placeholder gives the row its disclosure arrow; the lines are read when it opens.
-                item.getChildren().add(new TreeItem<>(new AccountCard()));
+                item.getChildren().add(detailPlaceholder("party.statement.details.loading"));
                 item.expandedProperty().addListener((observable, was, open) -> {
                     if (open) {
                         loadDocumentLines(item);
@@ -372,25 +444,60 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
                 });
             }
         }
-        if (expandAll.isSelected()) {
-            root.getChildren().forEach(child -> child.setExpanded(true));
+        if (showDetails.isSelected()) {
+            setAllExpanded(true);
         }
+    }
+
+    private void setAllExpanded(boolean expandedState) {
+        root.getChildren().stream()
+                .filter(item -> item.getValue() != null && item.getValue().hasDocumentLines())
+                .forEach(item -> item.setExpanded(expandedState));
     }
 
     private void loadDocumentLines(TreeItem<AccountCard> item) {
-        if (!expanded.add(item)) {
+        if (expanded.contains(item) || !loadingDetails.add(item)) {
             return;
         }
-        item.getChildren().clear();
-        try {
-            documentLines.addTreeItemTotals(item.getValue(), item);
-        } catch (Exception e) {
-            expanded.remove(item);
-            report(e);
-        }
+        Task<List<AccountCard>> task = new Task<>() {
+            @Override
+            protected List<AccountCard> call() throws Exception {
+                return documentLines.documentLines(item.getValue());
+            }
+        };
+        task.setOnSucceeded(event -> {
+            loadingDetails.remove(item);
+            if (item.getParent() != root) {
+                return;
+            }
+            expanded.add(item);
+            List<AccountCard> lines = task.getValue();
+            if (lines.isEmpty()) {
+                item.getChildren().setAll(detailPlaceholder("party.statement.details.empty"));
+            } else {
+                item.getChildren().setAll(lines.stream().map(TreeItem::new).toList());
+            }
+        });
+        task.setOnFailed(event -> {
+            loadingDetails.remove(item);
+            if (item.getParent() != root) {
+                return;
+            }
+            item.getChildren().setAll(detailPlaceholder("party.statement.details.failed"));
+            if (!detailErrorReported) {
+                detailErrorReported = true;
+                report("party.statement.details.error", task.getException());
+            }
+        });
+        DETAIL_READER.execute(task);
     }
 
-    /** A statement row as a tree row: the label for the eye, the kind for every decision. */
+    private static TreeItem<AccountCard> detailPlaceholder(String key) {
+        AccountCard placeholder = new AccountCard();
+        placeholder.setNotes(text(key));
+        return new TreeItem<>(placeholder);
+    }
+
     private AccountCard toCard(PartyStatementRow row) {
         AccountCard card = new AccountCard();
         card.setId((int) row.reference());
@@ -401,150 +508,222 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         card.setPaid(row.credit().doubleValue());
         card.setDetails(row.runningBalance().doubleValue());
         card.setName(row.treasuryName());
+        card.setUserName(row.userName());
         card.setNotes(row.notes());
         return card;
     }
 
-    // ---- printing and exporting -------------------------------------------------------
+    // ---- printing and exporting ----------------------------------------------------------
 
-    /**
-     * Prints the statement on screen.
-     * <p>
-     * Every row of it: {@link #statement} is the whole filtered extract rather than a page, so the
-     * printed page and the screen cannot differ. Ticking "show details" includes the expanded
-     * document lines, which are the rows with no movement kind of their own.
-     */
     private void print() {
-        if (statement.rows().isEmpty()) {
-            report(new UserValidationException(text("party.error.no.data.export")));
+        PartyStatementFilter filter = printableFilter();
+        if (filter == null) {
             return;
         }
-        String title = LanguageManager.getInstance().getString("party.account.card.title", partyName);
-        File target = TablePdfReport.chooseTarget(treeView.getScene().getWindow(), title);
-        if (target == null) return;
-        String[] headers = {text("date"), text("party.statement.column.kind"), text("party.statement.column.reference"),
-                text("common.debtor"), text("common.creditor"), text("party.statement.column.running"), text("column.notes")};
-        float[] widths = {85, 105, 80, 95, 95, 100, 180};
-        List<String[]> reportRows = statement.rowsOldestFirst().stream().map(row -> new String[]{
-                row.date().toString(), text(row.kind().messageKey()), row.reference() == 0 ? "" : String.valueOf(row.reference()),
-                Columns.money(row.debit()), Columns.money(row.credit()), Columns.money(row.runningBalance()), row.notes()
-        }).toList();
-        String subtitle = text("party.statement.total.debit") + ": " + Columns.money(statement.summary().totalDebit())
-                + "   " + text("party.statement.total.credit") + ": " + Columns.money(statement.summary().totalCredit());
-        TablePdfReport.write(target, title, subtitle,
-                new TablePdfLayout(headers, widths, reportRows, null), () -> { });
-    }
-
-    private void exportExcel() {
-        try {
-            requireRows();
-            int written = ExportData.exportDataToExcel(statement.rows(),
-                    new PartyStatementExcelWriter(statement.rows(), statement.summary()));
-            if (written < 1) {
-                throw new BusinessRuleException(text("party.error.cannot.save"));
+        withExtract(filter, extract -> {
+            if (!requireRows(extract)) {
+                return;
             }
-            AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
-        } catch (Exception e) {
-            report(e);
-        }
+            String title = text("party.account.card.title", partyName);
+            File target = TablePdfReport.chooseTarget(treeView.getScene().getWindow(), title);
+            if (target == null) {
+                return;
+            }
+            warnIfTruncated(extract);
+            TablePdfReport.write(target,
+                    file -> new PartyStatementPdfExporter()
+                            .export(extract, partyName, file.getAbsolutePath()));
+        });
     }
 
     private void exportPdf() {
-        try {
-            requireRows();
+        PartyStatementFilter filter = printableFilter();
+        if (filter == null) {
+            return;
+        }
+        withExtract(filter, extract -> {
+            if (!requireRows(extract)) {
+                return;
+            }
             FileChooser chooser = new FileChooser();
             chooser.setTitle(text("party.dialog.save.report"));
             chooser.setInitialFileName(partyName + "_" + LocalDate.now() + ".pdf");
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
-            File file = chooser.showSaveDialog(null);
-            if (file == null) {
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+            File target = chooser.showSaveDialog(treeView.getScene().getWindow());
+            if (target == null) {
                 return;
             }
-            if (!new PartyStatementPdfExporter().export(statement, partyName, file.getAbsolutePath())) {
-                throw new BusinessRuleException(text("party.error.export.generic"));
+            warnIfTruncated(extract);
+            TablePdfReport.write(target,
+                    file -> new PartyStatementPdfExporter()
+                            .export(extract, partyName, file.getAbsolutePath()));
+        });
+    }
+
+    private void exportExcel() {
+        PartyStatementFilter filter = printableFilter();
+        if (filter == null) {
+            return;
+        }
+        withExtract(filter, extract -> {
+            if (!requireRows(extract)) {
+                return;
             }
-            AllAlerts.alertSaveWithMessage(LanguageManager.getInstance()
-                    .getString("party.export.success.saved.at", file.getAbsolutePath()));
-        } catch (Exception e) {
-            report(e);
+            try {
+                int written = ExportData.exportDataToExcel(extract.rows(),
+                        new PartyStatementExcelWriter(extract.rows(), extract.summary()));
+                if (written < 1) {
+                    throw new BusinessRuleException(text("party.error.cannot.save"));
+                }
+                AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
+                warnIfTruncated(extract);
+            } catch (Exception e) {
+                report("party.error.export.account.statement", e);
+            }
+        });
+    }
+
+    private PartyStatementFilter printableFilter() {
+        if (currentFilter == null || currentPage.isEmpty()) {
+            report("party.statement.title",
+                    new UserValidationException(text("party.error.no.data.export")));
+            return null;
+        }
+        return currentFilter;
+    }
+
+    private void withExtract(PartyStatementFilter filter, Consumer<PartyStatementPrintData> consumer) {
+        Task<PartyStatementPrintData> task = new Task<>() {
+            @Override
+            protected PartyStatementPrintData call() throws Exception {
+                return statementService.forPrint(filter);
+            }
+        };
+        startPrimary(task, "party.statement.status.preparing.export", consumer,
+                "party.error.export.account.statement");
+    }
+
+    private boolean requireRows(PartyStatementPrintData extract) {
+        if (extract.rows().isEmpty()) {
+            report("party.statement.title",
+                    new UserValidationException(text("party.error.no.data.export")));
+            return false;
+        }
+        return true;
+    }
+
+    private void warnIfTruncated(PartyStatementPrintData extract) {
+        if (extract.truncated()) {
+            report("party.statement.title", new UserValidationException(
+                    text("party.statement.truncated", PartyStatementService.PRINT_LIMIT)));
         }
     }
 
-    /** Refuses an export of nothing out loud, rather than writing an empty file and saying it saved. */
-    private void requireRows() throws UserValidationException {
-        if (statement.rows().isEmpty()) {
-            throw new UserValidationException(text("party.error.no.data.export"));
-        }
+    // ---- columns and plumbing -------------------------------------------------------------
+
+    private TreeTableColumn<AccountCard, String> kindColumn() {
+        return tree("party.statement.column.kind", card -> card.getKind() == null
+                ? "" : text(card.getKind().messageKey()), 130);
     }
 
-    /** Every row under the root, the root itself excluded - it stands for the tree, not a movement. */
-    private List<AccountCard> allRows(TreeItem<AccountCard> item) {
-        List<AccountCard> rows = new java.util.ArrayList<>();
-        if (item != root && item.getValue() != null) {
-            rows.add(item.getValue());
-        }
-        item.getChildren().forEach(child -> rows.addAll(allRows(child)));
-        return rows;
-    }
-
-    // ---- plumbing --------------------------------------------------------------------
-
-    private PartyKind partyKind() {
-        return nameAndAccountInterface.partyKind();
-    }
-
-    private Button button(String key, AppIcon icon, Runnable action) {
-        Button button = new Button(text(key), icon.graphic());
-        button.getStyleClass().add("app-neutral-button");
-        button.setId("statement-" + key.replace('.', '-'));
-        button.setOnAction(event -> action.run());
-        return button;
-    }
-
-    private <T> TreeTableColumn<AccountCard, String> tree(
-            String titleKey, java.util.function.Function<AccountCard, String> value) {
+    private TreeTableColumn<AccountCard, String> tree(
+            String titleKey, java.util.function.Function<AccountCard, String> value, double width) {
         TreeTableColumn<AccountCard, String> column = new TreeTableColumn<>(text(titleKey));
+        column.setPrefWidth(width);
         column.setCellValueFactory(features -> new javafx.beans.property.ReadOnlyObjectWrapper<>(
                 value.apply(features.getValue().getValue())));
         return column;
     }
 
     private TreeTableColumn<AccountCard, BigDecimal> money(
-            String titleKey, java.util.function.Function<AccountCard, Double> value) {
+            String titleKey, java.util.function.Function<AccountCard, Double> value,
+            String styleClass) {
         TreeTableColumn<AccountCard, BigDecimal> column = new TreeTableColumn<>(text(titleKey));
-        column.setStyle("-fx-alignment: CENTER-RIGHT;");
+        column.setPrefWidth(110);
         column.setCellValueFactory(features -> {
             Double amount = value.apply(features.getValue().getValue());
             return new javafx.beans.property.ReadOnlyObjectWrapper<>(
                     amount == null || amount == 0 ? null : BigDecimal.valueOf(amount));
         });
-        column.setCellFactory(ignored -> new javafx.scene.control.TreeTableCell<>() {
+        column.setCellFactory(ignored -> new TreeTableCell<>() {
             @Override
             protected void updateItem(BigDecimal amount, boolean empty) {
                 super.updateItem(amount, empty);
                 setText(empty || amount == null ? null : Columns.money(amount));
                 pseudoClassStateChanged(Columns.NEGATIVE, amount != null && amount.signum() < 0);
+                getStyleClass().removeAll("party-statement-debit-cell",
+                        "party-statement-credit-cell", "party-statement-balance-cell");
+                if (!empty) {
+                    getStyleClass().add(styleClass);
+                }
             }
         });
         return column;
     }
 
-    private void report(Throwable e) {
-        AllAlerts.handleError(text("party.error.load.account.details.items"),
-                e instanceof Exception exception ? exception : new RuntimeException(e));
+    private static <V> TreeTableColumn<AccountCard, V> named(
+            String id, TreeTableColumn<AccountCard, V> column) {
+        column.setId(id);
+        return column;
     }
 
-    private static String text(String key) {
-        return LanguageManager.getInstance().getString(key);
+    private PartyKind partyKind() {
+        return nameAndAccountInterface.partyKind();
+    }
+
+    private Button button(String key, AppIcon icon, Runnable action) {
+        Button button = new Button(text(key));
+        if (icon != null) {
+            button.setGraphic(icon.graphic());
+        }
+        button.getStyleClass().add("app-neutral-button");
+        button.setContentDisplay(ContentDisplay.RIGHT);
+        button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setId("statement-" + key.replace('.', '-'));
+        button.setOnAction(event -> action.run());
+        return button;
+    }
+
+    private void report(String contextKey, Throwable error) {
+        AllAlerts.handleError(text(contextKey),
+                error instanceof Exception exception ? exception : new RuntimeException(error));
+    }
+
+    private static String text(String key, Object... arguments) {
+        return LanguageManager.getInstance().getString(key, arguments);
     }
 
     @Override
     public String title() {
-        return LanguageManager.getInstance().getString("party.account.card.title", partyName);
+        return text("party.account.card.title", partyName);
     }
 
     @Override
     public boolean resize() {
         return true;
+    }
+
+    @Override
+    public boolean addLastPane() {
+        return false;
+    }
+
+    @Override
+    public double minWidth() {
+        return 840;
+    }
+
+    @Override
+    public double minHeight() {
+        return 560;
+    }
+
+    @Override
+    public String dialogStyleClass() {
+        return "party-statement-dialog";
+    }
+
+    private record StatementSetup(PartyStatementOptions options, LocalDate earliest,
+                                  BigDecimal creditLimit) {
     }
 }

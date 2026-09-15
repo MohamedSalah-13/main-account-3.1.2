@@ -1,7 +1,8 @@
 package com.hamza.account.controller.name_account;
 
 import com.hamza.account.controller.model.AccountCard;
-import javafx.scene.control.TreeItem;
+
+import java.util.List;
 
 /**
  * The one thing a statement still needs per party side: the lines of a document.
@@ -22,11 +23,11 @@ import javafx.scene.control.TreeItem;
 public interface AccountDetailsInterface {
 
     /**
-     * Loads the lines of the document a row stands for, as children of its tree item.
+     * Loads the lines of the document a row stands for.
      * <p>
      * Called only for a row whose {@link AccountCard#hasDocumentLines()} is true, and only
      * when the user expands it — the statement of a party with two thousand invoices must
      * not read two thousand line tables to open.
      */
-    void addTreeItemTotals(AccountCard row, TreeItem<AccountCard> treeItem) throws Exception;
+    List<AccountCard> documentLines(AccountCard row) throws Exception;
 }

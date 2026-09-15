@@ -52,19 +52,16 @@
                     <children>
 
                         <!--
-                          Title strip: what this screen is, how much of it there is, and which page
-                          of it is showing. The page box has a floor (minWidth -Infinity) so the
-                          growing region beside it can never squeeze it off the screen.
+                          Title strip: what this screen is. The current page, selection and result
+                          count live in the fixed footer, where they remain visible while the table
+                          scrolls.
                         -->
                         <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="items-header">
                             <children>
                                 <Label fx:id="labelTitle" styleClass="app-title" text="%item.title" />
-                                <Label fx:id="labelCount" styleClass="items-count-badge" />
                                 <Label fx:id="labelFiltered" managed="false" styleClass="items-filtered-badge"
                                        text="%item.status.filtered" visible="false" />
-                                <HBox fx:id="pagerBox" alignment="CENTER_LEFT" minWidth="-Infinity" spacing="5.0" />
                                 <Region HBox.hgrow="ALWAYS" />
-                                <Label fx:id="labelSelected" styleClass="app-subtitle" />
                             </children>
                         </HBox>
 
@@ -291,6 +288,21 @@
                     </children>
                 </StackPane>
             </center>
+
+            <!-- The result state and page jump remain visible while either table scrolls. -->
+            <bottom>
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card,items-footer">
+                    <children>
+                        <Label fx:id="labelCount" styleClass="items-count-badge" />
+                        <Label fx:id="labelSelected" styleClass="app-subtitle" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <HBox fx:id="pagerBox" alignment="CENTER_LEFT" minWidth="-Infinity" spacing="5.0" />
+                    </children>
+                    <BorderPane.margin>
+                        <Insets top="10.0" />
+                    </BorderPane.margin>
+                </HBox>
+            </bottom>
         </BorderPane>
     </children>
 </StackPane>

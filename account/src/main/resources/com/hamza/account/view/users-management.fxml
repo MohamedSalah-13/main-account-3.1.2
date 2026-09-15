@@ -54,10 +54,6 @@
                         <ComboBox fx:id="comboStatus" prefWidth="170.0"/>
                         <MenuButton fx:id="viewMenu" mnemonicParsing="false"/>
                         <Button fx:id="btnRefresh" text="%refresh" styleClass="neutral-button"/>
-                        <Button fx:id="btnEdit" text="%user.management.action.edit" styleClass="neutral-button"/>
-                        <Button fx:id="btnToggle" text="%user.management.action.activate" styleClass="warning-action-button"/>
-                        <Button fx:id="btnPermissions" text="%user.management.action.permissions" styleClass="primary-button"/>
-                        <Button fx:id="btnClose" text="%close" styleClass="neutral-button"/>
                     </children>
                 </HBox>
                 <!-- The table is created in the controller and returned by the page

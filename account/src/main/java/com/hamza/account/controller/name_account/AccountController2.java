@@ -47,6 +47,7 @@ import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -61,6 +62,8 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -136,6 +139,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final TextField search = new TextField();
     private final CheckBox overLimitOnly = new CheckBox(text("party.balances.filter.over.limit"));
     private final TextField idleDays = new TextField();
+    private final ToggleButton filtersToggle = new ToggleButton(
+            text("invoice.search.filters"), AppIcon.FILTER.graphic());
+    private final VBox filtersPanel = new VBox(8);
 
     private final Label statParties = statValue("stat-parties");
     private final Label statOwed = statValue("stat-owed");
@@ -160,7 +166,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final ProgressIndicator progress = new ProgressIndicator();
 
     @FXML
-    private VBox box;
+    private BorderPane box;
     @FXML
     private StackPane stackPane;
 
@@ -184,9 +190,14 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         buildTable();
         columnViews().install(viewMenu, table);
-        box.getChildren().setAll(PartyIdentityHeader.of(identity.balancesProfile()),
-                statCards(), filterBar(), tableArea(), footer());
-        VBox.setVgrow(box, Priority.ALWAYS);
+        VBox top = new VBox(8, PartyIdentityHeader.of(identity.balancesProfile()),
+                statCards(), filterBar());
+        StackPane tableArea = tableArea();
+        box.setPadding(new Insets(8));
+        box.setTop(top);
+        box.setCenter(tableArea);
+        box.setBottom(footer());
+        BorderPane.setMargin(tableArea, new Insets(8, 0, 8, 0));
 
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(AccountChanged.class, event -> {
@@ -296,6 +307,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         } finally {
             loading = false;
         }
+        setFiltersPanelVisible(true);
         search(0);
     }
 
@@ -318,7 +330,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         idleDays.setPromptText(text("party.balances.filter.idle"));
         search.setPromptText(text("party.balances.filter.text"));
         search.setId("balance-search");
-        HBox.setHgrow(search, Priority.ALWAYS);
+        search.setPrefWidth(260);
 
         Button apply = new Button(text("search"), AppIcon.SEARCH.graphic());
         apply.getStyleClass().addAll("app-primary-button", "party-primary-button");
@@ -328,8 +340,12 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
         clear.getStyleClass().add("app-neutral-button");
         clear.setOnAction(event -> reset());
-        // The search field grows, and an HBox squeezes everything else to make room for it -
-        // a button's minimum is its full caption, or it is cut to "..." on a narrower window.
+        filtersToggle.setId("balance-filters-toggle");
+        filtersToggle.getStyleClass().addAll("app-neutral-button", "party-balances-filter-toggle");
+        filtersToggle.setContentDisplay(ContentDisplay.RIGHT);
+        filtersToggle.setOnAction(event -> setFiltersPanelVisible(filtersToggle.isSelected()));
+
+        // A button's minimum is its full caption, or it is cut to "..." on a narrower window.
         apply.setMinWidth(Region.USE_PREF_SIZE);
         clear.setMinWidth(Region.USE_PREF_SIZE);
 
@@ -341,18 +357,32 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         // The Enter order, declared once, in the order the bar is filled - rule ق-ل9.
         whenEnterPressed(balanceFrom, balanceTo, idleDays, search, apply);
 
-        HBox first = new HBox(8, caption("party.balances.filter.state"), comboState,
+        FlowPane first = new FlowPane(8, 8, caption("party.balances.filter.state"), comboState,
                 caption("party.balances.filter.area"), comboArea,
                 caption("party.balances.filter.as.of"), asOf, overLimitOnly);
         first.setAlignment(Pos.CENTER_LEFT);
-        HBox second = new HBox(8, balanceFrom, balanceTo, idleDays, search, apply, clear);
-        second.getChildren().addAll(listActions());
+        FlowPane second = new FlowPane(8, 8, balanceFrom, balanceTo, idleDays, clear);
         second.setAlignment(Pos.CENTER_LEFT);
 
-        VBox bar = new VBox(8, first, second);
+        FlowPane quick = new FlowPane(8, 8, search, apply, filtersToggle);
+        quick.getChildren().addAll(listActions());
+        quick.setAlignment(Pos.CENTER_LEFT);
+        quick.getStyleClass().add("party-balances-quick-actions");
+
+        filtersPanel.getChildren().setAll(first, second);
+        filtersPanel.getStyleClass().add("party-balances-filter-panel");
+        setFiltersPanelVisible(false);
+
+        VBox bar = new VBox(8, quick, filtersPanel);
         bar.getStyleClass().addAll("app-card", "party-form-card");
         bar.setId("balance-filters");
         return bar;
+    }
+
+    private void setFiltersPanelVisible(boolean visible) {
+        filtersPanel.setVisible(visible);
+        filtersPanel.setManaged(visible);
+        filtersToggle.setSelected(visible);
     }
 
     private StackPane tableArea() {
