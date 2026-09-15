@@ -137,7 +137,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private Label labelNum, labelName, labelStock, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
     @Getter
-    private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem, btnQuickMode,
+    private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnQuickMode,
             btnPinParty, btnPinDelegate, btnPinTreasury, btnPinStock;
     @FXML
     private Button btnReturnFromInvoice;
@@ -295,7 +295,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void buttonGraphic() {
         btnNew.setGraphic(AppIcon.ADD.graphic());
-        btnUpdateItem.setGraphic(AppIcon.EDIT.graphic());
         btnSearch.setGraphic(AppIcon.SEARCH.graphic());
         btnSave.setGraphic(AppIcon.SAVE.graphic());
         btnPrintSave.setGraphic(AppIcon.PRINT.graphic());
@@ -509,8 +508,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         btnSearch.setText(lang.getString("invoice.btn.search"));
         btnSave.setText(lang.getString("invoice.btn.save"));
         btnPrintSave.setText(lang.getString("invoice.btn.save.print"));
-        btnUpdateItem.setText(lang.getString(screenMode == InvoiceScreenMode.QUICK
-                ? "invoice.btn.add.or.update.item" : "invoice.btn.update.item"));
         btnAdd.setText(lang.getString("invoice.btn.add"));
         btnQuickMode.setText(lang.getString(screenMode == InvoiceScreenMode.QUICK
                 ? "invoice.screen.standard" : "invoice.screen.quick"));
@@ -609,7 +606,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         itemEntry = new InvoiceItemEntryCoordinator(
                 new InvoiceItemEntryCoordinator.Controls(
                         txtBarcode, txtPrice, txtQuantity, txtItemBalance, txtTotals,
-                        comboType, btnAdd, btnUpdateItem),
+                        comboType, btnAdd),
                 editor,
                 invoiceItemSelectionService,
                 textSearchItems,
@@ -1472,8 +1469,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void hideQuickItemInputs() {
         List<javafx.scene.Node> controls = new ArrayList<>(List.of(labelBarcode, txtBarcode,
                 labelSearchBy, labelCondition, comboType, labelPrice, txtPrice, labelQuantity,
-                txtQuantity, labelItemBalance, txtItemBalance, labelTotals, txtTotals, btnAdd,
-                btnUpdateItem));
+                txtQuantity, labelItemBalance, txtItemBalance, labelTotals, txtTotals, btnAdd));
         // The name search belongs to the form above the table, which this screen has
         // not got; leaving it visible left an orphan search box with nothing behind it.
         if (itemSearchField != null) {
@@ -1526,10 +1522,19 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             }
         };
         btnNew.disableProperty().bind(observableValue);
-        BooleanBinding itemMutationDenied = Bindings.createBooleanBinding(
-                () -> !AuthorizationGuard.isGranted(itemMutationPermission(txtBarcode.getText())),
-                txtBarcode.textProperty());
-        btnUpdateItem.disableProperty().bind(observableValue.or(itemMutationDenied));
+    }
+
+    /**
+     * F4: edit the item on the form, or create one. The same two conditions the removed
+     * toolbar button was disabled by - a saved invoice being edited, or no permission to
+     * create or update the item - so the shortcut does exactly what the button did.
+     */
+    public void openCurrentItem() {
+        if (num_invoice_update > 0
+                || !AuthorizationGuard.isGranted(itemMutationPermission(txtBarcode.getText()))) {
+            return;
+        }
+        itemEntry.openCurrentItem();
     }
 
     private void addItem(int num) {

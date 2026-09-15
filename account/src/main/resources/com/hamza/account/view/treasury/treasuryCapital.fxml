@@ -1,56 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:id="root"
-            fx:controller="com.hamza.account.controller.convert_treasury.TreasuryCapitalController"
-            styleClass="app-root">
+<BorderPane fx:id="root" styleClass="app-root" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21" fx:controller="com.hamza.account.controller.convert_treasury.TreasuryCapitalController">
 
     <top>
         <VBox spacing="18" styleClass="page-container">
             <padding>
-                <Insets top="24" right="28" bottom="18" left="28"/>
+                <Insets bottom="18" left="28" right="28" top="24" />
             </padding>
 
             <VBox spacing="6">
-                <Label text="%treasury.capital.title" styleClass="page-title"/>
-                <Label text="%treasury.capital.subtitle" styleClass="page-subtitle"/>
+                <Label styleClass="page-title" text="%treasury.capital.title" />
+                <Label styleClass="page-subtitle" text="%treasury.capital.subtitle" />
             </VBox>
 
-            <VBox spacing="16" styleClass="app-card">
-                <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Label text="%treasury.label.from.date" styleClass="form-label"/>
-                    <DatePicker fx:id="fromDate" styleClass="modern-input"/>
-                    <Label text="%treasury.label.to.date" styleClass="form-label"/>
-                    <DatePicker fx:id="toDate" styleClass="modern-input"/>
-                    <Button text="%common.refresh" onAction="#reload" styleClass="primary-button"/>
+            <VBox spacing="8.0" styleClass="app-card">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label styleClass="form-label" text="%treasury.label.from.date" />
+                    <DatePicker fx:id="fromDate" styleClass="modern-input" />
+                    <Label styleClass="form-label" text="%treasury.label.to.date" />
+                    <DatePicker fx:id="toDate" styleClass="modern-input" />
+                    <Button onAction="#reload" styleClass="primary-button" text="%common.refresh" />
                 </HBox>
 
-                <HBox spacing="28" alignment="CENTER_LEFT">
-                    <Label fx:id="paidInLabel" styleClass="section-title"/>
-                    <Label fx:id="drawnLabel" styleClass="section-title"/>
-                    <Label fx:id="netLabel" styleClass="section-title"/>
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <Label fx:id="paidInLabel" styleClass="section-title" />
+                    <Label fx:id="drawnLabel" styleClass="section-title" />
+                    <Label fx:id="netLabel" styleClass="section-title" />
                 </HBox>
 
-                <Label text="%treasury.capital.hint" wrapText="true" styleClass="page-subtitle"/>
+                <Label styleClass="page-subtitle" text="%treasury.capital.hint" wrapText="true" />
             </VBox>
         </VBox>
     </top>
 
     <center>
-        <VBox spacing="12" styleClass="table-section">
+        <VBox spacing="5.0" styleClass="table-section">
             <padding>
-                <Insets top="8" right="28" bottom="28" left="28"/>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
             </padding>
 
-            <HBox alignment="CENTER_RIGHT">
-                <Label text="%treasury.capital.section.movements" styleClass="section-title"/>
-            </HBox>
-
-            <TableView fx:id="movementsTable" styleClass="app-table" VBox.vgrow="ALWAYS"/>
+            <TableView fx:id="movementsTable" styleClass="app-table" VBox.vgrow="ALWAYS" />
         </VBox>
     </center>
 

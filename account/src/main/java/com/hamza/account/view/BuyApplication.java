@@ -111,10 +111,9 @@ public class BuyApplication extends Application {
                 btnPrintSave::fire
         );
 
-        var btnAddItem = getController().getBtnUpdateItem();
-        btnAddItem.getScene().getAccelerators().put(
+        btnPrintSave.getScene().getAccelerators().put(
                 new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F4),
-                btnAddItem::fire
+                getController()::openCurrentItem
         );
 
         var btnSwitchMode = getController().getBtnQuickMode();

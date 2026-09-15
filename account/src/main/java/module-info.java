@@ -176,4 +176,6 @@ module com.hamza.account {
     exports com.hamza.account.document;
     exports com.hamza.account.view;
     opens com.hamza.account.view to javafx.fxml;
+    opens com.hamza.account.features.invoice;
+    exports com.hamza.account.features.invoice;
 }

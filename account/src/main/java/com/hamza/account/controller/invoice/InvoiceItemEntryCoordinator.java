@@ -26,7 +26,9 @@ import java.util.function.Supplier;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
-/** Owns JavaFX event wiring for the item-entry section of an invoice form. */
+/**
+ * Owns JavaFX event wiring for the item-entry section of an invoice form.
+ */
 public final class InvoiceItemEntryCoordinator {
 
     private final Controls controls;
@@ -44,12 +46,13 @@ public final class InvoiceItemEntryCoordinator {
     private int currentPriceTier = 1;
 
     public InvoiceItemEntryCoordinator(Controls controls, InvoiceEditorViewModel<?> editor,
-            InvoiceItemSelectionService selectionService, StringProperty searchText, int stockId,
-            CheckedIntSupplier priceTier, Supplier<InvoiceItemSelectionService.ScaleBarcodeSettings> scaleSettings,
-            BooleanSupplier addDirectly, Runnable addLine, IntConsumer openItem, ErrorHandler errorHandler) {
+                                       InvoiceItemSelectionService selectionService, StringProperty searchText, int stockId,
+                                       CheckedIntSupplier priceTier, Supplier<InvoiceItemSelectionService.ScaleBarcodeSettings> scaleSettings,
+                                       BooleanSupplier addDirectly, Runnable addLine, IntConsumer openItem, ErrorHandler errorHandler) {
         this(controls, editor, selectionService, searchText, () -> stockId, priceTier,
                 scaleSettings, addDirectly, addLine, openItem, errorHandler);
     }
+
     public InvoiceItemEntryCoordinator(
             Controls controls,
             InvoiceEditorViewModel<?> editor,
@@ -75,10 +78,16 @@ public final class InvoiceItemEntryCoordinator {
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler");
     }
 
+    /**
+     * Opens the item on the form for editing, or a new item when the form names none.
+     * Reached by F4 alone: the toolbar button it used to sit behind is gone.
+     */
+    public void openCurrentItem() {
+        openItem.accept(controls.barcode().getText().isBlank() || editor.selectedItem() == null
+                ? 0 : editor.selectedItem().getId());
+    }
+
     public void configure() {
-        controls.updateItem().setOnAction(event -> openItem.accept(
-                controls.barcode().getText().isBlank() || editor.selectedItem() == null
-                        ? 0 : editor.selectedItem().getId()));
         controls.add().setOnAction(event -> addLine.run());
         controls.barcode().setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER && !controls.barcode().getText().isBlank()) {
@@ -236,21 +245,6 @@ public final class InvoiceItemEntryCoordinator {
         controls.total().setText(MoneyMath.text(MoneyMath.multiply(price, quantity)));
     }
 
-    public record Controls(TextField barcode, TextField price, TextField quantity,
-                           TextField balance, TextField total, ComboBox<String> unit,
-                           Button add, Button updateItem) {
-        public Controls {
-            Objects.requireNonNull(barcode, "barcode");
-            Objects.requireNonNull(price, "price");
-            Objects.requireNonNull(quantity, "quantity");
-            Objects.requireNonNull(balance, "balance");
-            Objects.requireNonNull(total, "total");
-            Objects.requireNonNull(unit, "unit");
-            Objects.requireNonNull(add, "add");
-            Objects.requireNonNull(updateItem, "updateItem");
-        }
-    }
-
     @FunctionalInterface
     public interface CheckedIntSupplier {
         int getAsInt() throws Exception;
@@ -259,5 +253,19 @@ public final class InvoiceItemEntryCoordinator {
     @FunctionalInterface
     public interface ErrorHandler {
         void handle(Exception error, boolean scaleBarcode);
+    }
+
+    public record Controls(TextField barcode, TextField price, TextField quantity,
+                           TextField balance, TextField total, ComboBox<String> unit,
+                           Button add) {
+        public Controls {
+            Objects.requireNonNull(barcode, "barcode");
+            Objects.requireNonNull(price, "price");
+            Objects.requireNonNull(quantity, "quantity");
+            Objects.requireNonNull(balance, "balance");
+            Objects.requireNonNull(total, "total");
+            Objects.requireNonNull(unit, "unit");
+            Objects.requireNonNull(add, "add");
+        }
     }
 }
