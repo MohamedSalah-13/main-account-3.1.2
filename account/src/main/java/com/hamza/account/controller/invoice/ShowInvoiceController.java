@@ -430,13 +430,19 @@ public final class ShowInvoiceController<T3 extends BaseNames, T4 extends BaseAc
             return;
         }
         setActionBusy(true);
-        String printedAt = formatDateTime(header.dateInsert());
+        InvoiceHeaderView printedHeader = header;
+        List<? extends BasePurchasesAndSales> printedLines = sourceLines;
+        // Two different times, as on the invoice screen: the receipt carries when the invoice was
+        // entered, and the A4 page's "printed at" line is now - a reprint a month later must not
+        // claim it was printed on the day of the sale.
+        String enteredAt = formatDateTime(printedHeader.dateInsert());
+        String printedAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         Task<InvoicePrintRequest> task = new Task<>() {
             @Override
             protected InvoicePrintRequest call() throws Exception {
-                return printService.prepare(sourceLines, printedAt,
+                return printService.prepare(printedLines, enteredAt,
                         PropertiesName.getPrintPaperReceiptInvoice(),
-                        lines -> ShowInvoiceDetails.printDocument(header, documentType, lines, printedAt));
+                        lines -> ShowInvoiceDetails.printDocument(printedHeader, documentType, lines, printedAt));
             }
         };
         task.setOnSucceeded(event -> {

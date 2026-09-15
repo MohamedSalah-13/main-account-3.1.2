@@ -133,6 +133,8 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     private Task<?> activeTask;
     private int generation;
     private boolean detailErrorReported;
+    /** Whether the filter bar has its options; until then refresh repeats the setup. */
+    private boolean setupDone;
 
     public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher,
                                              DataInterface<?, ?, T3, T4> dataInterface,
@@ -308,19 +310,36 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
     // ---- loading -------------------------------------------------------------------------
 
+    /**
+     * Reads what the filter bar needs before the first search. A failure here leaves the refresh
+     * button as the way back - {@link #reload()} repeats this step until it succeeds - and the
+     * credit limit is read apart from it: a limit that cannot be read hides the limit, not the
+     * statement.
+     */
     private void initialise() {
         Task<StatementSetup> setup = new Task<>() {
             @Override
             protected StatementSetup call() throws Exception {
                 PartyStatementOptions options = statementService.options(partyKind());
                 LocalDate earliest = statementService.earliestMovement(partyKind(), partyId);
-                return new StatementSetup(options, earliest, readCreditLimit());
+                BigDecimal limit = null;
+                Exception limitFailure = null;
+                try {
+                    limit = readCreditLimit();
+                } catch (Exception e) {
+                    limitFailure = e;
+                }
+                return new StatementSetup(options, earliest, limit, limitFailure);
             }
         };
         startPrimary(setup, "party.statement.status.initialising", value -> {
             creditLimit = value.creditLimit();
+            setupDone = true;
             filters.setDisable(false);
             filters.initialise(value.options(), value.earliest());
+            if (value.creditLimitFailure() != null) {
+                report("party.error.load.account.details.items", value.creditLimitFailure());
+            }
         }, "party.error.load.account.details.items");
     }
 
@@ -332,9 +351,14 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         return BigDecimal.valueOf(nameService.getCredit(List.of(party), partyId));
     }
 
+    /** Repeats the last search - or, when nothing has loaded yet, the step that failed. */
     private void reload() {
         if (currentFilter != null) {
             load(currentFilter);
+        } else if (setupDone) {
+            filters.search();
+        } else {
+            initialise();
         }
     }
 
@@ -724,6 +748,6 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     }
 
     private record StatementSetup(PartyStatementOptions options, LocalDate earliest,
-                                  BigDecimal creditLimit) {
+                                  BigDecimal creditLimit, Exception creditLimitFailure) {
     }
 }

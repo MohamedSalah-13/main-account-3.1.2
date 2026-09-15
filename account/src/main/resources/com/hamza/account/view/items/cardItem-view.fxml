@@ -94,7 +94,7 @@
                                         </VBox>
                                         <HBox alignment="BOTTOM_LEFT" spacing="8.0">
                                             <children>
-                                                <Button fx:id="btnSearch" defaultButton="true" mnemonicParsing="false"
+                                                <Button fx:id="btnSearch" mnemonicParsing="false"
                                                         styleClass="primary-button" text="%search" />
                                                 <Button fx:id="btnPrint" mnemonicParsing="false"
                                                         styleClass="neutral-button" text="%print" />

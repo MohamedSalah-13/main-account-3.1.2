@@ -134,8 +134,8 @@ public final class PartyStatementFilterBar extends VBox {
 
     /** The filter the controls describe right now. */
     public PartyStatementFilter filter(int page, int pageSize) {
-        LocalDate from = dateFrom.getValue() == null ? earliestMovement : dateFrom.getValue();
         LocalDate to = dateTo.getValue() == null ? LocalDate.now() : dateTo.getValue();
+        LocalDate from = dateFrom.getValue() == null ? earliestNoLaterThan(to) : dateFrom.getValue();
         Set<PartyMovementKind> kinds = comboKind.getValue() == null
                 ? Set.of() : Set.of(comboKind.getValue());
         return new PartyStatementFilter(kind, partyId, from, to, kinds,
@@ -166,8 +166,9 @@ public final class PartyStatementFilterBar extends VBox {
         LocalDate today = LocalDate.now();
         loading = true;
         try {
-            dateFrom.setValue(period.needsEarliestMovement() ? earliestMovement : period.from(today));
-            dateTo.setValue(period.to(today));
+            LocalDate to = period.to(today);
+            dateFrom.setValue(period.needsEarliestMovement() ? earliestNoLaterThan(to) : period.from(today));
+            dateTo.setValue(to);
         } finally {
             loading = false;
         }
@@ -290,6 +291,20 @@ public final class PartyStatementFilterBar extends VBox {
         VBox rows = new VBox(8, first, second);
         rows.getStyleClass().add("party-statement-filter-rows");
         return rows;
+    }
+
+    /**
+     * The party's first movement, unless it is dated after {@code to}. A movement entered with a
+     * future date is the party's earliest when it is their only one, and "all" starting after
+     * today would be a period the filter refuses - so the whole history opened on an error.
+     */
+    private LocalDate earliestNoLaterThan(LocalDate to) {
+        return earliestMovement.isAfter(to) ? to : earliestMovement;
+    }
+
+    /** Searches with the controls as they stand, through the same checks as every other search. */
+    public void search() {
+        fire();
     }
 
     private void fire() {
