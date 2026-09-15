@@ -1,23 +1,12 @@
 package com.hamza.account.service;
 
-import com.hamza.account.document.DocumentType;
-import com.hamza.account.features.stockledger.StockMovementAssembler;
-import com.hamza.account.features.events.ChangeAnnouncer;
-import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.period.PeriodLock;
-import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.authorization.AuthorizationGuard;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.document.TotalsPage;
 import com.hamza.account.document.TotalsSummaryRow;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsSalesReturnDao;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.TransactionTemplate;
-import com.hamza.account.features.shift.ShiftDocumentDeletionJournal;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -39,27 +28,6 @@ public record TotalSalesReturnService(DaoFactory daoFactory) {
 
     }
 
-    /** Refused whole if any of them falls inside a closed period - see TotalSalesService. */
-    public int deleteMultiData(Integer[] ids) throws DaoException {
-        return deleteMultiData(ids, null);
-    }
-
-    public int deleteMultiData(Integer[] ids, String correctionReason) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.SALES_RE_DELETE);
-        PeriodLock.require(PeriodLockRegistry.SALES_RETURN, List.of(ids));
-        return TransactionTemplate.execute(() -> {
-            var journal = new ShiftDocumentDeletionJournal(daoFactory).capture(DocumentType.SALES_RETURN, ids);
-            daoFactory.stockMovementDao().deleteByReferences(
-                    StockMovementAssembler.referenceTypeFor(DocumentType.SALES_RETURN), ids);
-            int rows = getTotalsSalesReturnDao().deleteInvoicesInRange(ids);
-            journal.appendReversals(rows, correctionReason);
-            if (rows > 0) {
-                ChangeAnnouncer.jdbc().announce(new InvoiceSaved(DocumentType.SALES_RETURN.side()));
-            }
-            return rows;
-        });
-    }
-
     public List<Total_Sales_Re> getTotalSalesByCustomerId(int customer_id) throws DaoException {
         return getTotalsSalesReturnDao().getTotalSalesByCustomerId(customer_id);
     }
@@ -75,10 +43,6 @@ public record TotalSalesReturnService(DaoFactory daoFactory) {
 
     public int getMaxId() throws DaoException {
         return getTotalsSalesReturnDao().getMaxId();
-    }
-
-    public int deleteById(int id) throws DaoException {
-        return deleteMultiData(new Integer[]{id});
     }
 
     public TotalsPage<Total_Sales_Re> searchTotals(TotalsSearchCriteria criteria, int page, int pageSize)

@@ -42,7 +42,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
 
     private final DesignInterface designInterface = () -> DocumentType.SALES_RETURN;
 
-    private final TotalDesignInterface totalDesignInterface = new TotalSalesReturnImplDesign(totalSalesReturnService);
+    private final TotalDesignInterface totalDesignInterface = new TotalSalesReturnImplDesign();
 
     private final InvoiceBuy<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> invoiceBuy = new SalesInvoiceReturn();
 

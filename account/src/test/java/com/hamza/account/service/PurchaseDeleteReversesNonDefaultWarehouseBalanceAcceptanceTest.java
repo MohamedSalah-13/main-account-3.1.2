@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.documentdelete.BackupBeforeDelete;
+import com.hamza.account.features.documentdelete.DocumentDeletionService;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -83,7 +86,8 @@ class PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest {
             assertEquals(0, balance(transaction, itemId, DefaultStock.ID), 0.0001,
                     "and nowhere else - warehouse 1 must not see a purchase made against a different one");
 
-            new TotalBuyService(FACTORY).deleteMultiData(new Integer[]{invoiceId});
+            DocumentDeletionService.jdbc(FACTORY, BackupBeforeDelete.NONE)
+                    .delete(DocumentType.PURCHASE, java.util.List.of(invoiceId), null);
 
             assertEquals(0, balance(transaction, itemId, stockId), 0.0001,
                     "deleting the invoice must restore the balance of the warehouse it named");

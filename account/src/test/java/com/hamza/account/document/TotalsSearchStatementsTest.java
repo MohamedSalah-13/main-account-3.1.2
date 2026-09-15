@@ -140,6 +140,23 @@ class TotalsSearchStatementsTest {
         }
     }
 
+    /**
+     * The item count reads each family's own line table and item column, correlated on the page
+     * row. Counting {@code num} on a return - whose lines call it {@code item_id} - would be an
+     * unknown column; counting another family's lines would be a plausible wrong number.
+     */
+    @Test
+    void theItemCountCountsDistinctItemsOnTheFamilysOwnLines() {
+        assertTrue(DocumentTableSpec.SALES.searchPageSql(EVERYTHING, new ArrayList<>()).contains(
+                "(SELECT COUNT(DISTINCT ln.num) FROM sales ln WHERE ln.invoice_number = p.invoice_number) AS item_count"));
+        assertTrue(DocumentTableSpec.PURCHASE.searchPageSql(EVERYTHING, new ArrayList<>()).contains(
+                "(SELECT COUNT(DISTINCT ln.num) FROM purchase ln WHERE ln.invoice_number = p.invoice_number) AS item_count"));
+        assertTrue(DocumentTableSpec.SALES_RETURN.searchPageSql(EVERYTHING, new ArrayList<>()).contains(
+                "(SELECT COUNT(DISTINCT ln.item_id) FROM sales_re ln WHERE ln.invoice_number = p.id) AS item_count"));
+        assertTrue(DocumentTableSpec.PURCHASE_RETURN.searchPageSql(EVERYTHING, new ArrayList<>()).contains(
+                "(SELECT COUNT(DISTINCT ln.item_id) FROM purchase_re ln WHERE ln.invoice_number = p.id) AS item_count"));
+    }
+
     /** The party is joined by hand, so the wrong table would silently search the wrong people. */
     @Test
     void eachFamilyJoinsItsOwnPartyTable() {

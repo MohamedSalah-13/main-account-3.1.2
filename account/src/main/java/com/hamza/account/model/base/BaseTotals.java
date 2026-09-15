@@ -31,6 +31,12 @@ public abstract class BaseTotals extends DForColumnTable {
     private InvoiceType invoiceType;
     private InvoiceStatus invoice_status;
     private DiscountType discountType;
+    /**
+     * How many different items the document holds. Filled only by the totals search
+     * ({@code DocumentTableSpec.searchPageSql}); a row read any other way carries zero.
+     * A plain field, not a property - see rule ق-ج1; the rest of this class still owes that.
+     */
+    private int itemCount;
 
     public int getId() {
         return id.get();

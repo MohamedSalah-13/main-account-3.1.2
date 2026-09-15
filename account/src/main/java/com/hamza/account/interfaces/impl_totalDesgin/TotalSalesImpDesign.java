@@ -7,26 +7,20 @@ import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.interfaces.totals.TotalsSalesData;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.Total_Sales;
-import com.hamza.account.service.TotalSalesService;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.table.Columns;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
-import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
-@RequiredArgsConstructor
 public class TotalSalesImpDesign implements TotalDesignInterface {
-
-    private final TotalSalesService totalSalesService;
 
     /** Every row on this screen is a {@link Total_Sales}; see {@link TotalsDataInterface}. */
     private static Total_Sales cast(BaseTotals t2) {
@@ -46,9 +40,9 @@ public class TotalSalesImpDesign implements TotalDesignInterface {
         addColumn(tableView, LanguageManager.getInstance().getString("user.type.delegate"), tableView.getColumns().size(), colDelegate);
 
         if (AuthorizationGuard.isGranted(AppPermissions.INVOICE_PROFIT_SHOW)) {
-            Callback<TableColumn.CellDataFeatures<BaseTotals, Double>, ObservableValue<Double>> totalProfit =
-                    cellData -> new SimpleDoubleProperty(cast(cellData.getValue()).getTotal_profit()).asObject();
-            addColumn(tableView, LanguageManager.getInstance().getString("report.column.invoice.profit"), tableView.getColumns().size(), totalProfit);
+            // Money, written the way the totals beside it are.
+            tableView.getColumns().add(Columns.asMoney(Columns.number("report.column.invoice.profit",
+                    row -> cast(row).getTotal_profit())));
 
             Callback<TableColumn.CellDataFeatures<BaseTotals, Double>, ObservableValue<Double>> totalProfitPercent =
                     cellData -> new SimpleDoubleProperty(cast(cellData.getValue()).getProfit_percent()).asObject();
@@ -65,21 +59,6 @@ public class TotalSalesImpDesign implements TotalDesignInterface {
     @Override
     public TotalsDataInterface totalsDataInterface() {
         return new TotalsSalesData();
-    }
-
-    @Override
-    public int deleteData(int id) throws DaoException {
-        return totalSalesService.deleteById(id);
-    }
-
-    @Override
-    public int deleteMultiData(@NotNull Integer... ids) throws Exception {
-        return totalSalesService.deleteMultiData(ids);
-    }
-
-    @Override
-    public int deleteMultiData(String correctionReason, @NotNull Integer... ids) throws Exception {
-        return totalSalesService.deleteMultiData(ids, correctionReason);
     }
 
 }

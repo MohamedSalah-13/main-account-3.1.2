@@ -42,7 +42,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 
     private final DesignInterface designInterface = () -> DocumentType.SALES;
 
-    private final TotalDesignInterface totalDesignInterface = new TotalSalesImpDesign(totalSalesService);
+    private final TotalDesignInterface totalDesignInterface = new TotalSalesImpDesign();
 
     private final InvoiceBuy<Sales, Total_Sales, Customers, CustomerAccount> invoiceBuy = new SalesInvoice();
 

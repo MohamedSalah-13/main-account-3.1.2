@@ -255,7 +255,12 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
         String pageSql = SPEC.searchPageSql(criteria, pageParams);
         pageParams.add(pageSize);
         pageParams.add(page * pageSize);
-        List<Total_Buy_Re> rows = queryForObjects(pageSql, this::map, pageParams.toArray());
+        List<Total_Buy_Re> rows = queryForObjects(pageSql, rs -> {
+            // Only the search's own statement carries the count, so only this mapper reads it.
+            var row = map(rs);
+            row.setItemCount(rs.getInt(DocumentTableSpec.ITEM_COUNT));
+            return row;
+        }, pageParams.toArray());
 
         List<Object> countParams = new ArrayList<>();
         String countSql = SPEC.searchCountSql(criteria, countParams);

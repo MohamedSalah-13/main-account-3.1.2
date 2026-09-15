@@ -232,6 +232,7 @@ public record DocumentTableSpec(
      */
     public String searchPageSql(TotalsSearchCriteria criteria, List<Object> params) {
         StringBuilder sql = new StringBuilder("SELECT p.*, st.stock_name, tr.t_name, us.user_name");
+        sql.append(", ").append(itemCountSubquery("p")).append(" AS ").append(ITEM_COUNT);
         if (hasProfit()) {
             String cost = lineCostSubquery("p");
             String net = "(p.total - p.discount)";
@@ -373,6 +374,22 @@ public record DocumentTableSpec(
                 + " ORDER BY sum_quantity DESC"
                 + " LIMIT " + REPORT_ROW_LIMIT;
     }
+
+    /**
+     * How many different items one document holds.
+     * <p>
+     * Distinct items rather than lines: the same item twice on a document - two expiry batches,
+     * or two units of it - is still one item, and "how many items were on this invoice" is the
+     * question the column answers. Correlated, for the reason {@link #searchPageSql} gives: it
+     * runs for the fifty rows of the page, through the line table's index on the document.
+     */
+    private String itemCountSubquery(String documentAlias) {
+        return "(SELECT COUNT(DISTINCT ln." + lineItem + ") FROM " + lineTable
+                + " ln WHERE ln." + LINE_DOCUMENT + " = " + documentAlias + "." + key + ")";
+    }
+
+    /** The column {@link #searchPageSql} names the item count, which the four mappers read. */
+    public static final String ITEM_COUNT = "item_count";
 
     /** The recorded cost of one document's lines, as {@code document_profit} sums it. */
     private String lineCostSubquery(String documentAlias) {
