@@ -39,6 +39,21 @@ public record AuditLogQuery(String search,
                 "", AuditSourceFilter.ALL, AuditLogSort.NEWEST, 0, DEFAULT_PAGE_SIZE);
     }
 
+    /**
+     * How many of the conditions behind the audit log's filters button narrow the rows - shown on
+     * the button while its panel is closed. The text and the two dates stay in the bar and are
+     * not counted; the order is counted, since a list sorted another way reads as a different list.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (userId != null) count++;
+        if (action != AuditActionFilter.ALL) count++;
+        if (tableName != null && !tableName.isBlank()) count++;
+        if (source != AuditSourceFilter.ALL) count++;
+        if (sort != AuditLogSort.NEWEST) count++;
+        return count;
+    }
+
     public AuditLogQuery withPage(int value) {
         return new AuditLogQuery(search, from, to, userId, action, tableName, source, sort, value, pageSize);
     }

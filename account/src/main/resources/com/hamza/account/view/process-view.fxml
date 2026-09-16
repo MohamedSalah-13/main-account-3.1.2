@@ -2,7 +2,6 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
@@ -10,6 +9,8 @@
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -18,7 +19,10 @@
 
 <StackPane fx:id="root" styleClass="app-root,audit-log-root" stylesheets="@../css/audit-log.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.others.ProcessesController">
     <children>
-      <ScrollPane fitToHeight="true" fitToWidth="true">
+      <!-- An AnchorPane so the row's field changes can open in a RowDetailDrawer over the list. -->
+      <AnchorPane fx:id="drawerHost">
+       <children>
+      <ScrollPane fitToHeight="true" fitToWidth="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <content>
               <VBox minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="page-container">
                   <padding>
@@ -35,11 +39,6 @@
                               </VBox>
                               <Region HBox.hgrow="ALWAYS" />
                               <ProgressIndicator fx:id="progress" maxHeight="24.0" maxWidth="24.0" visible="false" />
-                              <Button fx:id="btnExportExcel" styleClass="success-button" text="%audit.log.export.excel" />
-                              <Button fx:id="btnExportPdf" styleClass="primary-button" text="%audit.log.export.pdf" />
-                              <Button fx:id="btnRetention" styleClass="warning-button" text="%audit.log.retention.button" />
-                              <Button fx:id="btnAdminEvents" styleClass="neutral-button" text="%audit.admin.button" />
-                              <Button fx:id="btnRefresh" styleClass="neutral-button" text="%refresh" />
                           </children>
                       </HBox>
       
@@ -72,51 +71,46 @@
                           </children>
                       </FlowPane>
       
-                      <VBox spacing="9.0" styleClass="app-card,audit-filter-card">
+                      <!-- Ordered by ListToolbar in ProcessesController: the text and the dates, apply, the
+                           filters button and clear all, then refresh and the exports, then the rest. -->
+                      <VBox spacing="8.0" styleClass="app-card,audit-filter-card">
                           <children>
-                              <Label styleClass="section-title" text="%audit.log.filter.title" />
-                              <FlowPane alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
+                              <FlowPane fx:id="toolbarRow" alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
                                   <children>
                                       <TextField fx:id="txtSearch" prefWidth="250.0" promptText="%audit.log.filter.search" />
+                                      <DatePicker fx:id="dateFrom" prefWidth="145.0" promptText="%audit.log.filter.from" />
+                                      <DatePicker fx:id="dateTo" prefWidth="145.0" promptText="%audit.log.filter.to" />
+                                      <Button fx:id="btnApply" styleClass="primary-button" text="%audit.log.filter.apply" />
+                                      <ToggleButton fx:id="btnFilters" mnemonicParsing="false" />
+                                      <Button fx:id="btnClear" styleClass="neutral-button" text="%invoice.search.clear" />
+                                      <Button fx:id="btnRefresh" styleClass="neutral-button" text="%refresh" />
+                                      <Button fx:id="btnExportExcel" styleClass="success-button" text="%audit.log.export.excel" />
+                                      <Button fx:id="btnExportPdf" styleClass="primary-button" text="%audit.log.export.pdf" />
+                                      <Button fx:id="btnAdminEvents" styleClass="neutral-button" text="%audit.admin.button" />
+                                      <Button fx:id="btnRetention" styleClass="warning-button" text="%audit.log.retention.button" />
+                                      <Button fx:id="btnDelete" styleClass="danger-button" text="%audit.log.delete.selected" />
+                                  </children>
+                              </FlowPane>
+                              <FlowPane fx:id="filterPane" alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
+                                  <children>
                                       <ComboBox fx:id="comboUser" prefWidth="155.0" />
                                       <ComboBox fx:id="comboAction" prefWidth="135.0" />
                                       <ComboBox fx:id="comboTable" prefWidth="165.0" />
                                       <ComboBox fx:id="comboSource" prefWidth="145.0" />
-                                      <DatePicker fx:id="dateFrom" prefWidth="145.0" promptText="%audit.log.filter.from" />
-                                      <DatePicker fx:id="dateTo" prefWidth="145.0" promptText="%audit.log.filter.to" />
                                       <ComboBox fx:id="comboSort" prefWidth="165.0" />
-                                      <Button fx:id="btnApply" styleClass="primary-button" text="%audit.log.filter.apply" />
-                                      <Button fx:id="btnClear" styleClass="neutral-button" text="%audit.log.filter.clear" />
                                   </children>
                               </FlowPane>
                           </children>
                       </VBox>
-      
+
                       <Pagination fx:id="pagination" maxPageIndicatorCount="7" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
-      
-                      <VBox spacing="5.0" styleClass="app-card,audit-details-card">
-                          <children>
-                              <HBox alignment="CENTER_RIGHT" spacing="8.0">
-                                  <children>
-                                      <VBox spacing="2.0">
-                                          <children>
-                                              <Label styleClass="section-title" text="%audit.log.details.title" />
-                                              <Label fx:id="labelSelection" styleClass="info-text" text="%audit.log.details.none" />
-                                          </children>
-                                      </VBox>
-                                      <Region HBox.hgrow="ALWAYS" />
-                                      <CheckBox fx:id="chkChangedOnly" text="%audit.diff.changed.only" />
-                                      <Button fx:id="btnDelete" styleClass="danger-button" text="%audit.log.delete.selected" />
-                                  </children>
-                              </HBox>
-                              <StackPane fx:id="diffHost" minHeight="190.0" VBox.vgrow="ALWAYS" />
-                          </children>
-                      </VBox>
       
                       <Label fx:id="labelStatus" styleClass="status-label" text="%audit.log.status.ready" />
                   </children>
               </VBox>
          </content>
       </ScrollPane>
+       </children>
+      </AnchorPane>
     </children>
 </StackPane>

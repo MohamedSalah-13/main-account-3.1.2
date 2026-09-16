@@ -6,6 +6,10 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.features.audit.*;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.table.RowDetailDrawer;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AuditAdminEventsApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -16,7 +20,13 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
@@ -37,6 +47,8 @@ import java.util.function.Function;
 @FxmlPath(pathFile = "process-view.fxml")
 public final class ProcessesController {
 
+    /** What the four change columns ask for; the drawer takes the whole width below its floor. */
+    private static final double DIFF_PANEL_WIDTH = 760;
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
@@ -57,7 +69,7 @@ public final class ProcessesController {
     @FXML
     private Label labelTitle, labelTotal, labelInserts, labelUpdates, labelDeletes;
     @FXML
-    private Label labelStatus, labelSelection;
+    private Label labelStatus;
     @FXML
     private TextField txtSearch;
     @FXML
@@ -77,9 +89,15 @@ public final class ProcessesController {
     @FXML
     private ProgressIndicator progress;
     @FXML
-    private StackPane diffHost;
+    private AnchorPane drawerHost;
     @FXML
-    private CheckBox chkChangedOnly;
+    private FlowPane toolbarRow, filterPane;
+    @FXML
+    private ToggleButton btnFilters;
+    private final CheckBox chkChangedOnly = new CheckBox(text("audit.diff.changed.only"));
+    private final ListToolbar toolbar = new ListToolbar();
+    /** The field changes of one row, over the list rather than in a second table under it. */
+    private RowDetailDrawer detail;
     @FXML
     private Button btnApply, btnClear, btnRefresh, btnDelete;
     @FXML
@@ -190,16 +208,33 @@ public final class ProcessesController {
                 }
             }
         });
-        diffHost.getChildren().setAll(diffTable);
         chkChangedOnly.setSelected(true);
         chkChangedOnly.selectedProperty().addListener((obs, old, value) -> showDiff());
+
+        // The changes were a second table under the list, which on a 768-point screen left each
+        // of them a few rows. They open over the list now, from the row's own button or a
+        // double-click, and an open panel follows the selection down the list.
+        VBox content = new VBox(8, chkChangedOnly, diffTable);
+        VBox.setVgrow(diffTable, Priority.ALWAYS);
+        detail = RowDetailDrawer.installIn(drawerHost);
+        detail.setContent(content);
+        detail.setPreferredWidth(DIFF_PANEL_WIDTH);
+        detail.setOnHidden(() -> {
+            currentDiff = List.of();
+            diffTable.getItems().clear();
+        });
     }
 
     private void configureTable() {
+        TableColumn<AuditLogEntry, Void> actions = RowActionsColumn.of("invoice.column.actions",
+                RowAction.permitted(List.of(RowAction.of("audit.log.details.title", AppIcon.SHOW,
+                        "app-neutral-button", null, this::showDetails))));
+        actions.setId("auditActions");
+        tableView.getColumns().add(actions);
         tableView.setId("auditLogTable");
         tableView.getStyleClass().add("modern-table");
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        tableView.getColumns().setAll(
+        tableView.getColumns().addAll(
                 column("auditId", "audit.log.column.id", 80, row -> String.valueOf(row.id())),
                 column("auditTime", "audit.log.column.time", 155, row -> DATE_TIME.format(row.actionTime())),
                 column("auditActor", "audit.log.column.actor", 145, this::actorLabel),
@@ -211,6 +246,14 @@ public final class ProcessesController {
                 column("auditNotes", "audit.log.column.notes", 210, AuditLogEntry::notes));
         tableView.setPlaceholder(new Label(text("audit.log.placeholder.empty")));
         tableView.setRowFactory(ignored -> new TableRow<>() {
+            {
+                setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2 && !isEmpty()) {
+                        showDetails(getItem());
+                    }
+                });
+            }
+
             @Override
             protected void updateItem(AuditLogEntry row, boolean empty) {
                 super.updateItem(row, empty);
@@ -264,7 +307,19 @@ public final class ProcessesController {
 
     private void configureActions() {
         labelTitle.setGraphic(AppIcon.REPORT.graphic(24));
-        btnApply.setGraphic(AppIcon.FILTER.graphic());
+        btnApply.setGraphic(AppIcon.SEARCH.graphic());
+        btnFilters.getStyleClass().add("app-neutral-button");
+        btnFilters.setGraphic(AppIcon.FILTER.graphic());
+        // Exporting, retention and the administration journal used to sit in the heading, apart
+        // from the filters they export; deleting the ticked rows sat under the second table.
+        toolbar.searchField(txtSearch, dateFrom, dateTo)
+                .search(btnApply)
+                .filters(btnFilters, filterPane)
+                .clear(btnClear)
+                .refresh(btnRefresh)
+                .export(btnExportExcel, btnExportPdf)
+                .extra(btnAdminEvents, btnRetention, btnDelete)
+                .installIn(toolbarRow);
         btnClear.setGraphic(AppIcon.CLEAR.graphic());
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
         btnExportExcel.setGraphic(AppIcon.SPREADSHEET.graphic());
@@ -323,6 +378,7 @@ public final class ProcessesController {
     private void load(AuditLogQuery next) {
         if (auditLogService == null) return;
         query = next;
+        toolbar.showActiveFilters(next.panelConditionCount());
         long token = ++loadToken;
         boolean loadOptions = !optionsLoaded;
         setBusy(true);
@@ -403,13 +459,23 @@ public final class ProcessesController {
             clearDetails();
             return;
         }
-        AuditLogEntry row = selected.getFirst();
-        labelSelection.setText(selected.size() == 1
-                ? text("audit.log.details.selected.one", row.id(), tableLabel(row.tableName()), row.recordId())
-                : text("audit.log.details.selected.many", selected.size(), row.id(),
-                tableLabel(row.tableName()), row.recordId()));
+        if (detail.isShowing()) {
+            showDetails(selected.getLast());
+        }
+    }
+
+    /**
+     * Opens one row's field changes. It never selects the row: the selection is what "delete the
+     * selected rows" acts on, and opening a row to read it must not add it to that.
+     */
+    private void showDetails(AuditLogEntry row) {
+        if (row == null) {
+            return;
+        }
         currentDiff = AuditJsonDiff.compare(row.oldData(), row.newData());
         showDiff();
+        detail.show(text("audit.log.details.title"),
+                text("audit.log.details.selected.one", row.id(), tableLabel(row.tableName()), row.recordId()));
     }
 
     private void showDiff() {
@@ -421,9 +487,10 @@ public final class ProcessesController {
     }
 
     private void clearDetails() {
-        labelSelection.setText(text("audit.log.details.none"));
-        currentDiff = List.of();
-        diffTable.getItems().clear();
+        // The page has been replaced; a panel left open would be describing a row no longer shown.
+        if (detail != null && detail.isShowing()) {
+            detail.hide();
+        }
         btnDelete.setDisable(true);
     }
 
