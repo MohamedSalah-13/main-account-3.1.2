@@ -25,6 +25,7 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.CardItemService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.TablePdfLayout;
@@ -53,8 +54,10 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.input.MouseButton;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -130,6 +133,10 @@ public class CardController extends LoadData implements AppSettingInterface {
     private DatePicker dateFrom, dateTo;
     @FXML
     private ProgressIndicator progress;
+    @FXML
+    private FlowPane toolbarRow;
+    @FXML
+    private VBox fromBox, toBox, stockBox, typeBox;
 
     public CardController(ItemsModel itemsModel, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -271,6 +278,14 @@ public class CardController extends LoadData implements AppSettingInterface {
         btnThisMonth.setGraphic(AppIcon.CALENDAR.graphic());
         btnAllHistory.setGraphic(AppIcon.HISTORY.graphic());
 
+        // The filters were a card of their own: a title row holding the period shortcuts, then the
+        // fields with search and print in the last cell. One row now, in the list screens' order.
+        new ListToolbar()
+                .searchField(fromBox, toBox, stockBox, typeBox)
+                .search(btnSearch)
+                .print(btnPrint)
+                .extra(btnToday, btnThisMonth, btnAllHistory)
+                .installIn(toolbarRow);
         btnSearch.setOnAction(event -> loadCard());
         btnPrint.setOnAction(event -> print());
         btnToday.setOnAction(event -> usePeriod(ItemCardFilter.today(LocalDate.now())));

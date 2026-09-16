@@ -22,7 +22,8 @@
             <top>
                 <VBox spacing="8.0">
                     <children>
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                        <!-- Ordered by ListToolbar in ItemGroupManagerController. -->
+                        <HBox fx:id="toolbarRow" alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                             <children>
                                 <TextField fx:id="txtSearch" minWidth="280.0"
                                            promptText="%item.group.manager.search" HBox.hgrow="ALWAYS" />

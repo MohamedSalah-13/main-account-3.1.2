@@ -18,6 +18,10 @@ import com.hamza.account.features.audit.AuditJsonFormatter;
 import com.hamza.account.features.audit.AuditSourceFilter;
 import com.hamza.account.features.audit.AuditUserOption;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.table.RowDetailDrawer;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -27,6 +31,8 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -37,6 +43,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -63,6 +72,9 @@ public final class AuditAdminEventsController {
     private final AuditAdminExportService exportService = ServiceRegistry.get(AuditAdminExportService.class);
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(350));
     private final TableView<AuditAdminEvent> table = new TableView<>();
+    private final ListToolbar toolbar = new ListToolbar();
+    /** An event's reason and data, over the list rather than in a card under it. */
+    private RowDetailDrawer detail;
     private AuditAdminEventQuery query = AuditAdminEventQuery.recent(LocalDate.now());
     private long loadToken;
     private boolean syncing;
@@ -71,7 +83,11 @@ public final class AuditAdminEventsController {
     @FXML private StackPane root;
     @FXML private Label labelTitle, labelTotal, labelExports, labelDeletes, labelPolicies, labelCleanups;
     @FXML private Label labelActivityToday, labelActivityAdmin, labelActivityDatabase, labelActivityAuthorization;
-    @FXML private Label labelStatus, labelSelection;
+    @FXML private Label labelStatus;
+    @FXML private AnchorPane drawerHost;
+    @FXML private FlowPane toolbarRow, filterPane;
+    @FXML private VBox detailPane;
+    @FXML private ToggleButton btnFilters;
     @FXML private TextField txtSearch;
     @FXML private DatePicker dateFrom, dateTo;
     @FXML private ComboBox<AuditUserOption> comboUser;
@@ -97,7 +113,12 @@ public final class AuditAdminEventsController {
     private void configureTable() {
         table.setId("auditAdminEventTable");
         table.getStyleClass().add("modern-table");
-        table.getColumns().setAll(
+        TableColumn<AuditAdminEvent, Void> actions = RowActionsColumn.of("invoice.column.actions",
+                RowAction.permitted(List.of(RowAction.of("audit.admin.details.title", AppIcon.SHOW,
+                        "app-neutral-button", null, this::showDetails))));
+        actions.setId("adminActions");
+        table.getColumns().add(actions);
+        table.getColumns().addAll(
                 column("adminId", "audit.admin.column.id", 80, row -> String.valueOf(row.id())),
                 column("adminTime", "audit.admin.column.time", 155, row -> DATE_TIME.format(row.occurredAt())),
                 column("adminEvent", "audit.admin.column.event", 170, row -> eventLabel(row.eventType())),
@@ -109,6 +130,20 @@ public final class AuditAdminEventsController {
                 column("adminReason", "audit.admin.column.reason", 260, AuditAdminEvent::reason));
         table.setPlaceholder(new Label(text("audit.admin.placeholder.empty")));
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> showSelection(value));
+        table.setRowFactory(ignored -> {
+            TableRow<AuditAdminEvent> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    showDetails(row.getItem());
+                }
+            });
+            return row;
+        });
+        // The reason and the data were a card under the list, two text boxes a few lines tall on
+        // a 768-point screen. They open over the list now, and an open panel follows the selection.
+        detail = RowDetailDrawer.installIn(drawerHost);
+        detail.setContent(detailPane);
+        detail.setPreferredWidth(620);
         TableSetting.tableMenuSetting(getClass(), table);
     }
 
@@ -156,7 +191,17 @@ public final class AuditAdminEventsController {
 
     private void configureActions() {
         labelTitle.setGraphic(AppIcon.REPORT.graphic(24));
-        btnApply.setGraphic(AppIcon.FILTER.graphic());
+        btnApply.setGraphic(AppIcon.SEARCH.graphic());
+        btnFilters.getStyleClass().add("app-neutral-button");
+        btnFilters.setGraphic(AppIcon.FILTER.graphic());
+        toolbar.searchField(txtSearch, dateFrom, dateTo)
+                .search(btnApply)
+                .filters(btnFilters, filterPane)
+                .clear(btnClear)
+                .refresh(btnRefresh)
+                .export(btnExportExcel, btnExportPdf)
+                .extra(btnClose)
+                .installIn(toolbarRow);
         btnClear.setGraphic(AppIcon.CLEAR.graphic());
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
         btnExportExcel.setGraphic(AppIcon.SPREADSHEET.graphic());
@@ -206,6 +251,7 @@ public final class AuditAdminEventsController {
     private void load(AuditAdminEventQuery next) {
         if (service == null) return;
         query = next;
+        toolbar.showActiveFilters(next.panelConditionCount());
         long token = ++loadToken;
         boolean loadMetadata = !metadataLoaded;
         setBusy(true);
@@ -288,14 +334,20 @@ public final class AuditAdminEventsController {
 
     private void showSelection(AuditAdminEvent row) {
         if (row == null) {
-            labelSelection.setText(text("audit.admin.details.none"));
+            if (detail.isShowing()) detail.hide();
             txtReason.clear();
             txtDetails.clear();
             return;
         }
-        labelSelection.setText(text("audit.admin.details.selected", row.id(), eventLabel(row.eventType())));
+        if (detail.isShowing()) showDetails(row);
+    }
+
+    private void showDetails(AuditAdminEvent row) {
+        if (row == null) return;
         txtReason.setText(Objects.toString(row.reason(), ""));
         txtDetails.setText(AuditJsonFormatter.display(row.details()));
+        detail.show(text("audit.admin.details.title"),
+                text("audit.admin.details.selected", row.id(), eventLabel(row.eventType())));
     }
 
     private void setBusy(boolean busy) {

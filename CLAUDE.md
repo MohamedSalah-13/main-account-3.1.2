@@ -1261,7 +1261,7 @@ refresh and print after the bulk delete - and none of those differences had been
   `filter*Pane`/`filter*Panel`. Its exemption list fails in both directions.
 
 A master and its detail are one table and a `RowDetailDrawer` (merge items, stock transfers, the
-audit log), never two tables stacked. Tables that do not depend on each other's selection - the
+audit log and its administration journal), never two tables stacked. Tables that do not depend on each other's selection - the
 shift administration, the permissions editor, the item picker's basket - are not that case.
 
 ### Row actions and paging

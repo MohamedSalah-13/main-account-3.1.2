@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
@@ -50,6 +51,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 
@@ -89,6 +91,7 @@ public final class ItemGroupManagerController {
     private final Map<Integer, ItemGroupSummary> allTargets = new LinkedHashMap<>();
 
     @FXML private StackPane root;
+    @FXML private HBox toolbarRow;
     @FXML private TextField txtSearch;
     @FXML private Button btnRefresh, btnExpandAll, btnCollapseAll, btnMove, btnUndo;
     @FXML private Label labelSelected, labelStatus;
@@ -295,6 +298,11 @@ public final class ItemGroupManagerController {
         btnUndo.setDisable(true);
 
         btnRefresh.setOnAction(event -> reload());
+        new ListToolbar()
+                .searchField(txtSearch)
+                .refresh(btnRefresh)
+                .extra(btnExpandAll, btnCollapseAll, progress)
+                .installIn(toolbarRow);
         btnExpandAll.setOnAction(event -> setMainGroupsExpanded(true));
         btnCollapseAll.setOnAction(event -> collapseAllGroups());
         btnMove.setOnAction(event -> chooseTarget());

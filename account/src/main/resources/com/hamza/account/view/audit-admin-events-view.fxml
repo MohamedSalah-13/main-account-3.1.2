@@ -10,6 +10,8 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -18,7 +20,10 @@
 
 <StackPane fx:id="root" minHeight="760.0" minWidth="1060.0" styleClass="app-root,audit-log-root,audit-admin-root" stylesheets="@../css/audit-log.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.others.AuditAdminEventsController">
     <children>
-      <ScrollPane fitToHeight="true" fitToWidth="true">
+      <!-- An AnchorPane so an event's reason and data can open in a RowDetailDrawer over the list. -->
+      <AnchorPane fx:id="drawerHost">
+       <children>
+      <ScrollPane fitToHeight="true" fitToWidth="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <content>
               <VBox minHeight="-Infinity" minWidth="-Infinity" prefHeight="850.0" prefWidth="850.0" spacing="5.0" styleClass="page-container">
                   <padding>
@@ -35,10 +40,6 @@
                               </VBox>
                               <Region HBox.hgrow="ALWAYS" />
                               <ProgressIndicator fx:id="progress" maxHeight="24.0" maxWidth="24.0" visible="false" />
-                              <Button fx:id="btnExportExcel" styleClass="success-button" text="%audit.admin.export.excel" />
-                              <Button fx:id="btnExportPdf" styleClass="primary-button" text="%audit.admin.export.pdf" />
-                              <Button fx:id="btnRefresh" styleClass="neutral-button" text="%refresh" />
-                              <Button fx:id="btnClose" styleClass="neutral-button" text="%close" />
                           </children>
                       </HBox>
       
@@ -111,54 +112,54 @@
                           </children>
                       </VBox>
       
-                      <VBox spacing="9.0" styleClass="app-card,audit-filter-card">
+                      <!-- Ordered by ListToolbar in AuditAdminEventsController. -->
+                      <VBox spacing="8.0" styleClass="app-card,audit-filter-card">
                           <children>
-                              <Label styleClass="section-title" text="%audit.admin.filter.title" />
-                              <FlowPane alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
+                              <FlowPane fx:id="toolbarRow" alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
                                   <children>
                                       <TextField fx:id="txtSearch" prefWidth="260.0" promptText="%audit.admin.filter.search" />
+                                      <DatePicker fx:id="dateFrom" prefWidth="145.0" promptText="%audit.log.filter.from" />
+                                      <DatePicker fx:id="dateTo" prefWidth="145.0" promptText="%audit.log.filter.to" />
+                                      <Button fx:id="btnApply" styleClass="primary-button" text="%audit.log.filter.apply" />
+                                      <ToggleButton fx:id="btnFilters" mnemonicParsing="false" />
+                                      <Button fx:id="btnClear" styleClass="neutral-button" text="%invoice.search.clear" />
+                                      <Button fx:id="btnRefresh" styleClass="neutral-button" text="%refresh" />
+                                      <Button fx:id="btnExportExcel" styleClass="success-button" text="%audit.admin.export.excel" />
+                                      <Button fx:id="btnExportPdf" styleClass="primary-button" text="%audit.admin.export.pdf" />
+                                      <Button fx:id="btnClose" styleClass="neutral-button" text="%close" />
+                                  </children>
+                              </FlowPane>
+                              <FlowPane fx:id="filterPane" alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
+                                  <children>
                                       <ComboBox fx:id="comboUser" prefWidth="160.0" />
                                       <ComboBox fx:id="comboEvent" prefWidth="180.0" />
                                       <ComboBox fx:id="comboSource" prefWidth="145.0" />
-                                      <DatePicker fx:id="dateFrom" prefWidth="145.0" promptText="%audit.log.filter.from" />
-                                      <DatePicker fx:id="dateTo" prefWidth="145.0" promptText="%audit.log.filter.to" />
                                       <ComboBox fx:id="comboSort" prefWidth="165.0" />
-                                      <Button fx:id="btnApply" styleClass="primary-button" text="%audit.log.filter.apply" />
-                                      <Button fx:id="btnClear" styleClass="neutral-button" text="%audit.log.filter.clear" />
                                   </children>
                               </FlowPane>
                           </children>
                       </VBox>
-      
+
                       <Pagination fx:id="pagination" maxPageIndicatorCount="7" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
-      
-                      <VBox spacing="8.0" styleClass="app-card,audit-details-card">
-                          <children>
-                              <Label styleClass="section-title" text="%audit.admin.details.title" />
-                              <Label fx:id="labelSelection" styleClass="info-text" text="%audit.admin.details.none" />
-                              <HBox spacing="10.0">
-                                  <children>
-                                      <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                                          <children>
-                                              <Label styleClass="form-label" text="%audit.admin.column.reason" />
-                                              <TextArea fx:id="txtReason" editable="false" prefRowCount="4" wrapText="true" VBox.vgrow="ALWAYS" />
-                                          </children>
-                                      </VBox>
-                                      <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                                          <children>
-                                              <Label styleClass="form-label" text="%audit.admin.details.data" />
-                                              <TextArea fx:id="txtDetails" editable="false" prefRowCount="4" styleClass="audit-json-area" wrapText="true" VBox.vgrow="ALWAYS" />
-                                          </children>
-                                      </VBox>
-                                  </children>
-                              </HBox>
-                          </children>
-                      </VBox>
       
                       <Label fx:id="labelStatus" styleClass="status-label" text="%audit.log.status.ready" />
                   </children>
               </VBox>
          </content>
       </ScrollPane>
+       </children>
+      </AnchorPane>
     </children>
+
+    <!-- Built here, shown in the drawer: fx:define injects these without placing them in the screen. -->
+    <fx:define>
+        <VBox fx:id="detailPane" spacing="8.0">
+            <children>
+                <Label styleClass="form-label" text="%audit.admin.column.reason" />
+                <TextArea fx:id="txtReason" editable="false" prefRowCount="4" wrapText="true" />
+                <Label styleClass="form-label" text="%audit.admin.details.data" />
+                <TextArea fx:id="txtDetails" editable="false" prefRowCount="12" styleClass="audit-json-area" wrapText="true" VBox.vgrow="ALWAYS" />
+            </children>
+        </VBox>
+    </fx:define>
 </StackPane>

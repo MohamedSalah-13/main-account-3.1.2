@@ -54,4 +54,13 @@ class AuditAdminEventQueryTest {
 
         assertEquals("audit.log.validation.date.range", error.getMessage());
     }
+
+    @org.junit.jupiter.api.Test
+    void theFiltersButtonCountsWhatThePanelNarrowsAndNotTheTextOrTheDates() {
+        java.time.LocalDate today = java.time.LocalDate.of(2026, 9, 16);
+        org.junit.jupiter.api.Assertions.assertEquals(0, AuditAdminEventQuery.recent(today).panelConditionCount());
+        AuditAdminEventQuery narrowed = new AuditAdminEventQuery("x", today.minusDays(2), today, 3, "EXPORT",
+                AuditSourceFilter.values()[1], AuditAdminSort.OLDEST, 0, AuditAdminEventQuery.DEFAULT_PAGE_SIZE);
+        org.junit.jupiter.api.Assertions.assertEquals(4, narrowed.panelConditionCount());
+    }
 }

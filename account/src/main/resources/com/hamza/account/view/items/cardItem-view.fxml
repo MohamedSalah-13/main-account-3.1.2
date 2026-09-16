@@ -51,59 +51,52 @@
                             </children>
                         </FlowPane>
 
-                        <VBox spacing="10.0" styleClass="app-card,item-card-filter-card">
+                        <!--
+                          Ordered by ListToolbar in CardController: the period and the warehouse (they
+                          say which card this is), the movement type beside them - one filter needs no
+                          panel - then search, print, and the period shortcuts.
+                        -->
+                        <FlowPane fx:id="toolbarRow" alignment="BOTTOM_LEFT" hgap="10.0" vgap="10.0"
+                                  styleClass="app-card,item-card-filter-card">
                             <children>
-                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <VBox fx:id="fromBox" minWidth="150.0" prefWidth="165.0" spacing="4.0">
                                     <children>
-                                        <Label styleClass="app-section-title" text="%item.card.filter.title" />
-                                        <Button fx:id="btnToday" mnemonicParsing="false" styleClass="filter-chip"
-                                                text="%item.card.period.today" />
-                                        <Button fx:id="btnThisMonth" mnemonicParsing="false" styleClass="filter-chip"
-                                                text="%item.card.period.month" />
-                                        <Button fx:id="btnAllHistory" mnemonicParsing="false" styleClass="filter-chip"
-                                                text="%item.card.period.all" />
+                                        <Label styleClass="form-label" text="%from" />
+                                        <DatePicker fx:id="dateFrom" editable="false"
+                                                    maxWidth="1.7976931348623157E308" />
                                     </children>
-                                </HBox>
-                                <FlowPane alignment="CENTER_LEFT" hgap="12.0" prefWrapLength="930.0" vgap="10.0">
+                                </VBox>
+                                <VBox fx:id="toBox" minWidth="150.0" prefWidth="165.0" spacing="4.0">
                                     <children>
-                                        <VBox minWidth="165.0" prefWidth="190.0" spacing="4.0">
-                                            <children>
-                                                <Label styleClass="form-label" text="%from" />
-                                                <DatePicker fx:id="dateFrom" editable="false"
-                                                            maxWidth="1.7976931348623157E308" />
-                                            </children>
-                                        </VBox>
-                                        <VBox minWidth="165.0" prefWidth="190.0" spacing="4.0">
-                                            <children>
-                                                <Label styleClass="form-label" text="%to" />
-                                                <DatePicker fx:id="dateTo" editable="false"
-                                                            maxWidth="1.7976931348623157E308" />
-                                            </children>
-                                        </VBox>
-                                        <VBox minWidth="180.0" prefWidth="215.0" spacing="4.0">
-                                            <children>
-                                                <Label styleClass="form-label" text="%invoice.stock" />
-                                                <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" />
-                                            </children>
-                                        </VBox>
-                                        <VBox minWidth="180.0" prefWidth="215.0" spacing="4.0">
-                                            <children>
-                                                <Label styleClass="form-label" text="%item.card.invoice.type" />
-                                                <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" />
-                                            </children>
-                                        </VBox>
-                                        <HBox alignment="BOTTOM_LEFT" spacing="8.0">
-                                            <children>
-                                                <Button fx:id="btnSearch" mnemonicParsing="false"
-                                                        styleClass="primary-button" text="%search" />
-                                                <Button fx:id="btnPrint" mnemonicParsing="false"
-                                                        styleClass="neutral-button" text="%print" />
-                                            </children>
-                                        </HBox>
+                                        <Label styleClass="form-label" text="%to" />
+                                        <DatePicker fx:id="dateTo" editable="false"
+                                                    maxWidth="1.7976931348623157E308" />
                                     </children>
-                                </FlowPane>
+                                </VBox>
+                                <VBox fx:id="stockBox" minWidth="170.0" prefWidth="190.0" spacing="4.0">
+                                    <children>
+                                        <Label styleClass="form-label" text="%invoice.stock" />
+                                        <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" />
+                                    </children>
+                                </VBox>
+                                <VBox fx:id="typeBox" minWidth="170.0" prefWidth="190.0" spacing="4.0">
+                                    <children>
+                                        <Label styleClass="form-label" text="%item.card.invoice.type" />
+                                        <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" />
+                                    </children>
+                                </VBox>
+                                <Button fx:id="btnSearch" mnemonicParsing="false"
+                                        styleClass="primary-button" text="%search" />
+                                <Button fx:id="btnPrint" mnemonicParsing="false"
+                                        styleClass="neutral-button" text="%print" />
+                                <Button fx:id="btnToday" mnemonicParsing="false" styleClass="filter-chip"
+                                        text="%item.card.period.today" />
+                                <Button fx:id="btnThisMonth" mnemonicParsing="false" styleClass="filter-chip"
+                                        text="%item.card.period.month" />
+                                <Button fx:id="btnAllHistory" mnemonicParsing="false" styleClass="filter-chip"
+                                        text="%item.card.period.all" />
                             </children>
-                        </VBox>
+                        </FlowPane>
                     </children>
                 </VBox>
             </top>

@@ -15,6 +15,9 @@ import com.hamza.account.features.employee.attendance.LeaveStatus;
 import com.hamza.account.features.employee.attendance.LeaveType;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -158,19 +161,13 @@ public class LeaveRequestsController implements AppSettingInterface {
         filterStatus.getSelectionModel().selectFirst();
         filterStatus.setOnAction(event -> load());
 
-        List<Node> controls = new ArrayList<>(List.of(
-                caption("leave.state"), filterStatus,
-                button("refresh", AppIcon.REFRESH, this::load)));
-
-        if (AuthorizationGuard.isGranted(AppPermissions.LEAVE_APPROVE)) {
-            controls.add(button("leave.action.approve", AppIcon.CONFIRM,
-                    () -> decide(LeaveStatus.APPROVED)));
-            controls.add(button("leave.action.reject", AppIcon.CLOSE,
-                    () -> decide(LeaveStatus.REJECTED)));
-        }
-
-        HBox bar = new HBox(8);
-        bar.getChildren().addAll(controls);
+        // The state is the list's one filter, so it sits where the search would. Approving and
+        // rejecting are buttons in the request's own row now: from the bar they acted on "the
+        // selected request" and needed "choose a request first" to say what they could not know.
+        HBox bar = new ListToolbar()
+                .searchField(caption("leave.state"), filterStatus)
+                .refresh(ListToolbar.refreshButton(this::load))
+                .installIn(new HBox(8));
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("filter-bar");
         return bar;
@@ -197,6 +194,13 @@ public class LeaveRequestsController implements AppSettingInterface {
         table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         table.setPlaceholder(new Label(text("leave.empty")));
         table.getColumns().setAll(List.of(
+                named("leave-actions", RowActionsColumn.of("employee.column.actions", RowAction.permitted(List.of(
+                        new RowAction<LeaveRequest>("leave.action.approve", AppIcon.CONFIRM, "app-primary-button",
+                                AppPermissions.LEAVE_APPROVE, request -> request.status() == LeaveStatus.PENDING,
+                                request -> decide(request, LeaveStatus.APPROVED)),
+                        new RowAction<LeaveRequest>("leave.action.reject", AppIcon.CLOSE, "danger-action-button",
+                                AppPermissions.LEAVE_APPROVE, request -> request.status() == LeaveStatus.PENDING,
+                                request -> decide(request, LeaveStatus.REJECTED)))))),
                 named("leave-employee", Columns.text("name", LeaveRequest::employeeName)),
                 named("leave-type", Columns.text("leave.type", LeaveRequest::leaveTypeName)),
                 named("leave-paid", Columns.text("leave.paid",
@@ -254,12 +258,7 @@ public class LeaveRequestsController implements AppSettingInterface {
         }
     }
 
-    private void decide(LeaveStatus decision) {
-        LeaveRequest selected = table.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            AllAlerts.alertError(text("leave.error.select"));
-            return;
-        }
+    private void decide(LeaveRequest selected, LeaveStatus decision) {
         if (!AllAlerts.confirmSave()) {
             return;
         }

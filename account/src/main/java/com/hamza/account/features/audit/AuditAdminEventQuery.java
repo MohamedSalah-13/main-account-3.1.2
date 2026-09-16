@@ -28,6 +28,19 @@ public record AuditAdminEventQuery(String search,
         pageSize = pageSize < 1 ? DEFAULT_PAGE_SIZE : Math.min(pageSize, 200);
     }
 
+    /**
+     * How many of the conditions behind the journal's filters button narrow the rows - shown on the
+     * button while its panel is closed. The text and the dates stay in the bar and are not counted.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (userId != null) count++;
+        if (eventType != null && !eventType.isBlank()) count++;
+        if (source != AuditSourceFilter.ALL) count++;
+        if (sort != AuditAdminSort.NEWEST) count++;
+        return count;
+    }
+
     public static AuditAdminEventQuery recent(LocalDate today) {
         LocalDate end = Objects.requireNonNull(today, "today");
         return new AuditAdminEventQuery("", end.minusDays(29), end, null, "",
