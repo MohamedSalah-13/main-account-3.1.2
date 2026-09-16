@@ -81,6 +81,22 @@ public record PartyAgeingFilter(
                 null, "", 0, DEFAULT_PAGE_SIZE);
     }
 
+    /**
+     * How many of the conditions behind the screen's filters button are narrowing the report -
+     * shown on the button while its panel is closed. The text is typed in the bar and not counted.
+     *
+     * @param today a report as at today is no filter
+     */
+    public int panelConditionCount(LocalDate today) {
+        int count = 0;
+        if (!asOf.equals(today)) count++;
+        if (areaId != null) count++;
+        if (overdueOnly) count++;
+        if (includeSettled) count++;
+        if (minimumBalance != null) count++;
+        return count;
+    }
+
     public boolean hasText() {
         return !text.isEmpty();
     }

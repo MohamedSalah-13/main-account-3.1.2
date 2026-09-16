@@ -137,5 +137,17 @@ class PartyAgeingFilterTest {
             assertEquals(null, noFloor.minimumBalance());
             assertEquals(BigDecimal.ZERO, zeroFloor.minimumBalance());
         }
+
+        @Test
+        @DisplayName("the filters button counts what its panel narrows, and not the text in the bar")
+        void theFiltersButtonCountsWhatThePanelNarrows() {
+            LocalDate today = LocalDate.of(2026, 9, 16);
+            assertEquals(0, new PartyAgeingFilter(PartyKind.CUSTOMER, today, null, false, false,
+                    null, "ahmed", 0, 50).panelConditionCount(today));
+            assertEquals(3, new PartyAgeingFilter(PartyKind.CUSTOMER, today.minusDays(1), 4, true, false,
+                    null, "", 0, 50).panelConditionCount(today));
+            assertEquals(1, new PartyAgeingFilter(PartyKind.CUSTOMER, today, null, false, false,
+                    BigDecimal.ZERO, "", 0, 50).panelConditionCount(today));
+        }
     }
 }

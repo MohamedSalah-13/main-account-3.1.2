@@ -161,6 +161,25 @@ public record EmployeeFilter(String text,
                 minRate, maxRate, value, 0, pageSize);
     }
 
+    /**
+     * How many of the conditions behind the screen's filters button narrow the list - shown on
+     * the button while its panel is closed. The text is typed in the bar, in plain view, and is
+     * not one of them.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (jobId != null) count++;
+        if (state != EmployeeState.ALL) count++;
+        if (salaryKind != null) count++;
+        if (employmentType != null) count++;
+        if (hiredFrom != null) count++;
+        if (hiredTo != null) count++;
+        if (minRate != null) count++;
+        if (maxRate != null) count++;
+        if (delegatesOnly) count++;
+        return count;
+    }
+
     /** Whether anything at all narrows the list - what the "clear filters" button is enabled by. */
     public boolean isNarrowed() {
         return hasText() || jobId != null || state != EmployeeState.ALL || salaryKind != null

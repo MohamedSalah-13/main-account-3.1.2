@@ -19,6 +19,7 @@ import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -34,6 +35,7 @@ import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContentDisplay;
@@ -208,8 +210,8 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         HBox identity = new HBox(14, iconBox, identityText);
         identity.setAlignment(Pos.CENTER_LEFT);
 
-        Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
-        Button print = button("print", AppIcon.PRINT, this::print);
+        Button refresh = ListToolbar.refreshButton(this::reload);
+        Button print = ListToolbar.printButton(this::print);
         print.getStyleClass().setAll("button", "app-primary-button", "party-statement-primary-action");
         Button pdf = button("party.btn.export.pdf", AppIcon.EXPORT, this::exportPdf);
         pdf.getStyleClass().setAll("button", "pdf-button");
@@ -219,12 +221,12 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         showDetails.setTooltip(new Tooltip(text("party.statement.details.hint")));
         showDetails.setOnAction(event -> setAllExpanded(showDetails.isSelected()));
 
-        FlowPane actions = new FlowPane(8, 8, showDetails, refresh, print, pdf, excel);
-        actions.setAlignment(Pos.CENTER_LEFT);
-        actions.getStyleClass().add("party-statement-actions");
+        // In the filter bar, in the order every list screen uses, rather than a row of their own
+        // under the heading. Expanding the documents is the statement's own control, so it is last.
+        filters.setListActions(refresh, print, new Node[]{pdf, excel}, showDetails);
         busySensitive.addAll(List.of(showDetails, refresh, print, pdf, excel));
 
-        VBox hero = new VBox(10, identity, actions);
+        VBox hero = new VBox(10, identity);
         hero.getStyleClass().add("party-statement-hero");
         return hero;
     }

@@ -59,7 +59,7 @@
                                   card holding three buttons that act on the list as a whole -
                                   and cost the table the height of a card to say so.
                                 -->
-                                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="totals-search-bar">
+                                <HBox fx:id="searchBar" alignment="CENTER_LEFT" spacing="8.0" styleClass="totals-search-bar">
                                     <children>
                                         <Label fx:id="searchIcon" styleClass="totals-search-icon" />
                                         <TextField fx:id="textSearch" promptText="%invoice.search.free.text.prompt"
@@ -70,7 +70,6 @@
                                                       styleClass="neutral-button" text="%invoice.search.filters" />
                                         <Button fx:id="btnClearFilters" mnemonicParsing="false"
                                                 styleClass="neutral-button" text="%invoice.search.clear" />
-                                        <Separator orientation="VERTICAL" />
                                         <MenuButton fx:id="btnView" mnemonicParsing="false"
                                                     styleClass="neutral-button" text="%party.list.view" />
                                         <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />

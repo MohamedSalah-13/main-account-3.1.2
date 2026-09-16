@@ -23,6 +23,7 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.table.VisibleColumnsExcelWriter;
@@ -139,9 +140,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final TextField search = new TextField();
     private final CheckBox overLimitOnly = new CheckBox(text("party.balances.filter.over.limit"));
     private final TextField idleDays = new TextField();
-    private final ToggleButton filtersToggle = new ToggleButton(
-            text("invoice.search.filters"), AppIcon.FILTER.graphic());
+    private final ToggleButton filtersToggle = ListToolbar.filtersToggle();
     private final VBox filtersPanel = new VBox(8);
+    private final ListToolbar toolbar = new ListToolbar();
 
     private final Label statParties = statValue("stat-parties");
     private final Label statOwed = statValue("stat-owed");
@@ -232,7 +233,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
      * row" is two gestures and carries a message that exists only because the control is in
      * the wrong place - "choose a row first". A refresh, a print and an export have no row.
      */
-    private Node[] listActions() {
+    private void listActions() {
         // The ageing report opens from here rather than from the main menu: it is the same data
         // and the same permission, and "these are the balances" leads straight to "how old are
         // they". A menu entry of its own would need a product feature in the signed catalogue,
@@ -241,16 +242,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         // The same period columns as this table, drawn over time - so it opens from here, with the
         // same permission, for the same reason the ageing report does.
         Button trend = button("party.trend.open", AppIcon.TREND, this::openTrend);
-        Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
-        Button print = button("print", AppIcon.PRINT, this::print);
         // The same neutral button as its three neighbours. It used to replace its classes with
         // "excel-button" alone, which dropped the base "button" class with them - a small green
         // label among buttons, without their padding, border or rounded corners.
         Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
-
-        Separator divider = new Separator(Orientation.VERTICAL);
-        divider.getStyleClass().add("modern-separator");
-        return new Node[]{divider, ageing, trend, refresh, print, excel, viewMenu};
+        toolbar.refresh(ListToolbar.refreshButton(this::reload))
+                .print(ListToolbar.printButton(this::print))
+                .export(excel)
+                .view(viewMenu)
+                .extra(ageing, trend);
     }
 
     /**
@@ -337,17 +337,12 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         apply.setId("balance-apply");
         apply.setOnAction(event -> search(0));
 
-        Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
-        clear.getStyleClass().add("app-neutral-button");
-        clear.setOnAction(event -> reset());
         filtersToggle.setId("balance-filters-toggle");
-        filtersToggle.getStyleClass().addAll("app-neutral-button", "party-balances-filter-toggle");
+        filtersToggle.getStyleClass().add("party-balances-filter-toggle");
         filtersToggle.setContentDisplay(ContentDisplay.RIGHT);
-        filtersToggle.setOnAction(event -> setFiltersPanelVisible(filtersToggle.isSelected()));
 
         // A button's minimum is its full caption, or it is cut to "..." on a narrower window.
         apply.setMinWidth(Region.USE_PREF_SIZE);
-        clear.setMinWidth(Region.USE_PREF_SIZE);
 
         comboState.setOnAction(event -> search(0));
         comboArea.setOnAction(event -> search(0));
@@ -361,17 +356,20 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 caption("party.balances.filter.area"), comboArea,
                 caption("party.balances.filter.as.of"), asOf, overLimitOnly);
         first.setAlignment(Pos.CENTER_LEFT);
-        FlowPane second = new FlowPane(8, 8, balanceFrom, balanceTo, idleDays, clear);
+        FlowPane second = new FlowPane(8, 8, balanceFrom, balanceTo, idleDays);
         second.setAlignment(Pos.CENTER_LEFT);
-
-        FlowPane quick = new FlowPane(8, 8, search, apply, filtersToggle);
-        quick.getChildren().addAll(listActions());
-        quick.setAlignment(Pos.CENTER_LEFT);
-        quick.getStyleClass().add("party-balances-quick-actions");
 
         filtersPanel.getChildren().setAll(first, second);
         filtersPanel.getStyleClass().add("party-balances-filter-panel");
-        setFiltersPanelVisible(false);
+
+        toolbar.searchField(search)
+                .search(apply)
+                .filters(filtersToggle, filtersPanel)
+                .clear(ListToolbar.clearButton(this::reset));
+        listActions();
+        FlowPane quick = toolbar.installIn(new FlowPane(8, 8));
+        quick.setAlignment(Pos.CENTER_LEFT);
+        quick.getStyleClass().add("party-balances-quick-actions");
 
         VBox bar = new VBox(8, quick, filtersPanel);
         bar.getStyleClass().addAll("app-card", "party-form-card");
@@ -380,9 +378,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void setFiltersPanelVisible(boolean visible) {
-        filtersPanel.setVisible(visible);
-        filtersPanel.setManaged(visible);
-        filtersToggle.setSelected(visible);
+        toolbar.setFiltersVisible(visible);
     }
 
     private StackPane tableArea() {
@@ -554,6 +550,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void show(PartyBalancePage page) {
         summary = page.summary();
+        toolbar.showActiveFilters(filter.panelConditionCount(LocalDate.now()));
         table.setItems(FXCollections.observableArrayList(page.rows()));
         columnSizing.layout(table);
 

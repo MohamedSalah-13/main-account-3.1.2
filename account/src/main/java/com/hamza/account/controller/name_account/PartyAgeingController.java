@@ -18,6 +18,7 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PageJumpBox;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
@@ -131,6 +132,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
 
     private final ContentSizedColumns<PartyAgeingRow> columnSizing = new ContentSizedColumns<>();
     private final MenuButton viewMenu = TableColumnViews.menuButton();
+    private final ListToolbar toolbar = new ListToolbar();
 
     private PartyAgeingFilter filter;
     private PartyAgeingSummary summary = PartyAgeingSummary.EMPTY;
@@ -199,7 +201,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
         return box;
     }
 
-    private FlowPane filterBar() {
+    private VBox filterBar() {
         DateSetting.dateAction(asOf);
         asOf.setId("ageing-as-of");
         asOf.setOnAction(event -> reload());
@@ -225,21 +227,28 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
         apply.setId("ageing-apply");
         apply.setOnAction(event -> reload());
 
-        Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
-        clear.getStyleClass().add("app-neutral-button");
-        clear.setMinWidth(Region.USE_PREF_SIZE);
-        clear.setOnAction(event -> reset());
-
         com.hamza.controlsfx.others.Utils.whenEnterPressed(minimumBalance, search, apply);
 
-        FlowPane bar = new FlowPane(8, 8,
+        // Everything but the text moved behind the filters button: on one row they left the
+        // search field a sliver at 1366 points, and the count on the button still says the
+        // report is narrowed while the panel is closed.
+        FlowPane panel = new FlowPane(8, 8,
                 caption("party.ageing.filter.as.of"), asOf,
                 caption("party.column.area"), comboArea,
-                minimumBalance, search, overdueOnly, includeSettled, apply, clear);
-        bar.getChildren().addAll(listActions());
-        bar.setAlignment(Pos.CENTER_LEFT);
+                minimumBalance, overdueOnly, includeSettled);
+        panel.setAlignment(Pos.CENTER_LEFT);
+
+        search.setPrefWidth(260);
+        toolbar.searchField(search)
+                .search(apply)
+                .filters(ListToolbar.filtersToggle(), panel)
+                .clear(ListToolbar.clearButton(this::reset));
+        listActions();
+        FlowPane row = toolbar.installIn(new FlowPane(8, 8));
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        VBox bar = new VBox(8, row, panel);
         bar.getStyleClass().addAll("app-card", "party-form-card");
-        search.setPrefWidth(220);
         return bar;
     }
 
@@ -247,14 +256,11 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
      * What acts on the list, after the filters that decide what the list is - where the accounts
      * screen puts its own. It used to be a bar of its own above the figures, holding two buttons.
      */
-    private Node[] listActions() {
-        Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
-        Button print = button("print", AppIcon.PRINT, this::print);
-        Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
-
-        Separator divider = new Separator(Orientation.VERTICAL);
-        divider.getStyleClass().add("modern-separator");
-        return new Node[]{divider, refresh, print, excel, viewMenu};
+    private void listActions() {
+        toolbar.refresh(ListToolbar.refreshButton(this::reload))
+                .print(ListToolbar.printButton(this::print))
+                .export(button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
+                .view(viewMenu);
     }
 
     /**
@@ -421,6 +427,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void show(PartyAgeingPage loaded) {
         summary = loaded.summary();
+        toolbar.showActiveFilters(filter.panelConditionCount(LocalDate.now()));
         table.setItems(FXCollections.observableArrayList(loaded.rows()));
         columnSizing.layout(table);
 

@@ -114,6 +114,27 @@ public record PartyBalanceFilter(
         return periodFrom == null ? LocalDate.EPOCH : periodFrom;
     }
 
+    /**
+     * How many of the conditions behind the screen's filters button are narrowing the list - the
+     * number the button shows while its panel is closed. The free text is not one of them: it is
+     * typed into the bar itself, where it is already in plain view.
+     *
+     * @param today what an "as at" date is compared with; a balance as at today is no filter
+     */
+    public int panelConditionCount(LocalDate today) {
+        int count = 0;
+        if (!asOf.equals(today)) count++;
+        if (state != BalanceState.ALL) count++;
+        if (minBalance != null) count++;
+        if (maxBalance != null) count++;
+        if (areaId != null) count++;
+        if (priceTierId != null) count++;
+        if (overLimitOnly) count++;
+        if (idleDays != null) count++;
+        if (periodFrom != null) count++;
+        return count;
+    }
+
     /** Whether a credit limit is a thing this ledger has at all. Only a customer has one. */
     public boolean hasCreditLimit() {
         return partyKind == PartyKind.CUSTOMER;

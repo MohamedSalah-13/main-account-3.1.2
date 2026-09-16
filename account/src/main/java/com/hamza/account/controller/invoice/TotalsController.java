@@ -40,6 +40,7 @@ import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.TableColumnViews;
@@ -134,6 +135,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
     private final String dateToKey;
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(300));
     private final ContentSizedColumns<BaseTotals> columnSizing = new ContentSizedColumns<>();
+    private final ListToolbar toolbar = new ListToolbar();
     private final Map<ComboBox<String>, FilterableCombo> filterableCombos = new IdentityHashMap<>();
     /** Added to every row loaded, so ticking or unticking one updates the line beside the delete button. */
     private final InvalidationListener selectionChanged = observable -> updateSelectionSummary();
@@ -190,7 +192,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
     @FXML
     private VBox filterPane;
     @FXML
-    private HBox pagerBar;
+    private HBox pagerBar, searchBar;
     @FXML
     private MenuButton menuButton;
     @FXML
@@ -224,6 +226,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
         reports = new TotalsReports(dataInterface, maskerPaneSetting, new ReportsHost());
         applyTotalsIdentity();
+        arrangeToolbar();
         getTable();
         otherSetting();
         configureSearchExperience();
@@ -254,6 +257,24 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
             }));
         }
         subscriptions.disposeWith(stackPane);
+    }
+
+    /**
+     * The bar in the order every list screen uses. It used to put the view menu before refresh
+     * and print after the bulk actions, which is the order the FXML happened to be written in.
+     * The ticked-rows controls come last: they act on some rows rather than the list, and delete
+     * is the one control in the bar that refresh does not undo.
+     */
+    private void arrangeToolbar() {
+        toolbar.searchField(searchIcon, textSearch)
+                .search(btnSearch)
+                .filters(btnFilters, filterPane)
+                .clear(btnClearFilters)
+                .refresh(btnRefresh)
+                .print(menuButton)
+                .view(btnView)
+                .extra(btnSelected, labelSelection, btnDeleteSelected)
+                .installIn(searchBar);
     }
 
     /** Gives each of the four totals lists a persistent, immediately recognizable identity. */
@@ -512,7 +533,6 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
         btnRefresh.setOnAction(actionEvent -> search(false));
         btnSearch.setOnAction(actionEvent -> search(true));
         btnClearFilters.setOnAction(actionEvent -> clearFilters());
-        btnFilters.setOnAction(actionEvent -> setFilterPanelVisible(btnFilters.isSelected()));
         btnPreviousPage.setOnAction(actionEvent -> {
             if (currentPage > 0) {
                 currentPage--;
@@ -899,9 +919,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
     }
 
     private void setFilterPanelVisible(boolean visible) {
-        filterPane.setVisible(visible);
-        filterPane.setManaged(visible);
-        btnFilters.setSelected(visible);
+        toolbar.setFiltersVisible(visible);
     }
 
     private void clearFilters() {
@@ -987,9 +1005,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
         labelFiltered.setManaged(filtered);
         labelFiltered.setVisible(filtered);
         labelFiltered.setText(language.getString("invoice.search.filtered", hiddenFilters));
-        btnFilters.setText(filtered
-                ? language.getString("invoice.search.filters.count", hiddenFilters)
-                : language.getString("invoice.search.filters"));
+        toolbar.showActiveFilters(hiddenFilters);
     }
 
     private void addDataToComboName() {

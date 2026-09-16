@@ -41,6 +41,21 @@ public record EmployeeStatementFilter(int employeeId,
                                       int page,
                                       int pageSize) {
 
+    /**
+     * How many of the conditions behind the statement's filters button narrow the rows - shown
+     * on the button while its panel is closed. The period is not one of them: a statement is
+     * always of a period, and its dates stay on screen. Nor is the text typed in the bar.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (kinds != null && !kinds.isEmpty()) count++;
+        if (source != null) count++;
+        if (userId != null) count++;
+        if (minAmount != null) count++;
+        if (maxAmount != null) count++;
+        return count;
+    }
+
     public static final int DEFAULT_PAGE_SIZE = 50;
     public static final int MAX_PAGE_SIZE = 10_000;
 

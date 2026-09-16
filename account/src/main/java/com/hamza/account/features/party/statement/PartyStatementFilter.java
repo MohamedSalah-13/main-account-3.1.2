@@ -59,6 +59,22 @@ public record PartyStatementFilter(
 
     public static final int DEFAULT_PAGE_SIZE = 100;
 
+    /**
+     * How many of the conditions behind the statement's filters button narrow the rows - shown on
+     * the button while its panel is closed. The period is not one of them: it stays on screen,
+     * because a statement is always of some dates. Nor is the text typed in the bar.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (kinds != null && !kinds.isEmpty()) count++;
+        if (treasuryId != null) count++;
+        if (userId != null) count++;
+        if (minAmount != null) count++;
+        if (maxAmount != null) count++;
+        if (deferredOnly) count++;
+        return count;
+    }
+
     /** As on the treasury side: one screenful of a report, not a whole ledger in memory. */
     public static final int MAX_PAGE_SIZE = 10_000;
 

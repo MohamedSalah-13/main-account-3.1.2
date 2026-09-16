@@ -8,12 +8,14 @@ import com.hamza.account.features.party.statement.PartyStatementOptions;
 import com.hamza.account.features.party.statement.PartyStatementTreasuryOption;
 import com.hamza.account.features.party.statement.PartyStatementUserOption;
 import com.hamza.account.features.party.statement.StatementPeriod;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -80,9 +82,10 @@ public final class PartyStatementFilterBar extends VBox {
     private final ToggleGroup periodGroup = new ToggleGroup();
     private final Map<StatementPeriod, ToggleButton> periodButtons =
             new EnumMap<>(StatementPeriod.class);
-    private final ToggleButton filtersToggle = new ToggleButton(
-            text("invoice.search.filters"), AppIcon.FILTER.graphic());
+    private final ToggleButton filtersToggle = ListToolbar.filtersToggle();
     private final VBox filtersPanel = new VBox(8);
+    private final ListToolbar toolbar = new ListToolbar();
+    private final FlowPane toolbarRow = new FlowPane(8, 8);
 
     /** Replaced when the period is ALL: the party's first movement, which only the database knows. */
     private LocalDate earliestMovement = LocalDate.now();
@@ -97,12 +100,25 @@ public final class PartyStatementFilterBar extends VBox {
         setId("party-statement-filters");
         getStyleClass().addAll("app-card", "party-statement-filter-card");
         filtersToggle.setId("statement-filters-toggle");
-        filtersToggle.getStyleClass().addAll("app-neutral-button", "party-statement-filter-toggle");
-        filtersToggle.setOnAction(event -> setPanelVisible(filtersToggle.isSelected()));
+        filtersToggle.getStyleClass().add("party-statement-filter-toggle");
         filtersPanel.getStyleClass().add("party-statement-filter-panel");
-        filtersPanel.getChildren().addAll(periodRow(), filterRows());
-        getChildren().addAll(filterToolbar(), filtersPanel);
-        setPanelVisible(false);
+        filtersPanel.getChildren().add(filterRows());
+        toolbar.filters(filtersToggle, filtersPanel);
+        toolbarRow.setAlignment(Pos.CENTER_LEFT);
+        toolbarRow.getStyleClass().add("party-statement-filter-toolbar");
+        toolbar.installIn(toolbarRow);
+        // The period stays out of the panel: a statement is always of some dates, and closing
+        // the panel must not hide which. It used to be the first thing the panel hid.
+        getChildren().addAll(toolbarRow, periodRow(), filtersPanel);
+    }
+
+    /**
+     * What acts on the statement as a whole, placed in the bar after the filters - the host owns
+     * what they do. They used to sit in the header, a whole row above the filters they print.
+     */
+    public void setListActions(Node refresh, Node print, Node[] exports, Node... extras) {
+        toolbar.refresh(refresh).print(print).export(exports).extra(extras);
+        toolbar.installIn(toolbarRow);
     }
 
     /** Called whenever the user asks for a different set of rows. */
@@ -253,10 +269,8 @@ public final class PartyStatementFilterBar extends VBox {
         apply.setId("statement-apply");
         apply.setOnAction(event -> fire());
 
-        Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
-        clear.getStyleClass().add("app-neutral-button");
+        Button clear = ListToolbar.clearButton(this::reset);
         clear.setId("statement-reset");
-        clear.setOnAction(event -> reset());
 
         // The Enter order, declared once and in the order the bar is actually filled: a minimum,
         // a maximum, some text, then the button - rule ق-ل9, pinned by
@@ -284,10 +298,10 @@ public final class PartyStatementFilterBar extends VBox {
                 deferredOnly);
         first.setAlignment(Pos.CENTER_LEFT);
 
-        FlowPane second = new FlowPane(8, 8,
-                amountFrom, amountTo, search, apply, clear);
+        FlowPane second = new FlowPane(8, 8, amountFrom, amountTo);
         second.setAlignment(Pos.CENTER_LEFT);
         search.setPrefWidth(240);
+        toolbar.searchField(search).search(apply).clear(clear);
         VBox rows = new VBox(8, first, second);
         rows.getStyleClass().add("party-statement-filter-rows");
         return rows;
@@ -317,7 +331,9 @@ public final class PartyStatementFilterBar extends VBox {
                     new UserValidationException(text(validationKey)));
             return;
         }
-        onSearch.accept(filter(0, PartyStatementFilter.DEFAULT_PAGE_SIZE));
+        PartyStatementFilter filter = filter(0, PartyStatementFilter.DEFAULT_PAGE_SIZE);
+        toolbar.showActiveFilters(filter.panelConditionCount());
+        onSearch.accept(filter);
     }
 
     private String validationKey() {
@@ -339,31 +355,6 @@ public final class PartyStatementFilterBar extends VBox {
         fire();
     }
 
-    private VBox titleBlock() {
-        Label title = new Label(text("party.statement.filter.title"));
-        title.getStyleClass().add("party-statement-section-title");
-        Label hint = new Label(text("party.statement.filter.hint"));
-        hint.getStyleClass().add("party-statement-section-hint");
-        hint.setWrapText(true);
-        return new VBox(2, title, hint);
-    }
-
-    private HBox filterToolbar() {
-        VBox heading = titleBlock();
-        HBox.setHgrow(heading, Priority.ALWAYS);
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox toolbar = new HBox(8, heading, spacer, filtersToggle);
-        toolbar.setAlignment(Pos.CENTER_LEFT);
-        toolbar.getStyleClass().add("party-statement-filter-toolbar");
-        return toolbar;
-    }
-
-    private void setPanelVisible(boolean visible) {
-        filtersPanel.setVisible(visible);
-        filtersPanel.setManaged(visible);
-        filtersToggle.setSelected(visible);
-    }
 
     private static Label caption(String key) {
         Label label = new Label(text(key));

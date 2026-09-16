@@ -20,6 +20,7 @@ import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PageJumpBox;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
@@ -136,6 +137,7 @@ public class EmployeesScreenController extends LoadData {
     private final PageJumpBox pageJump = new PageJumpBox(this::search);
     private final ContentSizedColumns<Employee> columnSizing = new ContentSizedColumns<>();
     private final MenuButton viewMenu = TableColumnViews.menuButton();
+    private final ListToolbar toolbar = new ListToolbar();
 
     private final Label countLabel = new Label();
     private final Button previous = new Button();
@@ -292,11 +294,6 @@ public class EmployeesScreenController extends LoadData {
         apply.setMinWidth(Region.USE_PREF_SIZE);
         apply.setOnAction(event -> search(0));
 
-        Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
-        clear.getStyleClass().add("app-neutral-button");
-        clear.setMinWidth(Region.USE_PREF_SIZE);
-        clear.setOnAction(event -> reset());
-
         comboState.setOnAction(event -> search(0));
         comboJob.setOnAction(event -> search(0));
         comboSalaryKind.setOnAction(event -> search(0));
@@ -314,11 +311,19 @@ public class EmployeesScreenController extends LoadData {
                 caption("employee.filter.employment"), comboEmployment, delegates);
         first.setAlignment(Pos.CENTER_LEFT);
 
-        HBox second = new HBox(8, hiredFrom, hiredTo, rateFrom, rateTo, search, apply, clear);
-        second.getChildren().addAll(listActions());
+        HBox second = new HBox(8, hiredFrom, hiredTo, rateFrom, rateTo);
         second.setAlignment(Pos.CENTER_LEFT);
+        VBox panel = new VBox(8, first, second);
 
-        VBox bar = new VBox(8, first, second);
+        toolbar.searchField(search)
+                .search(apply)
+                .filters(ListToolbar.filtersToggle(), panel)
+                .clear(ListToolbar.clearButton(this::reset));
+        listActions();
+        HBox row = toolbar.installIn(new HBox(8));
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        VBox bar = new VBox(8, row, panel);
         bar.getStyleClass().addAll("app-card", "party-form-card");
         bar.setId("employee-filters");
         return bar;
@@ -328,30 +333,27 @@ public class EmployeesScreenController extends LoadData {
      * The things that act on the <b>list</b>, after the filters that decide what the list is.
      * Editing and stopping one employee are buttons in that employee's own row.
      */
-    private Node[] listActions() {
+    private void listActions() {
         Button add = button("employee.action.add", AppIcon.ADD, this::openNew);
         add.getStyleClass().setAll("button", "app-primary-button", "party-primary-button");
         Button jobs = button("employee.action.jobs", AppIcon.SETTINGS, this::openJobs);
-        Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
-        Button print = button("print", AppIcon.PRINT, this::print);
-        Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
-
-        Separator divider = new Separator(Orientation.VERTICAL);
-        divider.getStyleClass().add("modern-separator");
 
         // The payroll opens from here rather than from the main menu, the way the ageing report
         // opens from the balances screen: same people, same permission, and a menu entry would
         // need a feature in the signed product catalogue.
-        List<Node> bar = new ArrayList<>(List.of(divider, add, jobs));
+        List<Node> extras = new ArrayList<>(List.of(add, jobs));
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_SHOW)) {
-            bar.add(button("payroll.title", AppIcon.REPORT, this::openPayroll));
+            extras.add(button("payroll.title", AppIcon.REPORT, this::openPayroll));
         }
         if (AuthorizationGuard.isGranted(AppPermissions.ATTENDANCE_SHOW)) {
-            bar.add(button("attendance.title", AppIcon.SELECT_ALL, this::openAttendance));
-            bar.add(button("leave.title", AppIcon.INFO, this::openLeave));
+            extras.add(button("attendance.title", AppIcon.SELECT_ALL, this::openAttendance));
+            extras.add(button("leave.title", AppIcon.INFO, this::openLeave));
         }
-        bar.addAll(List.of(refresh, print, excel, viewMenu));
-        return bar.toArray(new Node[0]);
+        toolbar.refresh(ListToolbar.refreshButton(this::reload))
+                .print(ListToolbar.printButton(this::print))
+                .export(button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
+                .view(viewMenu)
+                .extra(extras.toArray(new Node[0]));
     }
 
     private TableColumnViews<Employee> columnViews() {
@@ -549,6 +551,7 @@ public class EmployeesScreenController extends LoadData {
 
     private void show(EmployeePage page) {
         summary = page.summary();
+        toolbar.showActiveFilters(filter.panelConditionCount());
         table.setItems(FXCollections.observableArrayList(page.rows()));
         columnSizing.layout(table);
 

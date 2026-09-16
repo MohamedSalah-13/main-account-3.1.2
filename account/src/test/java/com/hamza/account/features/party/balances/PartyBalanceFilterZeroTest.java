@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,6 +33,17 @@ class PartyBalanceFilterZeroTest {
     private static PartyBalanceFilter with(BigDecimal min, BigDecimal max) {
         return new PartyBalanceFilter(PartyKind.CUSTOMER, AS_OF, null, BalanceState.ALL,
                 min, max, null, null, false, null, "", 0, 50);
+    }
+
+    @Test
+    @DisplayName("the filters button counts a zero bound and ignores the text typed in the bar")
+    void theFiltersButtonCountsWhatThePanelNarrows() {
+        assertEquals(0, with(null, null).panelConditionCount(AS_OF));
+        assertEquals(1, with(BigDecimal.ZERO, null).panelConditionCount(AS_OF));
+        PartyBalanceFilter narrowed = new PartyBalanceFilter(PartyKind.CUSTOMER, AS_OF, null, BalanceState.DEBTOR,
+                null, null, 3, null, true, null, "ahmed", 0, 50);
+        assertEquals(3, narrowed.panelConditionCount(AS_OF));
+        assertEquals(4, narrowed.panelConditionCount(AS_OF.plusDays(1)));
     }
 
     @Test

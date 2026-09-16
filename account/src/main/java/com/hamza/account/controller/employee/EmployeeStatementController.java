@@ -18,6 +18,7 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PageJumpBox;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TablePdfLayout;
@@ -136,6 +137,7 @@ public class EmployeeStatementController implements AppSettingInterface {
     private final PageJumpBox pageJump = new PageJumpBox(this::search);
     private final ContentSizedColumns<EmployeeStatementRow> columnSizing = new ContentSizedColumns<>();
     private final MenuButton viewMenu = TableColumnViews.menuButton();
+    private final ListToolbar toolbar = new ListToolbar();
 
     private final Label countLabel = new Label();
     private final Button previous = new Button();
@@ -256,25 +258,29 @@ public class EmployeeStatementController implements AppSettingInterface {
         apply.setMinWidth(Region.USE_PREF_SIZE);
         apply.setOnAction(event -> search(0));
 
-        Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
-        clear.getStyleClass().add("app-neutral-button");
-        clear.setMinWidth(Region.USE_PREF_SIZE);
-        clear.setOnAction(event -> reset());
-
         whenEnterPressed(amountFrom, amountTo, search, apply);
 
-        HBox first = new HBox(8, caption("employee.statement.period"), comboPeriod,
-                caption("from"), from, caption("to"), to,
-                caption("employee.statement.filter.kind"), kindsMenu,
-                caption("employee.statement.filter.source"), comboSource);
-        first.setAlignment(Pos.CENTER_LEFT);
+        // The period stays in view: a statement is always of some dates, and a closed panel must
+        // not hide which. Everything else that narrows the rows is behind the filters button.
+        HBox period = new HBox(8, caption("employee.statement.period"), comboPeriod,
+                caption("from"), from, caption("to"), to);
+        period.setAlignment(Pos.CENTER_LEFT);
 
-        HBox second = new HBox(8, caption("employee.statement.filter.user"), comboUser,
-                amountFrom, amountTo, search, apply, clear);
-        second.getChildren().addAll(listActions());
-        second.setAlignment(Pos.CENTER_LEFT);
+        HBox panel = new HBox(8, caption("employee.statement.filter.kind"), kindsMenu,
+                caption("employee.statement.filter.source"), comboSource,
+                caption("employee.statement.filter.user"), comboUser,
+                amountFrom, amountTo);
+        panel.setAlignment(Pos.CENTER_LEFT);
 
-        VBox bar = new VBox(8, first, second);
+        toolbar.searchField(search)
+                .search(apply)
+                .filters(ListToolbar.filtersToggle(), panel)
+                .clear(ListToolbar.clearButton(this::reset));
+        listActions();
+        HBox row = toolbar.installIn(new HBox(8));
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        VBox bar = new VBox(8, period, row, panel);
         bar.getStyleClass().addAll("app-card", "party-form-card");
         return bar;
     }
@@ -321,7 +327,7 @@ public class EmployeeStatementController implements AppSettingInterface {
                 : LanguageManager.getInstance().getString("employee.statement.filter.kinds", chosen);
     }
 
-    private Node[] listActions() {
+    private void listActions() {
         Button pay = button("employee.action.pay", AppIcon.TREASURY_CASH, this::openPayment);
         pay.getStyleClass().setAll("button", "app-primary-button", "party-primary-button");
         pay.setDisable(!AuthorizationGuard.isGranted(AppPermissions.EMPLOYEE_PAY));
@@ -329,13 +335,11 @@ public class EmployeeStatementController implements AppSettingInterface {
         Button record = button("employee.action.record", AppIcon.ADD, this::openLedgerEntry);
         record.setDisable(!AuthorizationGuard.isGranted(AppPermissions.EMPLOYEE_ACCOUNT_ADJUST));
 
-        Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
-        Button print = button("print", AppIcon.PRINT, this::print);
-        Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
-
-        Separator divider = new Separator(Orientation.VERTICAL);
-        divider.getStyleClass().add("modern-separator");
-        return new Node[]{divider, pay, record, refresh, print, excel, viewMenu};
+        toolbar.refresh(ListToolbar.refreshButton(this::reload))
+                .print(ListToolbar.printButton(this::print))
+                .export(button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
+                .view(viewMenu)
+                .extra(pay, record);
     }
 
     private TableColumnViews<EmployeeStatementRow> columnViews() {
@@ -559,6 +563,7 @@ public class EmployeeStatementController implements AppSettingInterface {
 
     private void show(EmployeeStatementPage page) {
         summary = page.summary();
+        toolbar.showActiveFilters(filter.panelConditionCount());
         table.setItems(FXCollections.observableArrayList(page.rows()));
         columnSizing.layout(table);
 
