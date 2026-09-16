@@ -1310,11 +1310,14 @@ Four things it settles, and each was a decision rather than a default:
   would be in the way of the screen's own gesture. `RowActionsColumn` first, double-click as
   the shortcut, and `showOperations` deliberately never calls `select` - selecting a row to
   "show" it would add a source nobody asked to merge.
-- **The edge is decided by the language, and both halves flip.** JavaFX renders an RTL node's
-  children mirrored, so a panel anchored to the logical right is the visually left one *and*
-  leaves by moving logically right. It asks `LanguageManager`, not
-  `getEffectiveNodeOrientation()`, which answers LTR for a node the scene has not taken yet -
-  and a drawer is installed during `initialize()`.
+- **The edge is the trailing one, and it does not depend on the language.** The panel covers
+  the columns a table puts last, never the ones naming the row. JavaFX renders an RTL node's
+  children mirrored, so the logical right *is* the trailing edge in both directions - visually
+  left in Arabic, visually right in English - and one anchor answers both. The first draft
+  flipped it with the language and was right only in Arabic: **opened in English, the panel
+  sat over `View`, `Role` and `Item`**, and the unit test written for the flip passed, because
+  it pinned the wrong rule. Seeing a screen work in one reading direction says nothing about
+  the other.
 - **It takes the whole width below 760 points** rather than splitting it into two unusable
   halves.
 
@@ -1328,6 +1331,15 @@ adds `sidebar-compact` below `COMPACT_SIDEBAR_HEIGHT` - paddings, spacing and th
 about a hundred points on that screen. Nothing is hidden: an entry that disappeared because a
 window was resized is a worse bug than the one being fixed. Spacing is set in the controller
 rather than the stylesheet because the FXML sets it, and a value set on the node wins over CSS.
+
+**`TableSetting` stored the window size and called it the user's column width.**
+`TableAppearance` defaults to filling the available width - a constrained resize policy, under
+which JavaFX computes every column from the table's own width - and `TableSetting` persisted
+each change of that computed width. The merge screen's operations table had stored 1613 points
+across seven columns that way; restored into a 690-point panel it showed two of them. A width
+is now read and written only while the policy is unconstrained, the one state in which a drag
+is the only thing that can change it (`TableSettingTest`). Any table moved into a narrower
+place would have inherited the same, which is why it is fixed there and not at the screen.
 
 ### Column views and widths
 

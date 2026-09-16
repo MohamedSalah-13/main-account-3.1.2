@@ -45,12 +45,14 @@ import javafx.util.Duration;
  *       from the moment it is installed and is only made invisible, so the slide has
  *       something to measure, and an invisible node is not pickable - the table underneath
  *       goes on receiving the clicks it would otherwise have swallowed.</li>
- *   <li><b>The edge is the leading one, decided by the language.</b> In Arabic the sidebar
- *       is on the right, so the panel comes in from the left; JavaFX mirrors an RTL node's
- *       children, which is why the anchor and the hidden offset are both flipped rather
- *       than only one of them. {@link LanguageManager} is asked rather than
- *       {@code getEffectiveNodeOrientation()}, which answers LTR for a node the scene has
- *       not taken yet - and a drawer is installed during {@code initialize()}.</li>
+ *   <li><b>The edge is the trailing one, and it does not depend on the language.</b> The
+ *       panel covers the columns a table puts last, never the ones that say which row is
+ *       being read. JavaFX renders an RTL node's children mirrored, so the logical right
+ *       <em>is</em> the trailing edge in both directions - visually left in Arabic, visually
+ *       right in English - and one anchor answers both. The first draft flipped it with the
+ *       language, which is the same mistake in mirror image: running it in English put the
+ *       panel over "View", "Role" and "Item", the three columns that say which row it is
+ *       describing. Nothing but opening it in the other language could show that.</li>
  * </ul>
  *
  * <h2>Using it</h2>
@@ -66,6 +68,11 @@ public final class RowDetailDrawer {
     /** Under this, splitting the width leaves two unusable halves, so the panel takes it all. */
     private static final double FULL_COVER_BELOW = 760;
     private static final Duration SLIDE = Duration.millis(180);
+    /**
+     * The logical right, which mirroring makes the trailing edge in both reading directions.
+     * It is named because {@link #hiddenOffsetFor} has to agree with it.
+     */
+    private static final double TRAILING_ANCHOR = 0.0;
 
     private final AnchorPane host;
     private final VBox panel = new VBox();
@@ -74,14 +81,12 @@ public final class RowDetailDrawer {
     private final StackPane body = new StackPane();
     /** What the content says it needs; zero means "use {@link #SHARE}". */
     private final SimpleDoubleProperty preferredWidth = new SimpleDoubleProperty(0);
-    private final boolean rtl;
 
     private boolean showing;
     private Runnable onHidden;
 
     private RowDetailDrawer(AnchorPane host) {
         this.host = host;
-        this.rtl = LanguageManager.getInstance().isRtl();
     }
 
     /**
@@ -122,11 +127,7 @@ public final class RowDetailDrawer {
 
         AnchorPane.setTopAnchor(panel, 0.0);
         AnchorPane.setBottomAnchor(panel, 0.0);
-        if (rtl) {
-            AnchorPane.setRightAnchor(panel, 0.0);
-        } else {
-            AnchorPane.setLeftAnchor(panel, 0.0);
-        }
+        AnchorPane.setRightAnchor(panel, TRAILING_ANCHOR);
         host.getChildren().add(panel);
 
         // On the host rather than on the panel: Escape has to close it whether the focus
@@ -225,24 +226,45 @@ public final class RowDetailDrawer {
         slide.play();
     }
 
-    /**
-     * Off-screen, in the panel's own coordinates. An RTL host is rendered mirrored, so a
-     * panel anchored to the logical right is the visually left one and leaves by moving
-     * logically right.
-     */
     private double hiddenOffset() {
         double width = panel.getWidth() > 0 ? panel.getWidth() : widthFor(host.getWidth());
-        return rtl ? width : -width;
+        return hiddenOffsetFor(width);
     }
 
     private double widthFor(double hostWidth) {
+        return widthFor(hostWidth, preferredWidth.get());
+    }
+
+    // ------------------------------------------------------------------
+    // The geometry, kept out of the control so it can be pinned without a toolkit. Every
+    // rule below was a defect waiting to happen in four lines of JavaFX: see
+    // RowDetailDrawerTest.
+    // ------------------------------------------------------------------
+
+    /**
+     * Where the panel sits when it is closed, in its own coordinates.
+     * <p>
+     * It has to agree with {@link #TRAILING_ANCHOR}: a panel anchored to the logical right
+     * leaves by moving logically right. One of the two written the other way and the panel
+     * slides in from the wrong edge, or never arrives at all.
+     */
+    static double hiddenOffsetFor(double width) {
+        return width;
+    }
+
+    /**
+     * How wide the panel is: what the content asked for, or a share of the window when it
+     * asked for nothing - never wider than the host, never below {@link #MIN_WIDTH}, and the
+     * whole width once there is too little to divide.
+     */
+    static double widthFor(double hostWidth, double preferred) {
         if (hostWidth <= 0) {
             return MIN_WIDTH;
         }
         if (hostWidth <= FULL_COVER_BELOW) {
             return hostWidth;
         }
-        double wanted = preferredWidth.get() > 0 ? preferredWidth.get() : hostWidth * SHARE;
+        double wanted = preferred > 0 ? preferred : hostWidth * SHARE;
         return Math.min(hostWidth, Math.max(MIN_WIDTH, wanted));
     }
 }
