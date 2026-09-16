@@ -2099,7 +2099,17 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V58`: V58 adds
+  new database executes it and continues with `V2`, `V3`, … The current head is `V63`, which
+  gives the three columns a barcode can live in one collation. It exists because no migration
+  here has ever named a charset: a table a migration creates takes the *database* default, while
+  a table restored from a mysqldump keeps the charset the dump names and lands on the *server's*
+  default collation instead - and MySQL refuses a UNION of two columns whose collations differ.
+  A customer whose data had been restored into a database we created could not save an item at
+  all (error 1271, `ItemsDao.takenBarcodesAmong`), on a build working everywhere else. So
+  `CREATE DATABASE` no longer names a collation in either of the two places that issue it, and
+  `DatabaseMigrationService.alignDatabaseCollationWithItsTables` settles the database's own
+  default - which V63 cannot do, because MySQL refuses `ALTER DATABASE` through the
+  prepared-statement protocol. Before it, V58 adds
   the employee's account - the non-cash ledger, the purpose beside each payment, and the two
   views that union them (see **The employee's account** above) - and V57 makes the job a row
   rather than four constants, gives the salary a date and the employee a status. Before them,
