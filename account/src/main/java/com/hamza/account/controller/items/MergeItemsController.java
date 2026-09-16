@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.inventory.ColumnKind;
@@ -11,6 +12,9 @@ import com.hamza.account.features.itemmerge.MergeGroupBy;
 import com.hamza.account.model.domain.CardItems;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CardItemService;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.RowDetailDrawer;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -28,6 +32,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.AnchorPane;
 import javafx.util.StringConverter;
@@ -68,6 +73,8 @@ public class MergeItemsController {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     /** Enough to work through a catalogue's duplicates; a "same price" grouping could otherwise return most of it. */
     private static final int LIMIT = 500;
+    /** What the operations table's seven columns need, with the panel's own padding. */
+    private static final double OPERATIONS_WIDTH = 690;
 
     private final ItemMergeService mergeService = ServiceRegistry.get(ItemMergeService.class);
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
@@ -76,13 +83,20 @@ public class MergeItemsController {
     private final ObservableList<ItemMergeCandidate> candidates = FXCollections.observableArrayList();
     private final ObservableList<CardItems> operations = FXCollections.observableArrayList();
 
+    /**
+     * Built here rather than declared in the FXML: it is no longer a node of the screen but
+     * the contents of {@link #detail}, which owns where it is put.
+     */
+    private final TableView<CardItems> tableOperations = new TableView<>();
+
+    /** The panel the operations open in. Installed once, filled once, re-titled per row. */
+    private RowDetailDrawer detail;
+
     /** The survivor. Null until the user says so - there is no sensible default. */
     private ItemMergeCandidate target;
 
     @FXML
     private TableView<ItemMergeCandidate> tableCandidates;
-    @FXML
-    private TableView<CardItems> tableOperations;
     @FXML
     private ComboBox<MergeGroupBy> comboGroupBy;
     @FXML
@@ -99,6 +113,7 @@ public class MergeItemsController {
         buildGroupBy();
         buildCandidatesTable();
         buildOperationsTable();
+        buildDetailDrawer();
         buildActions();
         loadCandidates();
     }
@@ -130,6 +145,11 @@ public class MergeItemsController {
         tableCandidates.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableCandidates.setPlaceholder(new Label(lm.getString("item.merge.placeholder")));
 
+        // The actions column goes first: these tables are wider than the window, and a
+        // column appended to the end lands behind the horizontal scroll bar.
+        tableCandidates.getColumns().add(RowActionsColumn.of("item.merge.column.actions",
+                RowAction.permitted(List.of(RowAction.of("item.merge.action.operations",
+                        AppIcon.SHOW, "app-neutral-button", null, this::showOperations)))));
         tableCandidates.getColumns().add(role());
         tableCandidates.getColumns().add(text("name", lm.getString("item.merge.column.item"),
                 ItemMergeCandidate::name, 240));
@@ -146,10 +166,28 @@ public class MergeItemsController {
         tableCandidates.getColumns().add(text("group", lm.getString("item.merge.column.group"),
                 ItemMergeCandidate::groupKey, 160));
 
-        // Selecting a row shows what was done with that item, which is the question the
-        // screen exists to answer - so it is one click, not a second screen.
+        // An open panel follows the selection, so running down the list is one click a row.
+        // It does not *open* on selection: the table is multi-select - that is how the merge
+        // sources are chosen - and a panel that opened on every ctrl-click would be in the
+        // way of the screen's main gesture.
         tableCandidates.getSelectionModel().selectedItemProperty()
-                .addListener((observable, previous, selected) -> loadOperations(selected));
+                .addListener((observable, previous, selected) -> {
+                    if (detail != null && detail.isShowing()) {
+                        showOperations(selected);
+                    }
+                });
+
+        // The row's own button is the primary way in; a double-click is the shortcut for
+        // anyone who expects one.
+        tableCandidates.setRowFactory(table -> {
+            TableRow<ItemMergeCandidate> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    showOperations(row.getItem());
+                }
+            });
+            return row;
+        });
     }
 
     /**
@@ -181,26 +219,58 @@ public class MergeItemsController {
 
     private void buildOperationsTable() {
         var lm = LanguageManager.getInstance();
-        tableOperations.setId("mergeOperationsTable");
+        // A new id, deliberately. TableSetting keys a saved column width by it, and the
+        // widths this table saved while it was stretched across the window sum to 1613
+        // points - restored into a 490-point panel they showed two columns and put the
+        // other five behind a horizontal scroll bar. A table that changes shape this much
+        // is a different table as far as a remembered width is concerned.
+        tableOperations.setId("mergeOperationsPanel");
         tableOperations.setItems(operations);
         tableOperations.setPlaceholder(new Label(lm.getString("item.merge.operations.placeholder")));
 
         tableOperations.getColumns().add(cardText("date", lm.getString("column.date"),
-                row -> row.getInvoice_date() == null ? "" : row.getInvoice_date().format(DAY), 110));
+                row -> row.getInvoice_date() == null ? "" : row.getInvoice_date().format(DAY), 95));
         tableOperations.getColumns().add(cardText("type", lm.getString("item.merge.column.operation"),
-                CardItems::getProcessTypeName, 120));
+                CardItems::getProcessTypeName, 95));
         tableOperations.getColumns().add(cardText("invoice", lm.getString("invoice.number"),
-                row -> String.valueOf(row.getInvoice_num()), 100));
+                row -> String.valueOf(row.getInvoice_num()), 80));
         tableOperations.getColumns().add(cardText("party", lm.getString("item.merge.column.party"),
-                CardItems::getName_account, 180));
+                CardItems::getName_account, 150));
         tableOperations.getColumns().add(cardText("unit", lm.getString("item.column.unit"),
-                CardItems::getType_name, 90));
+                CardItems::getType_name, 70));
         tableOperations.getColumns().add(cardText("quantity", lm.getString("column.quantity"),
-                row -> ColumnKind.QUANTITY.format(row.getQuantity()), 100));
+                row -> ColumnKind.QUANTITY.format(row.getQuantity()), 80));
         tableOperations.getColumns().add(cardText("price", lm.getString("item.merge.column.price"),
-                row -> ColumnKind.MONEY.format(row.getPrice()), 100));
+                row -> ColumnKind.MONEY.format(row.getPrice()), 85));
 
         TableSetting.tableMenuSetting(getClass(), tableOperations);
+    }
+
+    private void buildDetailDrawer() {
+        detail = RowDetailDrawer.installIn(root);
+        detail.setContent(tableOperations);
+        // The seven columns above come to 655 points; a share of the window does not.
+        detail.setPreferredWidth(OPERATIONS_WIDTH);
+        // The panel is the only place the operations are shown, so there is nothing to keep
+        // loaded behind it.
+        detail.setOnHidden(operations::clear);
+    }
+
+    /**
+     * Opens the panel on one candidate's history, or re-points an open one at it.
+     * <p>
+     * It deliberately does not touch the selection. The table is multi-select and its
+     * selection is the list of merge sources; selecting a row here to "show" it would add a
+     * source the user never asked to merge.
+     */
+    private void showOperations(ItemMergeCandidate candidate) {
+        if (candidate == null) {
+            detail.hide();
+            return;
+        }
+        detail.show(LanguageManager.getInstance().getString("item.merge.operations.title"),
+                candidate.name());
+        loadOperations(candidate);
     }
 
     private TableColumn<ItemMergeCandidate, String> text(String id, String title,
@@ -252,6 +322,8 @@ public class MergeItemsController {
         task.setOnSucceeded(event -> {
             setBusy(false);
             candidates.setAll(task.getValue());
+            // The panel is pointed at a row of the list that has just been replaced.
+            detail.hide();
             operations.clear();
             // The target is a row of the list that was just replaced, and keeping a stale
             // one is how a user merges into an item they can no longer see.

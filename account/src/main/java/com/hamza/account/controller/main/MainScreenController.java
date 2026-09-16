@@ -63,6 +63,11 @@ public class MainScreenController extends MainItems implements Initializable {
     private final Subscriptions subscriptions = new Subscriptions();
     /** True once configureAllButtons has run, so the shortcut map reflects the edition. */
     private boolean sidebarReady;
+    /**
+     * Below this window height the sidebar switches to its compact paddings. A maximized
+     * window on a 1366x768 screen is about 730 points tall; a 1080p one is about 1050.
+     */
+    private static final double COMPACT_SIDEBAR_HEIGHT = 800;
     public Pane mainPane;
     @FXML
     private BorderPane borderPane;
@@ -79,6 +84,14 @@ public class MainScreenController extends MainItems implements Initializable {
     private MenuButtonSetting menuButtonSetting;
     @FXML
     private AnchorPane rightPaneRoot;
+    @FXML
+    private VBox sidebarStack;
+    @FXML
+    private ScrollPane sideMenuScroll;
+    @FXML
+    private VBox sideMenuBox;
+    @FXML
+    private Accordion sideAccordion;
     @FXML
     private Button btnSales, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems, btnItemGroups,
             btnAddItem, btnMasterData, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems, btnPriceCheck,
@@ -157,6 +170,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void setupRightPane() throws Exception {
         applySidebarDirection();
+        setupResponsiveSidebar();
         rightPaneSetting();
         setupBrand();
         setupUser();
@@ -403,6 +417,71 @@ public class MainScreenController extends MainItems implements Initializable {
         titledPane.setContentDisplay(LanguageManager.getInstance().isRtl()
                 ? ContentDisplay.RIGHT : ContentDisplay.LEFT);
         titledPane.setGraphic(icon.graphic(20));
+    }
+
+    /**
+     * The sidebar on a short screen.
+     *
+     * <p>The menu is nine accordion headers, a brand row, a user menu and a footer inside a
+     * fixed-height column. On a 1366x768 screen the window is about 730 points tall, the
+     * chrome takes some 560 of them, and the expanded section was left with a sliver: the
+     * items list showed <em>one</em> of its ten buttons, with a scroll arrow above and below
+     * it. Nothing was broken and nothing said so - the pane simply shrank to what was left.
+     *
+     * <p>Two things answer it, and the first is the one that matters. The accordion and the
+     * footer now live inside one {@code ScrollPane}, so a section that does not fit scrolls
+     * <em>with its headers</em> instead of being compressed - what a menu taller than its
+     * window has to do. The second is density: under {@link #COMPACT_SIDEBAR_HEIGHT} the
+     * paddings, the spacing and the logo shrink, which on the measured screen is worth about
+     * a hundred points and usually removes the need to scroll at all.
+     *
+     * <p>Spacing is set here rather than in the stylesheet because the FXML sets it
+     * explicitly, and a value set on the node wins over CSS.
+     */
+    private void setupResponsiveSidebar() {
+        borderPane.heightProperty().addListener(
+                (observable, was, now) -> applySidebarDensity(now.doubleValue()));
+        applySidebarDensity(borderPane.getHeight());
+
+        // Expanding a section that sits below the fold would otherwise open out of sight.
+        sideAccordion.expandedPaneProperty().addListener((observable, was, expanded) -> {
+            if (expanded != null) {
+                Platform.runLater(() -> scrollSideMenuTo(expanded));
+            }
+        });
+    }
+
+    private void applySidebarDensity(double height) {
+        boolean compact = height > 0 && height < COMPACT_SIDEBAR_HEIGHT;
+
+        rightPaneRoot.getStyleClass().remove("sidebar-compact");
+        if (compact) {
+            rightPaneRoot.getStyleClass().add("sidebar-compact");
+        }
+
+        double gap = compact ? 6 : 12;
+        sidebarStack.setSpacing(gap);
+        sideMenuBox.setSpacing(gap);
+
+        double logo = compact ? 34 : 60;
+        imgCompanyLogo.setFitHeight(logo);
+        imgCompanyLogo.setFitWidth(logo);
+    }
+
+    /** Puts the expanded section's header at the top of the viewport. */
+    private void scrollSideMenuTo(Node node) {
+        Node content = sideMenuScroll.getContent();
+        if (content == null) {
+            return;
+        }
+        double contentHeight = content.getBoundsInLocal().getHeight();
+        double viewport = sideMenuScroll.getViewportBounds().getHeight();
+        if (contentHeight <= viewport) {
+            return;
+        }
+        double top = content.sceneToLocal(node.localToScene(0, 0)).getY();
+        double value = top / (contentHeight - viewport);
+        sideMenuScroll.setVvalue(Math.max(0, Math.min(1, value)));
     }
 
     /** Keeps sidebar text and category icons aligned to the active reading direction. */

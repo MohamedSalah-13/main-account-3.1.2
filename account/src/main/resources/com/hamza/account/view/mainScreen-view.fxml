@@ -26,7 +26,7 @@
             <children>
                 <AnchorPane fx:id="rightPaneRoot" maxWidth="-Infinity" minWidth="-Infinity" prefHeight="587.0" styleClass="right-pane-root">
                     <children>
-                        <VBox spacing="12.0" styleClass="right-pane-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                        <VBox fx:id="sidebarStack" spacing="12.0" styleClass="right-pane-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                             <children>
                         <VBox alignment="TOP_CENTER" styleClass="sidebar-brand-row">
                            <children>
@@ -63,13 +63,15 @@
                                     </items>
                                 </MenuButton>
 
-                                <Accordion styleClass="main-accordion" VBox.vgrow="ALWAYS">
+                                <ScrollPane fx:id="sideMenuScroll" fitToWidth="true" hbarPolicy="NEVER" styleClass="side-scroll, sidebar-menu-scroll" VBox.vgrow="ALWAYS">
+                                    <content>
+                                        <VBox fx:id="sideMenuBox" spacing="12.0">
+                                            <children>
+                                <Accordion fx:id="sideAccordion" styleClass="main-accordion">
                                     <panes>
                                         <TitledPane fx:id="paneSales" animated="false" text="Sales">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnSales" mnemonicParsing="false" text="Sales" />
                                                                 <Button fx:id="btnSalesReturn" mnemonicParsing="false" text="Sales Return" />
@@ -77,16 +79,12 @@
                                                                 <Button fx:id="btnTotalSalesReturn" mnemonicParsing="false" text="Total Sales Returns" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="panePurchase" animated="false" text="Purchase">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnPurchase" mnemonicParsing="false" text="Purchase" />
                                                                 <Button fx:id="btnPurchaseRe" mnemonicParsing="false" text="Purchase Re" />
@@ -94,16 +92,12 @@
                                                                 <Button fx:id="btnTotalPurchaseRe" mnemonicParsing="false" text="Total Purchase Re" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneItems" animated="false" text="Items">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnItems" mnemonicParsing="false" text="Items" />
                                                                 <Button fx:id="btnItemGroups" mnemonicParsing="false" text="%item.group.manager.title" />
@@ -117,48 +111,36 @@
                                                                 <Button fx:id="btnPriceCheck" mnemonicParsing="false" text="%pricecheck.title" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneCustom" animated="false" text="Custom">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnAddCustomerName" mnemonicParsing="false" text="Add Customer" />
                                                                 <Button fx:id="btnCustomer" mnemonicParsing="false" text="Customer" />
                                                                 <Button fx:id="btnAccountCustom" mnemonicParsing="false" text="Account Customer" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneSuppliers" animated="false" text="Suppliers">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnAddSupplierName" mnemonicParsing="false" text="Add Supplier" />
                                                                 <Button fx:id="btnSuppliers" mnemonicParsing="false" text="Suppliers" />
                                                                 <Button fx:id="btnAccountSuppliers" mnemonicParsing="false" text="Account Suppliers" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneEmployees" animated="false" text="Employees">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnAddEmployee" mnemonicParsing="false" text="Add Employee" />
                                                                 <Button fx:id="btnEmployees" mnemonicParsing="false" text="Employees" />
@@ -166,16 +148,12 @@
                                                                 <Button fx:id="btnUsers" mnemonicParsing="false" text="Users" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneTreasury" animated="false" text="Treasury">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnTreasuries" mnemonicParsing="false" text="الخزائن" />
                                                                 <Button fx:id="btnTreasuryDetails" mnemonicParsing="false" text="كشف حساب" />
@@ -186,16 +164,12 @@
                                                                 <Button fx:id="btnExpenses" mnemonicParsing="false" text="Expenses" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneReports" animated="false" text="Reports">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnReportSummary" mnemonicParsing="false" text="Summary" />
                                                                 <Button fx:id="btnReportItems" mnemonicParsing="false" text="Items Report" />
@@ -210,16 +184,12 @@
                                                                 <Button fx:id="btnReportReturnReasons" mnemonicParsing="false" text="Return Reasons" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
 
                                         <TitledPane fx:id="paneSetting" animated="false" text="Setting">
                                             <content>
-                                                <ScrollPane fitToWidth="true" styleClass="side-scroll">
-                                                    <content>
-                                                        <VBox styleClass="side-button-box">
+                                                <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnHome" mnemonicParsing="false" styleClass="sidebar-nav-active" text="Home" />
                                                                 <Button fx:id="btnSetting" mnemonicParsing="false" text="Setting" />
@@ -231,12 +201,11 @@
                                                                 <Button fx:id="btnClose" mnemonicParsing="false" text="Close" />
                                                             </children>
                                                         </VBox>
-                                                    </content>
-                                                </ScrollPane>
                                             </content>
                                         </TitledPane>
                                     </panes>
                                 </Accordion>
+
 
                                 <VBox fx:id="rightFooterBox" alignment="BOTTOM_CENTER" spacing="5.0" styleClass="right-footer">
                                     <children>
@@ -257,6 +226,10 @@
                                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                                     </padding>
                                 </VBox>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
                             </children>
                         </VBox>
                     </children>

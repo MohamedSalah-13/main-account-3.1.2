@@ -1290,6 +1290,45 @@ the theme files, which is what the capital-management block should have done ins
 shared class name. One declaration now, with colours that answer the background it actually has.
 A screen-specific style must never redefine a shared class.
 
+### A row's detail, and a screen that has to fit 1366x768
+
+**A detail table stacked under its master table does not fit the screen this ships to.**
+`account.table.RowDetailDrawer` is the panel a row opens over its own screen instead:
+`installIn(AnchorPane)` once, `setContent(node)` once, `show(title, subtitle)` per row. The
+merge screen (دمج الأصناف) is the worked example - its candidates and the operations of the
+selected one were two tables sharing one column of height, which on a 768px screen is four
+rows each.
+
+Four things it settles, and each was a decision rather than a default:
+
+- **No scrim, and the table stays live underneath.** The gesture is running down a list -
+  open a row, read it, open the next - so an open panel follows the selection instead of
+  having to be closed first. That is why the panel is only made invisible rather than
+  removed: an invisible node is not pickable, so the clicks reach the table.
+- **The row's own button opens it, not the selection.** The merge table is multi-select,
+  because that selection *is* the list of merge sources; a panel opening on every ctrl-click
+  would be in the way of the screen's own gesture. `RowActionsColumn` first, double-click as
+  the shortcut, and `showOperations` deliberately never calls `select` - selecting a row to
+  "show" it would add a source nobody asked to merge.
+- **The edge is decided by the language, and both halves flip.** JavaFX renders an RTL node's
+  children mirrored, so a panel anchored to the logical right is the visually left one *and*
+  leaves by moving logically right. It asks `LanguageManager`, not
+  `getEffectiveNodeOrientation()`, which answers LTR for a node the scene has not taken yet -
+  and a drawer is installed during `initialize()`.
+- **It takes the whole width below 760 points** rather than splitting it into two unusable
+  halves.
+
+**The sidebar squeezed rather than scrolled, and nothing said so.** Each accordion section
+had a `ScrollPane` of its own inside a fixed-height column, so on a 1366x768 screen the nine
+headers, the brand row, the user menu and the footer left the expanded section a sliver: the
+items section showed *one* of its ten buttons, with a scroll arrow above and below it. The
+accordion and the footer now sit inside one `ScrollPane` (`sideMenuScroll`), so a menu taller
+than its window scrolls **with its headers**, and `MainScreenController.applySidebarDensity`
+adds `sidebar-compact` below `COMPACT_SIDEBAR_HEIGHT` - paddings, spacing and the logo, worth
+about a hundred points on that screen. Nothing is hidden: an entry that disappeared because a
+window was resized is a worse bug than the one being fixed. Spacing is set in the controller
+rather than the stylesheet because the FXML sets it, and a value set on the node wins over CSS.
+
 ### Column views and widths
 
 `account.table.TableColumnViews` is the "العرض" menu - a compact view, a full view, a

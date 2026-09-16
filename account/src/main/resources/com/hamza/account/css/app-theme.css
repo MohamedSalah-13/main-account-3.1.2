@@ -1523,6 +1523,107 @@
     -fx-border-color: transparent;
 }
 
+/* ---------- Sidebar: the whole menu scrolls ---------- */
+
+/* The accordion and the footer sit inside one ScrollPane, so a section taller than
+   what is left of a 768px screen scrolls with its headers instead of being squeezed
+   into a sliver - which is what a per-section ScrollPane did, and it showed one of
+   the items section's ten buttons. The bar is thin and dark because it sits on the
+   sidebar's gradient, not on a page. */
+.sidebar-menu-scroll > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 0.545em;
+}
+
+.sidebar-menu-scroll > .scroll-bar:vertical > .thumb {
+    -fx-background-color: -app-side-border;
+    -fx-background-radius: 0.545em;
+}
+
+.sidebar-menu-scroll > .scroll-bar > .increment-button,
+.sidebar-menu-scroll > .scroll-bar > .decrement-button {
+    -fx-padding: 0;
+    -fx-pref-height: 0;
+}
+
+/* ---------- Sidebar: compact, for a short window ---------- */
+
+/* Added by MainScreenController below COMPACT_SIDEBAR_HEIGHT. Padding and font size
+   only - nothing is hidden, so no entry disappears because a window was resized. */
+.sidebar-compact .right-pane-container {
+    -fx-padding: 0.545em;
+}
+
+.sidebar-compact .sidebar-brand-row {
+    -fx-padding: 0 0 0.273em 0;
+}
+
+.sidebar-compact .sidebar-brand-name {
+    -fx-font-size: 1em;
+}
+
+.sidebar-compact .sidebar-quick-actions {
+    -fx-padding: 0;
+}
+
+.sidebar-compact .sidebar-quick-action-btn {
+    -fx-padding: 0.273em 0.636em;
+}
+
+.sidebar-compact .sidebar-user-menu {
+    -fx-padding: 0.364em 0.545em;
+}
+
+.sidebar-compact .main-accordion .titled-pane > .title {
+    -fx-padding: 0.364em 0.727em;
+}
+
+.sidebar-compact .titled-pane {
+    -fx-padding: 0.091em;
+}
+
+.sidebar-compact .side-button-box {
+    -fx-spacing: 0.182em;
+}
+
+.sidebar-compact .side-button-box .button {
+    -fx-padding: 0.364em 0.727em;
+    -fx-font-size: 1em;
+}
+
+/* ---------- Row detail drawer ---------- */
+
+/* The panel a row opens over its own screen - see RowDetailDrawer. It is a surface
+   above the table rather than a second table under it, so it carries the elevation
+   the table does not. */
+.detail-drawer {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0 0 0 0.091em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 18, 0.16, 0, 0);
+}
+
+.detail-drawer-header {
+    -fx-background-color: -app-surface-2;
+    -fx-border-color: transparent transparent -app-border transparent;
+    -fx-border-width: 0 0 0.091em 0;
+    -fx-padding: 0.636em 0.818em;
+}
+
+.detail-drawer-title {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.091em;
+    -fx-font-weight: bold;
+}
+
+.detail-drawer-subtitle {
+    -fx-text-fill: -app-text-muted;
+}
+
+.detail-drawer-body {
+    -fx-padding: 0.545em;
+}
+
 /* ---------- Dialogs ---------- */
 
 .dialog-pane {

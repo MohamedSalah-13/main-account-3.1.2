@@ -58,10 +58,10 @@
             <center>
                 <VBox spacing="6.0" BorderPane.alignment="CENTER">
                     <children>
+                        <!-- One table. The item's operations used to be a second table under
+                             this one, which on a 768px screen left both of them four rows deep;
+                             they open in a RowDetailDrawer over this screen instead. -->
                         <TableView fx:id="tableCandidates" styleClass="modern-table" VBox.vgrow="ALWAYS" />
-
-                        <Label styleClass="form-label" text="%item.merge.operations.title" />
-                        <TableView fx:id="tableOperations" prefHeight="220.0" styleClass="modern-table" />
                     </children>
                     <padding>
                         <Insets bottom="6.0" left="6.0" right="6.0" />
