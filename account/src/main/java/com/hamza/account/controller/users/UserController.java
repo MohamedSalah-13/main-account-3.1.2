@@ -99,7 +99,9 @@ public final class UserController implements AppSettingInterface {
     private void configureColumns() {
         tableUsers.setId("usersManagementTable");
         tableUsers.getStyleClass().add("modern-table");
+        // The actions first, where every list screen puts the buttons that act on their own row.
         tableUsers.getColumns().setAll(
+                actionsColumn(),
                 column("colCode", "code", 70, row -> String.valueOf(row.id())),
                 column("colUsername", "user.management.column.username", 180, UserSummary::username),
                 column("colRoles", "user.management.column.roles", 310, UserSummary::roleNames),
@@ -108,8 +110,7 @@ public final class UserController implements AppSettingInterface {
                 column("colStatus", "user.management.column.status", 110, row -> text(row.active()
                         ? "user.management.status.active" : "user.management.status.inactive")),
                 column("colAvailable", "user.management.column.availability", 110, row -> text(row.available()
-                        ? "user.management.availability.online" : "user.management.availability.offline")),
-                actionsColumn());
+                        ? "user.management.availability.online" : "user.management.availability.offline")));
         tableUsers.setPlaceholder(new Label(text("user.management.placeholder.empty")));
         tableUsers.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2 && tableUsers.getSelectionModel().getSelectedItem() != null) {

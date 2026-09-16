@@ -422,7 +422,10 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         table.setPlaceholder(new Label(text("party.balances.empty")));
         // Every column carries an id: the view menu's compact set names columns by it, and
         // TableSetting would otherwise key them by position.
+        // The actions first: this table is wider than the window, and a column of buttons appended
+        // to the end lands behind the horizontal scroll bar - seen on screen at 1366x768.
         table.getColumns().setAll(List.of(
+                named(ACTIONS_COLUMN, actionsColumn()),
                 named("balance-code", Columns.number("code", PartyBalanceRow::partyId)),
                 named("balance-name", Columns.text("name", PartyBalanceRow::name)),
                 named("balance-phone", Columns.text("column.tel", PartyBalanceRow::phone)),
@@ -436,8 +439,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 named("balance-limit", Columns.money("party.balances.column.limit",
                         PartyBalanceRow::creditLimit)),
                 named("balance-last", Columns.date("party.balances.column.last",
-                        PartyBalanceRow::lastMovement)),
-                named(ACTIONS_COLUMN, actionsColumn())));
+                        PartyBalanceRow::lastMovement))));
 
         table.setRowFactory(view -> new TableRow<>() {
             @Override

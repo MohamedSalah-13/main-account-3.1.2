@@ -49,7 +49,6 @@ import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
 import java.io.File;
-import java.math.RoundingMode;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -177,19 +176,35 @@ public class TreasureDetailsController {
         action.setSortable(false);
         action.setPrefWidth(72);
 
+        // The action first, where every list puts a row's own button, and the three amounts written
+        // as money like the cards above them. Every column carries an id: TableSetting keys a saved
+        // width by position when there is none, so moving the action column would otherwise hand
+        // each column its neighbour's width.
         tableView.getColumns().setAll(
-                Columns.number("treasury.statement.column.reference", TreasuryStatementRow::referenceId),
-                Columns.date("treasury.statement.column.date", TreasuryStatementRow::movementDate),
-                Columns.text("treasury.statement.column.time", row -> row.recordedAt() == null
-                        ? "" : row.recordedAt().format(TIME_FORMAT)),
-                Columns.text("treasury.statement.column.movement", row -> text(row.kind().labelKey())),
-                Columns.text("treasury.statement.column.treasury", TreasuryStatementRow::treasuryName),
-                Columns.number("treasury.statement.column.income", TreasuryStatementRow::income),
-                Columns.number("treasury.statement.column.output", TreasuryStatementRow::output),
-                Columns.number("treasury.statement.column.balance", TreasuryStatementRow::runningBalance),
-                Columns.text("treasury.statement.column.user", TreasuryStatementRow::username), action);
+                named("treasury-action", action),
+                named("treasury-reference", Columns.number("treasury.statement.column.reference",
+                        TreasuryStatementRow::referenceId)),
+                named("treasury-date", Columns.date("treasury.statement.column.date", TreasuryStatementRow::movementDate)),
+                named("treasury-time", Columns.text("treasury.statement.column.time", row -> row.recordedAt() == null
+                        ? "" : row.recordedAt().format(TIME_FORMAT))),
+                named("treasury-movement", Columns.text("treasury.statement.column.movement",
+                        row -> text(row.kind().labelKey()))),
+                named("treasury-name", Columns.text("treasury.statement.column.treasury",
+                        TreasuryStatementRow::treasuryName)),
+                named("treasury-income", Columns.money("treasury.statement.column.income",
+                        TreasuryStatementRow::income)),
+                named("treasury-output", Columns.money("treasury.statement.column.output",
+                        TreasuryStatementRow::output)),
+                named("treasury-balance", Columns.money("treasury.statement.column.balance",
+                        TreasuryStatementRow::runningBalance)),
+                named("treasury-user", Columns.text("treasury.statement.column.user", TreasuryStatementRow::username)));
         tableView.setPlaceholder(new Label(text("treasury.statement.empty")));
         TableSetting.tableMenuSetting(getClass(), tableView);
+    }
+
+    private static <T> TableColumn<TreasuryStatementRow, T> named(String id, TableColumn<TreasuryStatementRow, T> column) {
+        column.setId(id);
+        return column;
     }
 
     private void subscribeToChanges() {
@@ -377,7 +392,8 @@ public class TreasureDetailsController {
         }
     }
 
-    private String money(BigDecimal value) { return value.setScale(2, RoundingMode.HALF_UP).toPlainString(); }
+    /** As every other money figure is written - thousands separated - on the cards and on paper alike. */
+    private String money(BigDecimal value) { return Columns.money(value); }
     private String text(String key) { return LanguageManager.getInstance().getString(key); }
 
     private record MovementChoice(TreasuryMovementKind kind) { }
