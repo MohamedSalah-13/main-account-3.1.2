@@ -19,6 +19,7 @@ import com.hamza.account.features.treasury.statement.TreasuryUserOption;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
@@ -32,6 +33,7 @@ import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -40,6 +42,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 
@@ -76,6 +79,9 @@ public class TreasureDetailsController {
     @FXML private Button btnSearch;
     @FXML private Button btnReset;
     @FXML private Button btnPrint;
+    @FXML private ToggleButton btnFilters;
+    @FXML private HBox toolbarRow, periodBox, filterPane;
+    private final ListToolbar toolbar = new ListToolbar();
     @FXML private Button btnPrevious;
     @FXML private Button btnNext;
     @FXML private Label statusLabel;
@@ -114,9 +120,26 @@ public class TreasureDetailsController {
         DateSetting.dateAction(dateTo);
         configureChoices();
         configureButtons();
+        arrangeToolbar();
         buildColumns();
         subscribeToChanges();
         load(true);
+    }
+
+    /**
+     * The bar in the order every list screen uses. The filters were a four-column grid with the
+     * buttons in its last cell, three rows of height for five controls.
+     */
+    private void arrangeToolbar() {
+        btnFilters.getStyleClass().add("app-neutral-button");
+        btnFilters.setGraphic(AppIcon.FILTER.graphic());
+        toolbar.searchField(periodBox)
+                .search(btnSearch)
+                .filters(btnFilters, filterPane)
+                .clear(btnReset)
+                .refresh(btnRefresh)
+                .print(btnPrint)
+                .installIn(toolbarRow);
     }
 
     private void configureChoices() {
@@ -221,6 +244,7 @@ public class TreasureDetailsController {
         }
         TreasuryStatementFilter filter = readFilter();
         if (filter == null) return;
+        toolbar.showActiveFilters(filter.panelConditionCount());
         AtomicReference<TreasuryStatementOptions> options = new AtomicReference<>();
         AtomicReference<TreasuryStatementPage> page = new AtomicReference<>();
         setLoading(true);

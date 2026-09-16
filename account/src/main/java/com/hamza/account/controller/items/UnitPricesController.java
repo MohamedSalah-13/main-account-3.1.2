@@ -18,6 +18,7 @@ import com.hamza.account.features.unitprices.UnitPricePolicy;
 import com.hamza.account.features.unitprices.UnitPriceSaveCommand;
 import com.hamza.account.features.unitprices.UnitPriceSaveResult;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PageJumpBox;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -109,7 +110,7 @@ public final class UnitPricesController {
     @FXML private Button btnExpandAll, btnCollapseAll, btnRefresh, btnAutomatic, btnDiscard, btnSave;
     @FXML private Button btnPrevious, btnNext;
     @FXML private Label labelSummary, labelStatus, labelPage;
-    @FXML private HBox pagerBox;
+    @FXML private HBox pagerBox, toolbarRow;
     @FXML private TreeTableView<Row> tree;
 
     private UnitPriceFilter filter = UnitPriceFilter.EMPTY;
@@ -657,6 +658,13 @@ public final class UnitPricesController {
         btnAutomatic.setTooltip(new Tooltip(text("unit.prices.automatic.tooltip")));
 
         btnRefresh.setOnAction(event -> load());
+        // Search and its two filters, then refresh, then this editor's own tree controls. Refresh
+        // used to come last, after expanding and collapsing.
+        new ListToolbar()
+                .searchField(txtSearch, comboState, checkBelowCost)
+                .refresh(btnRefresh)
+                .extra(btnExpandAll, btnCollapseAll, progress)
+                .installIn(toolbarRow);
         btnExpandAll.setOnAction(event -> setExpanded(true));
         btnCollapseAll.setOnAction(event -> setExpanded(false));
         btnPrevious.setOnAction(event -> goToPage(pageIndex - 1));

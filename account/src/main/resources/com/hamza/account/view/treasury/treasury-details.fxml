@@ -5,11 +5,9 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -43,37 +41,30 @@
                         <Label fx:id="closingBalance" styleClass="treasury-statement-summary-value" text="0.00" />
                     </VBox>
                 </HBox>
-                <VBox spacing="10.0" styleClass="app-card">
-                    <Label styleClass="section-title" text="%treasury.statement.filter.title" />
-                    <GridPane hgap="12.0" vgap="9.0">
-                        <columnConstraints>
-                            <ColumnConstraints percentWidth="16.0" />
-                            <ColumnConstraints percentWidth="34.0" />
-                            <ColumnConstraints percentWidth="16.0" />
-                            <ColumnConstraints percentWidth="34.0" />
-                        </columnConstraints>
-                        <Label styleClass="form-label" text="%treasury.label.treasury" />
-                        <ComboBox fx:id="comboTreasury" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" />
-                        <Label styleClass="form-label" text="%treasury.label.account.type" GridPane.columnIndex="2" />
-                        <ComboBox fx:id="comboDetails" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" />
-                        <Label styleClass="form-label" text="%treasury.label.user" GridPane.rowIndex="1" />
-                        <ComboBox fx:id="comboUsers" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                        <Label styleClass="form-label" text="%treasury.label.from.date" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                        <DatePicker fx:id="dateFrom" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                        <Label styleClass="form-label" text="%treasury.label.to.date" GridPane.rowIndex="2" />
-                        <DatePicker fx:id="dateTo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                        <HBox alignment="CENTER_RIGHT" spacing="8.0" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2">
-                            <Button fx:id="btnSearch" onAction="#search" styleClass="app-primary-button" text="%search" />
-                            <Button fx:id="btnRefresh" onAction="#refresh" styleClass="app-neutral-button" text="%refresh" />
-                            <Button fx:id="btnReset" onAction="#resetFilters" styleClass="app-neutral-button" text="%treasury.statement.reset" />
-                            <Button fx:id="btnPrint" onAction="#printStatement" styleClass="app-neutral-button" text="%print" />
+                <!-- Ordered by ListToolbar in TreasureDetailsController. The treasury and the period stay
+                     in the bar - they say which statement this is; the rest is behind the filters button. -->
+                <VBox spacing="8.0" styleClass="app-card">
+                    <HBox fx:id="toolbarRow" alignment="CENTER_LEFT" spacing="8.0">
+                        <HBox fx:id="periodBox" alignment="CENTER_LEFT" spacing="6.0">
+                            <Label styleClass="form-label" text="%treasury.label.treasury" />
+                            <ComboBox fx:id="comboTreasury" prefWidth="190.0" styleClass="modern-input" />
+                            <Label styleClass="form-label" text="%treasury.label.from.date" />
+                            <DatePicker fx:id="dateFrom" prefWidth="140.0" styleClass="modern-input" />
+                            <Label styleClass="form-label" text="%treasury.label.to.date" />
+                            <DatePicker fx:id="dateTo" prefWidth="140.0" styleClass="modern-input" />
                         </HBox>
-                  <rowConstraints>
-                     <RowConstraints />
-                     <RowConstraints />
-                     <RowConstraints />
-                  </rowConstraints>
-                    </GridPane>
+                        <Button fx:id="btnSearch" onAction="#search" styleClass="app-primary-button" text="%search" />
+                        <ToggleButton fx:id="btnFilters" mnemonicParsing="false" />
+                        <Button fx:id="btnReset" onAction="#resetFilters" styleClass="app-neutral-button" text="%invoice.search.clear" />
+                        <Button fx:id="btnRefresh" onAction="#refresh" styleClass="app-neutral-button" text="%refresh" />
+                        <Button fx:id="btnPrint" onAction="#printStatement" styleClass="app-neutral-button" text="%print" />
+                    </HBox>
+                    <HBox fx:id="filterPane" alignment="CENTER_LEFT" spacing="8.0">
+                        <Label styleClass="form-label" text="%treasury.label.account.type" />
+                        <ComboBox fx:id="comboDetails" prefWidth="190.0" styleClass="modern-input" />
+                        <Label styleClass="form-label" text="%treasury.label.user" />
+                        <ComboBox fx:id="comboUsers" prefWidth="190.0" styleClass="modern-input" />
+                    </HBox>
                     <Label fx:id="statusLabel" styleClass="page-subtitle" text="%treasury.statement.status.loading" />
                 </VBox>
             </VBox>

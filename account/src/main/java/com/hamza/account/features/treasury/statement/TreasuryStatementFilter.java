@@ -6,6 +6,19 @@ import java.util.Objects;
 public record TreasuryStatementFilter(LocalDate from, LocalDate to, Integer treasuryId,
                                       TreasuryMovementKind kind, Integer userId,
                                       int page, int pageSize) {
+
+    /**
+     * How many of the conditions behind the statement's filters button narrow the rows - shown on
+     * the button while its panel is closed. The treasury and the period are not among them: they
+     * say which statement this is, and they stay in the bar.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (kind != null) count++;
+        if (userId != null) count++;
+        return count;
+    }
+
     public TreasuryStatementFilter {
         Objects.requireNonNull(from, "from");
         Objects.requireNonNull(to, "to");
