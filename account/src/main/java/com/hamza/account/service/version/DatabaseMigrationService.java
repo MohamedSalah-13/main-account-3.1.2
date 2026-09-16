@@ -75,6 +75,7 @@ public class DatabaseMigrationService {
 
     public MigrationResult updateDatabaseIfNeeded() {
         createDatabaseIfMissing();
+        alignDatabaseCollationWithItsTables();
 
         // Emptiness has to be sampled before anything writes to the schema - Flyway treats a
         // non-empty schema with no history table as "baseline me", so creating so much as the
@@ -328,6 +329,15 @@ public class DatabaseMigrationService {
     /**
      * A first-ever install has an empty MySQL server, and Flyway cannot connect to a schema that
      * does not exist yet. Created with the same charset the old V001_tables.sql used.
+     * <p>
+     * The charset is named and the collation deliberately is not. It used to say
+     * {@code COLLATE utf8mb4_unicode_ci}, and that is one half of the defect V63 repairs: a
+     * mysqldump writes {@code DEFAULT CHARSET=utf8mb4} with no collation for a table sitting on
+     * the server's default one, so restoring a customer's data into a database created here gave
+     * those tables the server's collation while every table a later migration created took this
+     * one. Two collations in one schema, and MySQL refuses a UNION across them. Leaving the
+     * collation out means both paths land on the same answer, whatever that answer is on this
+     * server.
      */
     private void createDatabaseIfMissing() {
         String databaseName = database.getDbName();
@@ -337,8 +347,7 @@ public class DatabaseMigrationService {
                     "Database name in config.xml is not a plain identifier: " + databaseName);
         }
 
-        String sql = "CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-                .formatted(databaseName);
+        String sql = "CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4".formatted(databaseName);
 
         try (Connection connection = DriverManager.getConnection(
                 jdbcUrl(""), database.getUsername(), database.getPass());
@@ -347,6 +356,59 @@ public class DatabaseMigrationService {
         } catch (Exception e) {
             log.error("Failed to create database {}", databaseName, e);
             throw new RuntimeException("Failed to create database " + databaseName, e);
+        }
+    }
+
+    /**
+     * Makes the database's default collation agree with the collation its tables are actually in,
+     * so the next table a migration creates here is not the next mismatch.
+     * <p>
+     * It is the other half of what V63 repairs, and it cannot live in V63: MySQL refuses
+     * {@code ALTER DATABASE} through the prepared-statement protocol (error 1295), and a migration
+     * that must read the collation out of {@code information_schema} before naming it has nothing
+     * but dynamic SQL to say it with. Running it from here costs one query on a database that is
+     * already consistent, which is all of them but the ones this exists for.
+     * <p>
+     * {@code items.barcode} is the reference for the same reason V63 uses it: it is the column the
+     * other two barcode columns are compared against. A failure here is logged and not fatal -
+     * an install whose account may not alter the schema is not an install that should refuse to
+     * open, and everything that reads or writes works exactly as it did before.
+     */
+    private void alignDatabaseCollationWithItsTables() {
+        String databaseName = database.getDbName();
+        String sql = """
+                SELECT c.CHARACTER_SET_NAME, c.COLLATION_NAME, s.DEFAULT_COLLATION_NAME
+                FROM information_schema.SCHEMATA s
+                         JOIN information_schema.COLUMNS c
+                              ON c.TABLE_SCHEMA = s.SCHEMA_NAME
+                                  AND c.TABLE_NAME = 'items'
+                                  AND c.COLUMN_NAME = 'barcode'
+                WHERE s.SCHEMA_NAME = DATABASE()""";
+
+        try (Connection connection = DriverManager.getConnection(
+                jdbcUrl(databaseName), database.getUsername(), database.getPass());
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+
+            // A first-ever install has no `items` yet, and creates every table under one default.
+            if (!resultSet.next()) {
+                return;
+            }
+
+            String charset = resultSet.getString(1);
+            String tableCollation = resultSet.getString(2);
+            String databaseCollation = resultSet.getString(3);
+
+            if (charset == null || tableCollation == null || tableCollation.equals(databaseCollation)) {
+                return;
+            }
+
+            statement.execute("ALTER DATABASE `%s` CHARACTER SET %s COLLATE %s"
+                    .formatted(databaseName, charset, tableCollation));
+            log.info("Database {} default collation changed from {} to {}, to match its own tables",
+                    databaseName, databaseCollation, tableCollation);
+        } catch (Exception e) {
+            log.warn("Could not align the default collation of database {} with its tables", databaseName, e);
         }
     }
 

@@ -63,8 +63,10 @@ public final class JdbcDatabaseServerProvisioner implements DatabaseServerProvis
     }
 
     static String createDatabaseSql(String database) {
-        return "CREATE DATABASE IF NOT EXISTS `" + database
-                + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+        // The collation is left to the server, deliberately: see
+        // DatabaseMigrationService.createDatabaseIfMissing and V63. Naming one here gave a
+        // restored customer database two collations and a barcode query MySQL would not run.
+        return "CREATE DATABASE IF NOT EXISTS `" + database + "` CHARACTER SET utf8mb4";
     }
 
     static String grantSql(String database, String account) {

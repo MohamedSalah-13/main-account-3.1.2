@@ -68,7 +68,7 @@ class AuditLogDatabaseAcceptanceTest {
             try (Connection connection = DriverManager.getConnection(jdbcUrl(""), username, password);
                  Statement statement = connection.createStatement()) {
                 statement.execute("CREATE DATABASE `" + schema
-                        + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                        + "` CHARACTER SET utf8mb4");
             }
 
             Flyway.configure()

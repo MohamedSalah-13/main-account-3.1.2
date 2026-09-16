@@ -802,21 +802,22 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * code being an item's barcode here and a carton's there - and then a scan is a
      * coin toss. Written once so the two callers cannot come to disagree about which
      * tables a barcode can hide in.
+     * <p>
+     * Every branch is wrapped in {@code CONVERT(... USING utf8mb4)} because MySQL
+     * refuses a UNION of two columns whose collations differ, and these three have
+     * been found to differ in the field: no migration names a charset, so a table
+     * created by a migration takes the database default while a table restored from
+     * a dump keeps the charset written in the dump - which resolves to the server's
+     * default collation, a different one. A customer on 2026-09-16 could neither
+     * save an item nor be offered a free code, with error 1271 in the log and
+     * nothing wrong with the data. V63 converges the columns; this keeps the
+     * statement answerable on a database that has not run it, or that diverges
+     * again. It costs nothing: the conversion is in the select list, so the
+     * {@code IN} still reads each table's own barcode index.
      */
     private PreparedStatement takenBarcodesStatement(Connection connection, List<String> codes,
                                                      int exceptItemId, boolean firstOnly) throws SQLException {
-        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
-        String query = """
-                SELECT code FROM (
-                    SELECT barcode AS code FROM items WHERE id <> ? AND barcode IN (%1$s)
-                    UNION ALL
-                    SELECT barcode AS code FROM item_barcodes WHERE item_id <> ? AND barcode IN (%1$s)
-                    UNION ALL
-                    SELECT items_barcode AS code FROM items_units WHERE items_id <> ? AND items_barcode IN (%1$s)
-                ) AS matches
-                """.formatted(placeholders) + (firstOnly ? "LIMIT 1" : "");
-
-        PreparedStatement statement = connection.prepareStatement(query);
+        PreparedStatement statement = connection.prepareStatement(takenBarcodesSql(codes.size(), firstOnly));
         int index = 1;
         for (int i = 0; i < 3; i++) {
             statement.setInt(index++, exceptItemId);
@@ -825,6 +826,21 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             }
         }
         return statement;
+    }
+
+    /** The text of {@link #takenBarcodesStatement}, separated so a test can read it. */
+    static String takenBarcodesSql(int codeCount, boolean firstOnly) {
+        String placeholders = String.join(",", Collections.nCopies(codeCount, "?"));
+
+        return """
+                SELECT code FROM (
+                    SELECT CONVERT(barcode USING utf8mb4) AS code FROM items WHERE id <> ? AND barcode IN (%1$s)
+                    UNION ALL
+                    SELECT CONVERT(barcode USING utf8mb4) AS code FROM item_barcodes WHERE item_id <> ? AND barcode IN (%1$s)
+                    UNION ALL
+                    SELECT CONVERT(items_barcode USING utf8mb4) AS code FROM items_units WHERE items_id <> ? AND items_barcode IN (%1$s)
+                ) AS matches
+                """.formatted(placeholders) + (firstOnly ? "LIMIT 1" : "");
     }
 
     /**
