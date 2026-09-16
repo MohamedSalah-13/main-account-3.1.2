@@ -1337,9 +1337,18 @@ rather than the stylesheet because the FXML sets it, and a value set on the node
 which JavaFX computes every column from the table's own width - and `TableSetting` persisted
 each change of that computed width. The merge screen's operations table had stored 1613 points
 across seven columns that way; restored into a 690-point panel it showed two of them. A width
-is now read and written only while the policy is unconstrained, the one state in which a drag
-is the only thing that can change it (`TableSettingTest`). Any table moved into a narrower
-place would have inherited the same, which is why it is fixed there and not at the screen.
+is now written only while the policy is unconstrained, the one state in which a drag is the
+only thing that can change it (`TableSettingTest`). **That stops new garbage and does not clean
+the old:** a width stored while filling was on is restored as soon as a user turns filling off,
+which is the state of the development machine this was found on - so a table moved into a
+narrower place still needs an id of its own, and the merge panel's `mergeOperationsPanel` is
+what actually fixed it there.
+
+**A table with no id shares its saved widths with every id-less table in its package.**
+`TableSetting` keys a column by index under the prefix `table_` when the table has no id, and
+`Preferences.userNodeForPackage` makes the node the package, not the class. The stock transfer
+lines table opened with 862 and 751 points on its first two columns - another table's - and its
+quantity column off the edge. Give every table passed to `tableMenuSetting` an id.
 
 ### Column views and widths
 

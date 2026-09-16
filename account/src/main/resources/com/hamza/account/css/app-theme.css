@@ -1597,7 +1597,11 @@
    above the table rather than a second table under it, so it carries the elevation
    the table does not. */
 .detail-drawer {
-    -fx-background-color: -app-surface;
+    /* Two layers, the first opaque. -app-surface is 95% opaque in the light theme and 96% in
+       the dark - right for a card lying on the page background, wrong for a panel lying over
+       other controls: the stock transfer screen's card and its Post button showed through the
+       history panel. -app-surface-2 is a solid colour in both themes. */
+    -fx-background-color: -app-surface-2, -app-surface;
     -fx-border-color: -app-border;
     -fx-border-width: 0 0 0 0.091em;
     -fx-effect: dropshadow(gaussian, -app-shadow, 18, 0.16, 0, 0);

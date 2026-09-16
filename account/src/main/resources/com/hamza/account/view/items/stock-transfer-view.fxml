@@ -31,6 +31,7 @@
                                 <Label styleClass="form-label" text="%stocks.transfer.date" />
                                 <DatePicker fx:id="datePicker" minWidth="140.0" />
                                 <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnShowHistory" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.history.title" />
                                 <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%stocks.transfer.post.button" />
                             </children>
                             <padding>
@@ -60,24 +61,13 @@
                 </VBox>
             </top>
             <center>
+                <!-- The transfer being written is the screen's job, so its lines take the
+                     whole height. The history used to share it, which on a 768px screen left
+                     the lines grid 180 points and the history the rest; it opens in a
+                     RowDetailDrawer from "Transfer history" instead. -->
                 <VBox spacing="8.0" BorderPane.alignment="CENTER">
                     <children>
-                        <TableView fx:id="tableLines" styleClass="modern-table" prefHeight="180.0" />
-
-                        <Label styleClass="section-title" text="%stocks.transfer.history.title" />
-                        <HBox alignment="CENTER_LEFT" spacing="8.0">
-                            <children>
-                                <Button fx:id="btnRefreshHistory" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
-                                <Button fx:id="btnReverse" mnemonicParsing="false" styleClass="danger-button" text="%stocks.transfer.reverse" />
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Label styleClass="form-label" text="%stocks.transfer.date" />
-                                <DatePicker fx:id="datePrintFrom" minWidth="130.0" />
-                                <Label styleClass="form-label" text="%to" />
-                                <DatePicker fx:id="datePrintTo" minWidth="130.0" />
-                                <Button fx:id="btnPrintHistory" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.print.history" />
-                            </children>
-                        </HBox>
-                        <TableView fx:id="tableHistory" styleClass="modern-table" VBox.vgrow="ALWAYS" />
+                        <TableView fx:id="tableLines" styleClass="modern-table" VBox.vgrow="ALWAYS" />
                     </children>
                     <padding>
                         <Insets bottom="6.0" left="6.0" right="6.0" />
@@ -86,4 +76,31 @@
             </center>
         </BorderPane>
     </children>
+
+    <!-- Built here, shown in the drawer: fx:define creates and injects these nodes without
+         placing them in the screen, so the drawer takes them without re-parenting anything. -->
+    <fx:define>
+        <VBox fx:id="historyPane" spacing="8.0">
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <children>
+                        <Button fx:id="btnRefreshHistory" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
+                    </children>
+                </HBox>
+                <TableView fx:id="tableHistory" styleClass="modern-table" VBox.vgrow="ALWAYS" />
+                <!-- Printing covers a date range rather than the rows above, so it sits
+                     under the list as its own row instead of competing with it for width. -->
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <children>
+                        <Label styleClass="form-label" text="%stocks.transfer.date" />
+                        <DatePicker fx:id="datePrintFrom" prefWidth="130.0" />
+                        <Label styleClass="form-label" text="%to" />
+                        <DatePicker fx:id="datePrintTo" prefWidth="130.0" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnPrintHistory" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.print.history" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </fx:define>
 </AnchorPane>

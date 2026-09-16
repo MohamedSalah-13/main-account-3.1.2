@@ -1,5 +1,7 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
@@ -18,6 +20,9 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.RowDetailDrawer;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
@@ -35,10 +40,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.io.File;
@@ -57,8 +64,12 @@ import java.util.List;
  * quantity the source cannot cover, and is refused entirely inside a closed
  * accounting period - see {@code StockTransferService}.
  * <p>
- * The lower half is the history a posted transfer can be found and reversed from:
- * reversing deletes the transfer outright, which is the only undo there is.
+ * The history a posted transfer can be found and reversed from opens in a
+ * {@link RowDetailDrawer} over the screen. It used to be the lower half of it, and the
+ * two lists are not a master and its detail - one is the transfer being written, the other
+ * every transfer already posted - so sharing one column of height between them only left
+ * each too short to use on a 768px screen. Reversing deletes the transfer outright, which
+ * is the only undo there is, and it is a button on the row it reverses.
  */
 @FxmlPath(pathFile = "items/stock-transfer-view.fxml")
 public class StockTransferController {
@@ -71,6 +82,12 @@ public class StockTransferController {
 
     private final ObservableList<PendingLine> lines = FXCollections.observableArrayList();
     private final ObservableList<StockTransferSummary> history = FXCollections.observableArrayList();
+
+    /**
+     * The history's six columns and its print row - two date pickers and a button - need about
+     * this much; a share of a 1366-point window would cut the print row in half.
+     */
+    private static final double HISTORY_WIDTH = 640;
 
     private TextSearchApplication<ItemsModel> itemSearch;
 
@@ -87,13 +104,18 @@ public class StockTransferController {
     @FXML
     private TextField txtQuantity;
     @FXML
-    private Button btnAddLine, btnRemoveLine, btnPost, btnRefreshHistory, btnReverse, btnPrintHistory;
+    private Button btnAddLine, btnRemoveLine, btnPost, btnShowHistory, btnRefreshHistory, btnPrintHistory;
     @FXML
     private DatePicker datePrintFrom, datePrintTo;
     @FXML
     private TableView<PendingLine> tableLines;
     @FXML
     private TableView<StockTransferSummary> tableHistory;
+    /** Declared in the FXML's fx:define, so it belongs to no layout until the drawer takes it. */
+    @FXML
+    private VBox historyPane;
+
+    private RowDetailDrawer historyDrawer;
 
     @FXML
     public void initialize() {
@@ -101,12 +123,12 @@ public class StockTransferController {
         buildItemSearch();
         buildLinesTable();
         buildHistoryTable();
+        buildHistoryDrawer();
         buildActions();
         Utils.setTextFormatter(txtQuantity);
         datePicker.setValue(LocalDate.now());
         datePrintFrom.setValue(LocalDate.now().minusDays(30));
         datePrintTo.setValue(LocalDate.now());
-        loadHistory();
     }
 
     // ------------------------------------------------------------------
@@ -174,6 +196,10 @@ public class StockTransferController {
     }
 
     private void buildLinesTable() {
+        // An id of its own, or TableSetting keys the widths by column index under "table_",
+        // which every id-less table in this package shares: this table opened with another
+        // table's 862 and 751 points on its first two columns and its quantity off the edge.
+        tableLines.setId("stockTransferLines");
         tableLines.setPlaceholder(new Label(message("stocks.transfer.placeholder.lines")));
         tableLines.setItems(lines);
         tableLines.getColumns().add(Columns.text("item.stockcount.column.item", PendingLine::itemName));
@@ -183,22 +209,44 @@ public class StockTransferController {
     }
 
     private void buildHistoryTable() {
+        tableHistory.setId("stockTransferHistory");
         tableHistory.setPlaceholder(new Label(message("stocks.transfer.placeholder.history")));
         tableHistory.setItems(history);
-        tableHistory.getColumns().add(Columns.number("stocks.transfer.history.column.id", StockTransferSummary::id));
-        tableHistory.getColumns().add(Columns.date("stocks.transfer.history.column.date", StockTransferSummary::transferDate));
-        tableHistory.getColumns().add(Columns.text("stocks.transfer.history.column.from", StockTransferSummary::fromStockName));
-        tableHistory.getColumns().add(Columns.text("stocks.transfer.history.column.to", StockTransferSummary::toStockName));
-        tableHistory.getColumns().add(Columns.number("stocks.transfer.history.column.lines", StockTransferSummary::lineCount));
+        // First, where a column of buttons belongs; and a button in the row, so reversing
+        // cannot be pressed without naming the transfer it reverses. The permission is a
+        // hint - DeleteRegistry.STOCK_TRANSFERS is what enforces it.
+        tableHistory.getColumns().add(RowActionsColumn.of("stocks.transfer.column.actions",
+                RowAction.permitted(List.of(RowAction.of("stocks.transfer.reverse", AppIcon.DELETE,
+                        "app-neutral-button", AppPermissions.STOCK_TRANSFER_DELETE, this::reverse)))));
+        // Widths of their own: with "fill the available width" off a column opens at JavaFX's
+        // default 80 points, which cut the date to "2026-09-..." and a warehouse name to its
+        // last letters. Together these fit HISTORY_WIDTH with the actions column.
+        tableHistory.getColumns().add(width(Columns.number("stocks.transfer.history.column.id", StockTransferSummary::id), 60));
+        tableHistory.getColumns().add(width(Columns.date("stocks.transfer.history.column.date", StockTransferSummary::transferDate), 100));
+        tableHistory.getColumns().add(width(Columns.text("stocks.transfer.history.column.from", StockTransferSummary::fromStockName), 150));
+        tableHistory.getColumns().add(width(Columns.text("stocks.transfer.history.column.to", StockTransferSummary::toStockName), 150));
+        tableHistory.getColumns().add(width(Columns.number("stocks.transfer.history.column.lines", StockTransferSummary::lineCount), 80));
         TableSetting.tableMenuSetting(getClass(), tableHistory);
+    }
+
+    private void buildHistoryDrawer() {
+        historyDrawer = RowDetailDrawer.installIn(root);
+        historyDrawer.setContent(historyPane);
+        historyDrawer.setPreferredWidth(HISTORY_WIDTH);
+    }
+
+    /** Reads the history when it is opened rather than when the screen is: most visits post one. */
+    private void showHistory() {
+        loadHistory();
+        historyDrawer.show(message("stocks.transfer.history.title"), null);
     }
 
     private void buildActions() {
         btnAddLine.setOnAction(event -> addLine());
         btnRemoveLine.setOnAction(event -> removeSelectedLine());
         btnPost.setOnAction(event -> post());
+        btnShowHistory.setOnAction(event -> showHistory());
         btnRefreshHistory.setOnAction(event -> loadHistory());
-        btnReverse.setOnAction(event -> reverseSelected());
         btnPrintHistory.setOnAction(event -> printHistory());
     }
 
@@ -327,18 +375,13 @@ public class StockTransferController {
         }
     }
 
-    private void reverseSelected() {
-        StockTransferSummary selected = tableHistory.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            AllAlerts.alertError(message("stocks.transfer.error.select.history.row"));
-            return;
-        }
+    private void reverse(StockTransferSummary transfer) {
         if (!AllAlerts.confirm_all(message("stocks.transfer.confirm.reverse.title"),
                 message("stocks.transfer.confirm.reverse.body"))) {
             return;
         }
         try {
-            transferService.delete(selected.id());
+            transferService.delete(transfer.id());
             AllAlerts.alertDeleteWithMessage(message("stocks.transfer.msg.reversed"));
             loadHistory();
             eventBus.publish(new StockBalancesChanged());
@@ -350,6 +393,11 @@ public class StockTransferController {
     // ------------------------------------------------------------------
     // Plumbing
     // ------------------------------------------------------------------
+
+    private static <S, T> TableColumn<S, T> width(TableColumn<S, T> column, double width) {
+        column.setPrefWidth(width);
+        return column;
+    }
 
     private String message(String key, Object... arguments) {
         return LanguageManager.getInstance().getString(key, arguments);
