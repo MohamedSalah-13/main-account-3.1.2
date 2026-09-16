@@ -79,6 +79,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -395,8 +396,8 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
         tableView.getColumns().addFirst(rowActionsColumn());
         tableView.getColumns().add(named("totals-entered-by", Columns.text("users",
                 row -> row.getUsers() == null ? "" : row.getUsers().getUsername())));
-        tableView.getColumns().add(named("totals-entry-time", Columns.text("column.entry.time",
-                row -> row.getCreated_at() == null ? "" : row.getCreated_at().toString())));
+        tableView.getColumns().add(named("totals-entry-time", Columns.dateTime("column.entry.time",
+                BaseTotals::getCreated_at)));
         tableView.getColumns().get(1).setId(SELECTION_COLUMN);
 
         TableSetting.tableMenuSetting(getClass(), tableView);
@@ -574,7 +575,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
         labelSelection.setVisible(!selection.isEmpty());
         labelSelection.setManaged(!selection.isEmpty());
         labelSelection.setText(LanguageManager.getInstance().getString("invoice.selection.summary",
-                selection.count(), MoneyMath.text(selection.total())));
+                selection.count(), Columns.money(selection.total())));
     }
 
     /**
@@ -1044,13 +1045,13 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
      */
     private void showSummary(TotalsSummaryRow summary, boolean settled) {
         String pending = LanguageManager.getInstance().getString("invoice.search.summary.pending");
-        textSumTableSize.setText(settled ? String.valueOf(summary.count()) : pending);
-        textSumTotals.setText(settled ? MoneyMath.text(summary.total()) : pending);
-        textSumDiscount.setText(settled ? MoneyMath.text(summary.discount()) : pending);
-        textSumAfterDiscount.setText(settled ? MoneyMath.text(summary.afterDiscount()) : pending);
-        textCash.setText(settled ? MoneyMath.text(summary.paid()) : pending);
-        textDeffer.setText(settled ? MoneyMath.text(summary.remaining()) : pending);
-        textProfit.setText(settled ? MoneyMath.text(summary.profit()) : pending);
+        textSumTableSize.setText(settled ? Columns.quantity(BigDecimal.valueOf(summary.count())) : pending);
+        textSumTotals.setText(settled ? Columns.money(summary.total()) : pending);
+        textSumDiscount.setText(settled ? Columns.money(summary.discount()) : pending);
+        textSumAfterDiscount.setText(settled ? Columns.money(summary.afterDiscount()) : pending);
+        textCash.setText(settled ? Columns.money(summary.paid()) : pending);
+        textDeffer.setText(settled ? Columns.money(summary.remaining()) : pending);
+        textProfit.setText(settled ? Columns.money(summary.profit()) : pending);
     }
 
     private Window window() {

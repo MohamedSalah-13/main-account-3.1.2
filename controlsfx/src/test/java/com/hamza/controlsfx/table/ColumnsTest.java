@@ -6,7 +6,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -52,6 +54,21 @@ class ColumnsTest {
 
         assertEquals("2026-01-05", cellValue(column, withDate));
         assertEquals("", cellValue(column, withoutDate));
+    }
+
+    @Test
+    void dateTimeHasNoIsoSeparatorAndKeepsSecondsEvenWhenTheyAreZero() {
+        TableColumn<LocalDateTime, String> column = Columns.dateTime("item.title", moment -> moment);
+
+        assertEquals("2026-09-15 23:08:16", cellValue(column, LocalDateTime.of(2026, 9, 15, 23, 8, 16)));
+        assertEquals("2026-09-15 23:08:00", cellValue(column, LocalDateTime.of(2026, 9, 15, 23, 8)));
+        assertEquals("", cellValue(column, (LocalDateTime) null));
+    }
+
+    @Test
+    void moneyGroupsThousandsSoAFooterMatchesTheColumnItSums() {
+        assertEquals(String.format("%,.2f", new BigDecimal("1961403.51")), Columns.money(new BigDecimal("1961403.51")));
+        assertEquals(String.format("%,.2f", new BigDecimal("1000.00")), Columns.money(new BigDecimal("999.995")));
     }
 
     @Test

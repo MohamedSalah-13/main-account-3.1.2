@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 
@@ -71,6 +72,21 @@ public final class Columns {
         return text(titleKey, row -> {
             LocalDate value = extractor.apply(row);
             return value == null ? "" : value.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        });
+    }
+
+    /** The pattern {@link #dateTime} writes - still sortable as text, since it is most significant first. */
+    public static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * A moment as a person reads it: {@code 2026-09-15 23:08:16}. {@code LocalDateTime.toString()}
+     * is the ISO form with a {@code T} between the date and the time, and drops the seconds when they
+     * are zero, so one column showed two shapes of the same kind of value.
+     */
+    public static <S> TableColumn<S, String> dateTime(String titleKey, Function<S, LocalDateTime> extractor) {
+        return text(titleKey, row -> {
+            LocalDateTime value = extractor.apply(row);
+            return value == null ? "" : value.format(DATE_TIME);
         });
     }
 
