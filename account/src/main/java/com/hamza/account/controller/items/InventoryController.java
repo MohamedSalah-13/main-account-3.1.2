@@ -20,6 +20,7 @@ import com.hamza.account.features.inventory.StockBalanceRow;
 import com.hamza.account.features.inventory.StockFilter;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.features.export.ExcelExportService;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableColumnViews;
@@ -32,6 +33,8 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
+import javafx.scene.layout.HBox;
+import javafx.scene.control.ToggleButton;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -155,6 +158,11 @@ public class InventoryController {
     @FXML
     private CheckBox checkInactive;
     @FXML
+    private HBox toolbarRow, stockBox, filterPane;
+    @FXML
+    private ToggleButton btnFilters;
+    private final ListToolbar toolbar = new ListToolbar();
+    @FXML
     private VBox tileLowStock;
     @FXML
     private AnchorPane root;
@@ -167,6 +175,7 @@ public class InventoryController {
         buildStockPicker();
         buildGroupPicker();
         buildActions();
+        arrangeToolbar();
         explainTotals();
         subscribeToChanges();
         // The screen used to open showing 0.00 and stay there until the user changed
@@ -501,6 +510,26 @@ public class InventoryController {
     }
 
     /**
+     * The inventory bar in the order every list screen uses. It had every filter on one row with
+     * the actions pushed to the far end past a spacer, and print last after the cross-warehouse
+     * report. The group, the stock state and "show inactive" are behind the filters button now.
+     */
+    private void arrangeToolbar() {
+        btnFilters.getStyleClass().add("app-neutral-button");
+        btnFilters.setGraphic(com.hamza.account.config.AppIcon.FILTER.graphic());
+        toolbar.searchField(stockBox, textSearch)
+                .filters(btnFilters, filterPane)
+                .clear(btnClearFilters)
+                .refresh(btnRefresh)
+                .print(btnPrint)
+                .export(btnExcel)
+                .view(viewMenu)
+                .extra(btnPrintCrossStock, progress)
+                .installIn(toolbarRow);
+        toolbar.showActiveFilters(0);
+    }
+
+    /**
      * Puts the filter controls back in step with {@link #query}. Needed because the
      * query can change without the user touching a control - "مسح الفلاتر" resets all
      * of them at once, and the low-stock tile sets the stock state.
@@ -520,6 +549,7 @@ public class InventoryController {
                     .findFirst()
                     .ifPresent(choiceGroup::setValue);
             btnClearFilters.setDisable(!query.isNarrowed());
+            toolbar.showActiveFilters(query.panelConditionCount());
         } finally {
             adjustingFilters = false;
         }

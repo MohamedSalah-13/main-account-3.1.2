@@ -19,14 +19,17 @@
                 <VBox spacing="8.0" BorderPane.alignment="CENTER">
                     <children>
 
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                        <!-- Ordered by ListToolbar in MergeItemsController. -->
+                        <HBox fx:id="toolbarRow" alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                             <children>
-                                <Label styleClass="form-label" text="%item.merge.label.group.by" />
-                                <ComboBox fx:id="comboGroupBy" minWidth="220.0" />
+                                <HBox fx:id="groupByBox" alignment="CENTER_LEFT" spacing="6.0">
+                                    <children>
+                                        <Label styleClass="form-label" text="%item.merge.label.group.by" />
+                                        <ComboBox fx:id="comboGroupBy" minWidth="220.0" />
+                                    </children>
+                                </HBox>
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%item.merge.btn.refresh" />
                                 <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
-
-                                <Region HBox.hgrow="ALWAYS" />
 
                                 <Button fx:id="btnSetTarget" mnemonicParsing="false" styleClass="neutral-button" text="%item.merge.btn.set.target" />
                                 <Button fx:id="btnPreview" mnemonicParsing="false" styleClass="neutral-button" text="%item.merge.btn.preview" />

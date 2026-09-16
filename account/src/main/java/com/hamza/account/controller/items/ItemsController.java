@@ -29,6 +29,7 @@ import com.hamza.account.service.SelPriceItemService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.EditCell;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PageJumpBox;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
@@ -172,6 +173,9 @@ public class ItemsController extends LoadData {
     private Pagination pagination;
     @FXML
     private HBox pagerBox;
+    @FXML
+    private HBox searchRow;
+    private final ListToolbar toolbar = new ListToolbar();
     @FXML
     private TreeView<ItemsGroupTreePane.GroupNode> groupTree;
     @FXML
@@ -491,10 +495,22 @@ public class ItemsController extends LoadData {
     // ---------------------------------------------------------------------------
 
     private void setUpFilterBar() {
+        // The order every list screen uses. Print and the view menu used to sit in the commands
+        // card above, and the search row had no "clear all" - clearing meant opening the panel.
+        toolbar.searchField(comboSearchScope, comboMatchMode, txtSearch)
+                .filters(btnFilters, filterPane)
+                .clear(ListToolbar.clearButton(() -> {
+                    txtSearch.clear();
+                    filterBar.clearAll();
+                }))
+                .refresh(btnRefresh)
+                .print(menuButtonPrint)
+                .view(menuView)
+                .installIn(searchRow);
         filterBar = new ItemsFilterBar(comboSearchScope, comboMatchMode, comboFilterGroup, comboFilterActive,
                 comboFilterBarcode, comboFilterExpiry, comboFilterBalance, comboFilterUsage, comboFilterUnits,
-                txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo, comboSavedFilters, chipBar, filterPane,
-                btnFilters, labelFiltered, filter -> paginationTableSetting.setFilter(filter));
+                txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo, comboSavedFilters, chipBar, toolbar,
+                labelFiltered, filter -> paginationTableSetting.setFilter(filter));
         filterBar.initialize();
         filterBar.wireButtons(btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter);
         // The filter bar owns every condition, and the debounced search box owns the text -

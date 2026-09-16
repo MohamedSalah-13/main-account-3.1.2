@@ -28,6 +28,16 @@ class InventoryPagingTest {
                 new InventorySummary(itemCount, 0, 0, 0, 0, 0, 0));
     }
 
+    @Test
+    @DisplayName("the filters button counts what its panel narrows, not the warehouse or the text")
+    void theFiltersButtonCountsWhatThePanelNarrows() {
+        assertEquals(0, InventoryQuery.all().panelConditionCount());
+        assertEquals(0, new InventoryQuery("juice", StockFilter.ALL, InventoryQuery.all().mainGroupId(), true,
+                0, 50, 7).panelConditionCount());
+        assertEquals(3, new InventoryQuery("", StockFilter.values()[StockFilter.values().length - 1], 4, false,
+                0, 50, 1).panelConditionCount());
+    }
+
     @Nested
     @DisplayName("Page count")
     class PageCount {

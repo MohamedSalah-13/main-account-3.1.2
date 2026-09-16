@@ -1,6 +1,7 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.features.items.ItemCatalogFilter.BalanceRule;
 import com.hamza.account.features.items.ItemCatalogFilter.MatchMode;
 import com.hamza.account.features.items.ItemCatalogFilter.SearchScope;
@@ -66,8 +67,7 @@ public final class ItemsFilterBar {
     private final TextField txtMiniTo;
     private final ComboBox<String> comboSaved;
     private final FlowPane chipBar;
-    private final Region filterPane;
-    private final ToggleButton btnFilters;
+    private final ListToolbar toolbar;
     private final Label labelFiltered;
 
     private final SavedItemFilters savedFilters;
@@ -88,8 +88,8 @@ public final class ItemsFilterBar {
                           ComboBox<Tristate> comboExpiry, ComboBox<BalanceRule> comboBalance,
                           ComboBox<UsageRule> comboUsage, ComboBox<Tristate> comboUnits, TextField txtMinPrice, TextField txtMaxPrice,
                           TextField txtMiniFrom, TextField txtMiniTo,
-                          ComboBox<String> comboSaved, FlowPane chipBar, Region filterPane,
-                          ToggleButton btnFilters, Label labelFiltered,
+                          ComboBox<String> comboSaved, FlowPane chipBar, ListToolbar toolbar,
+                          Label labelFiltered,
                           Consumer<ItemCatalogFilter> onChanged) {
         this.comboScope = comboScope;
         this.comboMatch = comboMatch;
@@ -106,8 +106,7 @@ public final class ItemsFilterBar {
         this.txtMiniTo = txtMiniTo;
         this.comboSaved = comboSaved;
         this.chipBar = chipBar;
-        this.filterPane = filterPane;
-        this.btnFilters = btnFilters;
+        this.toolbar = toolbar;
         this.labelFiltered = labelFiltered;
         this.onChanged = onChanged;
         this.savedFilters = new SavedItemFilters(
@@ -212,7 +211,6 @@ public final class ItemsFilterBar {
             // operator is looking for inside it right now is their own business.
             if (saved != null) apply(saved.withSearch(filter.searchText()));
         });
-        btnFilters.setOnAction(event -> setPanelVisible(btnFilters.isSelected()));
         syncControls();
     }
 
@@ -264,10 +262,9 @@ public final class ItemsFilterBar {
         updateBadges();
     }
 
-    private void setPanelVisible(boolean visible) {
-        filterPane.setVisible(visible);
-        filterPane.setManaged(visible);
-        btnFilters.setSelected(visible);
+    /** Every condition and the text: what the bar's "clear all" means. */
+    public void clearAll() {
+        apply(ItemCatalogFilter.EMPTY);
     }
 
     /**
@@ -355,10 +352,7 @@ public final class ItemsFilterBar {
      */
     private void updateBadges() {
         int count = filter.activeConditionCount();
-        LanguageManager language = LanguageManager.getInstance();
-        btnFilters.setText(count == 0
-                ? language.getString("item.filter.button")
-                : language.getString("item.filter.button.count", count));
+        toolbar.showActiveFilters(count);
         boolean narrowed = !filter.isEmpty();
         labelFiltered.setVisible(narrowed);
         labelFiltered.setManaged(narrowed);

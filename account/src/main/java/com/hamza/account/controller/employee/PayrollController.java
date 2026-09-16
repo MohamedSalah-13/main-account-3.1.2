@@ -12,6 +12,7 @@ import com.hamza.account.features.employee.payroll.PayrollRunStatus;
 import com.hamza.account.features.employee.payroll.PayrollService;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TablePdfLayout;
@@ -220,6 +221,7 @@ public class PayrollController implements AppSettingInterface {
      */
     private HBox actionBar() {
         List<javafx.scene.Node> buttons = new ArrayList<>();
+        buttons.add(button("payroll.action.payslip", AppIcon.PRINT, this::printPayslip));
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_CREATE)) {
             buttons.add(primary("payroll.action.create", AppIcon.ADD, this::createDraft));
             buttons.add(button("payroll.action.rebuild", AppIcon.REFRESH, this::rebuildDraft));
@@ -233,14 +235,16 @@ public class PayrollController implements AppSettingInterface {
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_CREATE)) {
             buttons.add(button("payroll.action.delete", AppIcon.DELETE, this::deleteDraft));
         }
-        buttons.add(button("refresh", AppIcon.REFRESH, this::loadRuns));
-        buttons.add(button("payroll.action.payslip", AppIcon.PRINT, this::printPayslip));
-        buttons.add(button("print", AppIcon.PRINT, this::print));
-        buttons.add(button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel));
-        buttons.add(viewMenu);
 
-        HBox bar = new HBox(8);
-        bar.getChildren().addAll(buttons);
+        // The list's own actions first, in the order every list screen uses; the run's workflow
+        // - create, approve, pay, delete - after them.
+        HBox bar = new ListToolbar()
+                .refresh(ListToolbar.refreshButton(this::loadRuns))
+                .print(ListToolbar.printButton(this::print))
+                .export(button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
+                .view(viewMenu)
+                .extra(buttons.toArray(new javafx.scene.Node[0]))
+                .installIn(new HBox(8));
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("filter-bar");
         return bar;

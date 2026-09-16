@@ -48,7 +48,7 @@
                         </VBox>
                     </children>
                 </HBox>
-                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="app-card,users-management-toolbar">
+                <HBox fx:id="toolbarRow" alignment="CENTER_RIGHT" spacing="8.0" styleClass="app-card,users-management-toolbar">
                     <children>
                         <TextField fx:id="textSearch" promptText="%user.management.prompt.search" styleClass="modern-input" HBox.hgrow="ALWAYS"/>
                         <ComboBox fx:id="comboStatus" prefWidth="170.0"/>

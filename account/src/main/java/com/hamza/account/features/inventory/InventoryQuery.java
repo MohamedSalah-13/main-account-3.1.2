@@ -96,6 +96,19 @@ public record InventoryQuery(String search,
     }
 
     /** Whether anything at all is being left out - what the "clear" button acts on. */
+    /**
+     * How many of the conditions behind the screen's filters button narrow the sheet - shown on
+     * the button while its panel is closed. Neither the warehouse nor the text is one of them:
+     * both stay in the bar, in plain view.
+     */
+    public int panelConditionCount() {
+        int count = 0;
+        if (hasGroup()) count++;
+        if (level != StockFilter.ALL) count++;
+        if (!includeInactive) count++;
+        return count;
+    }
+
     public boolean isNarrowed() {
         return hasSearch() || hasGroup() || level != StockFilter.ALL || !includeInactive;
     }

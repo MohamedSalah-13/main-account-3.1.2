@@ -65,14 +65,40 @@
                             </children>
                         </HBox>
 
-                        <!-- Commands on one side, view switches on the other. -->
+                        <!--
+                          Finding things first, then what acts on the list: the row is ordered by
+                          ListToolbar in ItemsController (search, filters, clear all, refresh, print,
+                          view), so the order written here is not the one shown.
+                        -->
+                        <VBox spacing="8.0" styleClass="app-card">
+                            <children>
+                                <HBox fx:id="searchRow" alignment="CENTER_LEFT" spacing="8.0">
+                                    <children>
+                                        <ComboBox fx:id="comboSearchScope" prefWidth="120.0" />
+                                        <ComboBox fx:id="comboMatchMode" prefWidth="130.0" />
+                                        <TextField fx:id="txtSearch" promptText="%search" HBox.hgrow="ALWAYS" />
+                                        <ToggleButton fx:id="btnFilters" mnemonicParsing="false"
+                                                      styleClass="neutral-button" text="%item.filter.button" />
+                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
+                                    </children>
+                                </HBox>
+
+                                <!--
+                                  The chips are the four or five questions asked every day, one click
+                                  each. Anything they set is also settable in the panel below; they are
+                                  a shortcut, never a second way of meaning something.
+                                -->
+                                <FlowPane fx:id="chipBar" hgap="6.0" vgap="6.0" />
+                            </children>
+                        </VBox>
+
+                        <!-- Everything else: adding, the other tools, and the view switches. -->
                         <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                             <children>
                                 <HBox alignment="CENTER_LEFT" spacing="6.0">
                                     <children>
                                         <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button"
                                                 text="%item.btn.new" />
-                                        <Separator orientation="VERTICAL" />
                                         <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false"
                                                     styleClass="modern-menu-button" text="%item.menu.print">
                                             <items>
@@ -121,29 +147,6 @@
                                 </HBox>
                             </children>
                         </HBox>
-
-                        <!-- Finding things: scope, text, the quick chips and the filter panel switch. -->
-                        <VBox spacing="8.0" styleClass="app-card">
-                            <children>
-                                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                                    <children>
-                                        <ComboBox fx:id="comboSearchScope" prefWidth="120.0" />
-                                        <ComboBox fx:id="comboMatchMode" prefWidth="130.0" />
-                                        <TextField fx:id="txtSearch" promptText="%search" HBox.hgrow="ALWAYS" />
-                                        <ToggleButton fx:id="btnFilters" mnemonicParsing="false"
-                                                      styleClass="neutral-button" text="%item.filter.button" />
-                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
-                                    </children>
-                                </HBox>
-
-                                <!--
-                                  The chips are the four or five questions asked every day, one click
-                                  each. Anything they set is also settable in the panel below; they are
-                                  a shortcut, never a second way of meaning something.
-                                -->
-                                <FlowPane fx:id="chipBar" hgap="6.0" vgap="6.0" />
-                            </children>
-                        </VBox>
 
                         <!--
                           The filter panel. Collapsed by default and unmanaged while collapsed, so it

@@ -5,12 +5,10 @@
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -46,7 +44,8 @@
                                     </children>
                                 </HBox>
 
-                                <HBox alignment="CENTER_LEFT" spacing="8.0"
+                                <!-- Ordered by ListToolbar in TableController; the order written here is not the one shown. -->
+                                <HBox fx:id="listToolbar" alignment="CENTER_LEFT" spacing="8.0"
                                       styleClass="app-toolbar, party-list-toolbar">
                                     <children>
                                         <Button fx:id="btnNew" mnemonicParsing="false"
@@ -61,8 +60,6 @@
                                             </children>
                                         </HBox>
 
-                                        <Separator orientation="VERTICAL" styleClass="modern-separator" />
-
                                         <Button fx:id="btnRefresh" mnemonicParsing="false"
                                                 styleClass="neutral-action-button" text="%refresh" />
                                         <Button fx:id="btnPrint" mnemonicParsing="false"
@@ -74,8 +71,6 @@
                                                     styleClass="neutral-action-button"
                                                     text="%party.list.view" />
 
-                                        <Region HBox.hgrow="ALWAYS" />
-
                                         <!--
                                           The page-number box sits before the growing search field.
                                           Otherwise the field takes all spare width and the pager can
@@ -83,7 +78,7 @@
                                         -->
                                         <HBox fx:id="pagerBox" alignment="CENTER_LEFT"
                                               minWidth="-Infinity" spacing="5.0" />
-                                        <HBox alignment="CENTER_LEFT" spacing="7.0">
+                                        <HBox fx:id="searchBox" alignment="CENTER_LEFT" spacing="7.0">
                                             <children>
                                                 <Label fx:id="labelSearch" styleClass="form-label" text="%search" />
                                                 <TextField fx:id="txtSearch" focusTraversable="false"

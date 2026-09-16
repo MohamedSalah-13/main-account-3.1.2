@@ -1,9 +1,12 @@
 package com.hamza.account.controller.items;
 
+import java.util.prefs.Preferences;
+import javafx.collections.transformation.FilteredList;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.inventory.ColumnKind;
+import com.hamza.account.features.itemmerge.ItemMergeSearch;
 import com.hamza.account.features.itemmerge.ItemMergeCandidate;
 import com.hamza.account.features.itemmerge.ItemMergePreview;
 import com.hamza.account.features.itemmerge.ItemMergeResult;
@@ -12,6 +15,8 @@ import com.hamza.account.features.itemmerge.MergeGroupBy;
 import com.hamza.account.model.domain.CardItems;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CardItemService;
+import com.hamza.account.table.TableColumnViews;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.RowDetailDrawer;
@@ -25,6 +30,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.TextField;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -34,6 +41,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.AnchorPane;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
@@ -41,6 +49,7 @@ import lombok.extern.log4j.Log4j2;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -89,6 +98,8 @@ public class MergeItemsController {
      */
     private final TableView<CardItems> tableOperations = new TableView<>();
 
+    private static final String ACTIONS_COLUMN = "merge-actions";
+
     /** The panel the operations open in. Installed once, filled once, re-titled per row. */
     private RowDetailDrawer detail;
 
@@ -105,6 +116,10 @@ public class MergeItemsController {
     private Label labelTarget, labelPreview;
     @FXML
     private ProgressIndicator progress;
+    @FXML
+    private HBox toolbarRow, groupByBox;
+    private final TextField search = new TextField();
+    private final MenuButton viewMenu = TableColumnViews.menuButton();
     @FXML
     private AnchorPane root;
 
@@ -141,15 +156,22 @@ public class MergeItemsController {
     private void buildCandidatesTable() {
         var lm = LanguageManager.getInstance();
         tableCandidates.setId("mergeCandidatesTable");
-        tableCandidates.setItems(candidates);
+        FilteredList<ItemMergeCandidate> shown = new FilteredList<>(candidates);
+        search.textProperty().addListener((observable, previous, typed) -> {
+            Set<String> groups = ItemMergeSearch.groupsMatching(candidates, typed);
+            shown.setPredicate(groups == null ? null : candidate -> groups.contains(candidate.groupKey()));
+        });
+        tableCandidates.setItems(shown);
         tableCandidates.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableCandidates.setPlaceholder(new Label(lm.getString("item.merge.placeholder")));
 
         // The actions column goes first: these tables are wider than the window, and a
         // column appended to the end lands behind the horizontal scroll bar.
-        tableCandidates.getColumns().add(RowActionsColumn.of("item.merge.column.actions",
+        TableColumn<ItemMergeCandidate, Void> actions = RowActionsColumn.of("item.merge.column.actions",
                 RowAction.permitted(List.of(RowAction.of("item.merge.action.operations",
-                        AppIcon.SHOW, "app-neutral-button", null, this::showOperations)))));
+                        AppIcon.SHOW, "app-neutral-button", null, this::showOperations))));
+        actions.setId(ACTIONS_COLUMN);
+        tableCandidates.getColumns().add(actions);
         tableCandidates.getColumns().add(role());
         tableCandidates.getColumns().add(text("name", lm.getString("item.merge.column.item"),
                 ItemMergeCandidate::name, 240));
@@ -165,6 +187,13 @@ public class MergeItemsController {
                 candidate -> candidate.lastMovement() == null ? "" : candidate.lastMovement().format(DAY), 120));
         tableCandidates.getColumns().add(text("group", lm.getString("item.merge.column.group"),
                 ItemMergeCandidate::groupKey, 160));
+
+        TableSetting.tableMenuSetting(getClass(), tableCandidates);
+        tableCandidates.setTableMenuButtonVisible(false);
+        new TableColumnViews<ItemMergeCandidate>(Preferences.userNodeForPackage(getClass()).node("merge-candidates"),
+                "view.mode", TableColumnViews.Preset.FULL,
+                Set.of("role", "name", "barcode", "lines", "lastMovement"), Set.of(ACTIONS_COLUMN))
+                .install(viewMenu, tableCandidates);
 
         // An open panel follows the selection, so running down the list is one click a row.
         // It does not *open* on selection: the table is multi-select - that is how the merge
@@ -299,6 +328,16 @@ public class MergeItemsController {
     }
 
     private void buildActions() {
+        // Search first, as on every list screen. It narrows the loaded candidates a whole group
+        // at a time (ItemMergeSearch) - the list is already the groups, so there is no query to run.
+        search.setPromptText(LanguageManager.getInstance().getString("search"));
+        search.setPrefWidth(240);
+        new ListToolbar()
+                .searchField(groupByBox, search)
+                .refresh(btnRefresh)
+                .view(viewMenu)
+                .extra(btnSetTarget, btnPreview, btnMerge, progress)
+                .installIn(toolbarRow);
         btnRefresh.setOnAction(event -> loadCandidates());
         comboGroupBy.setOnAction(event -> loadCandidates());
         btnSetTarget.setOnAction(event -> chooseTarget());

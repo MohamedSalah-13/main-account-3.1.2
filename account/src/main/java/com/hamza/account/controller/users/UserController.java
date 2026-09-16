@@ -15,6 +15,7 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.UsersService;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
@@ -41,6 +42,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
@@ -80,6 +82,7 @@ public final class UserController implements AppSettingInterface {
     @FXML private ProgressIndicator progress;
     @FXML private Button btnNew, btnRefresh;
     @FXML private MenuButton viewMenu;
+    @FXML private HBox toolbarRow;
 
     @FXML
     public void initialize() {
@@ -183,6 +186,17 @@ public final class UserController implements AppSettingInterface {
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
         btnNew.setOnAction(event -> openEditor(0));
         btnRefresh.setOnAction(event -> reload());
+        // The status is the list's only filter, so it sits beside the search rather than behind a
+        // filters button that would open a panel holding one combo.
+        new ListToolbar()
+                .searchField(textSearch, comboStatus)
+                .clear(ListToolbar.clearButton(() -> {
+                    textSearch.clear();
+                    comboStatus.setValue(UserStatusFilter.ALL);
+                }))
+                .refresh(btnRefresh)
+                .view(viewMenu)
+                .installIn(toolbarRow);
         updateActions();
     }
 

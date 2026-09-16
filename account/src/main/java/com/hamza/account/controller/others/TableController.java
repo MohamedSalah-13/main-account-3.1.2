@@ -1,6 +1,9 @@
 package com.hamza.account.controller.others;
 
+import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PageJumpBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.HBox;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.TableAppearance;
@@ -71,7 +74,7 @@ public class TableController<T> implements Initializable {
     @FXML
     private Pagination pagination;
     @FXML
-    private HBox pagerBox, identityHeader, identityIconBox, rowRecordActions;
+    private HBox pagerBox, identityHeader, identityIconBox, rowRecordActions, listToolbar, searchBox;
 
     /**
      * Type a page number, land on it.
@@ -97,6 +100,7 @@ public class TableController<T> implements Initializable {
         initializePagination();
         applyScreenProfile();
         otherSetting();
+        arrangeToolbar();
 
         if (tableInterface.styleSheet() != null) {
             root.getStylesheets().add(tableInterface.styleSheet());
@@ -208,6 +212,27 @@ public class TableController<T> implements Initializable {
         buttonSetting(btnPrint, text("print"), AppIcon.PRINT);
         buttonSetting(btnSelected, text("table.column.select"), AppIcon.SELECT_ALL);
         buttonSetting(btnView, text("party.list.view"), AppIcon.SETTINGS);
+    }
+
+    /**
+     * Every screen this controller hosts gets the bar in the order all list screens use: the
+     * search, then refresh, print and the view menu, then adding and the record actions. It used
+     * to open with "new", with the search pushed to the far end past the pager.
+     * <p>
+     * The pager stays at the trailing end, after a spacer, with its minimum width as a floor: in an
+     * HBox a growing child takes every spare pixel, and the pager placed after one was not on
+     * screen at all.
+     */
+    private void arrangeToolbar() {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        new ListToolbar()
+                .searchField(searchBox)
+                .refresh(btnRefresh)
+                .print(btnPrint)
+                .view(btnView)
+                .extra(btnNew, rowRecordActions, btnSelected, spacer, pagerBox)
+                .installIn(listToolbar);
     }
 
     private void buttonSetting(ButtonBase button, String title, AppIcon icon) {
