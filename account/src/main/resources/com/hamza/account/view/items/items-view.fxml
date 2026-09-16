@@ -92,62 +92,6 @@
                             </children>
                         </VBox>
 
-                        <!-- Everything else: adding, the other tools, and the view switches. -->
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
-                            <children>
-                                <HBox alignment="CENTER_LEFT" spacing="6.0">
-                                    <children>
-                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button"
-                                                text="%item.btn.new" />
-                                        <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false"
-                                                    styleClass="modern-menu-button" text="%item.menu.print">
-                                            <items>
-                                                <MenuItem fx:id="menuPrint" mnemonicParsing="false"
-                                                          text="%item.menu.print.pdf" />
-                                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false"
-                                                          text="%item.menu.print.barcode" />
-                                            </items>
-                                        </MenuButton>
-                                        <MenuButton fx:id="menuButtonOther" mnemonicParsing="false"
-                                                    styleClass="modern-menu-button" text="%item.menu.other">
-                                            <items>
-                                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false"
-                                                          text="%item.group.manager.title" />
-                                                <MenuItem fx:id="menuItemUnitPrices" mnemonicParsing="false"
-                                                          text="%unit.prices.title" />
-                                                <MenuItem fx:id="menuItemBulkEdit" mnemonicParsing="false"
-                                                          text="%item.menu.bulk.edit" />
-                                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false"
-                                                          text="%item.menu.card" />
-                                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false"
-                                                          text="%item.menu.export.excel" />
-                                            </items>
-                                        </MenuButton>
-                                        <Button fx:id="btnReports" mnemonicParsing="false" styleClass="neutral-button"
-                                                text="%item.btn.reports" />
-                                        <!-- The columns: compact, full, or a hand-picked set - as on the parties lists. -->
-                                        <MenuButton fx:id="menuView" mnemonicParsing="false"
-                                                    styleClass="modern-menu-button" text="%party.list.view" />
-                                    </children>
-                                </HBox>
-
-                                <Region HBox.hgrow="ALWAYS" />
-
-                                <HBox alignment="CENTER_RIGHT" spacing="0.0" styleClass="items-segmented">
-                                    <children>
-                                        <ToggleButton fx:id="btnGroupTree" mnemonicParsing="false"
-                                                      styleClass="items-segment" text="%item.btn.group.tree" />
-                                        <ToggleButton fx:id="btnGroupedView" mnemonicParsing="false"
-                                                      styleClass="items-segment" text="%item.btn.grouped.view" />
-                                        <ToggleButton fx:id="btnQuickEdit" mnemonicParsing="false"
-                                                      styleClass="items-segment" text="%item.btn.quick.edit" />
-                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
-                                                      styleClass="items-segment" text="%item.btn.select" />
-                                    </children>
-                                </HBox>
-                            </children>
-                        </HBox>
-
                         <!--
                           The filter panel. Collapsed by default and unmanaged while collapsed, so it
                           costs no height at all - and the count on the filter button is what stops a
@@ -262,6 +206,63 @@
                                 </HBox>
                             </children>
                         </VBox>
+
+                        <!-- Everything else: adding, the other tools, and the view switches. -->
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                    <children>
+                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button"
+                                                text="%item.btn.new" />
+                                        <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false"
+                                                    styleClass="modern-menu-button" text="%item.menu.print">
+                                            <items>
+                                                <MenuItem fx:id="menuPrint" mnemonicParsing="false"
+                                                          text="%item.menu.print.pdf" />
+                                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false"
+                                                          text="%item.menu.print.barcode" />
+                                            </items>
+                                        </MenuButton>
+                                        <MenuButton fx:id="menuButtonOther" mnemonicParsing="false"
+                                                    styleClass="modern-menu-button" text="%item.menu.other">
+                                            <items>
+                                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false"
+                                                          text="%item.group.manager.title" />
+                                                <MenuItem fx:id="menuItemUnitPrices" mnemonicParsing="false"
+                                                          text="%unit.prices.title" />
+                                                <MenuItem fx:id="menuItemBulkEdit" mnemonicParsing="false"
+                                                          text="%item.menu.bulk.edit" />
+                                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false"
+                                                          text="%item.menu.card" />
+                                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false"
+                                                          text="%item.menu.export.excel" />
+                                            </items>
+                                        </MenuButton>
+                                        <Button fx:id="btnReports" mnemonicParsing="false" styleClass="neutral-button"
+                                                text="%item.btn.reports" />
+                                        <!-- The columns: compact, full, or a hand-picked set - as on the parties lists. -->
+                                        <MenuButton fx:id="menuView" mnemonicParsing="false"
+                                                    styleClass="modern-menu-button" text="%party.list.view" />
+                                    </children>
+                                </HBox>
+
+                                <Region HBox.hgrow="ALWAYS" />
+
+                                <HBox alignment="CENTER_RIGHT" spacing="0.0" styleClass="items-segmented">
+                                    <children>
+                                        <ToggleButton fx:id="btnGroupTree" mnemonicParsing="false"
+                                                      styleClass="items-segment" text="%item.btn.group.tree" />
+                                        <ToggleButton fx:id="btnGroupedView" mnemonicParsing="false"
+                                                      styleClass="items-segment" text="%item.btn.grouped.view" />
+                                        <ToggleButton fx:id="btnQuickEdit" mnemonicParsing="false"
+                                                      styleClass="items-segment" text="%item.btn.quick.edit" />
+                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
+                                                      styleClass="items-segment" text="%item.btn.select" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </HBox>
+
                     </children>
                     <BorderPane.margin>
                         <Insets bottom="10.0" />

@@ -37,6 +37,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -153,7 +154,7 @@ public class LeaveRequestsController implements AppSettingInterface {
         return bar;
     }
 
-    private HBox filterBar() {
+    private FlowPane filterBar() {
         filterStatus.getItems().add(null);
         filterStatus.getItems().addAll(LeaveStatus.values());
         filterStatus.setConverter(converter(status -> status == null
@@ -164,10 +165,10 @@ public class LeaveRequestsController implements AppSettingInterface {
         // The state is the list's one filter, so it sits where the search would. Approving and
         // rejecting are buttons in the request's own row now: from the bar they acted on "the
         // selected request" and needed "choose a request first" to say what they could not know.
-        HBox bar = new ListToolbar()
+        FlowPane bar = new ListToolbar()
                 .searchField(caption("leave.state"), filterStatus)
                 .refresh(ListToolbar.refreshButton(this::load))
-                .installIn(new HBox(8));
+                .installIn(new FlowPane(8, 8));
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("filter-bar");
         return bar;

@@ -14,6 +14,7 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -35,7 +36,7 @@
                         -->
                         <VBox spacing="8.0" styleClass="app-card">
                             <children>
-                                <HBox fx:id="toolbarRow" alignment="CENTER_LEFT" spacing="8.0">
+                                <FlowPane fx:id="toolbarRow" alignment="CENTER_LEFT" hgap="8.0" vgap="8.0">
                                     <children>
                                         <HBox fx:id="stockBox" alignment="CENTER_LEFT" spacing="6.0">
                                             <children>
@@ -53,7 +54,7 @@
                                         <Button fx:id="btnPrintCrossStock" mnemonicParsing="false" styleClass="neutral-button" text="%item.inventory.btn.cross.stock" />
                                         <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
                                     </children>
-                                </HBox>
+                                </FlowPane>
                                 <HBox fx:id="filterPane" alignment="CENTER_LEFT" spacing="8.0">
                                     <children>
                                         <Label styleClass="form-label" text="%item.inventory.label.group" />

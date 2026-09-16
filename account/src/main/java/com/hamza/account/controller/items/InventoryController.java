@@ -33,6 +33,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.control.ToggleButton;
 import javafx.animation.PauseTransition;
@@ -158,7 +159,9 @@ public class InventoryController {
     @FXML
     private CheckBox checkInactive;
     @FXML
-    private HBox toolbarRow, stockBox, filterPane;
+    private FlowPane toolbarRow;
+    @FXML
+    private HBox stockBox, filterPane;
     @FXML
     private ToggleButton btnFilters;
     private final ListToolbar toolbar = new ListToolbar();
@@ -515,6 +518,9 @@ public class InventoryController {
      * report. The group, the stock state and "show inactive" are behind the filters button now.
      */
     private void arrangeToolbar() {
+        // A hidden indicator that still takes its place wraps onto a line of its own in the bar
+        // and leaves an empty band under it - seen on screen at 1366x768.
+        progress.managedProperty().bind(progress.visibleProperty());
         btnFilters.getStyleClass().add("app-neutral-button");
         btnFilters.setGraphic(com.hamza.account.config.AppIcon.FILTER.graphic());
         toolbar.searchField(stockBox, textSearch)

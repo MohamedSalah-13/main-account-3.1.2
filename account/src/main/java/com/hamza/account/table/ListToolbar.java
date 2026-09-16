@@ -7,7 +7,9 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Separator;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 
@@ -125,8 +127,32 @@ public final class ListToolbar {
             }
             group.forEach(slot -> arranged.addAll(nodes.get(slot)));
         }
+        if (row instanceof FlowPane) {
+            arranged.forEach(ListToolbar::keepWhole);
+        }
         row.getChildren().setAll(arranged);
         return row;
+    }
+
+    /**
+     * Gives a control whose minimum was left computed a minimum of its preferred width.
+     * <p>
+     * Found by opening the screens at 1366x768: in an {@code HBox} every child may be squeezed below
+     * its preferred width, and a button squeezed is a button reading "الف..." or "..." - the
+     * treasury statement's search button showed nothing but the ellipsis. The buttons built here
+     * already had it; the ones declared in FXML did not. A text field is left alone: it is the one
+     * control that is still usable narrower, and it is what gives way.
+     * <p>
+     * <b>Only in a row that wraps.</b> Applied to an {@code HBox} it did the opposite of what was
+     * meant: a row whose children may not shrink is a row wider than the window, and the employees
+     * screen opened with its heading clipped and its search field off the edge. A bar with more
+     * than a handful of controls belongs in a {@code FlowPane}.
+     */
+    private static void keepWhole(Node node) {
+        if (node instanceof Region region && !(node instanceof TextInputControl)
+                && region.getMinWidth() == Region.USE_COMPUTED_SIZE) {
+            region.setMinWidth(Region.USE_PREF_SIZE);
+        }
     }
 
     public void setFiltersVisible(boolean visible) {

@@ -42,6 +42,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
@@ -80,7 +81,8 @@ public class TreasureDetailsController {
     @FXML private Button btnReset;
     @FXML private Button btnPrint;
     @FXML private ToggleButton btnFilters;
-    @FXML private HBox toolbarRow, periodBox, filterPane;
+    @FXML private FlowPane toolbarRow;
+    @FXML private HBox periodBox, filterPane;
     private final ListToolbar toolbar = new ListToolbar();
     @FXML private Button btnPrevious;
     @FXML private Button btnNext;

@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -20,7 +21,7 @@
                     <children>
 
                         <!-- Ordered by ListToolbar in MergeItemsController. -->
-                        <HBox fx:id="toolbarRow" alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                        <FlowPane fx:id="toolbarRow" alignment="CENTER_LEFT" hgap="8.0" vgap="8.0" styleClass="app-card">
                             <children>
                                 <HBox fx:id="groupByBox" alignment="CENTER_LEFT" spacing="6.0">
                                     <children>
@@ -38,7 +39,7 @@
                             <padding>
                                 <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
                             </padding>
-                        </HBox>
+                        </FlowPane>
 
                         <!-- The target, and what the merge would move. Both are text rather than
                              tiles: the sentence is what a user checks before pressing a button

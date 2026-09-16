@@ -278,6 +278,7 @@ public class EmployeesScreenController extends LoadData {
         rateTo.setPromptText(text("employee.filter.rate.to"));
         search.setPromptText(text("employee.filter.text"));
         search.setId("employee-search");
+        search.setPrefWidth(260);
         HBox.setHgrow(search, Priority.ALWAYS);
 
         // The two salary filters are only offered to somebody who may read a salary. A filter you
@@ -320,7 +321,7 @@ public class EmployeesScreenController extends LoadData {
                 .filters(ListToolbar.filtersToggle(), panel)
                 .clear(ListToolbar.clearButton(this::reset));
         listActions();
-        HBox row = toolbar.installIn(new HBox(8));
+        FlowPane row = toolbar.installIn(new FlowPane(8, 8));
         row.setAlignment(Pos.CENTER_LEFT);
 
         VBox bar = new VBox(8, row, panel);

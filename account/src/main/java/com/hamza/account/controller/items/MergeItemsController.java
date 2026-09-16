@@ -41,6 +41,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.AnchorPane;
 import javafx.util.StringConverter;
@@ -117,7 +118,9 @@ public class MergeItemsController {
     @FXML
     private ProgressIndicator progress;
     @FXML
-    private HBox toolbarRow, groupByBox;
+    private FlowPane toolbarRow;
+    @FXML
+    private HBox groupByBox;
     private final TextField search = new TextField();
     private final MenuButton viewMenu = TableColumnViews.menuButton();
     @FXML
@@ -332,6 +335,7 @@ public class MergeItemsController {
         // at a time (ItemMergeSearch) - the list is already the groups, so there is no query to run.
         search.setPromptText(LanguageManager.getInstance().getString("search"));
         search.setPrefWidth(240);
+        search.setMinWidth(200);
         new ListToolbar()
                 .searchField(groupByBox, search)
                 .refresh(btnRefresh)

@@ -277,7 +277,7 @@ public class EmployeeStatementController implements AppSettingInterface {
                 .filters(ListToolbar.filtersToggle(), panel)
                 .clear(ListToolbar.clearButton(this::reset));
         listActions();
-        HBox row = toolbar.installIn(new HBox(8));
+        FlowPane row = toolbar.installIn(new FlowPane(8, 8));
         row.setAlignment(Pos.CENTER_LEFT);
 
         VBox bar = new VBox(8, period, row, panel);

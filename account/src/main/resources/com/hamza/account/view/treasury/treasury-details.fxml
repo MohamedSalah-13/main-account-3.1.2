@@ -7,6 +7,7 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -44,7 +45,7 @@
                 <!-- Ordered by ListToolbar in TreasureDetailsController. The treasury and the period stay
                      in the bar - they say which statement this is; the rest is behind the filters button. -->
                 <VBox spacing="8.0" styleClass="app-card">
-                    <HBox fx:id="toolbarRow" alignment="CENTER_LEFT" spacing="8.0">
+                    <FlowPane fx:id="toolbarRow" alignment="CENTER_LEFT" hgap="8.0" vgap="8.0">
                         <HBox fx:id="periodBox" alignment="CENTER_LEFT" spacing="6.0">
                             <Label styleClass="form-label" text="%treasury.label.treasury" />
                             <ComboBox fx:id="comboTreasury" prefWidth="190.0" styleClass="modern-input" />
@@ -58,7 +59,7 @@
                         <Button fx:id="btnReset" onAction="#resetFilters" styleClass="app-neutral-button" text="%invoice.search.clear" />
                         <Button fx:id="btnRefresh" onAction="#refresh" styleClass="app-neutral-button" text="%refresh" />
                         <Button fx:id="btnPrint" onAction="#printStatement" styleClass="app-neutral-button" text="%print" />
-                    </HBox>
+                    </FlowPane>
                     <HBox fx:id="filterPane" alignment="CENTER_LEFT" spacing="8.0">
                         <Label styleClass="form-label" text="%treasury.label.account.type" />
                         <ComboBox fx:id="comboDetails" prefWidth="190.0" styleClass="modern-input" />

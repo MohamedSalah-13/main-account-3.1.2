@@ -191,10 +191,10 @@ public final class ProcessesController {
         diffTable.setId("auditDiffTable");
         diffTable.getStyleClass().addAll("modern-table", "audit-diff-table");
         diffTable.getColumns().setAll(
-                diffColumn("diffField", "audit.diff.column.field", 190, AuditDiffRow::field),
-                diffColumn("diffBefore", "audit.diff.column.before", 330, AuditDiffRow::before),
-                diffColumn("diffAfter", "audit.diff.column.after", 330, AuditDiffRow::after),
-                diffColumn("diffKind", "audit.diff.column.change", 130,
+                diffColumn("diffField", "audit.diff.column.field", 150, AuditDiffRow::field),
+                diffColumn("diffBefore", "audit.diff.column.before", 230, AuditDiffRow::before),
+                diffColumn("diffAfter", "audit.diff.column.after", 230, AuditDiffRow::after),
+                diffColumn("diffKind", "audit.diff.column.change", 110,
                         row -> text(row.kind().labelKey())));
         diffTable.setPlaceholder(new Label(text("audit.diff.placeholder.empty")));
         diffTable.setRowFactory(ignored -> new TableRow<>() {

@@ -39,6 +39,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -219,7 +220,7 @@ public class PayrollController implements AppSettingInterface {
      * A button left out is the {@code isGranted} hint; the service still calls {@code require}.
      * Refresh and the view menu are here rather than in a row because they act on the list.
      */
-    private HBox actionBar() {
+    private FlowPane actionBar() {
         List<javafx.scene.Node> buttons = new ArrayList<>();
         buttons.add(button("payroll.action.payslip", AppIcon.PRINT, this::printPayslip));
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_CREATE)) {
@@ -238,13 +239,13 @@ public class PayrollController implements AppSettingInterface {
 
         // The list's own actions first, in the order every list screen uses; the run's workflow
         // - create, approve, pay, delete - after them.
-        HBox bar = new ListToolbar()
+        FlowPane bar = new ListToolbar()
                 .refresh(ListToolbar.refreshButton(this::loadRuns))
                 .print(ListToolbar.printButton(this::print))
                 .export(button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
                 .view(viewMenu)
                 .extra(buttons.toArray(new javafx.scene.Node[0]))
-                .installIn(new HBox(8));
+                .installIn(new FlowPane(8, 8));
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("filter-bar");
         return bar;
