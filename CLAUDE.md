@@ -1240,6 +1240,30 @@ offers the headings from `expenses` and the person paying chooses — a constant
 act is creating an expense, so a payment needs both; `V58` grants the new one to whoever holds the
 old, so nobody loses an ability on upgrade, but a role given only `employee.pay` cannot pay anybody.
 
+### A list screen's bar
+
+`account.table.ListToolbar` places the controls above a list, and the order is its decision, not
+the screen's: **search, filters, clear all | refresh, print, export, view | everything else**. A
+screen names what each control *is* (`.search(...)`, `.refresh(...)`, `.extra(...)`) and calls
+`installIn(row)`, which works on a row declared in FXML as well as one built in code. The screens
+had each written their own row and no two agreed - the totals screen had the view menu before
+refresh and print after the bulk delete - and none of those differences had been decided.
+
+- **The filters panel is closed until opened, and the toggle carries a count** (`showActiveFilters`).
+  Each filter record answers `panelConditionCount()`, tested apart from the screen. What stays in
+  the bar is not counted: the text, and whatever says *which* list this is - a statement's period,
+  the inventory's warehouse, the treasury statement's treasury. A closed panel must never hide
+  that, nor the fact that the list is narrowed.
+- **A single filter sits beside the search** (users, unit prices): a panel holding one combo is a
+  click for nothing.
+- `ListToolbarArchitectureTest` fails the build when a controller using `TableColumnViews` or
+  `PageJumpBox` does not go through `ListToolbar`, and when anything else shows or hides a
+  `filter*Pane`/`filter*Panel`. Its exemption list fails in both directions.
+
+A master and its detail are one table and a `RowDetailDrawer` (merge items, stock transfers, the
+audit log), never two tables stacked. Tables that do not depend on each other's selection - the
+shift administration, the permissions editor, the item picker's basket - are not that case.
+
 ### Row actions and paging
 
 `account.table.RowAction` + `RowActionsColumn` are the one way a table gets buttons that act on
