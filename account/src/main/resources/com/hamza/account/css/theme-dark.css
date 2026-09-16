@@ -203,10 +203,22 @@
 }
 
 /* Main invoice total */
+/* A Label now: its inner text is a .text, which ".summary-card .text" would paint white
+   on the light card - the caption above the total was already invisible that way. */
 .invoice-sales #textInvoiceTotal,
 .invoice-purchases #textInvoiceTotal,
-.invoice-return #textInvoiceTotal {
+.invoice-return #textInvoiceTotal,
+.invoice-sales #textInvoiceTotal .text,
+.invoice-purchases #textInvoiceTotal .text,
+.invoice-return #textInvoiceTotal .text,
+.invoice-sales #labelInvoiceTotal,
+.invoice-purchases #labelInvoiceTotal,
+.invoice-return #labelInvoiceTotal,
+.invoice-sales #labelInvoiceTotal .text,
+.invoice-purchases #labelInvoiceTotal .text,
+.invoice-return #labelInvoiceTotal .text {
     -fx-fill: -invoice-main;
+    -fx-text-fill: -invoice-main;
     -fx-font-weight: bold;
 }
 

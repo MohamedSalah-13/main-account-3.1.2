@@ -1995,6 +1995,46 @@
     -fx-padding: 0.18em 0.35em;
 }
 
+/*
+ * The invoice form is sized here, never by what its fields hold. A ComboBox asks to be as
+ * wide as its longest item and the unit combo's items change with every item picked, so a
+ * long treasury name widened a column and the form jumped as lines were added. A fixed
+ * preferred width with a small minimum lets the fields share the window and shrink on a
+ * 1366x768 screen instead of pushing the invoice past its edge. Direct children only: a
+ * DatePicker's own editor is a .text-field too.
+ */
+.invoice-entry-grid > .text-field,
+.invoice-entry-grid > .combo-box-base {
+    -fx-pref-width: 11em;
+    -fx-min-width: 5em;
+}
+
+/*
+ * Footer figures reserve room for a realistic amount, so a total gaining a digit does not
+ * move every column beside it; a larger one still grows rather than being cut off - a
+ * truncated amount is worse than a moved one. The captions that change between a cash and
+ * a deferred invoice reserve their longer wording for the same reason. The captions carry
+ * minWidth="-Infinity" in the FXML, so a narrow window shrinks the notes and the amount
+ * boxes rather than cutting a caption to "...".
+ */
+.invoice-summary-figure {
+    -fx-min-width: 6em;
+}
+
+.invoice-summary-caption {
+    -fx-min-width: 9em;
+}
+
+.invoice-summary-total {
+    -fx-min-width: 8em;
+    -fx-alignment: center;
+}
+
+.invoice-notes {
+    -fx-pref-width: 16em;
+    -fx-min-width: 8em;
+}
+
 /* Invoice commands wrap on short screens instead of being clipped at either edge. */
 .invoice-command-bar {
     -fx-padding: 0.45em 0.65em;

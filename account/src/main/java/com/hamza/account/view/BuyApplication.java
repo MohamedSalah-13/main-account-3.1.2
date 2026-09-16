@@ -7,8 +7,10 @@ import com.hamza.account.document.DocumentType;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Getter;
 
@@ -94,7 +96,7 @@ public class BuyApplication extends Application {
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().tools));
 
         stage.show();
-//        StageDimensions.stageDimensions(getClass(), stage);
+        keepOnScreen(stage);
 
         var btnSave = getController().getBtnSave();
 
@@ -122,5 +124,24 @@ public class BuyApplication extends Application {
                 btnSwitchMode::fire
         );
 
+    }
+
+    /**
+     * A window with no size of its own opens at its content's preferred size, and the
+     * invoice's table alone can ask for more than a 1366x768 screen has - so the save
+     * buttons and the footer opened off the edge. The window is fitted into the visual
+     * bounds of the screen it opened on; the layout then shrinks the fields to fit.
+     */
+    private static void keepOnScreen(Stage stage) {
+        var screens = Screen.getScreensForRectangle(
+                stage.getX(), stage.getY(), Math.max(1, stage.getWidth()), Math.max(1, stage.getHeight()));
+        Rectangle2D bounds = (screens.isEmpty() ? Screen.getPrimary() : screens.get(0)).getVisualBounds();
+        if (stage.getWidth() <= bounds.getWidth() && stage.getHeight() <= bounds.getHeight()) {
+            return;
+        }
+        stage.setWidth(Math.min(stage.getWidth(), bounds.getWidth()));
+        stage.setHeight(Math.min(stage.getHeight(), bounds.getHeight()));
+        stage.setX(bounds.getMinX() + (bounds.getWidth() - stage.getWidth()) / 2);
+        stage.setY(bounds.getMinY() + (bounds.getHeight() - stage.getHeight()) / 2);
     }
 }

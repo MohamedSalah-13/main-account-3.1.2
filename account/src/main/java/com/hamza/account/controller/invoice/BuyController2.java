@@ -67,7 +67,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.text.Text;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
@@ -150,7 +149,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     @FXML
     private TableView<BasePurchasesAndSales> table;
     @FXML
-    private Text textSumCount, txtSumQuantity, txtBeforeDiscount, txtSumDiscount, txtSumTotals, textInvoiceTotal;
+    // Labels, not Text: a Text has no minimum width, so every digit a total gained widened
+    // its column and moved the whole footer. .invoice-summary-figure reserves the room.
+    private Label textSumCount, txtSumQuantity, txtBeforeDiscount, txtSumDiscount, txtSumTotals, textInvoiceTotal;
     @FXML
     private DatePicker date;
     @FXML
