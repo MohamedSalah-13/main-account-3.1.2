@@ -216,7 +216,8 @@ Two documents govern work here and are kept current — read them before large c
   employee payment screen, and why a payment above the till's balance is a warning rather than a
   refusal. §10 records what phase A delivered, what differed from §3, and that **V64 and
   `ExpenseDatabaseAcceptanceTest` passed against MySQL twice running on 2026-09-17** (the first run
-  found a defect in the test itself), while the four screens have not been opened. **Read it before touching
+  found a defect in the test itself), and that the four screens were opened on a copy of the
+  development database the same day, where three layout defects no test could see were found and fixed. **Read it before touching
   anything under `features/expense`, `controller/expense`, `WalletFeeService` or `V64`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
