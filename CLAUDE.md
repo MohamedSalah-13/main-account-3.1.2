@@ -209,6 +209,15 @@ Two documents govern work here and are kept current — read them before large c
   review found; §12 the order the phases are built in. **Read it before touching anything under
   `features/employee`, `controller/employee` or the `V57`-`V58` tables.** §13 records what phase A
   delivered and §14 phase B, each with what was actually run and what was not.
+- **[`docs/expenses-plan.md`](docs/expenses-plan.md)** — the expenses contract: why
+  `expenses_details` stays the one table an expense lives in (nine readers depend on it), why a
+  heading is a row with a `system_key` for the one the wallet fee needs (it was found by name, and
+  renaming a heading is what the headings screen does), why an employee is paid only through the
+  employee payment screen, and why a payment above the till's balance is a warning rather than a
+  refusal. §10 records what phase A delivered, what differed from §3, and that **V64 and
+  `ExpenseDatabaseAcceptanceTest` passed against MySQL twice running on 2026-09-17** (the first run
+  found a defect in the test itself), while the four screens have not been opened. **Read it before touching
+  anything under `features/expense`, `controller/expense`, `WalletFeeService` or `V64`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
