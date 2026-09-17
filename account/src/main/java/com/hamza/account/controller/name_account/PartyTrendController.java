@@ -30,7 +30,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -45,8 +44,6 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.PixelReader;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -54,13 +51,9 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.transform.Transform;
 import javafx.util.StringConverter;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+import com.hamza.account.table.ChartSnapshot;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 
@@ -434,80 +427,10 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
         return subtitle.toString();
     }
 
-    /**
-     * The chart as a PNG, at twice its size on screen so it stays sharp on paper.
-     * <p>
-     * Three things are true only for the length of the snapshot:
-     * <ul>
-     *   <li><b>{@code trend-print}</b> paints it dark on white whatever the theme: the page is
-     *       white, and a dark theme's light axis labels would print as nothing at all.</li>
-     *   <li><b>The chart's own legend is shown.</b> On screen the checkboxes are the legend; a
-     *       page has no checkboxes, and two coloured lines with nothing saying which is which is
-     *       not a report. Its markers are given the lines' own classes, since JavaFX colours a
-     *       legend by position and the lines here are coloured by class.</li>
-     *   <li><b>The picture is flipped back when the chart is mirrored.</b> The chart runs left to
-     *       right inside a right-to-left screen, so JavaFX gives it a mirroring transform that the
-     *       screen's own mirror cancels. A snapshot takes the chart without its parent, so the
-     *       first printed chart came out backwards - time running right to left, every label
-     *       reversed. A probe of the same arrangement showed {@code mxx = -1} and the flip
-     *       putting it right.</li>
-     * </ul>
-     */
+    /** The chart as a PNG, at twice its size on screen - see {@link ChartSnapshot} for what it adjusts. */
     private byte[] chartImage() throws IOException {
-        boolean mirrored = chart.getParent() != null
-                && chart.getParent().getEffectiveNodeOrientation() != chart.getEffectiveNodeOrientation();
-        chart.getStyleClass().add(PRINTING);
-        chart.setLegendVisible(true);
-        try {
-            chart.applyCss();
-            chart.layout();
-            styleLegend();
-            chart.applyCss();
-            chart.layout();
-            SnapshotParameters parameters = new SnapshotParameters();
-            parameters.setFill(Color.WHITE);
-            parameters.setTransform(Transform.scale(2, 2));
-            return png(chart.snapshot(parameters, null), mirrored);
-        } finally {
-            chart.setLegendVisible(false);
-            chart.getStyleClass().remove(PRINTING);
-            chart.applyCss();
-        }
-    }
-
-    /** Gives each legend marker the classes of the line it names, matched by the series name. */
-    private void styleLegend() {
-        for (Node item : chart.lookupAll(".chart-legend-item")) {
-            if (item instanceof Label label && label.getGraphic() != null) {
-                List<String> classes = seriesStyles.get(label.getText());
-                if (classes != null) {
-                    for (String styleClass : classes) {
-                        if (!label.getGraphic().getStyleClass().contains(styleClass)) {
-                            label.getGraphic().getStyleClass().add(styleClass);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Pixel by pixel, so no javafx.swing module is needed for SwingFXUtils - and read from the far
-     * edge when the snapshot came out mirrored.
-     */
-    private static byte[] png(Image image, boolean mirrored) throws IOException {
-        int width = (int) image.getWidth();
-        int height = (int) image.getHeight();
-        BufferedImage picture = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        PixelReader pixels = image.getPixelReader();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                picture.setRGB(x, y, pixels.getArgb(mirrored ? width - 1 - x : x, y));
-            }
-        }
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(picture, "png", out);
-        return out.toByteArray();
+        return ChartSnapshot.png(chart, PRINTING, seriesStyles,
+                () -> chart.setLegendVisible(true), () -> chart.setLegendVisible(false));
     }
 
     // ---- loading ---------------------------------------------------------------------

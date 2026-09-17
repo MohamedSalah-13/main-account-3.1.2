@@ -122,35 +122,7 @@ public final class JdbcExpenseRepository extends AbstractDao<ExpenseRow> impleme
 
     /** Every condition {@link ExpenseQuery#whereSql} writes, in the order it writes them. */
     static void bindWhere(List<Object> values, ExpenseFilter filter) {
-        if (filter.from() != null) {
-            values.add(Date.valueOf(filter.from()));
-        }
-        if (filter.to() != null) {
-            values.add(Date.valueOf(filter.to()));
-        }
-        if (filter.headingId() != null) {
-            values.add(filter.headingId());
-            values.add(filter.headingId());
-        }
-        if (filter.treasuryId() != null) {
-            values.add(filter.treasuryId());
-        }
-        if (filter.userId() != null) {
-            values.add(filter.userId());
-        }
-        if (filter.minAmount() != null) {
-            values.add(filter.minAmount());
-        }
-        if (filter.maxAmount() != null) {
-            values.add(filter.maxAmount());
-        }
-        if (filter.hasText()) {
-            String contains = ExpenseQuery.containsPattern(filter.text());
-            values.add(filter.numericText());
-            for (int i = 0; i < 6; i++) {
-                values.add(contains);
-            }
-        }
+        values.addAll(ExpenseQuery.whereValues(filter));
     }
 
     @Override

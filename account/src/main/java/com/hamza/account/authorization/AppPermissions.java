@@ -138,6 +138,13 @@ public final class AppPermissions {
      * whoever may view the list, because the old screen's print button asked for nothing.
      */
     public static final PermissionKey EXPENSES_EXPORT = key("expenses.export");
+    /**
+     * The expense reports (V65): by heading, the year by month, the trend, by till, person, shift, payee
+     * or month, and expenses against net sales. Apart from the list for the reason the reports exist -
+     * the list says what was paid, the reports say where the business's money goes, which is a figure
+     * about the business rather than a record of a drawer. Granted on upgrade to whoever may view the list.
+     */
+    public static final PermissionKey EXPENSES_REPORTS = key("expenses.reports");
     public static final PermissionKey EMPLOYEE_SHOW = key("employee.show");
     public static final PermissionKey EMPLOYEE_CREATE = key("employee.create");
     public static final PermissionKey EMPLOYEE_UPDATE = key("employee.update");

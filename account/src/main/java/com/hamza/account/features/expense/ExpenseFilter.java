@@ -95,6 +95,25 @@ public record ExpenseFilter(LocalDate from,
         return new ExpenseFilter(from, to, headingId, treasuryId, userId, minAmount, maxAmount, text, 0, size);
     }
 
+    /** The same conditions over other dates - a report's row or cell opening the list on its own period. */
+    public ExpenseFilter withPeriod(LocalDate newFrom, LocalDate newTo) {
+        return new ExpenseFilter(newFrom, newTo, headingId, treasuryId, userId, minAmount, maxAmount, text, 0,
+                pageSize);
+    }
+
+    /** The same conditions on one heading - a main heading still includes every heading under it. */
+    public ExpenseFilter withHeading(Integer heading) {
+        return new ExpenseFilter(from, to, heading, treasuryId, userId, minAmount, maxAmount, text, 0, pageSize);
+    }
+
+    public ExpenseFilter withTreasury(Integer treasury) {
+        return new ExpenseFilter(from, to, headingId, treasury, userId, minAmount, maxAmount, text, 0, pageSize);
+    }
+
+    public ExpenseFilter withUser(Integer user) {
+        return new ExpenseFilter(from, to, headingId, treasuryId, user, minAmount, maxAmount, text, 0, pageSize);
+    }
+
     /**
      * The period of the same length just before this one, with every other condition kept - or
      * {@code null} when this filter has no whole period to measure against.

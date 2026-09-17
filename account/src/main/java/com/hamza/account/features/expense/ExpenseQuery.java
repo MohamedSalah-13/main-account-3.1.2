@@ -62,6 +62,15 @@ public final class ExpenseQuery {
     private ExpenseQuery() {
     }
 
+    /**
+     * The joins every statement reads through, for the reports in {@code features/expense/report}: a report
+     * that wrote its own joins could filter by the same words and still describe a different set - an inner
+     * join to a treasury that has gone is enough.
+     */
+    public static String fromSql() {
+        return FROM;
+    }
+
     /** One page. Parameters: the filter's, then limit and offset. Newest first, as the old list was. */
     public static String pageSql(ExpenseFilter filter) {
         return COLUMNS + FROM + whereSql(filter) + "ORDER BY d.date DESC, d.id DESC\nLIMIT ? OFFSET ?";
@@ -169,6 +178,44 @@ public final class ExpenseQuery {
                     + " OR d.notes LIKE ? ESCAPE '!' OR e.column_name LIKE ? ESCAPE '!')");
         }
         return conditions.isEmpty() ? "" : "WHERE " + String.join("\n  AND ", conditions) + "\n";
+    }
+
+    /**
+     * The values {@link #whereSql} binds, in the order it writes them. Public so a report binds exactly what
+     * the list binds; {@link JdbcExpenseRepository} goes through here too.
+     */
+    public static List<Object> whereValues(ExpenseFilter filter) {
+        List<Object> values = new ArrayList<>();
+        if (filter.from() != null) {
+            values.add(java.sql.Date.valueOf(filter.from()));
+        }
+        if (filter.to() != null) {
+            values.add(java.sql.Date.valueOf(filter.to()));
+        }
+        if (filter.headingId() != null) {
+            values.add(filter.headingId());
+            values.add(filter.headingId());
+        }
+        if (filter.treasuryId() != null) {
+            values.add(filter.treasuryId());
+        }
+        if (filter.userId() != null) {
+            values.add(filter.userId());
+        }
+        if (filter.minAmount() != null) {
+            values.add(filter.minAmount());
+        }
+        if (filter.maxAmount() != null) {
+            values.add(filter.maxAmount());
+        }
+        if (filter.hasText()) {
+            String contains = containsPattern(filter.text());
+            values.add(filter.numericText());
+            for (int i = 0; i < 6; i++) {
+                values.add(contains);
+            }
+        }
+        return values;
     }
 
     /** How many parameters {@link #whereSql} binds for this filter - what the test holds the binder to. */

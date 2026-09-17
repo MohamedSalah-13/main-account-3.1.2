@@ -3,7 +3,18 @@ package com.hamza.account.features.expense;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.document.DocumentTableSpec;
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.employee.EmployeeCashPurpose;
+import com.hamza.account.features.expense.report.ExpenseByHeadingReport;
+import com.hamza.account.features.expense.report.ExpenseDimension;
+import com.hamza.account.features.expense.report.ExpenseHeadingLineKind;
+import com.hamza.account.features.expense.report.ExpenseReportService;
+import com.hamza.account.features.expense.report.ExpenseSalesRatio;
+import com.hamza.account.features.expense.report.ExpenseTrend;
+import com.hamza.account.features.expense.report.ExpenseYearMatrix;
+import com.hamza.account.features.profitloss.ProfitLossDao;
+import com.hamza.account.features.profitloss.ProfitLossRow;
 import com.hamza.account.features.employee.EmployeePayment;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.rbac.UserSessionContext;
@@ -150,8 +161,17 @@ class ExpenseDatabaseAcceptanceTest {
         assertEquals(1, scalar("SELECT COUNT(*) FROM expenses WHERE system_key = 'WALLET_FEE'"));
         assertEquals(2, scalar("SELECT COUNT(*) FROM expenses WHERE employee_payment = 1"
                 + " AND expenses_name IN ('مرتبات', 'سلف')"));
-        assertEquals(3, scalar("SELECT COUNT(*) FROM auth_permission WHERE permission_key IN"
-                + " ('expenses.show', 'expenses.headings.update', 'expenses.export')"));
+        assertEquals(4, scalar("SELECT COUNT(*) FROM auth_permission WHERE permission_key IN"
+                + " ('expenses.show', 'expenses.headings.update', 'expenses.export', 'expenses.reports')"));
+        assertEquals(0, scalar("""
+                SELECT COUNT(*) FROM auth_role_permission shown
+                    JOIN auth_permission show_key ON show_key.id = shown.permission_id
+                                                 AND show_key.permission_key = 'expenses.show'
+                WHERE NOT EXISTS (SELECT 1 FROM auth_role_permission reported
+                                      JOIN auth_permission report_key ON report_key.id = reported.permission_id
+                                                                     AND report_key.permission_key = 'expenses.reports'
+                                  WHERE reported.role_id = shown.role_id)"""),
+                "V65: whoever may see the list may see its reports after the upgrade");
         assertEquals(0, scalar("SELECT COUNT(*) FROM information_schema.routines WHERE routine_schema = DATABASE()"
                 + " AND routine_name LIKE '%expense%'"), "V64 leaves none of its helpers behind");
     }
@@ -277,6 +297,98 @@ class ExpenseDatabaseAcceptanceTest {
                 LocalDate.now(), BigDecimal.TEN, EmployeeCashPurpose.SALARY, till, power, STAMP + " wrong")));
     }
 
+    // ---- the reports (phase B) -------------------------------------------------------------
+
+    /**
+     * The invariant docs/expenses-plan.md §4 names, on MySQL rather than trusted: the report by heading's
+     * total for a period, the expenses column of the profit and loss for that period, and the list filtered
+     * by that period alone are one figure - and so is every other report's expense total over it. And the
+     * ratio's net sales are the profit and loss's net sales.
+     * <p>
+     * March 2003, which nothing else in this class writes: the other cases date their expenses today.
+     */
+    @Test
+    @DisplayName("reports: by heading = profit and loss = the list, for one period; net sales agree too")
+    void reportsAgreeWithProfitAndLossAndTheList() throws Exception {
+        signIn(AppPermissions.EXPENSES_SHOW, AppPermissions.EXPENSES_CREATE, AppPermissions.EXPENSES_HEADINGS_UPDATE,
+                AppPermissions.EXPENSES_REPORTS);
+        LocalDate from = LocalDate.of(2003, 3, 1);
+        LocalDate to = LocalDate.of(2003, 3, 31);
+        int till = scalar("SELECT MIN(id) FROM treasury");
+        ExpenseHeadingService headings = new ExpenseHeadingService();
+        int main = headings.save(new ExpenseHeadingDraft(0, STAMP + " تشغيل", null, true, false));
+        int sub = headings.save(new ExpenseHeadingDraft(0, STAMP + " صيانة", main, true, false));
+        int power = scalar("SELECT id FROM expenses WHERE expenses_name = 'كهرباء'");
+        ExpenseService expenses = new ExpenseService(DaoFactory.INSTANCE);
+        expenses.create(ExpenseEntry.parse(0, LocalDate.of(2003, 3, 2), main, till, new BigDecimal("40.25"),
+                null, null, STAMP + " report"));
+        expenses.create(ExpenseEntry.parse(0, LocalDate.of(2003, 3, 15), sub, till, new BigDecimal("300.00"),
+                "ورشة", null, STAMP + " report"));
+        expenses.create(ExpenseEntry.parse(0, LocalDate.of(2003, 3, 31), power, till, new BigDecimal("159.75"),
+                null, null, STAMP + " report"));
+        expenses.create(ExpenseEntry.parse(0, LocalDate.of(2003, 4, 1), power, till, new BigDecimal("999.00"),
+                null, null, STAMP + " outside"));
+        insertSaleAndReturn(till, LocalDate.of(2003, 3, 10));
+
+        ExpenseFilter period = ExpenseFilter.between(from, to);
+        ExpenseReportService reports = new ExpenseReportService();
+        BigDecimal listed = expenses.search(period).summary().total();
+        BigDecimal profitLossExpenses = BigDecimal.ZERO;
+        BigDecimal profitLossSales = BigDecimal.ZERO;
+        for (ProfitLossRow row : new ProfitLossDao().load(from, to)) {
+            profitLossExpenses = profitLossExpenses.add(row.expenses());
+            profitLossSales = profitLossSales.add(row.netSales());
+        }
+
+        assertEquals(0, new BigDecimal("500.00").compareTo(listed), "the fixture's own three expenses");
+        assertEquals(0, listed.compareTo(profitLossExpenses), "the list and the profit and loss");
+        ExpenseByHeadingReport byHeading = reports.byHeading(period);
+        assertEquals(0, listed.compareTo(byHeading.total()), "the report by heading");
+        ExpenseByHeadingReport.Line mainLine = byHeading.lines().stream()
+                .filter(line -> line.headingId() == main && line.kind() == ExpenseHeadingLineKind.MAIN)
+                .findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("340.25").compareTo(mainLine.total()), "a main heading holds its child");
+        assertEquals(0, reports.byHeading(period.withHeading(main)).total()
+                .compareTo(expenses.search(period.withHeading(main)).summary().total()), "narrowed alike");
+
+        ExpenseYearMatrix year = reports.yearMatrix(period, 2003);
+        assertEquals(0, listed.compareTo(year.totals().month(3)), "the year's March");
+        assertEquals(0, new BigDecimal("999.00").compareTo(year.totals().month(4)));
+        assertEquals(0, listed.compareTo(reports.trend(new ExpenseTrend.Filter(period,
+                com.hamza.account.features.party.trend.TrendGranularity.WEEK, true)).total()), "the trend");
+        for (ExpenseDimension dimension : ExpenseDimension.values()) {
+            assertEquals(0, listed.compareTo(reports.byDimension(period, dimension).total()), dimension.name());
+        }
+
+        ExpenseSalesRatio ratio = reports.salesRatio(period);
+        assertEquals(0, listed.compareTo(ratio.expenses()), "the ratio's expenses");
+        assertEquals(0, new BigDecimal("700.00").compareTo(profitLossSales), "1000 - 100 sold, 200 returned");
+        assertEquals(0, profitLossSales.compareTo(ratio.netSales()), "the ratio's sales are document_profit's");
+        assertEquals(0, new BigDecimal("71.4").compareTo(ratio.ratio().orElseThrow()));
+    }
+
+    /** A cash sale of 1000 less 100 discount, and a return of 200, on one day - headers only. */
+    private static void insertSaleAndReturn(int till, LocalDate day) throws Exception {
+        try (Connection connection = ConnectionManager.acquire(); Statement statement = connection.createStatement()) {
+            int customer = scalar(connection, "SELECT MIN(id) FROM custom");
+            int stock = scalar(connection, "SELECT MIN(stock_id) FROM stocks");
+            // Not nullable on either header, and a real key: the first run of this case failed here.
+            int delegate = scalar(connection, "SELECT MIN(id) FROM employees");
+            DocumentTableSpec sales = DocumentTableSpec.of(DocumentType.SALES);
+            DocumentTableSpec returns = DocumentTableSpec.of(DocumentType.SALES_RETURN);
+            statement.executeUpdate("INSERT INTO " + sales.table() + " (" + sales.key() + ", " + sales.party()
+                    + ", invoice_type, invoice_date, total, discount, " + sales.paid()
+                    + ", stock_id, delegate_id, treasury_id, notes, user_id) SELECT COALESCE(MAX(" + sales.key() + "), 0) + 1, "
+                    + customer + ", 1, '" + day + "', 1000, 100, 900, " + stock + ", " + delegate + ", " + till + ", '" + STAMP
+                    + "', 1 FROM " + sales.table());
+            statement.executeUpdate("INSERT INTO " + returns.table() + " (" + returns.key() + ", " + returns.party()
+                    + ", invoice_type, invoice_date, total, discount, " + returns.paid()
+                    + ", stock_id, delegate_id, treasury_id, notes, user_id) SELECT COALESCE(MAX(" + returns.key() + "), 0) + 1, "
+                    + customer + ", 1, '" + day + "', 200, 0, 200, " + stock + ", " + delegate + ", " + till + ", '" + STAMP
+                    + "', 1 FROM " + returns.table());
+        }
+    }
+
     // ---- fixtures -----------------------------------------------------------------------
 
     /**
@@ -290,7 +402,9 @@ class ExpenseDatabaseAcceptanceTest {
         try (var files = Files.list(source)) {
             for (Path file : files.toList()) {
                 String name = file.getFileName().toString();
-                if (name.startsWith("V64__")) {
+                // V64 and everything after it: a later migration left in the folder would be applied to the
+                // V63 schema first, and Flyway then skips V64 as older than what is already applied.
+                if (name.matches("V(\\d+)__.*") && Integer.parseInt(name.substring(1, name.indexOf("__"))) >= 64) {
                     continue;
                 }
                 String sql = Files.readString(file, StandardCharsets.UTF_8);

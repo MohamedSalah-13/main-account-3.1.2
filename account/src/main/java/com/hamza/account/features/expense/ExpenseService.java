@@ -133,6 +133,17 @@ public final class ExpenseService {
         return repository.find(expenseId);
     }
 
+    /**
+     * One expense for its printed voucher, read again from the database rather than taken off the list, so
+     * the paper says what is stored. A voucher is a file that leaves the shop, so it asks the export
+     * permission on top of viewing.
+     */
+    public ExpenseRow forVoucher(int expenseId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EXPENSES_SHOW);
+        AuthorizationGuard.require(AppPermissions.EXPENSES_EXPORT);
+        return repository.find(expenseId);
+    }
+
     public List<ExpenseUserOption> users() throws DaoException {
         AuthorizationGuard.require(AppPermissions.EXPENSES_SHOW);
         return repository.users();

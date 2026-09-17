@@ -2657,6 +2657,16 @@
     -fx-text-fill: -app-text-muted;
 }
 
+/* The total line an expense report ends with - the same look as the items report's total row. */
+.table-row-cell:report-total {
+    -fx-background-color: -app-summary-bg;
+}
+
+.table-row-cell:report-total > .table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-summary-value;
+}
+
 /* User management: a quiet operational screen with enough contrast to distinguish
    account states at a glance. The colours are theme tokens, so the treatment follows
    the light and dark palettes instead of hard-coding a variant of its own. */

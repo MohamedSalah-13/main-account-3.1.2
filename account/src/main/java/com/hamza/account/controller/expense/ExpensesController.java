@@ -6,7 +6,15 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.controller.expense.report.ExpenseReportsController;
 import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
+import com.hamza.account.features.company.CompanyService;
+import com.hamza.account.features.expense.report.ExpenseVoucherLayout;
+import com.hamza.account.features.export.DocumentPdfPage;
+import com.hamza.account.features.export.PdfExportService;
+import com.hamza.account.features.invoice.InvoicePrintDocument;
+import com.hamza.account.model.domain.Company;
+import com.hamza.account.view.OpenApplication;
 import com.hamza.account.features.events.ExpensesChanged;
 import com.hamza.account.features.events.TreasuriesChanged;
 import com.hamza.account.features.expense.ExpenseFilter;
@@ -73,10 +81,12 @@ import lombok.extern.log4j.Log4j2;
 import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.prefs.Preferences;
 
 import static com.hamza.controlsfx.others.DateSetting.dateFilter;
@@ -142,7 +152,9 @@ public class ExpensesController extends LoadData {
     private final ProgressIndicator progress = new ProgressIndicator();
 
     private final GridPane detailGrid = new GridPane();
+    private final Button printVoucher = new Button();
     private RowDetailDrawer detail;
+    private ExpenseRow detailRow;
 
     @FXML
     private StackPane stackPane;
@@ -299,6 +311,9 @@ public class ExpensesController extends LoadData {
         if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_HEADINGS_UPDATE)) {
             extras.add(button("expense.action.headings", AppIcon.TREE, this::openHeadings));
         }
+        if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_REPORTS)) {
+            extras.add(button("expense.action.reports", AppIcon.REPORT, this::openReports));
+        }
         toolbar.refresh(ListToolbar.refreshButton(this::reload));
         if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_EXPORT)) {
             toolbar.print(ListToolbar.printButton(this::print))
@@ -407,11 +422,21 @@ public class ExpensesController extends LoadData {
         values.setHgrow(Priority.ALWAYS);
         detailGrid.getColumnConstraints().setAll(captions, values);
         detail = RowDetailDrawer.installIn(root);
-        detail.setContent(new VBox(10, detailGrid));
+        VBox content = new VBox(10, detailGrid);
+        if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_EXPORT)) {
+            printVoucher.setText(text("expense.action.voucher"));
+            printVoucher.setGraphic(AppIcon.PRINT.graphic());
+            printVoucher.getStyleClass().add("app-neutral-button");
+            printVoucher.setId("expense-print-voucher");
+            printVoucher.setOnAction(event -> printVoucher());
+            content.getChildren().add(printVoucher);
+        }
+        detail.setContent(content);
         detail.setPreferredWidth(460);
     }
 
     private void showDetails(ExpenseRow row) {
+        detailRow = row;
         detailGrid.getChildren().clear();
         int line = 0;
         line = detailLine(line, "code", String.valueOf(row.id()));
@@ -665,6 +690,111 @@ public class ExpensesController extends LoadData {
             } else {
                 reload();
             }
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * The reports, over this list's own filter. They change only the dates; a line in them opens this list
+     * on exactly that line, through {@link #applyFilter}.
+     */
+    private void openReports() {
+        try {
+            new OpenApplication<>(new ExpenseReportsController(filter, conditionsText(), this::applyFilter));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * The list's conditions other than its dates, in words - what the reports window writes under its bar and
+     * on every page it prints, so a report narrowed by a heading never reads as a report on everything.
+     */
+    private String conditionsText() {
+        List<String> parts = new ArrayList<>();
+        if (filter.headingId() != null && comboHeading.getValue() != null) {
+            parts.add(text("expense.filter.heading") + " " + comboHeading.getValue().path());
+        }
+        if (filter.treasuryId() != null && comboTreasury.getValue() != null) {
+            parts.add(text("expense.filter.treasury") + " " + comboTreasury.getValue().name());
+        }
+        if (filter.userId() != null && comboUser.getValue() != null) {
+            parts.add(text("expense.filter.user") + " " + comboUser.getValue().name());
+        }
+        if (filter.minAmount() != null || filter.maxAmount() != null) {
+            parts.add(text("expense.filter.amount") + " "
+                    + (filter.minAmount() == null ? "-" : Columns.money(filter.minAmount())) + " / "
+                    + (filter.maxAmount() == null ? "-" : Columns.money(filter.maxAmount())));
+        }
+        if (filter.hasText()) {
+            parts.add(text("search") + ": " + filter.text());
+        }
+        return String.join("  |  ", parts);
+    }
+
+    /**
+     * Puts a filter a report line stands for onto the bar and reads the list. The period combo is cleared:
+     * the dates are the line's own, and a combo still reading "this month" over them would be describing
+     * another list.
+     */
+    private void applyFilter(ExpenseFilter wanted) {
+        loading = true;
+        try {
+            comboPeriod.setValue(null);
+            dateFrom.setValue(wanted.from());
+            dateTo.setValue(wanted.to());
+            selectById(comboHeading, wanted.headingId(), ExpenseHeading::id);
+            selectById(comboTreasury, wanted.treasuryId(), TreasuryBalanceSummary::id);
+            selectById(comboUser, wanted.userId(), ExpenseUserOption::id);
+            amountFrom.setText(wanted.minAmount() == null ? "" : wanted.minAmount().toPlainString());
+            amountTo.setText(wanted.maxAmount() == null ? "" : wanted.maxAmount().toPlainString());
+            search.setText(wanted.text());
+        } finally {
+            loading = false;
+        }
+        search(0);
+    }
+
+    /** Selects the option with this id, or the "all" option at the top for none. */
+    private static <T> void selectById(ComboBox<T> combo, Integer id, ToIntFunction<T> idOf) {
+        int wanted = id == null ? 0 : id;
+        for (T option : combo.getItems()) {
+            if (option != null && idOf.applyAsInt(option) == wanted) {
+                combo.getSelectionModel().select(option);
+                return;
+            }
+        }
+        combo.getSelectionModel().selectFirst();
+    }
+
+    /**
+     * The payment voucher for the expense in the drawer, read again from the database - the paper says what
+     * is stored, not what the list loaded. The file is chosen on the JavaFX thread and written in the
+     * background, as the invoice is.
+     */
+    private void printVoucher() {
+        if (detailRow == null) {
+            return;
+        }
+        try {
+            ExpenseRow stored = expenseService.forVoucher(detailRow.id());
+            if (stored == null) {
+                throw new UserValidationException(text("expense.error.not.found"));
+            }
+            Company company = new CompanyService(DaoFactory.INSTANCE).load();
+            InvoicePrintDocument.Letterhead letterhead = new InvoicePrintDocument.Letterhead(company.getName(),
+                    company.getAddress(), company.getTel(), company.getCommercial(), company.getTax(),
+                    company.getImage());
+            DocumentPdfPage page = ExpenseVoucherLayout.of(stored, letterhead,
+                    LanguageManager.getInstance()::getString, Columns.DATE_TIME.format(LocalDateTime.now()));
+            File target = TablePdfReport.chooseTarget(table.getScene().getWindow(),
+                    page.title() + " " + stored.id());
+            if (target == null) {
+                return;
+            }
+            TablePdfReport.write(target, file -> new PdfExportService().exportDocument(
+                    file.getAbsolutePath(), page, TablePdfReport.uprightPageSize()));
         } catch (Exception e) {
             report(e);
         }
