@@ -512,3 +512,110 @@ BEGIN
     END IF;
 END|
 DELIMITER ;
+
+-- expenses_details and expenses (V64)
+--
+-- An expense had a DELETE trigger (V7) and nothing else, so changing one from 500 to 50 left
+-- no trace outside the shift cash journal - and that journal writes nothing while shifts are
+-- DISABLED, which is the default. The headings had no trigger at all. docs/expenses-plan.md ع-٨.
+--
+-- The V7 delete trigger is replaced here rather than beside it: it recorded neither the date nor
+-- the employee, and a deleted expense whose date is gone cannot be placed in the month it moved.
+DROP TRIGGER IF EXISTS audit_expenses_details_insert;
+DROP TRIGGER IF EXISTS audit_expenses_details_update;
+DROP TRIGGER IF EXISTS audit_expenses_details_delete;
+DROP TRIGGER IF EXISTS audit_expenses_insert;
+DROP TRIGGER IF EXISTS audit_expenses_update;
+DROP TRIGGER IF EXISTS audit_expenses_delete;
+
+DELIMITER |
+CREATE TRIGGER audit_expenses_details_insert
+    AFTER INSERT ON expenses_details
+    FOR EACH ROW
+BEGIN
+    CALL write_audit_log('expenses_details', NEW.id, 'INSERT', COALESCE(@app_user_id, NEW.user_id, 1),
+                         NULL,
+                         JSON_OBJECT('type_code', NEW.type_code, 'date', NEW.date, 'amount', NEW.amount,
+                                     'treasury_id', NEW.treasury_id, 'emp_id', NEW.emp_id,
+                                     'payee', NEW.payee, 'reference_no', NEW.reference_no,
+                                     'notes', NEW.notes),
+                         NULL);
+END|
+
+CREATE TRIGGER audit_expenses_details_update
+    AFTER UPDATE ON expenses_details
+    FOR EACH ROW
+BEGIN
+    IF NOT (OLD.type_code <=> NEW.type_code AND OLD.date <=> NEW.date AND OLD.amount <=> NEW.amount
+            AND OLD.treasury_id <=> NEW.treasury_id AND OLD.emp_id <=> NEW.emp_id
+            AND OLD.payee <=> NEW.payee AND OLD.reference_no <=> NEW.reference_no
+            AND OLD.notes <=> NEW.notes) THEN
+        CALL write_audit_log('expenses_details', NEW.id, 'UPDATE',
+                             COALESCE(@app_user_id, NEW.user_id, OLD.user_id, 1),
+                             JSON_OBJECT('type_code', OLD.type_code, 'date', OLD.date, 'amount', OLD.amount,
+                                         'treasury_id', OLD.treasury_id, 'emp_id', OLD.emp_id,
+                                         'payee', OLD.payee, 'reference_no', OLD.reference_no,
+                                         'notes', OLD.notes),
+                             JSON_OBJECT('type_code', NEW.type_code, 'date', NEW.date, 'amount', NEW.amount,
+                                         'treasury_id', NEW.treasury_id, 'emp_id', NEW.emp_id,
+                                         'payee', NEW.payee, 'reference_no', NEW.reference_no,
+                                         'notes', NEW.notes),
+                             NULL);
+    END IF;
+END|
+
+CREATE TRIGGER audit_expenses_details_delete
+    AFTER DELETE ON expenses_details
+    FOR EACH ROW
+BEGIN
+    CALL write_audit_log('expenses_details', OLD.id, 'DELETE', COALESCE(@app_user_id, 1),
+                         JSON_OBJECT('id', OLD.id, 'type_code', OLD.type_code, 'date', OLD.date,
+                                     'amount', OLD.amount, 'treasury_id', OLD.treasury_id,
+                                     'emp_id', OLD.emp_id, 'payee', OLD.payee,
+                                     'reference_no', OLD.reference_no, 'notes', OLD.notes),
+                         NULL, NULL);
+END|
+
+CREATE TRIGGER audit_expenses_insert
+    AFTER INSERT ON expenses
+    FOR EACH ROW
+BEGIN
+    CALL write_audit_log('expenses', NEW.id, 'INSERT', COALESCE(@app_user_id, NEW.user_id, 1),
+                         NULL,
+                         JSON_OBJECT('expenses_name', NEW.expenses_name, 'parent_id', NEW.parent_id,
+                                     'is_active', NEW.is_active, 'employee_payment', NEW.employee_payment,
+                                     'system_key', NEW.system_key),
+                         NULL);
+END|
+
+CREATE TRIGGER audit_expenses_update
+    AFTER UPDATE ON expenses
+    FOR EACH ROW
+BEGIN
+    IF NOT (OLD.expenses_name <=> NEW.expenses_name AND OLD.parent_id <=> NEW.parent_id
+            AND OLD.is_active <=> NEW.is_active AND OLD.employee_payment <=> NEW.employee_payment
+            AND OLD.system_key <=> NEW.system_key) THEN
+        CALL write_audit_log('expenses', NEW.id, 'UPDATE', COALESCE(@app_user_id, NEW.user_id, 1),
+                             JSON_OBJECT('expenses_name', OLD.expenses_name, 'parent_id', OLD.parent_id,
+                                         'is_active', OLD.is_active,
+                                         'employee_payment', OLD.employee_payment,
+                                         'system_key', OLD.system_key),
+                             JSON_OBJECT('expenses_name', NEW.expenses_name, 'parent_id', NEW.parent_id,
+                                         'is_active', NEW.is_active,
+                                         'employee_payment', NEW.employee_payment,
+                                         'system_key', NEW.system_key),
+                             NULL);
+    END IF;
+END|
+
+CREATE TRIGGER audit_expenses_delete
+    AFTER DELETE ON expenses
+    FOR EACH ROW
+BEGIN
+    CALL write_audit_log('expenses', OLD.id, 'DELETE', COALESCE(@app_user_id, 1),
+                         JSON_OBJECT('expenses_name', OLD.expenses_name, 'parent_id', OLD.parent_id,
+                                     'is_active', OLD.is_active, 'employee_payment', OLD.employee_payment,
+                                     'system_key', OLD.system_key),
+                         NULL, NULL);
+END|
+DELIMITER ;

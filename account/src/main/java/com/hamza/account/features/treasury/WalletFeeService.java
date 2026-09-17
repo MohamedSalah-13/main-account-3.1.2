@@ -1,10 +1,16 @@
 package com.hamza.account.features.treasury;
 
-import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Employees;
-import com.hamza.account.model.domain.Expenses;
-import com.hamza.account.model.domain.ExpensesDetails;
-import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.ExpensesChanged;
+import com.hamza.account.features.expense.ExpenseEntry;
+import com.hamza.account.features.expense.ExpenseHeading;
+import com.hamza.account.features.expense.ExpenseHeadingRepository;
+import com.hamza.account.features.expense.ExpenseRepository;
+import com.hamza.account.features.expense.JdbcExpenseHeadingRepository;
+import com.hamza.account.features.expense.JdbcExpenseRepository;
+import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.treasury.TreasuryBalanceSummary;
 import com.hamza.account.treasury.WalletFee;
 import com.hamza.controlsfx.database.DaoException;
@@ -30,7 +36,9 @@ import com.hamza.account.features.shift.ShiftCashSource;
  * <p>
  * <b>No permission of its own.</b> The fee is a consequence of a collection the user
  * has already been authorized to make, not an expense they chose to enter - guarding it
- * with {@code expenses.create} would stop a cashier collecting on a wallet at all.
+ * with {@code expenses.create} would stop a cashier collecting on a wallet at all. So it
+ * writes through the expense repository rather than {@code ExpenseService}, and applies the
+ * period lock itself, which the old DAO used to do for it.
  * <p>
  * <b>Posted on insert only.</b> Editing a payment does not touch its fee row: the fee
  * belongs to the transfer that actually happened, and recomputing it on every edit
@@ -39,10 +47,16 @@ import com.hamza.account.features.shift.ShiftCashSource;
  */
 public final class WalletFeeService {
 
-    private final DaoFactory daoFactory;
+    private final ExpenseRepository expenseRepository;
+    private final ExpenseHeadingRepository headingRepository;
 
-    public WalletFeeService(DaoFactory daoFactory) {
-        this.daoFactory = daoFactory;
+    public WalletFeeService() {
+        this(new JdbcExpenseRepository(), new JdbcExpenseHeadingRepository());
+    }
+
+    WalletFeeService(ExpenseRepository expenseRepository, ExpenseHeadingRepository headingRepository) {
+        this.expenseRepository = expenseRepository;
+        this.headingRepository = headingRepository;
     }
 
     /** What the screen should suggest for this treasury, before the user overrides it. */
@@ -71,38 +85,42 @@ public final class WalletFeeService {
             throw new BusinessRuleException(message("treasury.fee.error.too.large"));
         }
 
-        ExpensesDetails expense = new ExpensesDetails();
-        expense.setLocalDate(date == null ? LocalDate.now() : date);
-        expense.setAmount(fee.doubleValue());
-        expense.setNotes(note);
-        expense.setEmployees(new Employees(0));
-        expense.setTreasuryModel(new Treasury(treasuryId));
-        expense.setExpenses(new Expenses(feeHeadingId()));
+        LocalDate day = date == null ? LocalDate.now() : date;
+        PeriodLock.require(day, PeriodLockRegistry.EXPENSE.label());
+        // The notes column is VARCHAR(255), and the note here is built from a collection's own notes.
+        String clean = note == null || note.isBlank() ? null
+                : note.strip().substring(0, Math.min(note.strip().length(), ExpenseEntry.NOTES_MAX));
+        ExpenseEntry expense = new ExpenseEntry(0, day, feeHeadingId(), treasuryId,
+                fee.setScale(2, java.math.RoundingMode.HALF_UP), null, null, clean);
 
-        // Through the DAO rather than ExpensesDetailsService: the service guards on
-        // expenses.create, and this is not the user entering an expense - see the class
-        // comment. The DAO still applies the accounting period lock on its own.
-        int id = daoFactory.expensesDetailsDao().insertReturningId(expense,
-                shiftId != null && shiftId.isPresent() ? shiftId.getAsInt() : null);
         var effectiveShift = shiftId == null ? OptionalInt.empty() : shiftId;
-        int actor = expense.getUsers().getId();
+        Integer attributed = effectiveShift.isPresent() ? effectiveShift.getAsInt() : null;
+        int actor = currentUserId();
+        int id = expenseRepository.insert(expense, null, attributed, actor);
         ShiftCashLedger.jdbc().created(effectiveShift, actor,
-                ShiftCashEffect.outgoing(ShiftCashSource.EXPENSE, id, treasuryId,
-                        effectiveShift.isPresent() ? effectiveShift.getAsInt() : null, fee));
+                ShiftCashEffect.outgoing(ShiftCashSource.EXPENSE, id, treasuryId, attributed, expense.amount()));
+        ChangeAnnouncer.jdbc().announce(new ExpensesChanged());
         return 1;
     }
 
     /**
-     * The seeded {@code عمولات تحويل} heading, looked up by name rather than by a
-     * number written into the code: {@code expenses.id} is not auto-increment, so
-     * {@code V21} could not know in advance which id it would take.
+     * The heading a wallet fee is posted under, found by its key since V64.
+     * <p>
+     * It used to be found by the name {@link WalletFee#EXPENSE_NAME}, which was right only while no
+     * screen could rename a heading - and the headings screen can. The key was written onto the row by
+     * the migration, reading the name once, at the one moment it was certain.
      */
     private int feeHeadingId() throws DaoException {
-        Expenses heading = daoFactory.expensesDao().getDataByString(WalletFee.EXPENSE_NAME);
-        if (heading == null || heading.getId() <= 0) {
+        ExpenseHeading heading = headingRepository.bySystemKey(ExpenseHeading.WALLET_FEE);
+        if (heading == null || heading.id() <= 0) {
             throw new BusinessRuleException(message("treasury.fee.error.no.heading"));
         }
-        return heading.getId();
+        return heading.id();
+    }
+
+    private static int currentUserId() {
+        var user = CurrentUser.getOrNull();
+        return user == null ? 1 : user.getId();
     }
 
     private static String message(String key) {

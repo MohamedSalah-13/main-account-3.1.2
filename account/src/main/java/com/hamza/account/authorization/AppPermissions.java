@@ -126,6 +126,18 @@ public final class AppPermissions {
     public static final PermissionKey EXPENSES_CREATE = key("expenses.create");
     public static final PermissionKey EXPENSES_UPDATE = key("expenses.update");
     public static final PermissionKey EXPENSES_DELETE = key("expenses.delete");
+    /**
+     * Adding, renaming, moving and stopping the headings expenses are filed under (V64). There was no
+     * screen for it before: the headings were six constants in {@code ExpensesType}. Granted on upgrade
+     * to whoever could edit an expense.
+     */
+    public static final PermissionKey EXPENSES_HEADINGS_UPDATE = key("expenses.headings.update");
+    /**
+     * Printing and exporting the expenses list (V64). Apart from viewing it for the reason the ageing
+     * report gives: a list on a screen is looked at, a file leaves the building. Granted on upgrade to
+     * whoever may view the list, because the old screen's print button asked for nothing.
+     */
+    public static final PermissionKey EXPENSES_EXPORT = key("expenses.export");
     public static final PermissionKey EMPLOYEE_SHOW = key("employee.show");
     public static final PermissionKey EMPLOYEE_CREATE = key("employee.create");
     public static final PermissionKey EMPLOYEE_UPDATE = key("employee.update");
@@ -168,7 +180,7 @@ public final class AppPermissions {
      * <p>
      * It is the <em>additional</em> permission on top of {@link #EXPENSES_CREATE}, not a
      * replacement for it: every pound paid to an employee is an expense row (ق-١), so the payment
-     * goes through {@code ExpensesDetailsService} and is refused without both. V58 grants this to
+     * goes through {@code ExpenseService.recordForEmployee} and is refused without both. V58 grants this to
      * whoever holds {@code expenses.create}, so nobody loses an ability on upgrade.
      */
     public static final PermissionKey EMPLOYEE_PAY = key("employee.pay");

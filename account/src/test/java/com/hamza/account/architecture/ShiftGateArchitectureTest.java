@@ -31,9 +31,15 @@ class ShiftGateArchitectureTest {
             Path.of("src", "main", "java", "com", "hamza", "account", "service"),
             Path.of("src", "main", "java", "com", "hamza", "account", "features"));
 
-    /** Covers fields, accessors and generic seams: {@code someDao.insert(...)}, {@code someDao().update(...)}. */
+    /**
+     * Covers fields, accessors and generic seams: {@code someDao.insert(...)}, {@code someDao().update(...)}
+     * - and a {@code Repository}, which is what the newer packages write through. Until the expenses rework
+     * this read only DAOs, so {@code WalletFeeService} moving onto {@code expenseRepository} would have taken
+     * it out of the rule's sight while leaving it on the exception list below - the same hole
+     * {@code AuthorizationArchitectureTest.WRITE_RECEIVER} closed for permissions.
+     */
     private static final Pattern DAO_WRITE = Pattern.compile(
-            "(?s).*(?:[A-Za-z0-9_]+Dao)(?:\\(\\))?\\s*\\.\\s*"
+            "(?s).*(?:[A-Za-z0-9_]+Dao|[A-Za-z0-9_]*[Rr]epository)(?:\\(\\))?\\s*\\.\\s*"
                     + "(?:insert[A-Za-z0-9_]*|update|deleteById)\\s*\\(.*");
 
     /**
@@ -100,7 +106,7 @@ class ShiftGateArchitectureTest {
         var missing = new TreeSet<String>();
         for (String service : List.of("InvoiceSaveService", "TreasuryCashService",
                 "TreasuryTransferService", "AccountCustomerService",
-                "AccountSupplierService", "ExpensesDetailsService")) {
+                "AccountSupplierService", "ExpenseService")) {
             if (find(service).stream().noneMatch(path -> read(path).contains("ShiftGate"))) {
                 missing.add(service);
             }

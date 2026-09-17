@@ -10,7 +10,7 @@ import com.hamza.account.features.employee.statement.EmployeeStatementService;
 import com.hamza.account.features.employee.statement.JdbcEmployeeStatementRepository;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.service.ExpensesDetailsService;
+import com.hamza.account.features.expense.ExpenseService;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
@@ -76,7 +76,7 @@ class EmployeeAccountDatabaseAcceptanceTest {
     private static final EmployeeLedgerService LEDGER =
             new EmployeeLedgerService(new JdbcEmployeeStatementRepository());
     private static final EmployeePaymentService PAYMENTS = new EmployeePaymentService(
-            new ExpensesDetailsService(DaoFactory.INSTANCE), new JdbcEmployeeStatementRepository());
+            new ExpenseService(DaoFactory.INSTANCE), new JdbcEmployeeStatementRepository());
 
     private static Connection transaction;
     private static int employeeId;
@@ -287,8 +287,13 @@ class EmployeeAccountDatabaseAcceptanceTest {
         return scalar("SELECT MIN(id) FROM treasury");
     }
 
+    /**
+     * A heading employees are paid under. Since V64 an employee is paid only under one marked
+     * {@code employee_payment}, and the lowest id is that on a schema built from nothing ("مرتبات") but
+     * need not be on a working database.
+     */
     private static int firstHeading() throws Exception {
-        return scalar("SELECT MIN(id) FROM expenses");
+        return scalar("SELECT MIN(id) FROM expenses WHERE employee_payment = 1 AND is_active = 1");
     }
 
     private static int countExpenses() throws Exception {

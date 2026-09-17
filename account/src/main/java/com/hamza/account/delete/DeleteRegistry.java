@@ -167,6 +167,18 @@ public final class DeleteRegistry {
             .build();
 
     /**
+     * A heading expenses are filed under (V64). Nothing is protected by id: a heading the system
+     * depends on is found by its {@code system_key}, and {@code ExpenseHeadingRules.requireDeletable}
+     * refuses that one before this rule is reached - a protected id would be the number V21 happened
+     * to give the wallet-fee heading on one install and a different one on the next.
+     */
+    public static final DeleteRule EXPENSE_HEADINGS = DeleteRule.forEntity("delete.entity.expense.heading")
+            .requirePermission(AppPermissions.EXPENSES_HEADINGS_UPDATE)
+            .referencedBy("expenses_details", "type_code", "delete.ref.expense")
+            .referencedBy("expenses", "parent_id", "delete.ref.expense.heading")
+            .build();
+
+    /**
      * Stock {@code DefaultStock.ID} is the seeded {@code 'الرئيسي'} row every document
      * still writes to; see {@link DefaultStock}. {@code items_stock}, the four invoice
      * totals tables and {@code stock_count} all carry a non-cascading {@code stock_id},

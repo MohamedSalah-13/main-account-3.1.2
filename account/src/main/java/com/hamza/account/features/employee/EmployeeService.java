@@ -32,7 +32,7 @@ import java.util.Objects;
  * quietly dropped the bound would answer the wrong question instead.
  * <p>
  * <b>The three methods returning {@code Employees} are a seam, not a model choice.</b>
- * {@code Total_Sales}, {@code Total_Sales_Re} and {@code ExpensesDetails} hold their delegate as
+ * {@code Total_Sales} and {@code Total_Sales_Re} hold their delegate as
  * that class, so an invoice cannot be saved without one; they carry an id and a name and
  * nothing else, and no salary is read to produce them. They die with the single {@code Document}
  * model {@code CLAUDE.md} describes, and not before.

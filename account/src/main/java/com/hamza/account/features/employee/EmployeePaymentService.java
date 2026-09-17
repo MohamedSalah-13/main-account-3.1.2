@@ -4,12 +4,9 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.features.employee.statement.EmployeeStatementRepository;
 import com.hamza.account.features.employee.statement.JdbcEmployeeStatementRepository;
+import com.hamza.account.features.expense.ExpenseEntry;
+import com.hamza.account.features.expense.ExpenseService;
 import com.hamza.account.features.rbac.CurrentUser;
-import com.hamza.account.model.domain.Employees;
-import com.hamza.account.model.domain.Expenses;
-import com.hamza.account.model.domain.ExpensesDetails;
-import com.hamza.account.model.domain.Treasury;
-import com.hamza.account.service.ExpensesDetailsService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
 
@@ -34,19 +31,21 @@ import java.util.Objects;
  * <p>
  * Both rows go in <b>one</b> transaction: a payment whose purpose was lost would read as a salary
  * on every statement afterwards, which for an advance is the difference between an employee owing
- * a thousand and owing nothing.
+ * a thousand and owing nothing. Since the expenses rework this is also the <b>only</b> road an
+ * employee is paid by: the expenses screen no longer names an employee at all
+ * (docs/expenses-plan.md ق-٥), and {@link ExpenseService#recordForEmployee} refuses a heading that
+ * is not marked for employees.
  */
 public final class EmployeePaymentService {
 
-    private final ExpensesDetailsService expenses;
+    private final ExpenseService expenses;
     private final EmployeeStatementRepository repository;
 
-    public EmployeePaymentService(ExpensesDetailsService expenses) {
+    public EmployeePaymentService(ExpenseService expenses) {
         this(expenses, new JdbcEmployeeStatementRepository());
     }
 
-    public EmployeePaymentService(ExpensesDetailsService expenses,
-                                  EmployeeStatementRepository repository) {
+    public EmployeePaymentService(ExpenseService expenses, EmployeeStatementRepository repository) {
         this.expenses = Objects.requireNonNull(expenses, "expenses");
         this.repository = Objects.requireNonNull(repository, "repository");
     }
@@ -55,40 +54,22 @@ public final class EmployeePaymentService {
      * Records the payment and files it under its purpose.
      * <p>
      * {@code employee.pay} is asked here and {@code expenses.create} inside
-     * {@link ExpensesDetailsService#insertReturningId} — <b>both are needed</b>. That is not an
-     * oversight: this is an expense with an employee on it, so the base act is creating an expense
-     * and this key is the extra permission to direct one at a person. V58 grants it to whoever
-     * already holds {@code expenses.create}, so nobody loses an ability on upgrade.
+     * {@link ExpenseService#recordForEmployee} — <b>both are needed</b>. That is not an oversight:
+     * this is an expense with an employee on it, so the base act is creating an expense and this key
+     * is the extra permission to direct one at a person. V58 grants it to whoever already holds
+     * {@code expenses.create}, so nobody loses an ability on upgrade.
      *
      * @return the generated expense id
      */
     public int pay(EmployeePayment payment) throws DaoException {
         AuthorizationGuard.require(AppPermissions.EMPLOYEE_PAY);
+        ExpenseEntry entry = ExpenseEntry.parse(0, payment.date(), payment.expenseTypeCode(),
+                payment.treasuryId(), payment.amount(), null, null, payment.notes());
         return TransactionTemplate.execute(() -> {
-            int expenseId = expenses.insertReturningId(expenseRow(payment));
+            int expenseId = expenses.recordForEmployee(entry, payment.employeeId());
             repository.insertPurpose(expenseId, payment.purpose().name(), null, currentUserId());
             return expenseId;
         });
-    }
-
-    /**
-     * The expense row this payment is.
-     * <p>
-     * {@code ExpensesDetails} still carries {@code javafx.beans.property} through
-     * {@code DForColumnTable} and reads {@code CurrentUser} in a field initializer — rule ق-ج1's
-     * worked example. It is built here rather than taken as an argument so that the one place that
-     * knows it is a legacy shape is this method, and the screens above hand over an
-     * {@link EmployeePayment} that carries none of it.
-     */
-    private static ExpensesDetails expenseRow(EmployeePayment payment) {
-        ExpensesDetails row = new ExpensesDetails();
-        row.setLocalDate(payment.date());
-        row.setAmount(payment.amount().doubleValue());
-        row.setNotes(payment.notes());
-        row.setEmployees(new Employees(payment.employeeId()));
-        row.setTreasuryModel(new Treasury(payment.treasuryId()));
-        row.setExpenses(new Expenses(payment.expenseTypeCode()));
-        return row;
     }
 
     private static int currentUserId() {

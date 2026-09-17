@@ -39,7 +39,6 @@ class ModelPurityArchitectureTest {
             "com/hamza/account/model/base/DForColumnTable.java",
             "com/hamza/account/model/domain/CustomerAccount.java",
             "com/hamza/account/model/domain/Employees.java",
-            "com/hamza/account/model/domain/Expenses.java",
             "com/hamza/account/model/domain/ItemsModel.java",
             "com/hamza/account/model/domain/ItemsUnitsModel.java",
             "com/hamza/account/model/domain/Sales.java",

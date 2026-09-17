@@ -152,14 +152,6 @@ public enum DaoFactory {
         return new TotalsSalesReturnDao(this);
     }
 
-    public ExpensesDetailsDao expensesDetailsDao() {
-        return new ExpensesDetailsDao();
-    }
-
-    public ExpensesDao expensesDao() {
-        return new ExpensesDao();
-    }
-
     public ItemMiniDao itemMiniDao() {
         return new ItemMiniDao();
     }

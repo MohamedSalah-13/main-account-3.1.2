@@ -3,6 +3,7 @@ package com.hamza.account.dash;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.expense.ExpensesController;
 import com.hamza.account.controller.others.ProcessesController;
 import com.hamza.account.controller.convert_treasury.TreasureDetailsController;
 import com.hamza.account.controller.convert_treasury.TreasuryCapitalController;
@@ -11,10 +12,9 @@ import com.hamza.account.controller.convert_treasury.TreasuryController;
 import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.view.ExpensesDetailsApplication;
+import com.hamza.account.view.OpenExpensesApplication;
 import com.hamza.account.view.OpenTreasuryApplication;
 import com.hamza.account.view.OpenTreasuryCapitalApplication;
 import com.hamza.account.view.OpenTreasuryCashApplication;
@@ -242,30 +242,33 @@ public class TreasuryButtons {
         };
     }
 
+    /**
+     * The expenses list. It opened on {@code treasury.show} while {@code expenses.show} existed and
+     * nothing read it (docs/expenses-plan.md ع-٥); the permission that carries the name is the one
+     * asked now, and V64 grants it to whoever held the other.
+     */
     public ButtonWithPerm openExpenses() {
         return new ButtonWithPerm() {
-            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication();
 
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.TREASURY_SHOW;
+                return AppPermissions.EXPENSES_SHOW;
             }
 
             @Override
             public void action() throws Exception {
-                new TableOpen<>(expensesController).start(new Stage());
+                new OpenExpensesApplication(daoFactory, dataPublisher).start(new Stage());
             }
 
             @NotNull
             @Override
             public String textName() {
-                return expensesController.titleName();
+                return OpenExpensesApplication.title();
             }
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                var controller = new ExpensesDetailsApplication();
-                Pane pane = new TableOpen<>(controller).getPane();
+                Pane pane = new OpenFxmlApplication(new ExpensesController(daoFactory, dataPublisher)).getPane();
                 addTape(tabPane, pane, textName(), AppIcon.TREASURY_CASH.graphic(20));
             }
 

@@ -287,3 +287,15 @@
     -party-row-hover: #ede9fe;
     -party-row-selected: #ddd6fe;
 }
+
+/* The expenses screens, as the same palette class: amber, so an expense is told apart from a
+   party (blue, teal) and an employee (violet) at a glance. */
+.screen-expenses {
+    -party-accent: #d97706;
+    -party-accent-dark: #b45309;
+    -party-border: #fcd34d;
+    -party-shadow: rgba(217, 119, 6, 0.28);
+    -party-row-alt: #fffbeb;
+    -party-row-hover: #fef3c7;
+    -party-row-selected: #fde68a;
+}

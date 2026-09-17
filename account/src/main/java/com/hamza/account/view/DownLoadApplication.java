@@ -64,6 +64,8 @@ import com.hamza.account.features.shift.JdbcShiftVarianceSettlementRepository;
 import com.hamza.account.features.shift.ShiftShortageChargeService;
 import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.features.employee.EmployeePaymentService;
+import com.hamza.account.features.expense.ExpenseHeadingService;
+import com.hamza.account.features.expense.ExpenseService;
 import com.hamza.account.features.employee.attendance.AttendanceService;
 import com.hamza.account.features.employee.attendance.LeaveService;
 import com.hamza.account.features.employee.payroll.PayrollService;
@@ -252,15 +254,16 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(MainGroupService.class, new MainGroupService(daoFactory));
         ServiceRegistry.register(SupGroupService.class, new SupGroupService(daoFactory));
         ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));
-        ServiceRegistry.register(ExpensesService.class, new ExpensesService(daoFactory));
-        ServiceRegistry.register(ExpensesDetailsService.class, new ExpensesDetailsService(daoFactory));
+        // Expenses (V64): the headings as rows, and one service every expense is written through.
+        ServiceRegistry.register(ExpenseHeadingService.class, new ExpenseHeadingService());
+        ServiceRegistry.register(ExpenseService.class, new ExpenseService(daoFactory));
         // The employee's account (V58). The payment service takes the expenses service rather
         // than building one: every pound paid to an employee is an expense row, so it inherits
         // the shift gate, the period lock and the cash journal instead of restating them.
         ServiceRegistry.register(EmployeeStatementService.class, new EmployeeStatementService());
         ServiceRegistry.register(EmployeeLedgerService.class, new EmployeeLedgerService());
         ServiceRegistry.register(EmployeePaymentService.class,
-                new EmployeePaymentService(ServiceRegistry.get(ExpensesDetailsService.class)));
+                new EmployeePaymentService(ServiceRegistry.get(ExpenseService.class)));
         ServiceRegistry.register(AttendanceService.class, new AttendanceService());
         ServiceRegistry.register(LeaveService.class, new LeaveService());
         ServiceRegistry.register(PayrollService.class, new PayrollService());

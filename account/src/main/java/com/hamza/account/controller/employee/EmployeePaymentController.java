@@ -7,12 +7,13 @@ import com.hamza.account.features.employee.EmployeePayment;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.employee.statement.EmployeeStatementService;
 import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.account.features.events.ExpensesChanged;
+import com.hamza.account.features.expense.ExpenseHeading;
+import com.hamza.account.features.expense.ExpenseHeadingService;
 import com.hamza.account.features.events.TreasuriesChanged;
-import com.hamza.account.model.domain.Expenses;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.ExpensesService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -69,7 +70,7 @@ public class EmployeePaymentController implements AddInterface {
     private final EmployeeStatementService statementService =
             ServiceRegistry.get(EmployeeStatementService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
-    private final ExpensesService expensesService = ServiceRegistry.get(ExpensesService.class);
+    private final ExpenseHeadingService headingService = ServiceRegistry.get(ExpenseHeadingService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
 
     private final int employeeId;
@@ -81,7 +82,7 @@ public class EmployeePaymentController implements AddInterface {
     private final TextField txtAmount = new TextField();
     private final ComboBox<EmployeeCashPurpose> comboPurpose = new ComboBox<>();
     private final ComboBox<Treasury> comboTreasury = new ComboBox<>();
-    private final ComboBox<Expenses> comboHeading = new ComboBox<>();
+    private final ComboBox<ExpenseHeading> comboHeading = new ComboBox<>();
     private final TextField txtNotes = new TextField();
 
     @FXML
@@ -119,7 +120,7 @@ public class EmployeePaymentController implements AddInterface {
         comboPurpose.getSelectionModel().select(EmployeeCashPurpose.SALARY);
 
         comboTreasury.setConverter(converter(treasury -> treasury == null ? "" : treasury.getName()));
-        comboHeading.setConverter(converter(heading -> heading == null ? "" : heading.getName()));
+        comboHeading.setConverter(converter(heading -> heading == null ? "" : heading.path()));
 
         comboPurpose.setMaxWidth(Double.MAX_VALUE);
         comboTreasury.setMaxWidth(Double.MAX_VALUE);
@@ -189,16 +190,22 @@ public class EmployeePaymentController implements AddInterface {
      * The tills and the headings, and the employee's balance.
      * <p>
      * Only tills still open are offered - a treasury is closed rather than deleted, and paying
-     * into one that is closed is not a thing anybody means to do. The headings are offered whole
-     * and with <b>no default</b>: mapping a purpose to a heading id in code would be the constant
-     * this module spent phase A removing.
+     * into one that is closed is not a thing anybody means to do. The headings are the ones marked
+     * for employees since V64, with <b>no default</b>: mapping a purpose to a heading id in code
+     * would be the constant this module spent phase A removing.
      */
     private void loadPickers() {
         try {
             comboTreasury.setItems(FXCollections.observableArrayList(
                     treasuryService.getActiveTreasuryModelList()));
             comboTreasury.getSelectionModel().selectFirst();
-            comboHeading.setItems(FXCollections.observableArrayList(expensesService.headings()));
+            comboHeading.setItems(FXCollections.observableArrayList(headingService.forEmployeePayments()));
+            if (comboHeading.getItems().isEmpty()) {
+                // No heading is marked for employees - a shop that renamed both seeded ones before V64 read
+                // them. Saying so names the road; offering every heading instead is what let an advance be
+                // filed under anything (docs/expenses-plan.md ق-٥).
+                AllAlerts.alertError(text("employee.pay.error.no.headings"));
+            }
             txtBalance.setText(Columns.money(statementService.currentBalance(employeeId)));
         } catch (Exception e) {
             AllAlerts.handleError(text("employee.error.operation"), asException(e));
@@ -209,11 +216,11 @@ public class EmployeePaymentController implements AddInterface {
     @Override
     public int insertData() throws Exception {
         Treasury treasury = comboTreasury.getValue();
-        Expenses heading = comboHeading.getValue();
+        ExpenseHeading heading = comboHeading.getValue();
         EmployeePayment payment = EmployeePayment.parse(employeeId, date.getValue(),
                 amount(txtAmount), comboPurpose.getValue(),
                 treasury == null ? 0 : treasury.getId(),
-                heading == null ? 0 : heading.getId(),
+                heading == null ? 0 : heading.id(),
                 txtNotes.getText());
         paymentService.pay(payment);
         return 1;
@@ -223,6 +230,7 @@ public class EmployeePaymentController implements AddInterface {
     public void afterSaved() {
         if (eventBus != null) {
             eventBus.publish(new EmployeesChanged());
+            eventBus.publish(new ExpensesChanged());
             // The till is lighter by the amount, and the treasury screens read a derived balance -
             // so they are told, exactly as the expenses screen tells them.
             eventBus.publish(new TreasuriesChanged());

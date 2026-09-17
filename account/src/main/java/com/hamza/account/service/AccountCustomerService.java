@@ -142,7 +142,7 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                                 BigDecimal.valueOf(account.getPaid())));
             }
             if (walletFee != null && walletFee.signum() > 0) {
-                new WalletFeeService(daoFactory).post(
+                new WalletFeeService().post(
                         account.getTreasury().getId(), LocalDate.parse(account.getDate()),
                         BigDecimal.valueOf(account.getPaid()), walletFee, WalletFee.EXPENSE_NAME, shiftId);
             }

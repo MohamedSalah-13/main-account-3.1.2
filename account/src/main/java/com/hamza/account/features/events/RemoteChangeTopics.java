@@ -80,7 +80,9 @@ public final class RemoteChangeTopics {
         declare("areas", new AreasChanged(), Announcer.RELAY);
         declare("units", new UnitsChanged(), Announcer.RELAY);
         declare("treasuries", new TreasuriesChanged(), Announcer.RELAY);
-        declare("expenses", new ExpensesChanged(), Announcer.RELAY);
+        // SERVICE since the expenses rework: ExpenseService announces inside its transaction, so a batch
+        // refused on its third line tells no other till to reload for the two lines that were rolled back.
+        declare("expenses", new ExpensesChanged(), Announcer.SERVICE);
         declare("employees", new EmployeesChanged(), Announcer.RELAY);
         declare("company", new CompanyChanged(), Announcer.RELAY);
         declare("users", new UsersChanged(), Announcer.RELAY);

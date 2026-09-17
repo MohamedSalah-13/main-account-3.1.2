@@ -294,3 +294,14 @@
     -party-row-hover: #4c1d95;
     -party-row-selected: #5b21b6;
 }
+
+/* The expenses screens - see theme-light.css. */
+.screen-expenses {
+    -party-accent: #f59e0b;
+    -party-accent-dark: #b45309;
+    -party-border: rgba(251, 191, 36, 0.55);
+    -party-shadow: rgba(217, 119, 6, 0.38);
+    -party-row-alt: #451a03;
+    -party-row-hover: #78350f;
+    -party-row-selected: #92400e;
+}
