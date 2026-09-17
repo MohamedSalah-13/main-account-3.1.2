@@ -110,6 +110,9 @@ public class ExpenseHeadingsController implements AddInterface {
         buildTable();
         box.getChildren().setAll(header(), entryBar(), table);
         VBox.setVgrow(table, Priority.ALWAYS);
+        // Opened at 1366x768 the dialog was 701 points tall, its buttons at the bottom edge of a screen
+        // that has a taskbar under it. The table grows when the dialog is enlarged.
+        table.setPrefHeight(320);
     }
 
     private HBox header() {

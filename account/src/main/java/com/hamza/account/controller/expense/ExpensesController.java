@@ -434,6 +434,9 @@ public class ExpensesController extends LoadData {
         Label caption = caption(captionKey);
         Label content = new Label(value == null || value.isBlank() ? "—" : value);
         content.setWrapText(true);
+        // A bare Label inherits the drawer's muted text and was all but invisible when the screen was
+        // first opened - the captions beside it carried a class and the values did not.
+        content.getStyleClass().add("detail-drawer-value");
         detailGrid.add(caption, 0, line);
         detailGrid.add(content, 1, line);
         return line + 1;

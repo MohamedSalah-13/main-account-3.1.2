@@ -1624,6 +1624,12 @@
     -fx-text-fill: -app-text-muted;
 }
 
+/* A value in a drawer's detail grid, beside its caption. Without a class of its own a Label inherits
+   the muted text around it, and the expenses drawer opened with its values all but unreadable. */
+.detail-drawer-value {
+    -fx-text-fill: -app-text-strong;
+}
+
 .detail-drawer-body {
     -fx-padding: 0.545em;
 }

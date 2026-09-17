@@ -122,7 +122,10 @@ public class ExpenseBatchController implements AddInterface {
         comboTreasury.setConverter(converter(treasury -> treasury == null ? "" : treasury.name()));
         comboTreasury.valueProperty().addListener((observable, old, treasury) -> balance.setText(
                 treasury == null || treasury.balance() == null ? "—" : Columns.money(treasury.balance())));
-        comboHeading.setPrefWidth(220);
+        comboHeading.setPrefWidth(240);
+        txtAmount.setPrefWidth(130);
+        txtPayee.setPrefWidth(200);
+        txtReference.setPrefWidth(130);
         HBox.setHgrow(txtNotes, Priority.ALWAYS);
 
         add.setText(text("expense.batch.add"));
@@ -134,6 +137,11 @@ public class ExpenseBatchController implements AddInterface {
         buildTable();
         box.getChildren().setAll(header(), sharedBar(), lineBar(), table, footer());
         VBox.setVgrow(table, Priority.ALWAYS);
+        // Sized for the screen this ships to. Left to its content the dialog opened 1029 by 815 at
+        // 1366x768 - wider than the window and with its save button below the bottom of the screen.
+        // The table still grows when the dialog is enlarged; it only no longer asks for 400 points.
+        box.setPrefWidth(880);
+        table.setPrefHeight(230);
 
         // One receipt after another: the heading, the amount, to whom, its number, a note - and Enter on the
         // add button adds the line and returns to the heading, below in addLine().
@@ -163,10 +171,13 @@ public class ExpenseBatchController implements AddInterface {
         return card;
     }
 
+    /** Two rows, in the order a receipt is read: what for, how much, to whom - then its number and a note. */
     private VBox lineBar() {
-        HBox row = new HBox(8, comboHeading, txtAmount, txtPayee, txtReference, txtNotes, add);
-        row.setAlignment(Pos.CENTER_LEFT);
-        VBox card = new VBox(row);
+        HBox first = new HBox(8, comboHeading, txtAmount, txtPayee);
+        first.setAlignment(Pos.CENTER_LEFT);
+        HBox second = new HBox(8, txtReference, txtNotes, add);
+        second.setAlignment(Pos.CENTER_LEFT);
+        VBox card = new VBox(8, first, second);
         card.getStyleClass().addAll("app-card", "party-form-card");
         return card;
     }
