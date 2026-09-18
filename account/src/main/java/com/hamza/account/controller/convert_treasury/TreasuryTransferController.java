@@ -7,7 +7,6 @@ import com.hamza.account.features.treasury.TreasuryTransfer;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
 import com.hamza.account.features.treasury.TreasuryTransferService;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryBalanceService;
 import com.hamza.account.treasury.TreasuryBalanceSummary;
@@ -59,6 +58,10 @@ public class TreasuryTransferController {
     @FXML
     private TextField amountField;
 
+    /** Optional: blank means the transfer cost nothing, which between two drawers it does not. */
+    @FXML
+    private TextField feeField;
+
     @FXML
     private TextField notesField;
 
@@ -88,7 +91,9 @@ public class TreasuryTransferController {
         transfersTable.getColumns().setAll(
                 Columns.text("treasury.transfer.column.from", TreasuryTransfer::fromTreasuryName),
                 Columns.text("treasury.transfer.column.to", TreasuryTransfer::toTreasuryName),
-                Columns.number("treasury.transfer.column.amount", TreasuryTransfer::amount),
+                Columns.text("treasury.transfer.column.amount", transfer -> Columns.money(transfer.amount())),
+                Columns.text("treasury.transfer.column.fee",
+                        transfer -> transfer.fee().signum() == 0 ? "" : Columns.money(transfer.fee())),
                 Columns.date("treasury.transfer.column.date", TreasuryTransfer::transferDate),
                 Columns.text("treasury.transfer.column.notes", TreasuryTransfer::notes));
 
@@ -124,11 +129,13 @@ public class TreasuryTransferController {
 
             BigDecimal amount = TreasuryCombo.amount(amountField.getText(),
                     "treasury.transfer.error.amount");
+            BigDecimal fee = TreasuryCombo.optionalAmount(feeField.getText(),
+                    "treasury.transfer.error.fee");
 
             transferService.transfer(new TreasuryTransferCommand(
                     from.id(), to.id(), amount, datePicker.getValue(),
                     notesField.getText() == null ? "" : notesField.getText().trim(),
-                    userId()));
+                    userId(), fee));
 
             // Two treasuries moved, so the event is published for each of them: a screen
             // watching one side must not have to know it was the other half of a transfer.
@@ -136,6 +143,7 @@ public class TreasuryTransferController {
             publish(to.id());
 
             amountField.clear();
+            feeField.clear();
             notesField.clear();
             reload();
             AllAlerts.alertSaveWithMessage(text("treasury.transfer.msg.success"));
@@ -173,9 +181,9 @@ public class TreasuryTransferController {
         }
     }
 
+    /** No session is a refusal, not user 1: a transfer filed under the administrator is one nobody made. */
     private int userId() {
-        Users user = CurrentUser.getOrNull();
-        return user == null ? 1 : user.getId();
+        return CurrentUser.get().getId();
     }
 
     private String text(String key) {

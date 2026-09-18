@@ -86,7 +86,9 @@ public final class TreasuryStatements {
      */
     public static final String SELECT_RECENT_TRANSFERS = """
             SELECT id, treasury_from, treasury_to, amount, transfer_date, notes,
-                   treasury_name_from, treasury_name_to
+                   treasury_name_from, treasury_name_to,
+                   (SELECT d.amount FROM expenses_details d
+                     WHERE d.fee_source_type = 11 AND d.fee_source_id = treasury_transfers_and_names.id) AS fee
             FROM treasury_transfers_and_names
             ORDER BY transfer_date DESC, id DESC
             LIMIT ?

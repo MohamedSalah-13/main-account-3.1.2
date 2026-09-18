@@ -6,6 +6,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.treasury.TreasuryBalanceSummary;
+import com.hamza.account.treasury.WalletFee;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -60,6 +61,12 @@ public final class TreasuryTransferService {
         if (command.amount() == null || command.amount().signum() <= 0) {
             throw new BusinessRuleException(message("treasury.transfer.error.amount"));
         }
+        // Arithmetic, so before the database: a negative fee would credit the source, and one
+        // as large as the transfer is a figure typed into the wrong box.
+        if (command.fee().signum() < 0
+                || (command.fee().signum() > 0 && !WalletFee.isPlausible(command.amount(), command.fee()))) {
+            throw new BusinessRuleException(message("treasury.transfer.error.fee"));
+        }
 
         return TransactionTemplate.execute(() -> {
             var sourceShift = shiftGate.requireCashAction(
@@ -73,7 +80,8 @@ public final class TreasuryTransferService {
             if (source == null) {
                 throw new BusinessRuleException(message("treasury.error.not.found"));
             }
-            requireEnough(source, command.amount());
+            // The source gives up the transfer and what it was charged for it.
+            requireEnough(source, command.amount().add(command.fee()));
 
             TreasuryBalanceSummary destination =
                     daoFactory.treasuryCurrentBalanceDao().getDataById(command.toTreasuryId());
@@ -93,6 +101,12 @@ public final class TreasuryTransferService {
                     ShiftCashEffect.incoming(ShiftCashSource.TRANSFER_IN, id,
                             command.toTreasuryId(), destinationShift.isPresent() ? destinationShift.getAsInt() : null,
                             command.amount()));
+            if (command.fee().signum() > 0) {
+                // An expense on the sending treasury, tied to this transfer (V68) so deleting the
+                // transfer takes it - the rule a collection's wallet fee follows, for its reasons.
+                new WalletFeeService().post(WalletFeeSource.transfer(id), command.fromTreasuryId(),
+                        command.transferDate(), command.amount(), command.fee(), command.notes(), sourceShift);
+            }
             ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
             return 1;
         });
@@ -122,6 +136,7 @@ public final class TreasuryTransferService {
                     incoming.income(), incoming.originalShiftId());
             int rows = daoFactory.treasuryTransferDao().deleteById(transferId);
             if (rows == 1) {
+                new WalletFeeService().removeFor(WalletFeeSource.transfer(transferId), correctionReason);
                 ShiftCashLedger ledger = ShiftCashLedger.jdbc();
                 ledger.deleted(sourceShift, actor, outgoing, correctionReason);
                 ledger.deleted(destinationShift, actor, incoming, correctionReason);

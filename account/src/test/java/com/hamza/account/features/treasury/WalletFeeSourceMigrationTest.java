@@ -23,17 +23,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WalletFeeSourceMigrationTest {
 
     private static final String MIGRATION = "/db/migration/V67__wallet_fee_source.sql";
+    /** V68 replaced the CHECK of V67 so a transfer can carry a fee; the newest statement of the rule is the rule. */
+    private static final String CURRENT_CHECK = "/db/migration/V68__transfer_fee_source.sql";
 
     @Test
     @DisplayName("the CHECK's range of kinds is exactly what WalletFeeSource accepts")
     void theCheckAndTheRecordAgree() throws IOException {
-        Matcher range = Pattern.compile("fee_source_type BETWEEN (\\d+) AND (\\d+)").matcher(migration());
-        assertTrue(range.find(), "V67 no longer states the range of fee_source_type");
-        int lowest = Integer.parseInt(range.group(1));
-        int highest = Integer.parseInt(range.group(2));
+        Matcher list = Pattern.compile("fee_source_type IN \\(([0-9, ]+)\\)").matcher(read(CURRENT_CHECK));
+        assertTrue(list.find(), "V68 no longer lists the kinds fee_source_type may hold");
+        java.util.Set<Integer> allowed = new java.util.HashSet<>();
+        for (String code : list.group(1).split(",")) {
+            allowed.add(Integer.parseInt(code.trim()));
+        }
 
         for (ShiftCashSource kind : ShiftCashSource.values()) {
-            boolean allowedBySql = kind.code() >= lowest && kind.code() <= highest;
+            boolean allowedBySql = allowed.contains(kind.code());
             if (allowedBySql) {
                 assertDoesNotThrow(() -> new WalletFeeSource(kind, 1), kind.name());
             } else {
@@ -57,11 +61,16 @@ class WalletFeeSourceMigrationTest {
         assertEquals(4, ShiftCashSource.SALES_RETURN.code());
         assertEquals(5, ShiftCashSource.CUSTOMER_ACCOUNT.code());
         assertEquals(6, ShiftCashSource.SUPPLIER_ACCOUNT.code());
+        assertEquals(11, ShiftCashSource.TRANSFER_OUT.code());
     }
 
     private static String migration() throws IOException {
-        try (InputStream in = WalletFeeSourceMigrationTest.class.getResourceAsStream(MIGRATION)) {
-            assertTrue(in != null, MIGRATION + " is not on the classpath");
+        return read(MIGRATION);
+    }
+
+    private static String read(String resource) throws IOException {
+        try (InputStream in = WalletFeeSourceMigrationTest.class.getResourceAsStream(resource)) {
+            assertTrue(in != null, resource + " is not on the classpath");
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
     }

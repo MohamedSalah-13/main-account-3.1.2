@@ -150,4 +150,26 @@ class TreasuryTransferServiceTest {
         return new TreasuryBalanceSummary(2, "فودافون كاش", TreasuryType.WALLET, true, 0,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, balance);
     }
+
+    @Test
+    @DisplayName("a negative fee, or one as large as the transfer, is refused before the database")
+    void anImpossibleFeeIsRefused() {
+        signInWith(AppPermissions.TREASURY_TRANSFER);
+        for (String fee : new String[]{"-1", "100", "250"}) {
+            TreasuryTransferCommand command = new TreasuryTransferCommand(1, 2, new BigDecimal("100"),
+                    LocalDate.now(), "", 2, new BigDecimal(fee));
+            // An empty DaoFactory: reaching it would be a NullPointerException, not this refusal.
+            assertThrows(BusinessRuleException.class, () -> serviceWithoutDatabase().transfer(command), fee);
+        }
+    }
+
+    @Test
+    @DisplayName("a transfer built without a fee costs nothing, and a missing one is zero")
+    void theFeeDefaultsToNothing() {
+        assertEquals(0, new TreasuryTransferCommand(1, 2, BigDecimal.TEN, LocalDate.now(), "", 1)
+                .fee().signum());
+        assertEquals(0, new TreasuryTransferCommand(1, 2, BigDecimal.TEN, LocalDate.now(), "", 1, null)
+                .fee().signum());
+    }
+
 }

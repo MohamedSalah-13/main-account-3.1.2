@@ -76,7 +76,8 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
                     rs.getString("treasury_name_to"),
                     rs.getBigDecimal("amount"),
                     rs.getDate("transfer_date").toLocalDate(),
-                    rs.getString("notes"));
+                    rs.getString("notes"),
+                    rs.getBigDecimal("fee"));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

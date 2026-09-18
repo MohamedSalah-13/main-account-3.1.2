@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,608 tests** with 136 skipped (below) — the figure `mvn clean test`
+**2,615 tests** with 140 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-18. What is
 genuinely covered:
 
@@ -845,6 +845,13 @@ rewrite an expense of a month already reported), and a document saved before V67
 retroactively**. Proven on MySQL through `ExpenseDatabaseAcceptanceTest` (16 cases, twice, from nothing
 and over a V63 database); what is *not* proven is a whole invoice save on a wallet end to end -
 `docs/treasury-plan.md` §19.3.
+
+**A transfer between treasuries may carry a fee** (`TreasuryTransferCommand.fee`, `V68`): what a
+wallet or a bank charged for it, posted as an expense on the **sending** treasury and tied to the
+transfer with `fee_source_type = 11` (`TRANSFER_OUT`), so deleting the transfer takes it. The
+destination receives the amount in full and the source must cover `amount + fee`. It is typed,
+not computed: a wallet's withdrawal fee is not its collection percentage, and a wrong suggestion is
+a figure people learn to accept. `V68` only replaces V67's CHECK - it does not touch V67.
 
 ### Shifts
 
@@ -2237,8 +2244,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V67`, which ties a
-  wallet fee to the movement it was paid for (see **The treasury**). Before it, `V66` adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V68`, which lets a
+  transfer between treasuries carry a fee; before it `V67` ties a wallet fee to the movement it was
+  paid for (see **The treasury**). Before them, `V66` adds the
   expense budget and the recurring-expense templates: `expense_budget` carries its unique index on a
   **generated** `month_key` (`COALESCE(month, 0)`), because MySQL counts two NULLs in a unique index as
   different values and a unique over a nullable `month` would allow two yearly budgets for one heading;

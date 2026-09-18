@@ -231,6 +231,23 @@ class TreasuryStatementsTest {
     }
 
     @Test
+    @DisplayName("the transfer list reads each transfer's fee by the kind the fee was written with")
+    void theTransferListReadsItsFee() {
+        assertEquals("""
+                SELECT id, treasury_from, treasury_to, amount, transfer_date, notes,
+                       treasury_name_from, treasury_name_to,
+                       (SELECT d.amount FROM expenses_details d
+                         WHERE d.fee_source_type = 11 AND d.fee_source_id = treasury_transfers_and_names.id) AS fee
+                FROM treasury_transfers_and_names
+                ORDER BY transfer_date DESC, id DESC
+                LIMIT ?
+                """, TreasuryStatements.SELECT_RECENT_TRANSFERS);
+        // The literal in the statement and the code WalletFeeSource.transfer writes are one number
+        // said twice; a list reading another kind shows every transfer as having cost nothing.
+        assertEquals(11, com.hamza.account.features.treasury.WalletFeeSource.transfer(1).kind().code());
+    }
+
+    @Test
     @DisplayName("the wallet fee statements, and the link each of them carries (V67)")
     void walletFeeStatements() {
         assertEquals("""

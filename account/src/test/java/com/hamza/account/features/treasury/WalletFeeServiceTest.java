@@ -177,7 +177,8 @@ class WalletFeeServiceTest {
     @DisplayName("only a document or a party payment can carry a fee")
     void otherSourcesAreRefused() {
         assertThrows(IllegalArgumentException.class, () -> new WalletFeeSource(ShiftCashSource.EXPENSE, 1));
-        assertThrows(IllegalArgumentException.class, () -> new WalletFeeSource(ShiftCashSource.TRANSFER_OUT, 1));
+        assertThrows(IllegalArgumentException.class, () -> new WalletFeeSource(ShiftCashSource.TRANSFER_IN, 1));
+        assertEquals(ShiftCashSource.TRANSFER_OUT, WalletFeeSource.transfer(5).kind());
         assertThrows(IllegalArgumentException.class, () -> new WalletFeeSource(ShiftCashSource.SALES, 0));
     }
 

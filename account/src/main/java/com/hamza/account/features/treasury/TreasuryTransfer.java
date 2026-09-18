@@ -11,5 +11,11 @@ public record TreasuryTransfer(int id,
                                String toTreasuryName,
                                BigDecimal amount,
                                LocalDate transferDate,
-                               String notes) {
+                               String notes,
+                               BigDecimal fee) {
+
+    /** What the sending treasury was charged for it; zero when the transfer cost nothing. */
+    public TreasuryTransfer {
+        fee = fee == null ? BigDecimal.ZERO : fee;
+    }
 }

@@ -27,6 +27,8 @@ import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.treasury.JdbcWalletFeeRepository;
+import com.hamza.account.features.treasury.TreasuryTransferCommand;
+import com.hamza.account.features.treasury.TreasuryTransferService;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Treasury;
@@ -38,6 +40,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DataSourceProvider;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
 import org.flywaydb.core.Flyway;
@@ -333,6 +336,35 @@ class ExpenseDatabaseAcceptanceTest {
 
         assertEquals(1, fees.removeFor(sale, null));
         assertEquals(0, scalar(feeOfSale.formatted("COUNT(*)")));
+    }
+
+    @Test
+    @DisplayName("V68: a transfer's fee is an expense on the sender, and goes when the transfer does")
+    void aTransferPaysItsFeeFromTheSender() throws Exception {
+        signIn(AppPermissions.TREASURY_TRANSFER);
+        int wallet = treasuryHolding("WALLET", "1000");
+        int drawer = treasuryHolding("CASH", "0");
+        TreasuryTransferService transfers = new TreasuryTransferService(DaoFactory.INSTANCE);
+        String balanceOf = "SELECT balance FROM treasury_current_balance WHERE id = ";
+
+        // 1000 on hand cannot send 1000 and pay 5 for sending it.
+        assertThrows(BusinessRuleException.class, () -> transfers.transfer(new TreasuryTransferCommand(
+                wallet, drawer, new BigDecimal("1000"), LocalDate.now(), STAMP, OPERATOR, new BigDecimal("5"))));
+
+        assertEquals(1, transfers.transfer(new TreasuryTransferCommand(
+                wallet, drawer, new BigDecimal("200"), LocalDate.now(), STAMP, OPERATOR, new BigDecimal("5"))));
+        int transfer = scalar("SELECT MAX(id) FROM treasury_transfers WHERE treasury_from = " + wallet);
+        assertEquals(0, new BigDecimal("795.00").compareTo(decimal(balanceOf + wallet)), "200 sent and 5 charged");
+        assertEquals(0, new BigDecimal("200.00").compareTo(decimal(balanceOf + drawer)), "the whole amount arrives");
+        assertEquals(1, scalar("SELECT COUNT(*) FROM expenses_details WHERE fee_source_type = 11"
+                + " AND fee_source_id = " + transfer + " AND treasury_id = " + wallet + " AND amount = 5"));
+        assertEquals(0, new BigDecimal("5.00").compareTo(transfers.recent(5).stream()
+                .filter(row -> row.id() == transfer).findFirst().orElseThrow().fee()), "the list shows what it cost");
+
+        assertEquals(1, transfers.delete(transfer));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(decimal(balanceOf + wallet)), "the fee came back too");
+        assertEquals(0, scalar("SELECT COUNT(*) FROM expenses_details WHERE fee_source_type = 11"
+                + " AND fee_source_id = " + transfer));
     }
 
     @Test
@@ -696,6 +728,13 @@ class ExpenseDatabaseAcceptanceTest {
         String name = STAMP + "-wallet-" + System.nanoTime();
         execute("INSERT INTO treasury (t_name, amount, treasury_type, fee_percent, user_id) VALUES ('"
                 + name + "', 0, 'WALLET', 1.00, 1)");
+        return scalar("SELECT id FROM treasury WHERE t_name = '" + name + "'");
+    }
+
+    private static int treasuryHolding(String type, String opening) throws Exception {
+        String name = STAMP + "-" + type + "-" + System.nanoTime();
+        execute("INSERT INTO treasury (t_name, amount, treasury_type, fee_percent, user_id) VALUES ('"
+                + name + "', " + opening + ", '" + type + "', 0, 1)");
         return scalar("SELECT id FROM treasury WHERE t_name = '" + name + "'");
     }
 

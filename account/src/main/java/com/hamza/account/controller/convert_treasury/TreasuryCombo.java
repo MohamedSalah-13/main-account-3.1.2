@@ -75,6 +75,22 @@ final class TreasuryCombo {
                 + " " + row.balance().toPlainString();
     }
 
+    /** A figure that may be left out: blank is zero, anything else has to be a number that is not negative. */
+    static BigDecimal optionalAmount(String text, String errorKey) throws UserValidationException {
+        if (text == null || text.isBlank()) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            BigDecimal amount = new BigDecimal(text.trim());
+            if (amount.signum() < 0) {
+                throw new UserValidationException(LanguageManager.getInstance().getString(errorKey));
+            }
+            return amount;
+        } catch (NumberFormatException e) {
+            throw new UserValidationException(LanguageManager.getInstance().getString(errorKey), e);
+        }
+    }
+
     static BigDecimal amount(String text, String errorKey) throws UserValidationException {
         try {
             BigDecimal amount = new BigDecimal(text == null ? "" : text.trim());
