@@ -873,6 +873,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             date.setValue(LocalDate.parse(invoiceDate));
             selectPartyByName(header.partyName());
             comboDelegate.getSelectionModel().select(header.delegateName());
+            selectStoredTreasury(dataById.getTreasuryModel());
             txtNum.setText(String.valueOf(id));
             codeAccount = header.partyId();
             List<? extends BasePurchasesAndSales> collection =
@@ -894,6 +895,28 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         } catch (Exception e) {
             logError(e);
         }
+    }
+
+    /**
+     * Opens a saved document on the treasury it was saved on.
+     * <p>
+     * It used to stay on the default the screen starts with: the header was loaded, its date,
+     * party, delegate and warehouse were put back, and its treasury was not. So opening an invoice
+     * paid on a wallet and saving it again - to correct a note - moved its cash to the main drawer,
+     * with nothing on screen saying so, and the two balances were wrong by the whole invoice.
+     * <p>
+     * A treasury since closed is not in the list of active ones, so it is added rather than left
+     * unselected: an old document must not be re-filed under another treasury because its own was
+     * retired. The same rule as {@code Add_AccountController.selectTreasury}.
+     */
+    private void selectStoredTreasury(Treasury stored) {
+        if (stored == null || stored.getName() == null || stored.getName().isBlank()) {
+            return;
+        }
+        if (!comboTreasury.getItems().contains(stored.getName())) {
+            comboTreasury.getItems().add(stored.getName());
+        }
+        comboTreasury.getSelectionModel().select(stored.getName());
     }
 
     private void saveInvoice(boolean print) {

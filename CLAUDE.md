@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,615 tests** with 140 skipped (below) — the figure `mvn clean test`
+**2,616 tests** with 140 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-18. What is
 genuinely covered:
 
@@ -852,6 +852,17 @@ transfer with `fee_source_type = 11` (`TRANSFER_OUT`), so deleting the transfer 
 destination receives the amount in full and the source must cover `amount + fee`. It is typed,
 not computed: a wallet's withdrawal fee is not its collection percentage, and a wrong suggestion is
 a figure people learn to accept. `V68` only replaces V67's CHECK - it does not touch V67.
+
+**All of it was then watched on a copy of a real database** (`docs/treasury-plan.md` §21): the app
+applied V66-V68 itself over 1,205 invoices, and a transfer with a fee, a cash sale on a wallet, its
+edit and its delete each did on screen and in MySQL what the tests said. **And the screen found what
+2,615 green tests could not: opening a saved document for editing did not restore its treasury.**
+`BuyController2.selectData` put back the date, the party, the delegate and the warehouse and left the
+treasury on the screen's default, so re-saving an invoice paid on a wallet - to fix a note - moved its
+cash to the main drawer without a word. It predates the fee work and affected every document on a
+non-default treasury. `selectStoredTreasury` fixes it (adding a treasury since closed rather than
+leaving it unselected), and `InvoiceEditRestoresTreasuryTest` reads the screen's source so the line
+cannot be lost in a merge - crude, and the only check possible without a toolkit.
 
 ### Shifts
 
