@@ -212,6 +212,45 @@ public final class TreasuryStatements {
             ORDER BY user_name, id
             """;
 
+    // ---- the wallet fee, and the movement it was paid for (V67) -------------------------------
+
+    /**
+     * A fee is an expense row like any other, plus the two columns that say whose it is. It has
+     * no employee, payee, reference or recurring template: it is a consequence of a payment, not
+     * something anybody entered.
+     */
+    public static final String INSERT_WALLET_FEE = """
+            INSERT INTO expenses_details (type_code, date, amount, notes, treasury_id, user_id,
+                                          shift_id, fee_source_type, fee_source_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+
+    /**
+     * Locked, because what follows is a read-then-write: the caller deletes or rewrites the row it
+     * was handed, and a second till deleting the same payment must wait and then find nothing.
+     */
+    public static final String LOCK_WALLET_FEE_FOR_SOURCE = """
+            SELECT id, date, amount, treasury_id, shift_id
+            FROM expenses_details
+            WHERE fee_source_type = ?
+              AND fee_source_id = ?
+            FOR UPDATE
+            """;
+
+    public static final String UPDATE_WALLET_FEE = """
+            UPDATE expenses_details
+            SET date = ?, amount = ?, treasury_id = ?
+            WHERE id = ?
+              AND fee_source_type IS NOT NULL
+            """;
+
+    /** By id alone, and only ever a fee: an ordinary expense is deleted through {@code ExpenseService}. */
+    public static final String DELETE_WALLET_FEE = """
+            DELETE FROM expenses_details
+            WHERE id = ?
+              AND fee_source_type IS NOT NULL
+            """;
+
     private TreasuryStatements() {
     }
 }

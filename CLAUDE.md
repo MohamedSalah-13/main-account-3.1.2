@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,570 tests** with 136 skipped (below) — the figure `mvn clean test`
+**2,608 tests** with 136 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-18. What is
 genuinely covered:
 
@@ -825,6 +825,26 @@ including each one's parameter count: a delete with the wrong count is a delete 
 every wallet payment they make. The payment and the fee are written in **one transaction** by
 `AccountCustomerService.save(account, fee)` / `AccountSupplierService.save(account, fee)`, and only on
 insert - editing a payment leaves its fee row alone.
+
+**A fee knows the movement it was paid for** (`V67`: `expenses_details.fee_source_type`, a
+`ShiftCashSource` code 1-6, and `fee_source_id`, unique together). It used to be an expense row with
+nothing saying whose: deleting a collection left its fee standing, and the correction the plan itself
+prescribes - delete the payment and enter it again - charged the fee twice.
+`WalletFeeService.removeFor` goes with the delete of a payment or a document, in that delete's own
+transaction. There is no foreign key (the column points at six tables), and rows written before V67
+stay unlinked on purpose: matching them by date and amount is a guess, and a fee linked to the wrong
+payment is deleted with a payment it has nothing to do with.
+
+**A document paid on a wallet pays the fee too, automatically** (`features/invoice/InvoiceWalletFee`,
+inside `InvoiceSaveService.persist`). The two kinds of fee differ deliberately: a collection's is
+*typed* off the wallet's receipt, so it is written on insert only; a document's is *computed*, so
+`syncDocument` keeps it in step - rewritten when the cash, the treasury or the date moves, removed when
+the document moves to a drawer or is deleted. Two rules keep that from surprising anyone: a fee already
+posted is **not re-rated** when nothing about the cash changed (fixing a note on an old invoice must not
+rewrite an expense of a month already reported), and a document saved before V67 is **not charged
+retroactively**. Proven on MySQL through `ExpenseDatabaseAcceptanceTest` (16 cases, twice, from nothing
+and over a V63 database); what is *not* proven is a whole invoice save on a wallet end to end -
+`docs/treasury-plan.md` §19.3.
 
 ### Shifts
 
@@ -2217,7 +2237,8 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V66`, which adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V67`, which ties a
+  wallet fee to the movement it was paid for (see **The treasury**). Before it, `V66` adds the
   expense budget and the recurring-expense templates: `expense_budget` carries its unique index on a
   **generated** `month_key` (`COALESCE(month, 0)`), because MySQL counts two NULLs in a unique index as
   different values and a unique over a nullable `month` would allow two yearly budgets for one heading;

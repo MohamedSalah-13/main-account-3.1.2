@@ -10,6 +10,7 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.treasury.WalletFee;
 import com.hamza.account.features.treasury.WalletFeeService;
+import com.hamza.account.features.treasury.WalletFeeSource;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
 import lombok.extern.log4j.Log4j2;
@@ -62,6 +63,9 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                     actor, old.treasuryId(), old.income().add(old.output()).abs(), old.originalShiftId());
             int rows = daoFactory.customerAccountDao().deleteById(id);
             if (rows == 1) {
+                // The fee was paid for this movement and goes with it (V67) - or deleting a
+                // collection to enter it again, which is how one is corrected, charges the fee twice.
+                new WalletFeeService().removeFor(WalletFeeSource.party(PartyKind.CUSTOMER, id), correctionReason);
                 ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
                 announceBalancesChanged();
             }
@@ -141,8 +145,8 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                                 shiftId.isPresent() ? shiftId.getAsInt() : null,
                                 BigDecimal.valueOf(account.getPaid())));
             }
-            if (walletFee != null && walletFee.signum() > 0) {
-                new WalletFeeService().post(
+            if (rows == 1 && walletFee != null && walletFee.signum() > 0) {
+                new WalletFeeService().post(WalletFeeSource.party(PartyKind.CUSTOMER, account.getId()),
                         account.getTreasury().getId(), LocalDate.parse(account.getDate()),
                         BigDecimal.valueOf(account.getPaid()), walletFee, WalletFee.EXPENSE_NAME, shiftId);
             }

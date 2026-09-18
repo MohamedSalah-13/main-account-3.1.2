@@ -25,7 +25,15 @@ import com.hamza.account.features.profitloss.ProfitLossRow;
 import com.hamza.account.features.employee.EmployeePayment;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.treasury.JdbcWalletFeeRepository;
+import com.hamza.account.model.domain.CustomerAccount;
+import com.hamza.account.model.domain.Customers;
+import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.model.domain.Users;
+import com.hamza.account.service.AccountCustomerService;
 import com.hamza.account.features.treasury.WalletFeeService;
+import com.hamza.account.features.treasury.WalletFeeSource;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
@@ -263,9 +271,78 @@ class ExpenseDatabaseAcceptanceTest {
         headings.save(new ExpenseHeadingDraft(fee.id(), STAMP + " عمولة", null, true, false));
 
         int till = scalar("SELECT MIN(id) FROM treasury");
-        assertEquals(1, new WalletFeeService().post(till, LocalDate.now(), new BigDecimal("1000"),
+        assertEquals(1, new WalletFeeService().post(
+                WalletFeeSource.party(PartyKind.CUSTOMER, 2_000_000_000), till, LocalDate.now(), new BigDecimal("1000"),
                 new BigDecimal("15"), STAMP + " fee", OptionalInt.empty()));
         assertEquals(fee.id(), scalar("SELECT type_code FROM expenses_details WHERE notes = '" + STAMP + " fee'"));
+    }
+
+    @Test
+    @DisplayName("V67: deleting a wallet collection takes its fee, so entering it again charges it once")
+    void aDeletedCollectionTakesItsFee() throws Exception {
+        signIn(AppPermissions.CUSTOMER_ACCOUNT_CREATE, AppPermissions.CUSTOMER_ACCOUNT_DELETE);
+        int wallet = walletAtOnePercent();
+        int customer = scalar("SELECT MIN(id) FROM custom");
+        AccountCustomerService collections = new AccountCustomerService(DaoFactory.INSTANCE);
+        String feesOnWallet = "SELECT COUNT(*) FROM expenses_details WHERE treasury_id = " + wallet
+                + " AND fee_source_type IS NOT NULL";
+
+        CustomerAccount first = collection(customer, wallet);
+        assertEquals(1, collections.save(first, new BigDecimal("10")));
+        assertEquals(1, scalar(feesOnWallet + " AND fee_source_type = 5 AND fee_source_id = " + first.getId()),
+                "the fee names the collection it was paid for");
+
+        assertEquals(1, collections.delete(first.getId()));
+        assertEquals(0, scalar(feesOnWallet), "the fee outlived the collection it was paid for");
+
+        // The correction docs/treasury-plan.md prescribes: enter it again. One fee, not two.
+        CustomerAccount again = collection(customer, wallet);
+        collections.save(again, new BigDecimal("10"));
+        assertEquals(1, scalar(feesOnWallet));
+        assertEquals(0, new BigDecimal("990.00").compareTo(decimal(
+                "SELECT balance FROM treasury_current_balance WHERE id = " + wallet)),
+                "1000 collected, 10 kept by the wallet");
+
+        collections.delete(again.getId());
+        assertEquals(0, scalar(feesOnWallet));
+    }
+
+    @Test
+    @DisplayName("V67: a document has one fee row, rewritten by an edit and removed with the document")
+    void aDocumentsFeeFollowsTheDocument() throws Exception {
+        signIn();
+        int wallet = walletAtOnePercent();
+        WalletFeeService fees = new WalletFeeService();
+        WalletFeeSource sale = WalletFeeSource.document(DocumentType.SALES, 1_900_000_001);
+        String feeOfSale = "SELECT %s FROM expenses_details WHERE fee_source_type = 3 AND fee_source_id = 1900000001";
+        BigDecimal one = new BigDecimal("1.00");
+
+        fees.syncDocument(sale, wallet, LocalDate.now(), new BigDecimal("1000"), null, one,
+                OptionalInt.empty(), null);
+        assertEquals(0, new BigDecimal("10.00").compareTo(decimal(feeOfSale.formatted("amount"))));
+
+        fees.syncDocument(sale, wallet, LocalDate.now(), new BigDecimal("1500"),
+                new WalletFeeService.PreviousCash(new BigDecimal("1000"), wallet), one, OptionalInt.empty(), null);
+        assertEquals(1, scalar(feeOfSale.formatted("COUNT(*)")), "an edit wrote a second fee");
+        assertEquals(0, new BigDecimal("15.00").compareTo(decimal(feeOfSale.formatted("amount"))));
+
+        // The unique index is the last line: a second insert for one document is refused by MySQL.
+        assertThrows(DaoException.class, () -> new JdbcWalletFeeRepository().insert(sale,
+                scalar("SELECT id FROM expenses WHERE system_key = 'WALLET_FEE'"), LocalDate.now(),
+                BigDecimal.ONE, null, wallet, OPERATOR, null));
+
+        assertEquals(1, fees.removeFor(sale, null));
+        assertEquals(0, scalar(feeOfSale.formatted("COUNT(*)")));
+    }
+
+    @Test
+    @DisplayName("V67 over a database with expenses in it: every old row is unlinked, and none was lost")
+    void theLinkArrivesEmptyOnAnUpgrade() throws Exception {
+        try (Connection connection = DriverManager.getConnection(jdbcUrl(upgradedSchema), username, password)) {
+            assertTrue(scalar(connection, "SELECT COUNT(*) FROM expenses_details") > 0, "the upgrade fixture is empty");
+            assertEquals(0, scalar(connection,
+                    "SELECT COUNT(*) FROM expenses_details WHERE fee_source_type IS NOT NULL OR fee_source_id IS NOT NULL"));
+        }
     }
 
     @Test
@@ -615,6 +692,20 @@ class ExpenseDatabaseAcceptanceTest {
     }
 
     /** The signed-in user has to be a row: {@code expenses_details.user_id} is a foreign key. */
+    private static int walletAtOnePercent() throws Exception {
+        String name = STAMP + "-wallet-" + System.nanoTime();
+        execute("INSERT INTO treasury (t_name, amount, treasury_type, fee_percent, user_id) VALUES ('"
+                + name + "', 0, 'WALLET', 1.00, 1)");
+        return scalar("SELECT id FROM treasury WHERE t_name = '" + name + "'");
+    }
+
+    private static CustomerAccount collection(int customer, int treasury) {
+        CustomerAccount account = new CustomerAccount(0, LocalDate.now().toString(), 1000d, STAMP + " collection",
+                0, new Customers(customer), new Treasury(treasury));
+        account.setUsers(new Users(OPERATOR));
+        return account;
+    }
+
     private static void seedOperator() throws Exception {
         try (Connection connection = ConnectionManager.acquire();
              PreparedStatement insert = connection.prepareStatement(

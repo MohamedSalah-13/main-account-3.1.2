@@ -55,11 +55,6 @@ class ShiftGateArchitectureTest {
             // exists to find the shift this class opens and closes.
             "UserShiftService",
 
-            // Fine: it does not resolve a shift, it is handed one. Both callers -
-            // AccountCustomerService.save and AccountSupplierService.save - pass the shift
-            // the gate already gave them, and the fee is written in their transaction.
-            "WalletFeeService",
-
             // Fine: everything it writes happens after the close snapshot is stored, and is
             // deliberately attributed to no shift. Attributing the settlement or the handover
             // transfer would append to a drawer that has already been answered for.

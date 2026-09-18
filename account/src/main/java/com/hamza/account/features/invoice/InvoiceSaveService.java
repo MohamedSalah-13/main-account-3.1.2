@@ -62,6 +62,7 @@ public final class InvoiceSaveService<
     private final ShiftCashLedger shiftCashLedger;
     private final JdbcShiftCashEffectReader shiftEffectReader;
     private final ChangeAnnouncer changeAnnouncer;
+    private final InvoiceWalletFee walletFee;
 
     /**
      * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
@@ -88,7 +89,7 @@ public final class InvoiceSaveService<
                 new ReturnCostResolver(new JdbcReturnableRepository()),
                 treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
                 ShiftAttributionWriter.jdbc(), ShiftCashLedger.jdbc(), new JdbcShiftCashEffectReader(),
-                ChangeAnnouncer.jdbc());
+                ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -206,6 +207,30 @@ public final class InvoiceSaveService<
                        ShiftCashLedger shiftCashLedger,
                        JdbcShiftCashEffectReader shiftEffectReader,
                        ChangeAnnouncer changeAnnouncer) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver, treasuryLookup,
+                delegateLookup, stockMovementDao, shiftGate, shiftAttribution, shiftCashLedger,
+                shiftEffectReader, changeAnnouncer, InvoiceWalletFee.none());
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution,
+                       ShiftCashLedger shiftCashLedger,
+                       JdbcShiftCashEffectReader shiftEffectReader,
+                       ChangeAnnouncer changeAnnouncer,
+                       InvoiceWalletFee walletFee) {
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -224,6 +249,7 @@ public final class InvoiceSaveService<
         this.shiftCashLedger = shiftCashLedger;
         this.shiftEffectReader = shiftEffectReader;
         this.changeAnnouncer = changeAnnouncer;
+        this.walletFee = walletFee;
     }
 
     /** The two return settings, read here rather than inside the guard - see the constructor. */
@@ -334,6 +360,11 @@ public final class InvoiceSaveService<
         } else {
             shiftCashLedger.created(shiftId, userId, current);
         }
+        // The wallet keeps its percentage of whatever cash this document moved, and that is an
+        // expense on the same treasury - written, rewritten or removed here so it commits with
+        // the document. See InvoiceWalletFee.
+        walletFee.sync(documentType, invoiceNumber, treasury.getId(), treasury.getFeePercent(),
+                command.invoiceDate(), paid, previous, shiftId, command.correctionReason());
         if (documentType.isReturn()) {
             returnSourceWriter.writeSource(documentType, invoiceNumber,
                     command.sourceInvoiceNumber(), command.returnReason());

@@ -229,4 +229,34 @@ class TreasuryStatementsTest {
     private long parameters(String sql) {
         return sql.chars().filter(c -> c == '?').count();
     }
+
+    @Test
+    @DisplayName("the wallet fee statements, and the link each of them carries (V67)")
+    void walletFeeStatements() {
+        assertEquals("""
+                INSERT INTO expenses_details (type_code, date, amount, notes, treasury_id, user_id,
+                                              shift_id, fee_source_type, fee_source_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, TreasuryStatements.INSERT_WALLET_FEE);
+        assertEquals("""
+                SELECT id, date, amount, treasury_id, shift_id
+                FROM expenses_details
+                WHERE fee_source_type = ?
+                  AND fee_source_id = ?
+                FOR UPDATE
+                """, TreasuryStatements.LOCK_WALLET_FEE_FOR_SOURCE);
+        assertEquals("""
+                UPDATE expenses_details
+                SET date = ?, amount = ?, treasury_id = ?
+                WHERE id = ?
+                  AND fee_source_type IS NOT NULL
+                """, TreasuryStatements.UPDATE_WALLET_FEE);
+        // By id, and never an ordinary expense: that one is ExpenseService's to delete, behind
+        // its own permission. A statement that lost its second line would let this path take it.
+        assertEquals("""
+                DELETE FROM expenses_details
+                WHERE id = ?
+                  AND fee_source_type IS NOT NULL
+                """, TreasuryStatements.DELETE_WALLET_FEE);
+    }
 }

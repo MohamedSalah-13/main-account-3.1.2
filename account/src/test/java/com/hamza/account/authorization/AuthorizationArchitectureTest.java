@@ -259,6 +259,12 @@ class AuthorizationArchitectureTest {
             // again would ask permission twice for one operation.
             "WalletFeeService#post",
 
+            // Fine, for the same reason: the fee of a document, rewritten or removed inside
+            // InvoiceSaveService.save, which requires the document's create or update
+            // permission as its first line. The fee is computed from the document, so whoever
+            // may change the document has changed the fee by doing so.
+            "WalletFeeService#syncDocument",
+
             // Fine, and the only entries here unguarded on purpose rather than because a
             // caller guarded first: emergency recovery runs when nobody can sign in, so
             // there is no session to ask a permission of. Reachable only before sign-in: the
