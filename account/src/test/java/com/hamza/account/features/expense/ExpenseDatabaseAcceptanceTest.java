@@ -366,7 +366,14 @@ class ExpenseDatabaseAcceptanceTest {
         assertEquals(0, new BigDecimal("5.00").compareTo(transfers.recent(5).stream()
                 .filter(row -> row.id() == transfer).findFirst().orElseThrow().fee()), "the list shows what it cost");
 
+        // The slip reads the stored row again: the fee, and the name of whoever entered it.
+        var slip = transfers.forVoucher(transfer);
+        assertEquals(0, new BigDecimal("5.00").compareTo(slip.transfer().fee()));
+        assertEquals(0, new BigDecimal("200.00").compareTo(slip.transfer().amount()));
+        assertEquals(STAMP, slip.enteredBy());
+
         assertEquals(1, transfers.delete(transfer));
+        assertThrows(BusinessRuleException.class, () -> transfers.forVoucher(transfer), "a paper for a deleted transfer");
         assertEquals(0, new BigDecimal("1000.00").compareTo(decimal(balanceOf + wallet)), "the fee came back too");
         assertEquals(0, scalar("SELECT COUNT(*) FROM expenses_details WHERE fee_source_type = 11"
                 + " AND fee_source_id = " + transfer));
@@ -412,6 +419,11 @@ class ExpenseDatabaseAcceptanceTest {
                 today, STAMP, "", OPERATOR));
         cash.record(new CashMovementCommand(other, CashDirection.WITHDRAWAL, CashCategory.NORMAL,
                 new BigDecimal("15"), today, STAMP, "", OPERATOR));
+        var receipt = cash.forVoucher(scalar("SELECT MIN(id) FROM treasury_deposit_expenses WHERE treasury_id = " + other));
+        assertEquals(CashDirection.DEPOSIT, receipt.movement().direction());
+        assertEquals(0, new BigDecimal("40.00").compareTo(receipt.movement().amount()));
+        assertEquals(STAMP, receipt.enteredBy());
+
         var both = cash.history(new TreasuryHistoryFilter(today, today, other, null, 0, 50));
         assertEquals(2, both.rows().size());
         assertEquals(0, new BigDecimal("40.00").compareTo(both.totals().first()), "deposited");

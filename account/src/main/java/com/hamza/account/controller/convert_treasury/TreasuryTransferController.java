@@ -9,6 +9,7 @@ import com.hamza.account.features.treasury.TreasuryHistoryPage;
 import com.hamza.account.features.treasury.TreasuryTransfer;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
 import com.hamza.account.features.treasury.TreasuryTransferService;
+import com.hamza.account.features.treasury.TreasuryVoucherLayout;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryBalanceService;
@@ -115,7 +116,7 @@ public class TreasuryTransferController {
                         Columns.money("treasury.transfer.column.fee", TreasuryTransfer::fee)),
                 TreasuryHistoryTable.withId("transferNotes",
                         Columns.text("treasury.transfer.column.notes", TreasuryTransfer::notes))),
-                AppPermissions.TREASURY_TRANSFER, this::deleteTransfer);
+                AppPermissions.TREASURY_TRANSFER, this::deleteTransfer, this::printVoucher);
         history = new TreasuryHistoryBar(false, this::loadHistory, this::printHistory, this::exportHistory);
         history.installIn(historyBar, historyFooter);
 
@@ -190,6 +191,12 @@ public class TreasuryTransferController {
         } catch (Exception e) {
             AllAlerts.handleError(text("treasury.transfer.op.delete"), e);
         }
+    }
+
+    private void printVoucher(TreasuryTransfer row) {
+        TreasuryVoucherPrinter.print(transfersTable, row.id(), () -> TreasuryVoucherLayout.of(
+                transferService.forVoucher(row.id()), TreasuryVoucherPrinter.letterhead(),
+                LanguageManager.getInstance()::getString, TreasuryVoucherPrinter.now()));
     }
 
     private void loadHistory(TreasuryHistoryFilter filter) {

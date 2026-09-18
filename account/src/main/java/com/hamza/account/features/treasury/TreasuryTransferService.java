@@ -158,6 +158,19 @@ public final class TreasuryTransferService {
         return history(filter.forPrint());
     }
 
+    /**
+     * The movement as the database holds it now, for its voucher - read again rather than printed
+     * from the list, so the paper says what is stored on the machine that prints it.
+     */
+    public TreasuryVoucherLayout.TransferVoucher forVoucher(int id) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_TRANSFER);
+        TreasuryVoucherLayout.TransferVoucher stored = daoFactory.treasuryTransferDao().voucher(id);
+        if (stored == null) {
+            throw new BusinessRuleException(message("treasury.voucher.error.not.found"));
+        }
+        return stored;
+    }
+
     /** Recent history, for the screen that lets a transfer be found and undone. */
     public List<TreasuryTransfer> recent(int limit) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_TRANSFER);

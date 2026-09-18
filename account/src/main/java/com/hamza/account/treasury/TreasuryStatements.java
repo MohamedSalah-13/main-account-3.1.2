@@ -271,6 +271,34 @@ public final class TreasuryStatements {
             %s
             """.formatted(CASH_WHERE);
 
+    // ---- one movement, read again for its voucher ----------------------------------------
+
+    /**
+     * A voucher prints the stored row, never the list's copy, and says who entered it - which the
+     * list does not carry. Every column is qualified: the view and the table both have an {@code id}.
+     */
+    public static final String SELECT_TRANSFER_FOR_VOUCHER = """
+            SELECT treasury_transfers_and_names.id, treasury_transfers_and_names.treasury_from,
+                   treasury_transfers_and_names.treasury_to, treasury_transfers_and_names.amount,
+                   treasury_transfers_and_names.transfer_date, treasury_transfers_and_names.notes,
+                   treasury_name_from, treasury_name_to,
+                   %s AS fee,
+                   u.user_name
+            FROM treasury_transfers_and_names
+                     JOIN treasury_transfers tt ON tt.id = treasury_transfers_and_names.id
+                     LEFT JOIN users u ON u.id = tt.user_id
+            WHERE treasury_transfers_and_names.id = ?
+            """.formatted(TRANSFER_FEE);
+
+    public static final String SELECT_CASH_MOVEMENT_FOR_VOUCHER = """
+            SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
+                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name, u.user_name
+            FROM treasury_deposit_expenses d
+                     JOIN treasury t ON t.id = d.treasury_id
+                     LEFT JOIN users u ON u.id = d.user_id
+            WHERE d.id = ?
+            """;
+
     // ---- the wallet fee, and the movement it was paid for (V67) -------------------------------
 
     /**

@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,626 tests** with 141 skipped (below) — the figure `mvn clean test`
+**2,634 tests** with 141 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-18. What is
 genuinely covered:
 
@@ -873,6 +873,16 @@ set; a treasury matches either end of a transfer, inside one bracket. `TreasuryH
 row, and a PDF and a spreadsheet of the columns on screen over the whole extract. **The deposits and
 capital reports carry no totals line on purpose**: both directions share one amount column, and their
 sum is a number that means nothing - the two totals go in the subtitle.
+
+**A deposit, a withdrawal and a transfer each have a paper** (`TreasuryVoucherLayout`,
+`docs/treasury-plan.md` §23): a receipt voucher, a payment voucher and a transfer slip, built on
+`ExpenseVoucherLayout` through `DocumentPdfPage`. The slip carries the fee and what **left the
+source** (`amount + fee`), or it would not agree with the source treasury's statement; a capital
+deposit says so on the paper. `forVoucher(id)` reads the stored row again with who entered it, and
+the button is in the row. There is no amount in words on purpose. **Drawing the three to images found
+what no test could**: a shadda in a label splits the word in the PDF font. The label lost its
+diacritics; the same happens to a user's own note with tanween on any document, and
+`ArabicTextHelper` does not handle it - that one is not fixed.
 
 ### Shifts
 

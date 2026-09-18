@@ -231,6 +231,30 @@ class TreasuryStatementsTest {
     }
 
     @Test
+    @DisplayName("a voucher reads one movement by its id, with who entered it")
+    void voucherStatementsReadOneRow() {
+        assertEquals("""
+                SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
+                       d.deposit_or_expenses, d.category, d.treasury_id, t.t_name, u.user_name
+                FROM treasury_deposit_expenses d
+                         JOIN treasury t ON t.id = d.treasury_id
+                         LEFT JOIN users u ON u.id = d.user_id
+                WHERE d.id = ?
+                """, TreasuryStatements.SELECT_CASH_MOVEMENT_FOR_VOUCHER);
+
+        String transfer = TreasuryStatements.SELECT_TRANSFER_FOR_VOUCHER;
+        assertEquals(1, parameters(transfer));
+        assertTrue(transfer.stripTrailing().endsWith("WHERE treasury_transfers_and_names.id = ?"));
+        // The view and the table both have an id: an unqualified one is "ambiguous" only when MySQL reads it.
+        assertTrue(transfer.contains("SELECT treasury_transfers_and_names.id,"));
+        assertTrue(transfer.contains("d.fee_source_type = 11"), "the slip shows what the transfer cost");
+        // LEFT, so a movement whose user has gone still prints - without a name, not without a paper.
+        for (String sql : List.of(transfer, TreasuryStatements.SELECT_CASH_MOVEMENT_FOR_VOUCHER)) {
+            assertTrue(sql.contains("LEFT JOIN users u"), sql);
+        }
+    }
+
+    @Test
     @DisplayName("a history page and its totals are read with one WHERE, bound in one order")
     void historyPagesShareTheirWhere() {
         String transfers = """

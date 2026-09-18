@@ -153,6 +153,19 @@ public final class TreasuryCashService {
         return history(filter.forPrint());
     }
 
+    /**
+     * The movement as the database holds it now, for its voucher - read again rather than printed
+     * from the list, so the paper says what is stored on the machine that prints it.
+     */
+    public TreasuryVoucherLayout.CashVoucher forVoucher(int id) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_DEPOSIT);
+        TreasuryVoucherLayout.CashVoucher stored = daoFactory.cashMovementDao().voucher(id);
+        if (stored == null) {
+            throw new BusinessRuleException(message("treasury.voucher.error.not.found"));
+        }
+        return stored;
+    }
+
     public List<CashMovement> recent(int limit) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_DEPOSIT);
         return daoFactory.cashMovementDao().recent(limit);

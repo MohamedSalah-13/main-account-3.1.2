@@ -11,6 +11,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.features.treasury.TreasuryCashService;
 import com.hamza.account.features.treasury.TreasuryHistoryFilter;
 import com.hamza.account.features.treasury.TreasuryHistoryPage;
+import com.hamza.account.features.treasury.TreasuryVoucherLayout;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryBalanceService;
@@ -160,7 +161,7 @@ public class TreasuryCashController {
                         Columns.money("treasury.cash.column.amount", CashMovement::amount)),
                 TreasuryHistoryTable.withId("cashStatement",
                         Columns.text("treasury.cash.column.statement", CashMovement::statement))),
-                AppPermissions.TREASURY_DEPOSIT, this::deleteMovement);
+                AppPermissions.TREASURY_DEPOSIT, this::deleteMovement, this::printVoucher);
         history = new TreasuryHistoryBar(true, this::loadHistory, this::printHistory, this::exportHistory);
         history.installIn(historyBar, historyFooter);
 
@@ -229,6 +230,12 @@ public class TreasuryCashController {
         } catch (Exception e) {
             AllAlerts.handleError(text("treasury.cash.op.delete"), e);
         }
+    }
+
+    private void printVoucher(CashMovement row) {
+        TreasuryVoucherPrinter.print(movementsTable, row.id(), () -> TreasuryVoucherLayout.of(
+                cashService.forVoucher(row.id()), TreasuryVoucherPrinter.letterhead(),
+                LanguageManager.getInstance()::getString, TreasuryVoucherPrinter.now()));
     }
 
     private void loadHistory(TreasuryHistoryFilter filter) {

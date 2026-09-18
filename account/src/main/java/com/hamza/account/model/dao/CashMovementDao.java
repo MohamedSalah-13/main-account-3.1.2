@@ -6,6 +6,7 @@ import com.hamza.account.features.treasury.CashMovement;
 import com.hamza.account.features.treasury.CashMovementCommand;
 import com.hamza.account.features.treasury.TreasuryHistoryFilter;
 import com.hamza.account.features.treasury.TreasuryHistoryPage;
+import com.hamza.account.features.treasury.TreasuryVoucherLayout;
 import com.hamza.account.treasury.TreasuryStatements;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -106,6 +107,20 @@ public class CashMovementDao extends AbstractDao<CashMovement> {
         Integer direction = filter.direction() == null ? null : filter.direction().code();
         return new Object[]{Date.valueOf(filter.from()), Date.valueOf(filter.to()),
                 filter.treasuryId(), filter.treasuryId(), direction, direction};
+    }
+
+    /** The stored movement and who entered it, for its voucher; {@code null} when it is gone. */
+    public TreasuryVoucherLayout.CashVoucher voucher(int id) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(TreasuryStatements.SELECT_CASH_MOVEMENT_FOR_VOUCHER)) {
+                statement.setInt(1, id);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? new TreasuryVoucherLayout.CashVoucher(map(rs), rs.getString("user_name")) : null;
+                }
+            } catch (SQLException e) {
+                throw new DaoException("Could not read the movement for its voucher", e);
+            }
+        });
     }
 
     @Override

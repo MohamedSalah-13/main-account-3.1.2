@@ -42,22 +42,31 @@ final class TreasuryHistoryTable<T> {
 
     /** A report: rows to read, print and export, with nothing to do to any of them. */
     TreasuryHistoryTable(TableView<T> table, String id, List<TableColumn<T, ?>> columns) {
-        this(table, id, columns, null, null);
+        this(table, id, columns, null, null, null);
     }
 
     /**
      * @param columns  the data columns, each already carrying an id
      * @param onDelete what the row's delete button does; the service behind it still asks permission
+     * @param onVoucher prints the row's own paper, or {@code null} for a list that has none
      */
     TreasuryHistoryTable(TableView<T> table, String id, List<TableColumn<T, ?>> columns,
-                         PermissionKey deletePermission, Consumer<T> onDelete) {
+                         PermissionKey deletePermission, Consumer<T> onDelete, Consumer<T> onVoucher) {
         this.table = table;
         table.setId(id);
         table.setPlaceholder(new Label(text("treasury.history.empty")));
 
         List<TableColumn<T, ?>> all = new ArrayList<>();
-        List<RowAction<T>> actions = onDelete == null ? List.of() : RowAction.permitted(List.of(
-                RowAction.of("delete", AppIcon.DELETE, "app-neutral-button", deletePermission, onDelete)));
+        List<RowAction<T>> offered = new ArrayList<>();
+        if (onVoucher != null) {
+            // The same permission as the list itself: whoever may see the movement may print its paper.
+            offered.add(RowAction.of("treasury.voucher.action.print", AppIcon.PRINT, "app-neutral-button",
+                    deletePermission, onVoucher));
+        }
+        if (onDelete != null) {
+            offered.add(RowAction.of("delete", AppIcon.DELETE, "app-neutral-button", deletePermission, onDelete));
+        }
+        List<RowAction<T>> actions = RowAction.permitted(offered);
         if (!actions.isEmpty()) {
             // First, not last: a wide table scrolls sideways, and a button meant for the row in
             // front of you must not be behind that scroll.
