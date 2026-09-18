@@ -82,3 +82,9 @@ account/dependency-reduced-pom.xml
 # Local Multi-Agent orchestration state. Worktrees live beside the repository;
 # only logs/results need ignoring inside this checkout.
 .agent-runs/
+
+# The user manual is rebuilt from docs/manual by scripts/manual/build-manual.ps1.
+# Its sources (the .md pages, the demo seed and the captured screenshots) are tracked;
+# the rendered PDF is not - it is 1.3 MB that changes on every release and regenerates
+# exactly from what is committed.
+docs/manual/*.pdf

@@ -40,7 +40,12 @@ public final class MainScreenApplication {
         return "dev";
     }
 
-    public void show(Stage stage) throws Exception {
+    /**
+     * @return the controller of the window just shown. Every caller in the application ignores it;
+     * the user manual's screenshot harness uses it to reach {@code sidebarCommands()} and open each
+     * screen the way a user does, rather than building a second main window of its own.
+     */
+    public MainScreenController show(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("mainScreen-view.fxml"),
                 LanguageManager.getInstance().getResourceBundle());
         MainScreenController controller = new MainScreenController(daoFactory);
@@ -60,5 +65,6 @@ public final class MainScreenApplication {
         });
         stage.show();
         setAppLastRunVersion(version);
+        return controller;
     }
 }

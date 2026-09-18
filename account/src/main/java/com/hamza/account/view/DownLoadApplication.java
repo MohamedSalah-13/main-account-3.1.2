@@ -178,7 +178,19 @@ public class DownLoadApplication extends Application {
         thread.start();
     }
 
-    private BootstrapResult bootstrap() {
+    /**
+     * The startup wiring, for a tool that has to stand the application up outside its own window -
+     * today the user manual's screenshot harness, which opens every screen against a demo database.
+     * <p>
+     * It is exposed rather than copied on purpose: a second list of the sixty service registrations
+     * would be a second thing to remember when a service is added, and a screenshot taken from a
+     * half-wired application is a picture of a defect the running program does not have.
+     */
+    public static void bootstrapForTooling() {
+        bootstrap();
+    }
+
+    private static BootstrapResult bootstrap() {
         connectionToDatabase = new ConnectionToDatabase();
         MigrationResult migration = new DatabaseMigrationService(connectionToDatabase).updateDatabaseIfNeeded();
         DaoFactory daoFactory = getDaoFactory();
