@@ -145,6 +145,18 @@ public final class AppPermissions {
      * about the business rather than a record of a drawer. Granted on upgrade to whoever may view the list.
      */
     public static final PermissionKey EXPENSES_REPORTS = key("expenses.reports");
+    /**
+     * Setting a budget for an expense heading (V66). Separate from the reports: reading where the money
+     * went is not deciding what the shop is allowed to spend. Granted on upgrade to whoever manages the
+     * headings, which is the nearest thing to it today.
+     */
+    public static final PermissionKey EXPENSES_BUDGET_MANAGE = key("expenses.budget.manage");
+    /**
+     * Managing the recurring-expense templates and their reminders (V66). A template records nothing by
+     * itself - it reminds, and the person recording still needs {@code expenses.create} - but it decides
+     * what the shop is reminded of. Granted on upgrade beside the budget key.
+     */
+    public static final PermissionKey EXPENSES_RECURRING_MANAGE = key("expenses.recurring.manage");
     public static final PermissionKey EMPLOYEE_SHOW = key("employee.show");
     public static final PermissionKey EMPLOYEE_CREATE = key("employee.create");
     public static final PermissionKey EMPLOYEE_UPDATE = key("employee.update");

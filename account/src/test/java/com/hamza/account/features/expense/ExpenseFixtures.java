@@ -61,7 +61,8 @@ final class ExpenseFixtures {
     /** Every write it was asked to make, and what it answers reads with. */
     static final class Repository implements ExpenseRepository {
 
-        record Insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId) {
+        record Insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId,
+                      Integer recurringId) {
         }
 
         final List<Insert> inserts = new ArrayList<>();
@@ -99,8 +100,9 @@ final class ExpenseFixtures {
         }
 
         @Override
-        public int insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId) {
-            inserts.add(new Insert(entry, employeeId, shiftId, userId));
+        public int insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId,
+                          Integer recurringId) {
+            inserts.add(new Insert(entry, employeeId, shiftId, userId, recurringId));
             return 100 + inserts.size();
         }
 

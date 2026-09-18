@@ -4,6 +4,10 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.controller.dataByName.MasterDataController;
+import com.hamza.account.controller.expense.ExpenseEntryController;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.expense.recurring.ExpenseRecurringService;
+import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.features.masterdata.JdbcMasterDataRepository;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.notifications.AppNotification;
@@ -24,6 +28,7 @@ import lombok.extern.log4j.Log4j2;
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -130,7 +135,28 @@ public final class NotificationBootstrap {
                             AuthorizationGuard.require(kind.show);
                             MasterDataController.showWindow(kind);
                         }),
-                new BackupHealthSource());
+                new BackupHealthSource(),
+                recurringExpenses());
+    }
+
+    /**
+     * The reminder that a recurring expense has fallen due (V66).
+     * <p>
+     * <b>Its action opens the expense entry screen filled in; it records nothing itself.</b> The cash
+     * leaves a drawer by a person's hand and {@code ShiftGate} asks for an open shift belonging to that
+     * person on that till - which a scheduled task has no way to be. The screen is opened on the JavaFX
+     * thread, because {@code poll()} runs on a background daemon.
+     */
+    private NotificationSource recurringExpenses() {
+        return new ExpenseRecurringSource(
+                () -> ServiceRegistry.get(ExpenseRecurringService.class),
+                ExpenseRecurringSource.defaultMessages(),
+                key -> Platform.runLater(() -> {
+                    AppNotification previous = center.find(key);
+                    if (previous != null) center.dismiss(previous);
+                }),
+                due -> () -> new AddForAllApplication(0, ExpenseEntryController.from(due)),
+                LocalDate::now);
     }
 
     /**

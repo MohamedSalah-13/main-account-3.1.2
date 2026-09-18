@@ -141,9 +141,17 @@ public final class WipeCatalog {
 
     // ---- the rest ------------------------------------------------------------
 
+    /**
+     * The headings themselves are not emptied - they are master data, seeded by V1 and managed from a
+     * screen, like the units and the areas. What goes is the money filed under them, and with it the two
+     * V66 tables: a template is emptied <em>after</em> the expenses, since a recorded expense points at
+     * it, and a budget after that. A budget is a decision about a period that no longer has any spending
+     * in it, so leaving it behind would put a ceiling over an empty book.
+     */
     public static final WipeTarget EXPENSES = WipeTarget.of("expenses", "wipe.target.expenses",
             List.of(WipeTable.of("employee_cash_purpose"), WipeTable.of("expense_salary"),
-                    WipeTable.of("expenses_details")));
+                    WipeTable.of("expenses_details"), WipeTable.of("expense_recurring"),
+                    WipeTable.of("expense_budget")));
 
     /**
      * Employees and the treasury go together because the old procedure put them

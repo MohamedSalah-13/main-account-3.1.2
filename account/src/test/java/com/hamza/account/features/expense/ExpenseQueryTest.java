@@ -97,14 +97,19 @@ class ExpenseQueryTest {
     }
 
     @Test
-    @DisplayName("the update never names the employee, who entered it, or the shift the cash left under")
+    @DisplayName("the update never names the employee, who entered it, the shift, or the template")
     void updateLeavesWhatTheFormDoesNotOwn() {
         String set = ExpenseQuery.UPDATE_SQL.substring(ExpenseQuery.UPDATE_SQL.indexOf("SET"));
         assertFalse(set.contains("emp_id"), "an edit would take the employee off every salary it touched");
         assertFalse(set.contains("user_id"));
         assertFalse(set.contains("shift_id"));
+        // V66: where an expense came from is recorded once, at the insert. An edit that could write it
+        // would let a row be moved onto a template it was never recorded from - and that column is what
+        // decides whether the template's period has been answered.
+        assertFalse(set.contains("recurring_id"));
         assertEquals(8, placeholders(ExpenseQuery.UPDATE_SQL));
-        assertEquals(10, placeholders(ExpenseQuery.INSERT_SQL));
+        assertTrue(ExpenseQuery.INSERT_SQL.contains("recurring_id"));
+        assertEquals(11, placeholders(ExpenseQuery.INSERT_SQL));
     }
 
     @Test

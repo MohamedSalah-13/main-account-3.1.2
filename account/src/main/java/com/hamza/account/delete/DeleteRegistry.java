@@ -81,6 +81,7 @@ public final class DeleteRegistry {
             .referencedBy("customers_accounts", "treasury_id", "delete.ref.customer_account_movement")
             .referencedBy("suppliers_accounts", "treasury_id", "delete.ref.supplier_account_movement")
             .referencedBy("expenses_details", "treasury_id", "delete.ref.expense")
+            .referencedBy("expense_recurring", "treasury_id", "delete.ref.expense.recurring")
             .referencedBy("treasury_deposit_expenses", "treasury_id", "delete.ref.deposit_or_withdrawal")
             .referencedBy("treasury_transfers", "treasury_from", "delete.ref.transfer_out")
             .referencedBy("treasury_transfers", "treasury_to", "delete.ref.transfer_in")
@@ -176,6 +177,10 @@ public final class DeleteRegistry {
             .requirePermission(AppPermissions.EXPENSES_HEADINGS_UPDATE)
             .referencedBy("expenses_details", "type_code", "delete.ref.expense")
             .referencedBy("expenses", "parent_id", "delete.ref.expense.heading")
+            // V66. Neither key cascades, so MySQL refuses the delete either way; declared here so the
+            // refusal reads as a sentence with a count rather than as a reference code.
+            .referencedBy("expense_budget", "heading_id", "delete.ref.expense.budget")
+            .referencedBy("expense_recurring", "heading_id", "delete.ref.expense.recurring")
             .build();
 
     /**

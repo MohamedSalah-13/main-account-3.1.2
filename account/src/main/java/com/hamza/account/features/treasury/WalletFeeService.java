@@ -96,7 +96,7 @@ public final class WalletFeeService {
         var effectiveShift = shiftId == null ? OptionalInt.empty() : shiftId;
         Integer attributed = effectiveShift.isPresent() ? effectiveShift.getAsInt() : null;
         int actor = currentUserId();
-        int id = expenseRepository.insert(expense, null, attributed, actor);
+        int id = expenseRepository.insert(expense, null, attributed, actor, null);
         ShiftCashLedger.jdbc().created(effectiveShift, actor,
                 ShiftCashEffect.outgoing(ShiftCashSource.EXPENSE, id, treasuryId, attributed, expense.amount()));
         ChangeAnnouncer.jdbc().announce(new ExpensesChanged());

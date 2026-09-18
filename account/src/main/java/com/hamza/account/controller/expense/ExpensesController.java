@@ -314,6 +314,12 @@ public class ExpensesController extends LoadData {
         if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_REPORTS)) {
             extras.add(button("expense.action.reports", AppIcon.REPORT, this::openReports));
         }
+        if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_BUDGET_MANAGE)) {
+            extras.add(button("expense.action.budgets", AppIcon.REPORT, this::openBudgets));
+        }
+        if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_RECURRING_MANAGE)) {
+            extras.add(button("expense.action.recurring", AppIcon.REFRESH, this::openRecurring));
+        }
         toolbar.refresh(ListToolbar.refreshButton(this::reload));
         if (AuthorizationGuard.isGranted(AppPermissions.EXPENSES_EXPORT)) {
             toolbar.print(ListToolbar.printButton(this::print))
@@ -654,6 +660,31 @@ public class ExpensesController extends LoadData {
     private void openBatch() {
         try {
             new AddForAllApplication(0, new ExpenseBatchController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * The budgets (V66). Setting one changes no expense, so this list is not reloaded after it - the
+     * comparison lives in the reports window, which reads the budgets when it opens.
+     */
+    private void openBudgets() {
+        try {
+            new AddForAllApplication(0, new ExpenseBudgetsController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * The recurring templates. "Record now" on one of them opens the entry screen and saves an ordinary
+     * expense, so the list is reloaded afterwards - one may have been added while it was open.
+     */
+    private void openRecurring() {
+        try {
+            new AddForAllApplication(0, new ExpenseRecurringController());
+            reload();
         } catch (Exception e) {
             report(e);
         }

@@ -6,6 +6,13 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.employee.EmployeeCashPurpose;
+import com.hamza.account.features.expense.budget.ExpenseBudgetDraft;
+import com.hamza.account.features.expense.budget.ExpenseBudgetReport;
+import com.hamza.account.features.expense.budget.ExpenseBudgetService;
+import com.hamza.account.features.expense.recurring.ExpenseFrequency;
+import com.hamza.account.features.expense.recurring.ExpenseRecurringDraft;
+import com.hamza.account.features.expense.recurring.ExpenseRecurringDue;
+import com.hamza.account.features.expense.recurring.ExpenseRecurringService;
 import com.hamza.account.features.expense.report.ExpenseByHeadingReport;
 import com.hamza.account.features.expense.report.ExpenseDimension;
 import com.hamza.account.features.expense.report.ExpenseHeadingLineKind;
@@ -93,8 +100,7 @@ class ExpenseDatabaseAcceptanceTest {
 
     @BeforeAll
     static void migrateScratchSchemas() throws Exception {
-        File configFile = new File("config.xml");
-        if (!configFile.isFile()) configFile = new File("../config.xml");
+        File configFile = configSource();
         HashMap<String, String> config = new CryptoDatabaseConfig(CryptoDatabaseConfig.resolveConfigKey())
                 .loadAndDecryptConfig(configFile.getAbsolutePath());
         host = config.get(CryptoDatabaseConfig.HOST);
@@ -389,6 +395,138 @@ class ExpenseDatabaseAcceptanceTest {
         }
     }
 
+    // ---- the budget and the recurring templates (phase C, V66) ------------------------------
+
+    @Test
+    @DisplayName("V66 from nothing: the two tables, the link, the permissions, and no helper left behind")
+    void budgetAndRecurringSchema() throws Exception {
+        assertEquals(2, scalar("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()"
+                + " AND table_name IN ('expense_budget', 'expense_recurring')"));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE()"
+                + " AND table_name = 'expense_budget' AND column_name = 'month_key'"
+                + " AND generation_expression <> ''"), "the unique index reads a generated column");
+        assertEquals("SET NULL", string("SELECT delete_rule FROM information_schema.referential_constraints"
+                + " WHERE constraint_schema = DATABASE() AND table_name = 'expenses_details'"
+                + " AND referenced_table_name = 'expense_recurring'"));
+        assertEquals(2, scalar("SELECT COUNT(*) FROM auth_permission WHERE permission_key IN"
+                + " ('expenses.budget.manage', 'expenses.recurring.manage')"));
+        assertEquals(0, scalar("""
+                SELECT COUNT(*) FROM auth_role_permission held
+                    JOIN auth_permission heading_key ON heading_key.id = held.permission_id
+                                                    AND heading_key.permission_key = 'expenses.headings.update'
+                WHERE NOT EXISTS (SELECT 1 FROM auth_role_permission granted
+                                      JOIN auth_permission budget_key ON budget_key.id = granted.permission_id
+                                                                     AND budget_key.permission_key = 'expenses.budget.manage'
+                                  WHERE granted.role_id = held.role_id)"""),
+                "whoever manages the headings may set a budget after the upgrade");
+        assertEquals(0, scalar("SELECT COUNT(*) FROM information_schema.routines WHERE routine_schema = DATABASE()"
+                + " AND routine_name IN ('add_budget_column_if_missing', 'add_budget_index_if_missing',"
+                + " 'add_constraint_if_missing')"), "a stray helper is what the next migration calls");
+    }
+
+    @Test
+    @DisplayName("MySQL itself refuses a second yearly budget for one heading, which a nullable month would not")
+    void oneYearlyBudgetPerHeading() throws Exception {
+        signIn(AppPermissions.EXPENSES_BUDGET_MANAGE, AppPermissions.EXPENSES_REPORTS);
+        ExpenseBudgetService budgets = new ExpenseBudgetService();
+        int heading = scalar("SELECT id FROM expenses WHERE expenses_name = 'كهرباء'");
+
+        int yearly = budgets.save(new ExpenseBudgetDraft(0, heading, 2031, null, new BigDecimal("12000"), STAMP));
+        assertTrue(yearly > 0);
+        // The service's own check answers first; the index behind it is what actually holds, and is what
+        // a nullable month would have let through - MySQL counts two NULLs as different values.
+        assertThrows(UserValidationException.class, () -> budgets.save(
+                new ExpenseBudgetDraft(0, heading, 2031, null, new BigDecimal("9000"), STAMP)));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM expense_budget WHERE heading_id = " + heading
+                + " AND `year` = 2031 AND `month` IS NULL"));
+
+        // A month of the same year is a different budget and is allowed beside it.
+        assertTrue(budgets.save(new ExpenseBudgetDraft(0, heading, 2031, 4, new BigDecimal("1500"), STAMP)) > 0);
+        assertEquals(2, scalar("SELECT COUNT(*) FROM expense_budget WHERE heading_id = " + heading
+                + " AND `year` = 2031"));
+    }
+
+    @Test
+    @DisplayName("the budget report's actual is the report by heading's own total, on the same period")
+    void budgetActualIsTheReportsOwnFigure() throws Exception {
+        // The heading this case creates for itself goes through the headings service, which asks its own
+        // permission - the first run of these cases was refused there, which is the fixture's fault.
+        signIn(AppPermissions.EXPENSES_CREATE, AppPermissions.EXPENSES_SHOW, AppPermissions.EXPENSES_REPORTS,
+                AppPermissions.EXPENSES_BUDGET_MANAGE, AppPermissions.EXPENSES_HEADINGS_UPDATE);
+        ExpenseService expenses = new ExpenseService(DaoFactory.INSTANCE);
+        int heading = expenses(STAMP + " موازنة");
+        int till = scalar("SELECT MIN(id) FROM treasury");
+        LocalDate day = LocalDate.of(2031, 7, 15);
+        expenses.create(ExpenseEntry.parse(0, day, heading, till, new BigDecimal("400"), null, null, STAMP));
+        expenses.create(ExpenseEntry.parse(0, day, heading, till, new BigDecimal("150"), null, null, STAMP));
+
+        ExpenseBudgetService budgets = new ExpenseBudgetService();
+        budgets.save(new ExpenseBudgetDraft(0, heading, 2031, 7, new BigDecimal("1000"), STAMP));
+
+        ExpenseFilter july = ExpenseFilter.between(LocalDate.of(2031, 7, 1), LocalDate.of(2031, 7, 31));
+        ExpenseBudgetReport report = budgets.report(july);
+        ExpenseBudgetReport.Line line = report.lines().stream()
+                .filter(candidate -> candidate.headingId() == heading).findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("550").compareTo(line.actual()));
+        assertEquals(0, new BigDecimal("1000").compareTo(line.budget()));
+        assertEquals(0, new BigDecimal("450").compareTo(line.remaining()));
+
+        // The same figure the report by heading shows for that heading over the same period - one query.
+        ExpenseByHeadingReport byHeading = new ExpenseReportService().byHeading(july);
+        BigDecimal fromTheOtherReport = byHeading.lines().stream()
+                .filter(candidate -> candidate.headingId() == heading)
+                .map(ExpenseByHeadingReport.Line::total).findFirst().orElseThrow();
+        assertEquals(0, fromTheOtherReport.compareTo(line.actual()));
+    }
+
+    @Test
+    @DisplayName("a recorded expense carries its template, stops the reminder, and outlives the template")
+    void recurringLink() throws Exception {
+        signIn(AppPermissions.EXPENSES_CREATE, AppPermissions.EXPENSES_SHOW,
+                AppPermissions.EXPENSES_RECURRING_MANAGE, AppPermissions.EXPENSES_HEADINGS_UPDATE);
+        ExpenseRecurringService recurring = new ExpenseRecurringService();
+        int heading = expenses(STAMP + " إيجار");
+        int till = scalar("SELECT MIN(id) FROM treasury");
+        LocalDate today = LocalDate.now();
+        LocalDate start = today.withDayOfMonth(1).minusMonths(1);
+
+        int template = recurring.save(new ExpenseRecurringDraft(0, heading, till, new BigDecimal("5000"),
+                "المالك", STAMP, ExpenseFrequency.MONTHLY, 1, start, null, true));
+        List<ExpenseRecurringDue> due = recurring.due(today);
+        assertTrue(due.stream().anyMatch(item -> item.template().id() == template
+                        && item.periodStart().equals(today.withDayOfMonth(1))),
+                "this month has fallen due and nothing has been recorded against it");
+
+        // The reminder records nothing; the entry path does, and stamps the template on the row.
+        ExpenseService expenseService = new ExpenseService(DaoFactory.INSTANCE);
+        int expense = expenseService.create(ExpenseEntry.parse(0, today, heading, till, new BigDecimal("5000"),
+                "المالك", null, STAMP + " recurring"), template);
+        assertEquals(template, scalar("SELECT recurring_id FROM expenses_details WHERE id = " + expense));
+        List<ExpenseRecurringDue> after = recurring.due(today).stream()
+                .filter(item -> item.template().id() == template).toList();
+        assertTrue(after.stream().noneMatch(item -> item.periodStart().equals(today.withDayOfMonth(1))),
+                "this month is answered, so it no longer reminds");
+        // And the period before it still does: this template started last month and nothing was recorded
+        // against it, which is the grace a rent paid on the 3rd needs. The first run of this case asserted
+        // the template fell silent altogether, which would have meant the grace period was not working.
+        assertEquals(List.of(start), after.stream().map(ExpenseRecurringDue::periodStart).toList(),
+                "the grace period is still open and is the only thing left");
+        assertEquals(1, recurring.recordedCount(template));
+
+        // A template with history is refused a delete - and if the row goes another way, the money stays.
+        assertThrows(UserValidationException.class, () -> recurring.delete(template));
+        execute("DELETE FROM expense_recurring WHERE id = " + template);
+        assertEquals(1, scalar("SELECT COUNT(*) FROM expenses_details WHERE id = " + expense),
+                "ON DELETE SET NULL: that cash really left the drawer");
+        assertEquals(1, scalar("SELECT COUNT(*) FROM expenses_details WHERE id = " + expense
+                + " AND recurring_id IS NULL"));
+    }
+
+    /** A heading of this test's own, created straight through the service. */
+    private static int expenses(String name) throws Exception {
+        return new ExpenseHeadingService().save(new ExpenseHeadingDraft(0, name, null, true, false));
+    }
+
     // ---- fixtures -----------------------------------------------------------------------
 
     /**
@@ -527,6 +665,14 @@ class ExpenseDatabaseAcceptanceTest {
         }
     }
 
+    /** A write of this test's own, for the one case that has to see what the database does by itself. */
+    private static void execute(String sql) throws Exception {
+        try (Connection connection = ConnectionManager.acquire();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        }
+    }
+
     private static BigDecimal decimal(String sql) throws Exception {
         try (Connection connection = ConnectionManager.acquire();
              Statement statement = connection.createStatement(); ResultSet rows = statement.executeQuery(sql)) {
@@ -551,6 +697,29 @@ class ExpenseDatabaseAcceptanceTest {
     private static String jdbcUrl(String database) {
         return "jdbc:mysql://" + host + ":" + port + "/" + database
                 + "?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=LOCAL";
+    }
+
+    /**
+     * Where the credentials come from - the host, the port and the account this class signs in with. It
+     * creates its own scratch schemas and never touches the configured one, so this file is a credential
+     * carrier and nothing more.
+     * <p>
+     * The two relative paths are the ordinary ones: surefire's working directory is the module, so it is
+     * {@code account/config.xml}, never the repository root's - they are different files.
+     * {@code ACCOUNT_DB_ACCEPTANCE_CONFIG} names one explicitly, which is the same escape hatch
+     * {@code ACCOUNT_DB_ACCEPTANCE_ADMIN_USER} already is, and is what lets this class run from a
+     * worktree - which deliberately has no database configuration of its own
+     * (docs/agent-worktree-rules.md §5), so the alternative would be copying a secret into one.
+     */
+    private static File configSource() {
+        String named = System.getenv("ACCOUNT_DB_ACCEPTANCE_CONFIG");
+        if (named != null && !named.isBlank()) {
+            File explicit = new File(named);
+            assertTrue(explicit.isFile(), "ACCOUNT_DB_ACCEPTANCE_CONFIG names no file: " + named);
+            return explicit;
+        }
+        File beside = new File("config.xml");
+        return beside.isFile() ? beside : new File("../config.xml");
     }
 
     private static String environmentOr(String name, String fallback) {

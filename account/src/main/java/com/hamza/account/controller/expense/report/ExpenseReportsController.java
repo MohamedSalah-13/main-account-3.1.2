@@ -5,6 +5,8 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.features.expense.ExpenseFilter;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.expense.budget.ExpenseBudgetService;
 import com.hamza.account.features.expense.report.ExpenseReportService;
 import com.hamza.account.features.party.statement.StatementPeriod;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -42,8 +44,8 @@ import static com.hamza.account.controller.expense.report.ExpenseReportSupport.r
 import static com.hamza.account.controller.expense.report.ExpenseReportSupport.text;
 
 /**
- * The expense reports: by heading, the year by month, the trend, by dimension, and against net sales
- * (docs/expenses-plan.md §4).
+ * The expense reports: by heading, the year by month, the trend, by dimension, against net sales
+ * (docs/expenses-plan.md §4) and against the budget (§5.1).
  * <p>
  * <b>It opens on the list's own filter and changes only its dates.</b> The heading, till, person, amounts and
  * text the list was narrowed by are carried in and said in plain words under the bar, so a report is
@@ -63,6 +65,7 @@ public class ExpenseReportsController implements AppSettingInterface {
     static final String ACTIONS_COLUMN = "expense-report-actions";
 
     private final ExpenseReportService service = new ExpenseReportService();
+    private final ExpenseBudgetService budgets = ServiceRegistry.get(ExpenseBudgetService.class);
     private final ExpenseFilter conditions;
     private final String conditionsText;
     private final Consumer<ExpenseFilter> openList;
@@ -97,6 +100,9 @@ public class ExpenseReportsController implements AppSettingInterface {
         reports.add(new ExpenseTrendTab(service, support));
         reports.add(new ExpenseDimensionTab(service, support));
         reports.add(new ExpenseSalesRatioTab(service, support));
+        if (budgets != null) {
+            reports.add(new ExpenseBudgetTab(budgets, support));
+        }
         for (ExpenseReportTab report : reports) {
             tabs.getTabs().add(report.tab());
         }

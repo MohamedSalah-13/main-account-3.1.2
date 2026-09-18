@@ -203,8 +203,23 @@ public final class ExpenseService {
      * @return the generated code
      */
     public int create(ExpenseEntry entry) throws DaoException {
+        return create(entry, null);
+    }
+
+    /**
+     * Records an expense a recurring template reminded somebody to enter (docs/expenses-plan.md §5.2).
+     * <p>
+     * <b>This is the only way a template's expense is written, and it is the ordinary path.</b> The
+     * template itself records nothing: the cash leaves a drawer by a person's hand, and {@code ShiftGate}
+     * asks for an open shift belonging to that person on that till. So the row goes through the same
+     * method as a hand-entered expense - same permission, same period lock, same gate, same cash journal -
+     * and carries the template's id, which is what makes that period stop reminding.
+     *
+     * @param recurringId the template, or {@code null} for an expense nobody was reminded of
+     */
+    public int create(ExpenseEntry entry, Integer recurringId) throws DaoException {
         AuthorizationGuard.require(AppPermissions.EXPENSES_CREATE);
-        return transactions.execute(() -> record(entry, null));
+        return transactions.execute(() -> record(entry, null, recurringId));
     }
 
     /**
@@ -224,7 +239,7 @@ public final class ExpenseService {
         return transactions.execute(() -> {
             for (int index = 0; index < lines.size(); index++) {
                 try {
-                    record(lines.get(index), null);
+                    record(lines.get(index), null, null);
                 } catch (DaoException refused) {
                     if (refused instanceof UserFacingException facing) {
                         throw new ExpenseBatchLineRefused(index + 1, facing.userMessage(), refused);
@@ -248,7 +263,7 @@ public final class ExpenseService {
         if (employeeId <= 0) {
             throw new UserValidationException("employee.error.account.employee");
         }
-        return transactions.execute(() -> record(entry, employeeId));
+        return transactions.execute(() -> record(entry, employeeId, null));
     }
 
     /**
@@ -321,7 +336,7 @@ public final class ExpenseService {
      * The write behind every insert, inside a transaction the caller opened. Private, so the two rules
      * that read public methods see the guard on each entry point rather than a helper they cannot follow.
      */
-    private int record(ExpenseEntry entry, Integer employeeId) throws DaoException {
+    private int record(ExpenseEntry entry, Integer employeeId, Integer recurringId) throws DaoException {
         ExpenseHeading heading = headings.find(entry.headingId());
         if (employeeId == null) {
             ExpenseHeadingRules.requireUsableForExpense(heading);
@@ -333,7 +348,7 @@ public final class ExpenseService {
         int actor = currentUserId();
         OptionalInt shift = shiftGate.requireCashAction(actor, entry.treasuryId(), entry.amount());
         Integer shiftId = shift.isPresent() ? shift.getAsInt() : null;
-        int id = repository.insert(entry, employeeId, shiftId, actor);
+        int id = repository.insert(entry, employeeId, shiftId, actor, recurringId);
         ledger.created(shift, actor,
                 ShiftCashEffect.outgoing(ShiftCashSource.EXPENSE, id, entry.treasuryId(), shiftId, entry.amount()));
         announceChange();

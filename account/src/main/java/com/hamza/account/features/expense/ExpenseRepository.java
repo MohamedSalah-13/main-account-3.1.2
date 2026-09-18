@@ -26,11 +26,13 @@ public interface ExpenseRepository {
     /**
      * Writes a new expense.
      *
-     * @param employeeId the employee a payment is for, or {@code null}
-     * @param shiftId    the shift the gate answered with, or {@code null}
+     * @param employeeId  the employee a payment is for, or {@code null}
+     * @param shiftId     the shift the gate answered with, or {@code null}
+     * @param recurringId the template it was recorded from, or {@code null} for a hand-entered expense
      * @return the generated code
      */
-    int insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId) throws DaoException;
+    int insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId, Integer recurringId)
+            throws DaoException;
 
     int update(ExpenseEntry entry) throws DaoException;
 

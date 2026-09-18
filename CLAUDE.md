@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,827 tests across 247 test source files** with 101 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-11. What is
+**2,570 tests** with 136 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-18. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -86,6 +86,9 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
+**They read `account/config.xml` for the credentials alone**, and `ExpenseDatabaseAcceptanceTest` also
+takes `ACCOUNT_DB_ACCEPTANCE_CONFIG` to name that file outright - which is how it runs from a worktree,
+where there is deliberately no database configuration to copy a secret into.
 **`PartyStatementViewAcceptanceTest` and `PartyMovementDatabaseAcceptanceTest` are the newest**,
 written 2026-09-10 with the party statement and payment work and **first run the same day against a
 scratch schema built from nothing** - 23 cases with `PartyLedgerViewAcceptanceTest`, green twice
@@ -222,8 +225,24 @@ Two documents govern work here and are kept current — read them before large c
   (`ExpenseQuery.fromSql`/`whereValues`), and `ExpenseDatabaseAcceptanceTest` holds the report by heading,
   the profit and loss's expenses column and the filtered list to one figure on MySQL. **`V65`'s first draft
   failed on the first database it met** - a 62-character description for `auth_permission.description`,
-  which is `VARCHAR(50)` - and `ExpenseReportsMigrationTest` now reads the length. **Read it before touching
-  anything under `features/expense`, `controller/expense`, `WalletFeeService` or `V64`.**
+  which is `VARCHAR(50)` - and `ExpenseReportsMigrationTest` now reads the length. §12 records phase C,
+  the budget and the recurring expenses (`V66`): a main heading's own budget is the family's ceiling and
+  its children's are not added to it, a template **reminds and records nothing** because the cash leaves a
+  drawer by a person's hand and `ShiftGate` has nobody to ask in a scheduled task, and
+  `expenses_details.recurring_id` is both the link and the definition of "already recorded".
+  **V66 and the thirteen cases of `ExpenseDatabaseAcceptanceTest` passed against MySQL twice running on
+  2026-09-18**, from nothing and over a V63 database with data in it, leaving no schema and no row behind -
+  and that run found three defects, all three in the test rather than in the code. **Both screens were then
+  opened on a copy of the development database**, where the app applied V66 itself on start-up, and three
+  more defects turned up that no test could see (§12.8): a recurring template opened with its end date
+  seeded to today, so a new one was born already expired (`DateSetting.dateAction` seeds today,
+  `dateFilter` does not - the entry-field-versus-blank-means-none distinction, at a `DatePicker`); a
+  `FlowPane` wrapped between a caption and the control it names, so "الفترة" read as though it labelled
+  the combo before it; and the due list did not refresh after "record now", leaving an answered reminder
+  on screen for somebody to record twice. §12.9 lists what is still unseen: the budget tab's layout, the
+  notification actually firing, and the buttons hidden from a user without the two new permissions.
+  **Read it before touching anything under `features/expense`, `controller/expense`, `WalletFeeService`,
+  `V64` or `V66`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -2198,7 +2217,13 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V63`, which
+  new database executes it and continues with `V2`, `V3`, … The current head is `V66`, which adds the
+  expense budget and the recurring-expense templates: `expense_budget` carries its unique index on a
+  **generated** `month_key` (`COALESCE(month, 0)`), because MySQL counts two NULLs in a unique index as
+  different values and a unique over a nullable `month` would allow two yearly budgets for one heading;
+  `expenses_details.recurring_id` is `ON DELETE SET NULL`, so deleting a template never touches money that
+  actually left a drawer. Before it, `V65` adds `expenses.reports`, and `V64` rebuilds the expense headings
+  as managed rows. Before them, `V63`
   gives the three columns a barcode can live in one collation. It exists because no migration
   here has ever named a charset: a table a migration creates takes the *database* default, while
   a table restored from a mysqldump keeps the charset the dump names and lands on the *server's*

@@ -10,6 +10,7 @@ import com.hamza.account.features.expense.ExpenseHeading;
 import com.hamza.account.features.expense.ExpenseHeadingService;
 import com.hamza.account.features.expense.ExpenseRow;
 import com.hamza.account.features.expense.ExpenseService;
+import com.hamza.account.features.expense.recurring.ExpenseRecurringDue;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.treasury.DefaultTreasury;
@@ -110,8 +111,29 @@ public class ExpenseEntryController implements AddInterface {
     /** The stored row being corrected, or {@code null} for a new expense. */
     private ExpenseRow stored;
 
+    /** The template this expense is being recorded from, or {@code null} when it is hand-entered. */
+    private final ExpenseRecurringDue due;
+
     public ExpenseEntryController(int expenseId) {
+        this(expenseId, null);
+    }
+
+    private ExpenseEntryController(int expenseId, ExpenseRecurringDue due) {
         this.expenseId = expenseId;
+        this.due = due;
+    }
+
+    /**
+     * A new expense filled in from a recurring template, for the reminder's "record now".
+     * <p>
+     * <b>The saved row carries the template's id</b>, which is what stops that period reminding again -
+     * "already recorded" is a row of {@code expenses_details} pointing at the template, never a row that
+     * merely looks similar. And the date is the day it fell due, not today, because the period the row
+     * lands in is decided by its date: a February rent entered on 5 March with March's date would answer
+     * March's reminder and leave February's standing.
+     */
+    public static ExpenseEntryController from(ExpenseRecurringDue due) {
+        return new ExpenseEntryController(0, due);
     }
 
     @FXML
@@ -225,9 +247,28 @@ public class ExpenseEntryController implements AddInterface {
                     .findFirst().ifPresentOrElse(comboTreasury.getSelectionModel()::select,
                             () -> comboTreasury.getSelectionModel().selectFirst());
             comboHeading.setItems(FXCollections.observableArrayList(headingService.forExpenses()));
+            prefillFromTemplate();
         } catch (Exception e) {
             report(e);
         }
+    }
+
+    /**
+     * What the template already knows, so the person recording it types only what it cannot know - the
+     * reference number on the receipt, and the amount when this month's bill differs from the standing one.
+     */
+    private void prefillFromTemplate() {
+        if (due == null) {
+            return;
+        }
+        date.setValue(due.dueOn());
+        comboHeading.getItems().stream()
+                .filter(heading -> heading.id() == due.template().headingId()).findFirst()
+                .ifPresent(comboHeading.getSelectionModel()::select);
+        selectTreasury(due.template().treasuryId(), due.template().treasuryName());
+        txtAmount.setText(due.template().amount().toPlainString());
+        txtPayee.setText(due.template().payee());
+        txtNotes.setText(due.template().notes());
     }
 
     @Override
@@ -306,7 +347,7 @@ public class ExpenseEntryController implements AddInterface {
             return 0;
         }
         if (entry.isNew()) {
-            expenseService.create(entry);
+            expenseService.create(entry, due == null ? null : due.template().id());
             return 1;
         }
         var reason = ShiftCorrectionReasonPrompt.forUpdate();
@@ -374,10 +415,13 @@ public class ExpenseEntryController implements AddInterface {
                 txtAmount.textProperty());
     }
 
-    /** A new expense keeps the dialog for the next receipt; a correction closes it. */
+    /**
+     * A new expense keeps the dialog for the next receipt; a correction closes it - and so does one
+     * recorded from a template, which answers one reminder and is not the start of a stack of receipts.
+     */
     @Override
     public boolean keepDialogOpenAfterSave() {
-        return expenseId <= 0;
+        return expenseId <= 0 && due == null;
     }
 
     @Override

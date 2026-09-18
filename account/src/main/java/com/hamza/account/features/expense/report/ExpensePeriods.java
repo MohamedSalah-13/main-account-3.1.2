@@ -10,8 +10,11 @@ import java.util.Optional;
 /** The small arithmetic every expense report shares: a period inside the scope, and a percentage that may be absent. */
 public final class ExpensePeriods {
 
-    /** Zero with the two places money carries, so an empty cell prints as 0.00. */
-    static final BigDecimal NONE = new BigDecimal("0.00");
+    /**
+     * Zero with the two places money carries, so an empty cell prints as 0.00. Public because the budget
+     * report shares it: two zeros with different scales print differently on one page.
+     */
+    public static final BigDecimal NONE = new BigDecimal("0.00");
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     private ExpensePeriods() {

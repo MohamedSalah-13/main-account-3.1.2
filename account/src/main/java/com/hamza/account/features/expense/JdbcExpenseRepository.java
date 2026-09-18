@@ -102,10 +102,11 @@ public final class JdbcExpenseRepository extends AbstractDao<ExpenseRow> impleme
     }
 
     @Override
-    public int insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId) throws DaoException {
+    public int insert(ExpenseEntry entry, Integer employeeId, Integer shiftId, int userId, Integer recurringId)
+            throws DaoException {
         return insertReturningId(ExpenseQuery.INSERT_SQL, entry.headingId(), Date.valueOf(entry.date()),
                 entry.amount(), entry.notes(), employeeId, entry.treasuryId(), userId, shiftId,
-                entry.payee(), entry.referenceNo());
+                entry.payee(), entry.referenceNo(), recurringId);
     }
 
     @Override

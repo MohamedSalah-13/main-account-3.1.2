@@ -66,6 +66,8 @@ import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.expense.ExpenseHeadingService;
 import com.hamza.account.features.expense.ExpenseService;
+import com.hamza.account.features.expense.budget.ExpenseBudgetService;
+import com.hamza.account.features.expense.recurring.ExpenseRecurringService;
 import com.hamza.account.features.employee.attendance.AttendanceService;
 import com.hamza.account.features.employee.attendance.LeaveService;
 import com.hamza.account.features.employee.payroll.PayrollService;
@@ -257,6 +259,10 @@ public class DownLoadApplication extends Application {
         // Expenses (V64): the headings as rows, and one service every expense is written through.
         ServiceRegistry.register(ExpenseHeadingService.class, new ExpenseHeadingService());
         ServiceRegistry.register(ExpenseService.class, new ExpenseService(daoFactory));
+        // The budget and the recurring templates (V66). Neither writes an expense: the budget is a
+        // decision about a period, and a template reminds while the entry screen records.
+        ServiceRegistry.register(ExpenseBudgetService.class, new ExpenseBudgetService());
+        ServiceRegistry.register(ExpenseRecurringService.class, new ExpenseRecurringService());
         // The employee's account (V58). The payment service takes the expenses service rather
         // than building one: every pound paid to an employee is an expense row, so it inherits
         // the shift gate, the period lock and the cash journal instead of restating them.

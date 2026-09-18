@@ -119,12 +119,14 @@ public final class ExpenseQuery {
 
     /**
      * The insert. {@code emp_id} is written by one caller only - the employee payment - and is
-     * {@code NULL} for every other; {@code shift_id} is the shift the gate answered with.
+     * {@code NULL} for every other; {@code shift_id} is the shift the gate answered with;
+     * {@code recurring_id} (V66) is the template it was recorded from, and is what makes that template's
+     * period stop reminding - so it is written at the insert and never guessed afterwards.
      */
     public static final String INSERT_SQL = """
             INSERT INTO expenses_details (type_code, date, amount, notes, emp_id, treasury_id, user_id,
-                                          shift_id, payee, reference_no)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""";
+                                          shift_id, payee, reference_no, recurring_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""";
 
     /**
      * The update, and what it leaves alone is the point.
