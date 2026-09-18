@@ -37,6 +37,10 @@ public class Treasury extends DForColumnTable {
     private BigDecimal feePercent = BigDecimal.ZERO;
     private LocalDate openingDate;
     private int userId;
+    /** The wallet's number or the bank account's (V69); {@code null} for a cash drawer. */
+    private String accountNumber;
+    /** What the treasury is warned under (V69). Zero is "none set" - never "always low". */
+    private BigDecimal minBalance = BigDecimal.ZERO;
 
     public Treasury(int id) {
         this.id = id;

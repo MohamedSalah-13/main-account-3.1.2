@@ -57,7 +57,21 @@
                     <TextField fx:id="feeField" promptText="%treasury.field.fee.prompt" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                     <Label styleClass="page-subtitle" text="%treasury.hint.fee" wrapText="true" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2" />
+
+                    <Label styleClass="form-label" text="%treasury.field.account" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+
+                    <TextField fx:id="accountField" promptText="%treasury.field.account.prompt" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                    <Label styleClass="form-label" text="%treasury.field.minimum" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+
+                    <TextField fx:id="minimumField" promptText="%treasury.field.minimum.prompt" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+
+                    <Label styleClass="form-label" text="%treasury.field.sort" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+
+                    <TextField fx:id="sortField" promptText="%treasury.field.sort.prompt" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
                   <RowConstraints />
                   <RowConstraints />
                   <RowConstraints />
@@ -76,6 +90,8 @@
                     <Button fx:id="refreshButton" onAction="#loadTreasuries" styleClass="neutral-button" text="%common.refresh" />
 
                     <Button fx:id="printButton" onAction="#printTreasuries" styleClass="neutral-button" text="%print" />
+
+                    <Button onAction="#openFeeReport" styleClass="neutral-button" text="%treasury.fee.report.open" />
                 </HBox>
             </VBox>
         </VBox>

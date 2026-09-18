@@ -39,7 +39,7 @@ public class TreasuryDao extends AbstractDao<Treasury> {
      */
     private static final String COLUMNS = """
             id, t_name, amount, treasury_type, is_active, sort_order, fee_percent,
-                   opening_date, date_insert, updated_at, user_id""";
+                   opening_date, date_insert, updated_at, user_id, account_number, min_balance""";
 
     public TreasuryDao() {
         super();
@@ -60,9 +60,9 @@ public class TreasuryDao extends AbstractDao<Treasury> {
         String query = """
                 INSERT INTO treasury
                     (t_name, amount, treasury_type, is_active, sort_order, fee_percent,
-                     opening_date, user_id)
+                     opening_date, user_id, account_number, min_balance)
                 VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         return executeUpdate(
                 query,
@@ -73,7 +73,9 @@ public class TreasuryDao extends AbstractDao<Treasury> {
                 treasury.getSortOrder(),
                 feePercent(treasury),
                 openingDate(treasury),
-                treasury.getUserId()
+                treasury.getUserId(),
+                accountNumber(treasury),
+                minBalance(treasury)
         );
     }
 
@@ -88,7 +90,9 @@ public class TreasuryDao extends AbstractDao<Treasury> {
                     sort_order = ?,
                     fee_percent = ?,
                     opening_date = ?,
-                    user_id = ?
+                    user_id = ?,
+                    account_number = ?,
+                    min_balance = ?
                 WHERE id = ?
                 """;
         return executeUpdate(
@@ -101,6 +105,8 @@ public class TreasuryDao extends AbstractDao<Treasury> {
                 feePercent(treasury),
                 openingDate(treasury),
                 treasury.getUserId(),
+                accountNumber(treasury),
+                minBalance(treasury),
                 treasury.getId()
         );
     }
@@ -173,6 +179,9 @@ public class TreasuryDao extends AbstractDao<Treasury> {
             }
 
             treasury.setUserId(rs.getInt(USER_ID));
+            treasury.setAccountNumber(rs.getString("account_number"));
+            BigDecimal minBalance = rs.getBigDecimal("min_balance");
+            treasury.setMinBalance(minBalance == null ? BigDecimal.ZERO : minBalance);
             return treasury;
         } catch (Exception e) {
             throw new DaoException(e);
@@ -182,6 +191,16 @@ public class TreasuryDao extends AbstractDao<Treasury> {
 
     private TreasuryType type(Treasury treasury) {
         return treasury.getType() == null ? TreasuryType.CASH : treasury.getType();
+    }
+
+    /** Blank is no number, stored as NULL - an empty string would look like a number somebody typed. */
+    private String accountNumber(Treasury treasury) {
+        String number = treasury.getAccountNumber();
+        return number == null || number.isBlank() ? null : number.strip();
+    }
+
+    private BigDecimal minBalance(Treasury treasury) {
+        return treasury.getMinBalance() == null ? BigDecimal.ZERO : treasury.getMinBalance();
     }
 
     private BigDecimal feePercent(Treasury treasury) {
@@ -195,54 +214,5 @@ public class TreasuryDao extends AbstractDao<Treasury> {
     private Date openingDate(Treasury treasury) {
         LocalDate date = treasury.getOpeningDate() == null ? LocalDate.now() : treasury.getOpeningDate();
         return Date.valueOf(date);
-    }
-
-    /**
-     * @deprecated mutates the <b>opening</b> balance, whatever the name suggests, and
-     * is reachable only from {@code TreasuryMovementDao} - which nothing constructs.
-     * The current balance is derived, not stored: read {@code treasury_current_balance}
-     * through {@link TreasuryCurrentBalanceDao}. See docs/treasury-plan.md §2.
-     */
-    @Deprecated
-    public int updateAmount(int treasuryId, BigDecimal newAmount) throws DaoException {
-        String query = """
-                UPDATE treasury
-                SET amount = ?
-                WHERE id = ?
-                """;
-        return executeUpdate(query, newAmount, treasuryId);
-    }
-
-    /** @deprecated see {@link #updateAmount(int, java.math.BigDecimal)}. */
-    @Deprecated
-    public int increaseAmount(int treasuryId, BigDecimal amount) throws DaoException {
-        String query = """
-                UPDATE treasury
-                SET amount = amount + ?
-                WHERE id = ?
-                """;
-        return executeUpdate(query, amount, treasuryId);
-    }
-
-    /** @deprecated see {@link #updateAmount(int, java.math.BigDecimal)}. */
-    @Deprecated
-    public int decreaseAmount(int treasuryId, BigDecimal amount) throws DaoException {
-        String query = """
-                UPDATE treasury
-                SET amount = amount - ?
-                WHERE id = ?
-                  AND amount >= ?
-                """;
-        return executeUpdate(query, amount, treasuryId, amount);
-    }
-
-    /** @deprecated see {@link #updateAmount(int, java.math.BigDecimal)}. */
-    @Deprecated
-    public BigDecimal getCurrentAmount(int treasuryId) throws DaoException {
-        Treasury treasury = getDataById(treasuryId);
-        if (treasury == null) {
-            return BigDecimal.ZERO;
-        }
-        return treasury.getAmount();
     }
 }

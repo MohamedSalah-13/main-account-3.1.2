@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,634 tests** with 141 skipped (below) — the figure `mvn clean test`
+**2,644 tests** with 142 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-18. What is
 genuinely covered:
 
@@ -883,6 +883,22 @@ the button is in the row. There is no amount in words on purpose. **Drawing the 
 what no test could**: a shadda in a label splits the word in the PDF font. The label lost its
 diacritics; the same happens to a user's own note with tanween on any document, and
 `ArabicTextHelper` does not handle it - that one is not fixed.
+
+**What the wallets kept is a report** (`WalletFeeReport`, opened from the treasuries screen): fees
+per treasury and per kind of movement, grouped in SQL. It reads the expense rows under
+`system_key = 'WALLET_FEE'` and nothing else, so its total **is** the heading's total in the expenses
+reports - not a second computation - and a fee tied to no movement is listed rather than hidden, or
+the two would disagree. The printed treasury statement now says which statement it is: the treasury,
+whatever narrows the rows, and the balance brought forward.
+
+**A treasury may carry its wallet or account number and a minimum balance** (`V69`). The minimum is
+a **warning, never a refusal** - a withdrawal is still refused only above the balance itself - zero
+means none set, and every existing treasury has none, so an upgrade raises no notification.
+`min_balance` is deliberately **not** in `treasury_current_balance`: what a balance is has one
+definition and a warning level is not part of it; `SELECT_BELOW_MINIMUM` joins the table to the view
+itself. The dead `TreasuryMovementDao` family - eight classes and the four `@Deprecated` methods that
+mutated the *opening* balance under a name suggesting the current one - is gone; the
+`treasury_movements` table stays, deliberately dead.
 
 ### Shifts
 
@@ -2275,8 +2291,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V68`, which lets a
-  transfer between treasuries carry a fee; before it `V67` ties a wallet fee to the movement it was
+  new database executes it and continues with `V2`, `V3`, … The current head is `V69`, which gives a
+  treasury its wallet or account number and a minimum balance; before it `V68` lets a
+  transfer between treasuries carry a fee, and `V67` ties a wallet fee to the movement it was
   paid for (see **The treasury**). Before them, `V66` adds the
   expense budget and the recurring-expense templates: `expense_budget` carries its unique index on a
   **generated** `month_key` (`COALESCE(month, 0)`), because MySQL counts two NULLs in a unique index as

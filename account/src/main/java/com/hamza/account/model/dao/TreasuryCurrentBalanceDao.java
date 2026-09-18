@@ -57,6 +57,22 @@ public class TreasuryCurrentBalanceDao extends AbstractDao<TreasuryBalanceSummar
         return getDataById(treasuryId);
     }
 
+    /** The treasuries a person should move money into - see {@code TreasuryStatements.SELECT_BELOW_MINIMUM}. */
+    public List<com.hamza.account.features.treasury.TreasuryBelowMinimum> belowMinimum() throws DaoException {
+        return withConnection(connection -> {
+            try (java.sql.PreparedStatement statement =
+                         connection.prepareStatement(TreasuryStatements.SELECT_BELOW_MINIMUM);
+                 ResultSet rs = statement.executeQuery()) {
+                List<com.hamza.account.features.treasury.TreasuryBelowMinimum> low = new java.util.ArrayList<>();
+                while (rs.next()) {
+                    low.add(new com.hamza.account.features.treasury.TreasuryBelowMinimum(rs.getInt("id"),
+                            rs.getString("t_name"), rs.getBigDecimal("balance"), rs.getBigDecimal("min_balance")));
+                }
+                return low;
+            }
+        });
+    }
+
     @Override
     public TreasuryBalanceSummary map(ResultSet rs) throws DaoException {
         try {

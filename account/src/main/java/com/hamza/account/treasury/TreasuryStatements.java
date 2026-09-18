@@ -62,6 +62,21 @@ public final class TreasuryStatements {
             FOR UPDATE
             """;
 
+    /**
+     * Active treasuries under the minimum set for them (V69). The view is joined to the table
+     * rather than given the column: what a balance is has one definition and a warning level is
+     * not part of it. {@code > 0} is "a minimum was set" - zero means none, not "always low".
+     */
+    public static final String SELECT_BELOW_MINIMUM = """
+            SELECT b.id, b.t_name, b.balance, t.min_balance
+            FROM treasury_current_balance b
+                     JOIN treasury t ON t.id = b.id
+            WHERE b.is_active = 1
+              AND t.min_balance > 0
+              AND b.balance < t.min_balance
+            ORDER BY b.sort_order, b.id
+            """;
+
     // ---- transfers -------------------------------------------------------------
 
     public static final String INSERT_TRANSFER = """
@@ -270,6 +285,26 @@ public final class TreasuryStatements {
             FROM treasury_deposit_expenses d
             %s
             """.formatted(CASH_WHERE);
+
+    // ---- what the wallets kept ------------------------------------------------------------
+
+    /**
+     * The fee expenses of a period, by treasury and by the kind of movement each was charged on.
+     * By the heading's key, never its name - the headings screen can rename it. An unlinked fee
+     * groups under a NULL kind and is listed, so the total is the heading's own total.
+     */
+    public static final String SELECT_WALLET_FEE_REPORT = """
+            SELECT d.treasury_id, t.t_name, d.fee_source_type,
+                   COUNT(*) AS movements, COALESCE(SUM(d.amount), 0) AS fees
+            FROM expenses_details d
+                     JOIN expenses e ON e.id = d.type_code
+                     JOIN treasury t ON t.id = d.treasury_id
+            WHERE e.system_key = 'WALLET_FEE'
+              AND d.date BETWEEN ? AND ?
+              AND (? IS NULL OR d.treasury_id = ?)
+            GROUP BY d.treasury_id, t.t_name, d.fee_source_type
+            ORDER BY t.t_name, d.treasury_id, d.fee_source_type
+            """;
 
     // ---- one movement, read again for its voucher ----------------------------------------
 

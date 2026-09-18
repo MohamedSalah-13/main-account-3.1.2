@@ -140,6 +140,7 @@ public class TreasureDetailsController {
                 .clear(btnReset)
                 .refresh(btnRefresh)
                 .print(btnPrint)
+                .export(ListToolbar.button("treasury.history.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
                 .installIn(toolbarRow);
     }
 
@@ -370,10 +371,69 @@ public class TreasureDetailsController {
                 row.recordedAt() == null ? "" : row.recordedAt().format(TIME_FORMAT),
                 text(row.kind().labelKey()), row.treasuryName(), money(row.income()), money(row.output()),
                 money(row.runningBalance()), row.username()}).toList();
-        String subtitle = text("from") + ": " + filter.from() + "  |  " + text("to") + ": " + filter.to();
+        String subtitle = printedSubtitle(filter, summary.openingBalance());
         String[] totals = {text("total"), "", "", "", "", money(summary.totalIncome()), money(summary.totalOutput()),
                 money(summary.closingBalance()), ""};
         TablePdfReport.write(target, title, subtitle, new TablePdfLayout(headers, widths, rows, totals), () -> { });
+    }
+
+    /**
+     * Which statement this is, on the paper as on the screen: the treasury, whatever narrows the
+     * rows, and the balance carried into the period. The paper used to carry the two dates alone -
+     * so a printed statement of one wallet could not be told from one of every treasury, and its
+     * running balance began at a figure printed nowhere on it.
+     */
+    private String printedSubtitle(TreasuryStatementFilter filter, BigDecimal opening) {
+        StringBuilder line = new StringBuilder(text("from")).append(": ").append(filter.from())
+                .append("  |  ").append(text("to")).append(": ").append(filter.to())
+                .append("  |  ").append(text("treasury.statement.column.treasury")).append(": ")
+                .append(chosenText(comboTreasury));
+        if (filter.kind() != null) {
+            line.append("  |  ").append(text("treasury.statement.column.movement")).append(": ")
+                    .append(text(filter.kind().labelKey()));
+        }
+        if (filter.userId() != null) {
+            line.append("  |  ").append(text("treasury.statement.column.user")).append(": ")
+                    .append(chosenText(comboUsers));
+        }
+        return line.append("  |  ").append(text("treasury.statement.print.opening")).append(": ")
+                .append(money(opening)).toString();
+    }
+
+    private static <T> String chosenText(ComboBox<T> combo) {
+        return combo.getValue() == null || combo.getConverter() == null ? ""
+                : combo.getConverter().toString(combo.getValue());
+    }
+
+    /** The whole filtered statement as a spreadsheet of the columns on screen - never the page. */
+    private void exportExcel() {
+        TreasuryStatementFilter filter = readFilter();
+        if (filter == null || loading) return;
+        AtomicReference<TreasuryStatementPrintData> result = new AtomicReference<>();
+        setLoading(true);
+        maskerPaneSetting.showMaskerPane(text("treasury.statement.operation.print"),
+                () -> result.set(statementService.forPrint(filter)));
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
+            setLoading(false);
+            TreasuryStatementPrintData data = result.get();
+            if (data.truncated()) AllAlerts.alertError(text("treasury.statement.error.print.limit"));
+            else if (data.rows().isEmpty()) AllAlerts.alertError(text("treasury.statement.error.print.empty"));
+            else writeExcel(data);
+            runPendingRefresh();
+        });
+        maskerPaneSetting.getVoidTask().setOnFailed(event -> { setLoading(false); runPendingRefresh(); });
+    }
+
+    private void writeExcel(TreasuryStatementPrintData data) {
+        try {
+            int written = com.hamza.controlsfx.excel.ExportData.exportDataToExcel(data.rows(),
+                    com.hamza.account.table.VisibleColumnsExcelWriter.of(text("report.treasury.statement.title"),
+                            tableView, java.util.Set.of("treasury-action"), data.rows()));
+            // Zero is the save dialog cancelled, not a failure - a real one throws.
+            if (written > 0) AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.history.export.excel"), e);
+        }
     }
 
     private void openInvoice(TreasuryStatementRow row) {

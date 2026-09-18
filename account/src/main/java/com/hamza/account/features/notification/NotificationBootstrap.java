@@ -125,6 +125,7 @@ public final class NotificationBootstrap {
                 new LowStockSource(),
                 new CreditLimitSource(),
                 new TreasuryBalanceSource(),
+                new TreasuryMinimumBalanceSource(),
                 new EmptyGroupsSource(new JdbcMasterDataRepository(), AuthorizationGuard::isGranted,
                         (key, args) -> LanguageManager.getInstance().getString(key, args),
                         key -> Platform.runLater(() -> {

@@ -165,10 +165,6 @@ public enum DaoFactory {
     }
 
 
-    public TreasuryBalanceDao treasuryBalanceDao() {
-        return new TreasuryBalanceDao();
-    }
-
     public AreaDao areaDao() {
         return new AreaDao();
     }

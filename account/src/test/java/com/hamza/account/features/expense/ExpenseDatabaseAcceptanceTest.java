@@ -26,6 +26,7 @@ import com.hamza.account.features.employee.EmployeePayment;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.shift.ShiftCashSource;
 import com.hamza.account.features.treasury.CashCategory;
 import com.hamza.account.features.treasury.CashDirection;
 import com.hamza.account.features.treasury.CashMovementCommand;
@@ -33,6 +34,7 @@ import com.hamza.account.features.treasury.JdbcWalletFeeRepository;
 import com.hamza.account.features.treasury.TreasuryCashService;
 import com.hamza.account.features.treasury.TreasuryHistoryFilter;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
+import com.hamza.account.features.treasury.WalletFeeReport;
 import com.hamza.account.features.treasury.TreasuryTransferService;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
@@ -346,7 +348,7 @@ class ExpenseDatabaseAcceptanceTest {
     @Test
     @DisplayName("V68: a transfer's fee is an expense on the sender, and goes when the transfer does")
     void aTransferPaysItsFeeFromTheSender() throws Exception {
-        signIn(AppPermissions.TREASURY_TRANSFER);
+        signIn(AppPermissions.TREASURY_TRANSFER, AppPermissions.TREASURY_SHOW);
         int wallet = treasuryHolding("WALLET", "1000");
         int drawer = treasuryHolding("CASH", "0");
         TreasuryTransferService transfers = new TreasuryTransferService(DaoFactory.INSTANCE);
@@ -365,6 +367,15 @@ class ExpenseDatabaseAcceptanceTest {
                 + " AND fee_source_id = " + transfer + " AND treasury_id = " + wallet + " AND amount = 5"));
         assertEquals(0, new BigDecimal("5.00").compareTo(transfers.recent(5).stream()
                 .filter(row -> row.id() == transfer).findFirst().orElseThrow().fee()), "the list shows what it cost");
+
+        // The fee report names the treasury that paid and what it paid for, grouped in SQL.
+        var feeRows = new WalletFeeReport().between(LocalDate.now(), LocalDate.now(), wallet);
+        assertEquals(1, feeRows.size());
+        assertEquals(ShiftCashSource.TRANSFER_OUT, feeRows.get(0).kind());
+        assertEquals(1, feeRows.get(0).movements());
+        assertEquals(0, new BigDecimal("5.00").compareTo(feeRows.get(0).fees()));
+        assertTrue(new WalletFeeReport().between(LocalDate.now(), LocalDate.now(), drawer).isEmpty(),
+                "the receiving treasury paid nothing");
 
         // The slip reads the stored row again: the fee, and the name of whoever entered it.
         var slip = transfers.forVoucher(transfer);
@@ -433,6 +444,39 @@ class ExpenseDatabaseAcceptanceTest {
         assertEquals(0, withdrawals.totals().first().signum(), "a filter on withdrawals totals no deposit");
         assertEquals(2, cash.forPrint(new TreasuryHistoryFilter(today, today, other, null, 3, 1)).rows().size(),
                 "printing reads the whole set, whatever page is on screen");
+    }
+
+    @Test
+    @DisplayName("V69: a wallet keeps its number and its minimum, and is reported only while under it")
+    void aTreasuryUnderItsMinimumIsReported() throws Exception {
+        var treasuries = DaoFactory.INSTANCE.treasuryDao();
+        Treasury wallet = new Treasury();
+        wallet.setName(STAMP + "-minimum-" + System.nanoTime());
+        wallet.setAmount(new BigDecimal("300"));
+        wallet.setType(com.hamza.account.treasury.TreasuryType.WALLET);
+        wallet.setUserId(1);
+        wallet.setAccountNumber("  01002937820 ");
+        wallet.setMinBalance(new BigDecimal("500"));
+        assertEquals(1, treasuries.insert(wallet));
+
+        Treasury stored = treasuries.getDataByString(wallet.getName());
+        assertEquals("01002937820", stored.getAccountNumber(), "stripped on the way in");
+        assertEquals(0, new BigDecimal("500.00").compareTo(stored.getMinBalance()));
+
+        var balances = DaoFactory.INSTANCE.treasuryCurrentBalanceDao();
+        var low = balances.belowMinimum().stream().filter(row -> row.treasuryId() == stored.getId()).findFirst();
+        assertTrue(low.isPresent(), "300 held against a minimum of 500");
+        assertEquals(0, new BigDecimal("200.00").compareTo(low.get().shortBy()));
+
+        // Exactly at the minimum is enough, and a blank number is NULL rather than an empty string.
+        stored.setAmount(new BigDecimal("500"));
+        stored.setAccountNumber("   ");
+        assertEquals(1, treasuries.update(stored));
+        assertTrue(balances.belowMinimum().stream().noneMatch(row -> row.treasuryId() == stored.getId()));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM treasury WHERE id = " + stored.getId()
+                + " AND account_number IS NULL"));
+        // Every treasury that existed before V69 has no minimum, so none of them is ever reported.
+        assertEquals(0, scalar("SELECT COUNT(*) FROM treasury WHERE id = 1 AND min_balance <> 0"));
     }
 
     @Test

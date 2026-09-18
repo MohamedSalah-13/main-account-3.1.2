@@ -46,9 +46,6 @@ class ModelPurityArchitectureTest {
             "com/hamza/account/model/domain/Stock.java",
             "com/hamza/account/model/domain/Total_Sales.java",
             "com/hamza/account/model/domain/Total_buy.java",
-            "com/hamza/account/model/domain/TreasuryBalance.java",
-            "com/hamza/account/model/domain/TreasuryData.java",
-            "com/hamza/account/model/domain/TreasuryMovementData.java",
             "com/hamza/account/model/domain/UnitsModel.java",
             "com/hamza/account/model/domain/Users.java");
 

@@ -80,6 +80,18 @@ public class TreasuryController {
     @FXML
     private TextField feeField;
 
+    /** The wallet's number or the bank account's - blank for a drawer. */
+    @FXML
+    private TextField accountField;
+
+    /** What the treasury is warned under; blank or zero is no warning at all. */
+    @FXML
+    private TextField minimumField;
+
+    /** Where the treasury sits in every picker: lowest first, ties by number. */
+    @FXML
+    private TextField sortField;
+
     @FXML
     private TableView<TreasuryBalanceSummary> treasuryTable;
 
@@ -130,9 +142,10 @@ public class TreasuryController {
         });
         typeCombo.getSelectionModel().select(TreasuryType.CASH);
 
-        setTextFormatter(amountField, feeField);
+        setTextFormatter(amountField, feeField, minimumField);
         configureButtons();
-        whenEnterPressed(nameField, amountField, typeCombo, activeCheck, feeField);
+        whenEnterPressed(nameField, amountField, typeCombo, activeCheck, accountField, minimumField,
+                sortField, feeField);
         // The last field lands on the button that matches the form: editing a selected
         // treasury must not put focus on "save", which would insert a copy of it.
         feeField.setOnKeyPressed(event -> {
@@ -203,6 +216,9 @@ public class TreasuryController {
         typeCombo.getSelectionModel().select(TreasuryType.CASH);
         activeCheck.setSelected(true);
         feeField.clear();
+        accountField.clear();
+        minimumField.clear();
+        sortField.clear();
         treasuryTable.getSelectionModel().clearSelection();
     }
 
@@ -239,6 +255,16 @@ public class TreasuryController {
         }
     }
 
+    /** What the wallets kept, by treasury and by kind - the fee percentages are set on this screen. */
+    @FXML
+    private void openFeeReport() {
+        try {
+            new com.hamza.account.view.OpenApplication<>(new WalletFeeReportController());
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.fee.report.title"), e);
+        }
+    }
+
     @FXML
     private void printTreasuries() {
         List<TreasuryBalanceSummary> rows = List.copyOf(treasuryTable.getItems());
@@ -269,6 +295,9 @@ public class TreasuryController {
         treasury.setType(typeCombo.getValue());
         treasury.setActive(activeCheck.isSelected());
         treasury.setFeePercent(parseAmount(feeField.getText()));
+        treasury.setAccountNumber(accountField.getText());
+        treasury.setMinBalance(parseAmount(minimumField.getText()));
+        treasury.setSortOrder(parseOrder(sortField.getText()));
 
         // Who entered the row. Falls back to the seeded admin (id 1, the DEFAULT behind
         // every user_id column) rather than failing: this screen can be reached before a
@@ -302,6 +331,25 @@ public class TreasuryController {
         typeCombo.getSelectionModel().select(selectedTreasury.getType());
         activeCheck.setSelected(selectedTreasury.isActive());
         feeField.setText(String.valueOf(selectedTreasury.getFeePercent()));
+        accountField.setText(selectedTreasury.getAccountNumber() == null ? "" : selectedTreasury.getAccountNumber());
+        minimumField.setText(String.valueOf(selectedTreasury.getMinBalance()));
+        sortField.setText(String.valueOf(selectedTreasury.getSortOrder()));
+    }
+
+    /** Blank is zero; anything else has to be a whole number that is not negative. */
+    private int parseOrder(String value) throws UserValidationException {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            int order = Integer.parseInt(value.trim());
+            if (order < 0) {
+                throw new UserValidationException(text("treasury.error.sort.order"));
+            }
+            return order;
+        } catch (NumberFormatException e) {
+            throw new UserValidationException(text("treasury.error.sort.order"), e);
+        }
     }
 
     private BigDecimal parseAmount(String value) throws UserValidationException {
