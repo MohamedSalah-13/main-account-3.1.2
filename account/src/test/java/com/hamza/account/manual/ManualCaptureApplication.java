@@ -9,6 +9,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.view.ApplicationNavigator;
 import com.hamza.account.view.DownLoadApplication;
+import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MainScreenApplication;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
@@ -71,6 +72,8 @@ public final class ManualCaptureApplication extends Application {
 
     private final List<String> captured = new ArrayList<>();
     private final Map<String, String> skipped = new LinkedHashMap<>();
+    /** Things worth saying that did not cost a picture. */
+    private final List<String> warnings = new ArrayList<>();
 
     private Path images;
     private double settle;
@@ -106,8 +109,7 @@ public final class ManualCaptureApplication extends Application {
         Thread worker = new Thread(() -> {
             try {
                 DownLoadApplication.bootstrapForTooling();
-                signIn();
-                Platform.runLater(() -> showMainWindowThen(pages));
+                Platform.runLater(() -> shootLoginThen(pages));
             } catch (Exception failure) {
                 Platform.runLater(() -> fail("Could not start the application", failure));
             }
@@ -128,6 +130,45 @@ public final class ManualCaptureApplication extends Application {
             throw new IllegalStateException("The demo database has no user 1 to sign in as");
         }
         ServiceRegistry.get(RbacService.class).signIn(administrator);
+    }
+
+    /**
+     * The login screen, photographed before the harness signs past it.
+     * <p>
+     * It is the one screen no sidebar button reaches - the harness signs in through
+     * {@code RbacService} - and it is the first screen every user ever sees. A page asks for it
+     * with {@code stage: LOGIN}.
+     */
+    private void shootLoginThen(List<ManualPage> pages) {
+        Optional<String> picture = pages.stream()
+                .filter(page -> page.stage().filter("LOGIN"::equals).isPresent())
+                .flatMap(page -> page.screenshot().stream())
+                .findFirst();
+        if (picture.isEmpty()) {
+            signInThen(pages);
+            return;
+        }
+        try {
+            new LogApplication(DownLoadApplication.getDaoFactory(), user -> { }).show(stage);
+        } catch (Exception failure) {
+            skipped.put(picture.get(), "the login screen would not open: " + failure);
+            signInThen(pages);
+            return;
+        }
+        after(settle, () -> {
+            shoot(picture.get(), stage.getScene().getRoot());
+            signInThen(pages);
+        });
+    }
+
+    private void signInThen(List<ManualPage> pages) {
+        try {
+            signIn();
+        } catch (Exception failure) {
+            fail("Could not sign in", failure);
+            return;
+        }
+        showMainWindowThen(pages);
     }
 
     private void showMainWindowThen(List<ManualPage> pages) {
@@ -202,10 +243,11 @@ public final class ManualCaptureApplication extends Application {
             }
         });
 
-        after(settle, () -> {
+        after(settle, () -> press(page, before), () -> {
             List<Stage> opened = newStages(before);
-            Optional<Stage> screen = opened.stream().filter(stage -> !isDialog(stage))
-                    .max(Comparator.comparingDouble(stage -> stage.getScene().getWidth()));
+            Optional<Stage> screen = opened.stream()
+                    .max(Comparator.comparingDouble(ManualCaptureApplication::area))
+                    .filter(stage -> !isAlert(stage));
             if (screen.isPresent()) {
                 shoot(picture, screen.get().getScene().getRoot());
                 opened.forEach(Stage::close);
@@ -213,7 +255,7 @@ public final class ManualCaptureApplication extends Application {
                 // An alert is not the screen. The first run saved the backup screen's own
                 // "saved everything" dialog as the backup screen's picture, at 720x292, and
                 // nothing said so - which is the whole reason the choice is not "the newest window".
-                skipped.put(picture, "a dialog opened in front of the screen, so no picture was taken");
+                skipped.put(picture, "only a dialog opened: " + describe(opened));
                 opened.forEach(Stage::close);
             } else if (tabs().map(pane -> pane.getTabs().size()).orElse(0) > tabsBefore) {
                 shoot(picture, stage.getScene().getRoot());
@@ -263,9 +305,47 @@ public final class ManualCaptureApplication extends Application {
                 .toList();
     }
 
-    /** An alert or a confirmation: its scene is a {@link DialogPane}, whatever opened it. */
-    private boolean isDialog(Stage stage) {
-        return stage.getScene().getRoot() instanceof DialogPane;
+    /**
+     * What a dialog actually said. "A dialog was in the way" is a report nobody can act on; the
+     * title and the message name the screen's own refusal, which is usually the real finding.
+     */
+    private static String describe(List<Stage> stages) {
+        List<String> said = new ArrayList<>();
+        for (Stage stage : stages) {
+            if (stage.getScene().getRoot() instanceof DialogPane pane) {
+                String text = String.join(" / ", List.of(
+                        String.valueOf(stage.getTitle()),
+                        String.valueOf(pane.getHeaderText()),
+                        String.valueOf(pane.getContentText()))).replace("null", "").trim();
+                said.add(text.isBlank() ? "(an empty dialog)" : text);
+            } else {
+                said.add("(a window, " + (int) stage.getScene().getWidth() + "x"
+                        + (int) stage.getScene().getHeight() + ")");
+            }
+        }
+        return String.join(" | ", said);
+    }
+
+    private static double area(Stage stage) {
+        return stage.getScene().getWidth() * stage.getScene().getHeight();
+    }
+
+    /**
+     * An alert, as opposed to a screen that happens to be built as a dialog.
+     * <p>
+     * Two wrong tests were tried before this one, and each cost screens. Being a
+     * {@link DialogPane} is not it: "add a user", "delete data" and the price-check screen are
+     * dialogs by construction here, and treating every dialog as an alert threw nine screens away.
+     * Size is not it either - some of those screens are a small form.
+     * <p>
+     * What separates them is <b>where the words are</b>. An alert puts its message in
+     * {@code contentText}; a screen puts a scene graph in {@code setContent} and leaves
+     * {@code contentText} empty. Measured on all five: the backup screen's alert had content text,
+     * the four screens had none.
+     */
+    private boolean isAlert(Stage stage) {
+        return stage.getScene().getRoot() instanceof DialogPane pane
+                && pane.getContentText() != null && !pane.getContentText().isBlank();
     }
 
     private void shoot(String picture, Node node) {
@@ -288,10 +368,71 @@ public final class ManualCaptureApplication extends Application {
         pause.play();
     }
 
+    /** Wait, do something, wait again, then act - what a screen that has to be asked to load needs. */
+    private void after(double seconds, Runnable between, Runnable action) {
+        after(seconds, () -> {
+            between.run();
+            after(seconds, action);
+        });
+    }
+
+    /**
+     * Presses the button a page named with {@code click:}, if it is there.
+     * <p>
+     * Six of the report screens draw an empty table until "بحث وعرض" is pressed - they are a filter
+     * bar with a result area, and opening one is not asking it anything. Photographed without this,
+     * the manual's reports chapter documented six filter bars.
+     */
+    private void press(ManualPage page, List<Window> before) {
+        page.click().ifPresent(caption -> {
+            List<Stage> opened = newStages(before);
+            Optional<Button> button = opened.stream()
+                    .map(stage -> stage.getScene().getRoot())
+                    .map(root -> findButton(root, caption))
+                    .filter(Optional::isPresent).map(Optional::get)
+                    .findFirst()
+                    .or(() -> findButton(stage.getScene().getRoot(), caption));
+            if (button.isEmpty()) {
+                // Reported, not fatal. The screen is still worth a picture, and losing it as well
+                // punishes the page twice for naming a button that has since been renamed.
+                warnings.add(page.screenshot().orElse(page.id())
+                        + ": no button named \"" + caption + "\" - photographed without pressing it");
+                return;
+            }
+            try {
+                button.get().fire();
+            } catch (RuntimeException failure) {
+                warnings.add(page.screenshot().orElse(page.id())
+                        + ": pressing \"" + caption + "\" failed: " + failure);
+            }
+        });
+    }
+
+    /** The first enabled button whose caption contains the text, anywhere under this node. */
+    private Optional<Button> findButton(Node root, String caption) {
+        if (root instanceof Button button && !button.isDisabled()
+                && button.getText() != null && button.getText().contains(caption)) {
+            return Optional.of(button);
+        }
+        if (root instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                Optional<Button> found = findButton(child, caption);
+                if (found.isPresent()) {
+                    return found;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     private void report() {
         restoreTheme();
         System.out.println("captured " + captured.size() + " screenshots into " + images.toAbsolutePath());
         captured.forEach(picture -> System.out.println("  + " + picture));
+        if (!warnings.isEmpty()) {
+            System.out.println("warnings (" + warnings.size() + "):");
+            warnings.forEach(warning -> System.out.println("  ! " + warning));
+        }
         if (!skipped.isEmpty()) {
             System.out.println("not captured (" + skipped.size() + "):");
             skipped.forEach((picture, why) -> System.out.println("  - " + picture + ": " + why));

@@ -39,6 +39,8 @@ public final class ManualParser {
                 required(header, "chapter", id),
                 Optional.ofNullable(header.get("shortcut")).filter(value -> !value.isBlank()),
                 Optional.ofNullable(header.get("screenshot")).filter(value -> !value.isBlank()),
+                Optional.ofNullable(header.get("stage")).filter(value -> !value.isBlank()),
+                Optional.ofNullable(header.get("click")).filter(value -> !value.isBlank()),
                 splitList(header.get("sources")),
                 readBlocks(lines));
     }

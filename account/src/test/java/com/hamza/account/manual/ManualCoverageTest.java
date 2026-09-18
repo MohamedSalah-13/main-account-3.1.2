@@ -34,35 +34,19 @@ class ManualCoverageTest {
     /** Commands that are not screens and will never have a page of their own. */
     private static final Set<SidebarShortcut> NOT_A_SCREEN = EnumSet.of(
             SidebarShortcut.CLOSE,      // closes the program
-            SidebarShortcut.YOUTUBE);   // opens a video in the browser
+            SidebarShortcut.YOUTUBE,    // opens a video in the browser
+            // ReportsButtons.detailsReport() answers PermissionKey.deny() and its action() body is
+            // empty: the button is in the sidebar, is permanently disabled, and opens nothing. It
+            // was written a page in the manual before the capture harness reported that its button
+            // could not be pressed - which is how a screen that does not exist got noticed.
+            SidebarShortcut.REPORT_DETAILS);
 
     /**
-     * Screens the manual does not cover yet. Each line is a screen a customer can open and cannot
-     * look up. Delete a line when its page is written; the test fails if you delete one without
-     * writing the page, and fails if you write the page and leave the line.
+     * Screens the manual does not cover yet - empty, and meant to stay that way. A screen added to
+     * the sidebar fails {@link #theDebtIsHonest()} until it has a page here or is listed below, so
+     * the only way to ship a screen nobody can look up is to write down that you are doing it.
      */
-    private static final Set<SidebarShortcut> UNDOCUMENTED = EnumSet.of(
-            SidebarShortcut.TOTAL_SALES, SidebarShortcut.TOTAL_SALES_RETURN,
-            SidebarShortcut.PURCHASE_RETURN, SidebarShortcut.TOTAL_PURCHASE,
-            SidebarShortcut.TOTAL_PURCHASE_RETURN,
-            SidebarShortcut.ITEMS, SidebarShortcut.ITEM_GROUPS, SidebarShortcut.ADD_ITEM,
-            SidebarShortcut.MASTER_DATA, SidebarShortcut.INVENTORY, SidebarShortcut.STOCK_COUNT,
-            SidebarShortcut.STOCKS, SidebarShortcut.STOCK_TRANSFERS, SidebarShortcut.MERGE_ITEMS,
-            SidebarShortcut.PRICE_CHECK,
-            SidebarShortcut.ADD_CUSTOMER, SidebarShortcut.CUSTOMERS, 
-            SidebarShortcut.ADD_SUPPLIER, SidebarShortcut.SUPPLIERS, SidebarShortcut.SUPPLIER_ACCOUNT,
-            SidebarShortcut.ADD_EMPLOYEE, SidebarShortcut.EMPLOYEES, SidebarShortcut.ADD_USER,
-            SidebarShortcut.USERS,
-            SidebarShortcut.TREASURIES, SidebarShortcut.TREASURY_TRANSFER, SidebarShortcut.TREASURY_CASH,
-            SidebarShortcut.TREASURY_CAPITAL, SidebarShortcut.TREASURY_DETAILS,
-            SidebarShortcut.TREASURY_PROCESS, 
-            SidebarShortcut.REPORT_SUMMARY, SidebarShortcut.REPORT_ITEMS, SidebarShortcut.REPORT_ITEMS_DAILY,
-            SidebarShortcut.REPORT_SALES_YEAR, SidebarShortcut.REPORT_PURCHASE_YEAR,
-            SidebarShortcut.REPORT_CUSTOMER_PAID, SidebarShortcut.REPORT_SUPPLIER_PAID,
-            SidebarShortcut.REPORT_DETAILS, SidebarShortcut.REPORT_YEARLY, SidebarShortcut.REPORT_PROFIT_LOSS,
-            SidebarShortcut.REPORT_RETURN_REASONS,
-            SidebarShortcut.SETTINGS, SidebarShortcut.SHIFT_REPORTS, 
-            SidebarShortcut.DELETE_DATA, SidebarShortcut.ABOUT);
+    private static final Set<SidebarShortcut> UNDOCUMENTED = EnumSet.noneOf(SidebarShortcut.class);
 
     /** Arabic letters. A code span is for text that reads left to right, and only for that. */
     private static final Pattern ARABIC = Pattern.compile("[\\u0600-\\u06FF]");

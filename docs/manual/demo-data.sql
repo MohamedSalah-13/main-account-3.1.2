@@ -209,3 +209,112 @@ VALUES (5, CURRENT_DATE - INTERVAL 12 DAY, 1800.00, 'إيجار المحل عن 
 UPDATE document_sequences
 SET current_value = GREATEST(current_value, (SELECT COALESCE(MAX(invoice_number), 0) FROM total_sales))
 WHERE document_type = 'SALES';
+
+-- ---------------------------------------------------------------- purchases
+-- Without these, the purchases list, its return list and the purchases-by-month report are
+-- three empty tables in the manual, and the stock the sales draw on has no origin.
+
+-- total_buy carries no delegate: a purchase has no salesman.
+INSERT INTO total_buy (invoice_number, sup_code, invoice_type, invoice_date, total, discount,
+                       paid_up, stock_id, treasury_id) VALUES
+    (2001, 2, 1, CURRENT_DATE - INTERVAL 20 DAY, 8400.00,   0.00, 8400.00, 1, 1),
+    (2002, 3, 2, CURRENT_DATE - INTERVAL 18 DAY, 6650.00, 150.00, 2000.00, 1, 1),
+    (2003, 4, 1, CURRENT_DATE - INTERVAL 15 DAY, 3840.00,   0.00, 3840.00, 1, 1),
+    (2004, 2, 2, CURRENT_DATE - INTERVAL  7 DAY, 5400.00,   0.00, 1500.00, 1, 1)
+ON DUPLICATE KEY UPDATE total = VALUES(total), paid_up = VALUES(paid_up);
+
+INSERT INTO purchase (invoice_number, num, type, quantity, price, discount, type_value)
+SELECT line.invoice_number, line.item, i.unit_id, line.qty, i.buy_price, 0, 1
+FROM (
+    SELECT 2001 AS invoice_number,  4 AS item, 100 AS qty UNION ALL
+    SELECT 2001,  7,  80 UNION ALL
+    SELECT 2001,  5, 120 UNION ALL
+    SELECT 2002,  1,  48 UNION ALL
+    SELECT 2002,  2,  36 UNION ALL
+    SELECT 2002,  3,  12 UNION ALL
+    SELECT 2003, 14, 120 UNION ALL
+    SELECT 2003, 16, 200 UNION ALL
+    SELECT 2004, 10,  24 UNION ALL
+    SELECT 2004, 11,  30 UNION ALL
+    SELECT 2004, 13,  20
+) AS line
+JOIN items i ON i.id = line.item;
+
+-- ---------------------------------------------------------------- returns
+
+INSERT INTO total_sales_re (id, sup_id, invoice_type, invoice_date, total, discount,
+                            paid_from_treasury, stock_id, delegate_id, treasury_id) VALUES
+    (3001, 2, 2, CURRENT_DATE - INTERVAL 5 DAY, 316.00, 0.00,   0.00, 1, 1, 1),
+    (3002, 1, 1, CURRENT_DATE - INTERVAL 2 DAY, 120.00, 0.00, 120.00, 1, 1, 1)
+ON DUPLICATE KEY UPDATE total = VALUES(total);
+
+INSERT INTO sales_re (invoice_number, item_id, type, quantity, price, buy_price,
+                      total_sel_price, total_buy_price, total_profit, discount, type_value)
+SELECT line.inv, line.item, i.unit_id, line.qty, line.price, i.buy_price,
+       line.qty * line.price, line.qty * i.buy_price,
+       line.qty * (line.price - i.buy_price), 0, 1
+FROM (
+    SELECT 3001 AS inv,  8 AS item, 4 AS qty, 52.00 AS price UNION ALL
+    SELECT 3001, 17, 3, 32.00 UNION ALL
+    SELECT 3002, 16, 20, 6.00
+) AS line
+JOIN items i ON i.id = line.item;
+
+INSERT INTO total_buy_re (id, sup_id, invoice_type, invoice_date, total, discount,
+                          paid_to_treasury, stock_id, treasury_id) VALUES
+    (4001, 3, 2, CURRENT_DATE - INTERVAL 9 DAY, 276.00, 0.00, 0.00, 1, 1)
+ON DUPLICATE KEY UPDATE total = VALUES(total);
+
+INSERT INTO purchase_re (invoice_number, item_id, type, quantity, price, discount, type_value)
+SELECT 4001, 3, i.unit_id, 3, i.buy_price, 0, 1
+FROM items i WHERE i.id = 3;
+
+-- ---------------------------------------------------------------- more cash movement
+-- A collection today, so the customer-payments report is not empty on the day it is opened.
+
+INSERT INTO customers_accounts (account_code, account_date, paid, purchase, treasury_id, numberInv, notes)
+VALUES (3, CURRENT_DATE, 800.00, 0, 1, 0, 'تحصيل نقدي'),
+       (2, CURRENT_DATE, 1500.00, 0, 1, 0, 'تحصيل على الحساب');
+
+INSERT INTO suppliers_accounts (account_code, account_date, paid, purchase, treasury_id, numberInv, notes)
+VALUES (2, CURRENT_DATE - INTERVAL 6 DAY, 2000.00, 0, 1, 0, 'سداد دفعة'),
+       (4, CURRENT_DATE, 1200.00, 0, 1, 0, 'سداد دفعة');
+
+INSERT INTO treasury_transfers (treasury_from, treasury_to, amount, transfer_date, notes)
+VALUES (1, 3, 10000.00, CURRENT_DATE - INTERVAL 5 DAY, 'ترحيل نقدية إلى البنك'),
+       (2, 1, 1500.00, CURRENT_DATE - INTERVAL 2 DAY, 'تحويل من المحفظة إلى الدرج');
+
+-- deposit_or_expenses is the direction and its values are 1 = in and 2 = out - not 0 for out.
+-- V21's CHECK ties each category to its only possible direction, which is what refuses a personal
+-- withdrawal recorded as money coming in.
+INSERT INTO treasury_deposit_expenses (treasury_id, statement, date_inter, amount,
+                                       description_data, deposit_or_expenses, category)
+VALUES (1, 'رأس مال', CURRENT_DATE - INTERVAL 25 DAY, 20000.00, 'رأس مال إضافي من صاحب العمل', 1, 'CAPITAL_IN'),
+       (1, 'مسحوبات', CURRENT_DATE - INTERVAL 11 DAY,  3000.00, 'مسحوبات شخصية', 2, 'OWNER_DRAW'),
+       (1, 'إيداع',   CURRENT_DATE - INTERVAL  4 DAY,  1000.00, 'إيداع نقدي متنوع', 1, 'NORMAL');
+
+-- ---------------------------------------------------------------- a pair to merge
+-- The merge screen lists candidates; with no near-duplicate in the catalogue it is an empty table.
+
+INSERT INTO items (id, barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2, sel_price3,
+                   unit_id, mini_quantity, first_balance) VALUES
+    (21, '5449000000125', 'كوكاكولا 1 لتر - كود قديم', 7, 16.00, 20.00, 19.50, 19.00, 4, 24, 0)
+ON DUPLICATE KEY UPDATE nameItem = VALUES(nameItem);
+
+INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
+SELECT * FROM (
+    SELECT 21 AS item_id, s.stock_id AS stock_id, 0 AS first_balance, 0 AS current_quantity
+    FROM stocks s
+) AS seed
+ON DUPLICATE KEY UPDATE first_balance = VALUES(first_balance);
+
+-- The numbering must not hand out a number already on a document above.
+UPDATE document_sequences
+SET current_value = GREATEST(current_value, (SELECT COALESCE(MAX(invoice_number), 0) FROM total_buy))
+WHERE document_type = 'PURCHASE';
+UPDATE document_sequences
+SET current_value = GREATEST(current_value, (SELECT COALESCE(MAX(id), 0) FROM total_sales_re))
+WHERE document_type = 'SALES_RETURN';
+UPDATE document_sequences
+SET current_value = GREATEST(current_value, (SELECT COALESCE(MAX(id), 0) FROM total_buy_re))
+WHERE document_type = 'PURCHASE_RETURN';

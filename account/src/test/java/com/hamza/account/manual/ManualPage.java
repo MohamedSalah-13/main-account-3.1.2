@@ -16,6 +16,13 @@ import java.util.Optional;
  * @param chapter    which part of the manual it belongs to
  * @param shortcut   the {@code SidebarShortcut} constant this page documents, where it is a screen
  * @param screenshot the picture id the capture harness writes, where the page shows one
+ * @param stage      a screen the harness reaches other than by pressing a sidebar button. The
+ *                   only one today is {@code LOGIN}: the harness signs in through the service
+ *                   layer and never sees the login screen, which is the first screen every user
+ *                   meets and so the one a manual can least afford to leave out
+ * @param click      a button caption the harness presses before taking the picture. Several
+ *                   reports here draw nothing until "بحث وعرض" is pressed, and a manual whose
+ *                   report pages all show an empty table documents the filter bar, not the report
  * @param sources    the controller and FXML that define the screen - what a stale picture is
  *                   measured against
  * @param blocks     the prose
@@ -25,6 +32,8 @@ public record ManualPage(String id,
                          String chapter,
                          Optional<String> shortcut,
                          Optional<String> screenshot,
+                         Optional<String> stage,
+                         Optional<String> click,
                          List<String> sources,
                          List<ManualBlock> blocks) {
 

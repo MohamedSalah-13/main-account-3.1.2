@@ -3,6 +3,7 @@ id: sign-in
 title: تسجيل الدخول
 chapter: البداية
 screenshot: login
+stage: LOGIN
 sources: account/src/main/resources/com/hamza/account/view/login.fxml, account/src/main/resources/com/hamza/account/view/change-password.fxml
 ---
 
