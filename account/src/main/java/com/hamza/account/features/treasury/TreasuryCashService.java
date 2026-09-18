@@ -141,6 +141,18 @@ public final class TreasuryCashService {
         });
     }
 
+    /** One page of the period's deposits and withdrawals, with the totals of everything the filter matches. */
+    public TreasuryHistoryPage<CashMovement> history(TreasuryHistoryFilter filter) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_DEPOSIT);
+        return TreasuryHistoryPage.of(daoFactory.cashMovementDao().page(filter),
+                daoFactory.cashMovementDao().totals(filter), filter);
+    }
+
+    /** The whole filtered set for paper or a file - what is printed is never just the page on screen. */
+    public TreasuryHistoryPage<CashMovement> forPrint(TreasuryHistoryFilter filter) throws DaoException {
+        return history(filter.forPrint());
+    }
+
     public List<CashMovement> recent(int limit) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_DEPOSIT);
         return daoFactory.cashMovementDao().recent(limit);

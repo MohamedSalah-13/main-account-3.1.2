@@ -214,6 +214,63 @@ public final class TreasuryStatements {
             ORDER BY user_name, id
             """;
 
+    // ---- history lists: a period, a treasury, a page ----------------------------------------
+
+    /** The fee a transfer cost, read by the kind {@code WalletFeeSource.transfer} wrote it with. */
+    private static final String TRANSFER_FEE = """
+            (SELECT d.amount FROM expenses_details d
+                     WHERE d.fee_source_type = 11 AND d.fee_source_id = treasury_transfers_and_names.id)""";
+
+    /**
+     * One WHERE for the page and for its totals, so the footer cannot describe other rows than the
+     * table. A treasury matches either end of a transfer - and the pair is inside one bracket:
+     * {@code a OR b AND c} is {@code a OR (b AND c)}, which would let every transfer through.
+     */
+    private static final String TRANSFERS_WHERE = """
+            WHERE transfer_date BETWEEN ? AND ?
+              AND (? IS NULL OR treasury_from = ? OR treasury_to = ?)""";
+
+    public static final String SELECT_TRANSFERS_PAGE = """
+            SELECT id, treasury_from, treasury_to, amount, transfer_date, notes,
+                   treasury_name_from, treasury_name_to,
+                   %s AS fee
+            FROM treasury_transfers_and_names
+            %s
+            ORDER BY transfer_date DESC, id DESC
+            LIMIT ? OFFSET ?
+            """.formatted(TRANSFER_FEE, TRANSFERS_WHERE);
+
+    public static final String SELECT_TRANSFERS_TOTALS = """
+            SELECT COUNT(*) AS movements, COALESCE(SUM(amount), 0) AS first_total,
+                   COALESCE(SUM(%s), 0) AS second_total
+            FROM treasury_transfers_and_names
+            %s
+            """.formatted(TRANSFER_FEE, TRANSFERS_WHERE);
+
+    private static final String CASH_WHERE = """
+            WHERE d.date_inter BETWEEN ? AND ?
+              AND (? IS NULL OR d.treasury_id = ?)
+              AND (? IS NULL OR d.deposit_or_expenses = ?)""";
+
+    public static final String SELECT_CASH_MOVEMENTS_PAGE = """
+            SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
+                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name
+            FROM treasury_deposit_expenses d
+                     JOIN treasury t ON t.id = d.treasury_id
+            %s
+            ORDER BY d.date_inter DESC, d.id DESC
+            LIMIT ? OFFSET ?
+            """.formatted(CASH_WHERE);
+
+    /** Deposits first, withdrawals second - 1 and 2 are {@code CashDirection}'s codes, as the view reads them. */
+    public static final String SELECT_CASH_MOVEMENTS_TOTALS = """
+            SELECT COUNT(*) AS movements,
+                   COALESCE(SUM(IF(d.deposit_or_expenses = 1, d.amount, 0)), 0) AS first_total,
+                   COALESCE(SUM(IF(d.deposit_or_expenses = 2, d.amount, 0)), 0) AS second_total
+            FROM treasury_deposit_expenses d
+            %s
+            """.formatted(CASH_WHERE);
+
     // ---- the wallet fee, and the movement it was paid for (V67) -------------------------------
 
     /**

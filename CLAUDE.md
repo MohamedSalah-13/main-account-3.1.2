@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,616 tests** with 140 skipped (below) — the figure `mvn clean test`
+**2,626 tests** with 141 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-18. What is
 genuinely covered:
 
@@ -863,6 +863,16 @@ cash to the main drawer without a word. It predates the fee work and affected ev
 non-default treasury. `selectStoredTreasury` fixes it (adding a treasury since closed rather than
 leaving it unselected), and `InvoiceEditRestoresTreasuryTest` reads the screen's source so the line
 cannot be lost in a merge - crude, and the only check possible without a toolkit.
+
+**The transfers, deposits and capital screens list a period, not "the last fifty"**
+(`TreasuryHistoryFilter`/`TreasuryHistoryPage`, `docs/treasury-plan.md` §22). A movement older than
+the fifty could not be found, and so could not be corrected either - the delete acted on a row of
+that list. The page and its totals are read with **one `WHERE`**, the totals over the whole filtered
+set; a treasury matches either end of a transfer, inside one bracket. `TreasuryHistoryBar` and
+`TreasuryHistoryTable` give all three the shared bar, content-sized columns, a delete button in the
+row, and a PDF and a spreadsheet of the columns on screen over the whole extract. **The deposits and
+capital reports carry no totals line on purpose**: both directions share one amount column, and their
+sum is a number that means nothing - the two totals go in the subtitle.
 
 ### Shifts
 

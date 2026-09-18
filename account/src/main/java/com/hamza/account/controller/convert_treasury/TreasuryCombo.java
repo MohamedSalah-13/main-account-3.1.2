@@ -72,7 +72,7 @@ final class TreasuryCombo {
             return "";
         }
         return LanguageManager.getInstance().getString("treasury.available.balance")
-                + " " + row.balance().toPlainString();
+                + " " + com.hamza.controlsfx.table.Columns.money(row.balance());
     }
 
     /** A figure that may be left out: blank is zero, anything else has to be a number that is not negative. */

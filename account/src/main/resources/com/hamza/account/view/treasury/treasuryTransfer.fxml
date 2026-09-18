@@ -66,7 +66,6 @@
 
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Button onAction="#saveTransfer" styleClass="primary-button" text="%treasury.transfer.btn.save" />
-                    <Button onAction="#deleteTransfer" styleClass="warning-button" text="%common.delete" />
                     <Button onAction="#reload" styleClass="neutral-button" text="%common.refresh" />
                 </HBox>
             </VBox>
@@ -81,7 +80,9 @@
 
             <!-- Columns are built in the controller with Columns.*, never with a field-name
                  string: rule 1 of section 5 in docs/new-code-rules.md. -->
+            <HBox fx:id="historyBar" alignment="CENTER_LEFT" spacing="8" />
             <TableView fx:id="transfersTable" styleClass="app-table" VBox.vgrow="ALWAYS" />
+            <HBox fx:id="historyFooter" alignment="CENTER_LEFT" spacing="10" />
         </VBox>
     </center>
 

@@ -231,6 +231,55 @@ class TreasuryStatementsTest {
     }
 
     @Test
+    @DisplayName("a history page and its totals are read with one WHERE, bound in one order")
+    void historyPagesShareTheirWhere() {
+        String transfers = """
+                WHERE transfer_date BETWEEN ? AND ?
+                  AND (? IS NULL OR treasury_from = ? OR treasury_to = ?)""";
+        String cash = """
+                WHERE d.date_inter BETWEEN ? AND ?
+                  AND (? IS NULL OR d.treasury_id = ?)
+                  AND (? IS NULL OR d.deposit_or_expenses = ?)""";
+        // The footer describes the rows of the table, so both statements carry the same text - and
+        // the treasury pair sits in ONE bracket: unbracketed, "a OR b AND c" lets every transfer through.
+        for (String sql : List.of(TreasuryStatements.SELECT_TRANSFERS_PAGE, TreasuryStatements.SELECT_TRANSFERS_TOTALS)) {
+            assertTrue(sql.contains(transfers), sql);
+        }
+        for (String sql : List.of(TreasuryStatements.SELECT_CASH_MOVEMENTS_PAGE,
+                TreasuryStatements.SELECT_CASH_MOVEMENTS_TOTALS)) {
+            assertTrue(sql.contains(cash), sql);
+        }
+
+        // The page binds the WHERE's values and then LIMIT and OFFSET; the totals bind the WHERE's alone.
+        assertEquals(7, parameters(TreasuryStatements.SELECT_TRANSFERS_PAGE));
+        assertEquals(5, parameters(TreasuryStatements.SELECT_TRANSFERS_TOTALS));
+        assertEquals(8, parameters(TreasuryStatements.SELECT_CASH_MOVEMENTS_PAGE));
+        assertEquals(6, parameters(TreasuryStatements.SELECT_CASH_MOVEMENTS_TOTALS));
+        for (String page : List.of(TreasuryStatements.SELECT_TRANSFERS_PAGE,
+                TreasuryStatements.SELECT_CASH_MOVEMENTS_PAGE)) {
+            assertTrue(page.stripTrailing().endsWith("LIMIT ? OFFSET ?"), "an unbounded history page: " + page);
+            assertTrue(page.contains("DESC, "), "newest first, and the id breaks a tie so a page is stable");
+        }
+    }
+
+    @Test
+    @DisplayName("the cash totals split by CashDirection's own codes, and a transfer's by its fee kind")
+    void historyTotalsReadTheRightSides() {
+        assertEquals("""
+                SELECT COUNT(*) AS movements,
+                       COALESCE(SUM(IF(d.deposit_or_expenses = 1, d.amount, 0)), 0) AS first_total,
+                       COALESCE(SUM(IF(d.deposit_or_expenses = 2, d.amount, 0)), 0) AS second_total
+                FROM treasury_deposit_expenses d
+                WHERE d.date_inter BETWEEN ? AND ?
+                  AND (? IS NULL OR d.treasury_id = ?)
+                  AND (? IS NULL OR d.deposit_or_expenses = ?)
+                """, TreasuryStatements.SELECT_CASH_MOVEMENTS_TOTALS);
+        assertEquals(1, com.hamza.account.features.treasury.CashDirection.DEPOSIT.code());
+        assertEquals(2, com.hamza.account.features.treasury.CashDirection.WITHDRAWAL.code());
+        assertTrue(TreasuryStatements.SELECT_TRANSFERS_TOTALS.contains("d.fee_source_type = 11"));
+    }
+
+    @Test
     @DisplayName("the transfer list reads each transfer's fee by the kind the fee was written with")
     void theTransferListReadsItsFee() {
         assertEquals("""

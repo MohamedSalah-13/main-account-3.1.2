@@ -3,6 +3,9 @@ package com.hamza.account.controller.convert_treasury;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.TreasuryMovementRecorded;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.features.treasury.TreasuryHistoryFilter;
+import com.hamza.account.features.treasury.TreasuryHistoryPage;
 import com.hamza.account.features.treasury.TreasuryTransfer;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
 import com.hamza.account.features.treasury.TreasuryTransferService;
@@ -16,7 +19,6 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -24,10 +26,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Moves money from one treasury to another.
@@ -44,7 +48,8 @@ import java.util.List;
 @FxmlPath(pathFile = "treasury/treasuryTransfer.fxml")
 public class TreasuryTransferController {
 
-    private static final int RECENT_LIMIT = 50;
+    private static final String AMOUNT_COLUMN = "transferAmount";
+    private static final String FEE_COLUMN = "transferFee";
 
     @FXML
     private BorderPane root;
@@ -74,6 +79,15 @@ public class TreasuryTransferController {
     @FXML
     private TableView<TreasuryTransfer> transfersTable;
 
+    @FXML
+    private HBox historyBar;
+
+    @FXML
+    private HBox historyFooter;
+
+    private TreasuryHistoryBar history;
+    private TreasuryHistoryTable<TreasuryTransfer> historyTable;
+
     private final TreasuryTransferService transferService;
     private final TreasuryBalanceService balanceService;
     private final EventBus eventBus;
@@ -88,14 +102,22 @@ public class TreasuryTransferController {
     private void initialize() {
         datePicker.setValue(LocalDate.now());
 
-        transfersTable.getColumns().setAll(
-                Columns.text("treasury.transfer.column.from", TreasuryTransfer::fromTreasuryName),
-                Columns.text("treasury.transfer.column.to", TreasuryTransfer::toTreasuryName),
-                Columns.text("treasury.transfer.column.amount", transfer -> Columns.money(transfer.amount())),
-                Columns.text("treasury.transfer.column.fee",
-                        transfer -> transfer.fee().signum() == 0 ? "" : Columns.money(transfer.fee())),
-                Columns.date("treasury.transfer.column.date", TreasuryTransfer::transferDate),
-                Columns.text("treasury.transfer.column.notes", TreasuryTransfer::notes));
+        historyTable = new TreasuryHistoryTable<>(transfersTable, "treasuryTransfersTable", List.of(
+                TreasuryHistoryTable.withId("transferDate",
+                        Columns.date("treasury.transfer.column.date", TreasuryTransfer::transferDate)),
+                TreasuryHistoryTable.withId("transferFrom",
+                        Columns.text("treasury.transfer.column.from", TreasuryTransfer::fromTreasuryName)),
+                TreasuryHistoryTable.withId("transferTo",
+                        Columns.text("treasury.transfer.column.to", TreasuryTransfer::toTreasuryName)),
+                TreasuryHistoryTable.withId(AMOUNT_COLUMN,
+                        Columns.money("treasury.transfer.column.amount", TreasuryTransfer::amount)),
+                TreasuryHistoryTable.withId(FEE_COLUMN,
+                        Columns.money("treasury.transfer.column.fee", TreasuryTransfer::fee)),
+                TreasuryHistoryTable.withId("transferNotes",
+                        Columns.text("treasury.transfer.column.notes", TreasuryTransfer::notes))),
+                AppPermissions.TREASURY_TRANSFER, this::deleteTransfer);
+        history = new TreasuryHistoryBar(false, this::loadHistory, this::printHistory, this::exportHistory);
+        history.installIn(historyBar, historyFooter);
 
         fromCombo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, was, now) -> availableLabel.setText(TreasuryCombo.availableText(now)));
@@ -110,9 +132,9 @@ public class TreasuryTransferController {
             TreasuryCombo.fill(fromCombo, treasuries);
             TreasuryCombo.fill(toCombo, treasuries);
             availableLabel.setText(TreasuryCombo.availableText(fromCombo.getValue()));
-
-            transfersTable.setItems(FXCollections.observableArrayList(
-                    transferService.recent(RECENT_LIMIT)));
+            // Every treasury, closed ones included: an old transfer is found under the till it was made on.
+            history.setTreasuries(balanceService.getTreasuryBalanceSummary());
+            history.load();
         } catch (DaoException e) {
             AllAlerts.handleError(text("treasury.error.load.title"), e);
         }
@@ -152,13 +174,8 @@ public class TreasuryTransferController {
         }
     }
 
-    @FXML
-    private void deleteTransfer() {
-        TreasuryTransfer selected = transfersTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            AllAlerts.alertError(text("treasury.transfer.msg.select.to.delete"));
-            return;
-        }
+    /** The row's own button: there is no "choose a transfer first" to get wrong. */
+    private void deleteTransfer(TreasuryTransfer selected) {
         if (!AllAlerts.confirmDelete()) {
             return;
         }
@@ -173,6 +190,48 @@ public class TreasuryTransferController {
         } catch (Exception e) {
             AllAlerts.handleError(text("treasury.transfer.op.delete"), e);
         }
+    }
+
+    private void loadHistory(TreasuryHistoryFilter filter) {
+        try {
+            TreasuryHistoryPage<TreasuryTransfer> page = transferService.history(filter);
+            historyTable.show(page.rows());
+            history.showPage(page, totalsText(page));
+        } catch (DaoException e) {
+            AllAlerts.handleError(text("treasury.error.load.title"), e);
+        }
+    }
+
+    private void printHistory() {
+        TreasuryHistoryFilter filter = history.filter();
+        if (filter == null) return;
+        try {
+            TreasuryHistoryPage<TreasuryTransfer> extract = transferService.forPrint(filter);
+            if (extract.truncated()) {
+                AllAlerts.alertError(text("treasury.statement.error.print.limit"));
+                return;
+            }
+            historyTable.print(text("treasury.transfer.report.title"), history.periodText(), extract.rows(),
+                    Set.of(AMOUNT_COLUMN, FEE_COLUMN));
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.statement.operation.print"), e);
+        }
+    }
+
+    private void exportHistory() {
+        TreasuryHistoryFilter filter = history.filter();
+        if (filter == null) return;
+        try {
+            historyTable.exportExcel(text("treasury.transfer.report.title"),
+                    transferService.forPrint(filter).rows());
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.history.export.excel"), e);
+        }
+    }
+
+    private String totalsText(TreasuryHistoryPage<TreasuryTransfer> page) {
+        return LanguageManager.getInstance().getString("treasury.transfer.totals", page.totals().count(),
+                Columns.money(page.totals().first()), Columns.money(page.totals().second()));
     }
 
     private void publish(int treasuryId) {

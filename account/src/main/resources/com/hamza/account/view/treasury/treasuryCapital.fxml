@@ -29,6 +29,7 @@
                     <Label styleClass="form-label" text="%treasury.label.to.date" />
                     <DatePicker fx:id="toDate" styleClass="modern-input" />
                     <Button onAction="#reload" styleClass="primary-button" text="%common.refresh" />
+                    <HBox fx:id="reportActions" alignment="CENTER_LEFT" spacing="8" />
                 </HBox>
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">

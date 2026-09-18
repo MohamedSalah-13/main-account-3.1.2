@@ -70,7 +70,6 @@
 
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Button onAction="#saveMovement" styleClass="primary-button" text="%treasury.cash.btn.save" />
-                    <Button onAction="#deleteMovement" styleClass="warning-button" text="%common.delete" />
                     <Button onAction="#reload" styleClass="neutral-button" text="%common.refresh" />
                 </HBox>
             </VBox>
@@ -83,7 +82,9 @@
                 <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
             </padding>
 
+            <HBox fx:id="historyBar" alignment="CENTER_LEFT" spacing="8" />
             <TableView fx:id="movementsTable" styleClass="app-table" VBox.vgrow="ALWAYS" />
+            <HBox fx:id="historyFooter" alignment="CENTER_LEFT" spacing="10" />
         </VBox>
     </center>
 </BorderPane>

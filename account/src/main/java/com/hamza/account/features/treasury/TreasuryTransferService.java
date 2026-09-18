@@ -146,6 +146,18 @@ public final class TreasuryTransferService {
         });
     }
 
+    /** One page of the period's transfers, with the totals of everything the filter matches. */
+    public TreasuryHistoryPage<TreasuryTransfer> history(TreasuryHistoryFilter filter) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_TRANSFER);
+        return TreasuryHistoryPage.of(daoFactory.treasuryTransferDao().page(filter),
+                daoFactory.treasuryTransferDao().totals(filter), filter);
+    }
+
+    /** The whole filtered set for paper or a file - what is printed is never just the page on screen. */
+    public TreasuryHistoryPage<TreasuryTransfer> forPrint(TreasuryHistoryFilter filter) throws DaoException {
+        return history(filter.forPrint());
+    }
+
     /** Recent history, for the screen that lets a transfer be found and undone. */
     public List<TreasuryTransfer> recent(int limit) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_TRANSFER);

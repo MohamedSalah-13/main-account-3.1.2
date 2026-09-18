@@ -26,7 +26,12 @@ import com.hamza.account.features.employee.EmployeePayment;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.treasury.CashCategory;
+import com.hamza.account.features.treasury.CashDirection;
+import com.hamza.account.features.treasury.CashMovementCommand;
 import com.hamza.account.features.treasury.JdbcWalletFeeRepository;
+import com.hamza.account.features.treasury.TreasuryCashService;
+import com.hamza.account.features.treasury.TreasuryHistoryFilter;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
 import com.hamza.account.features.treasury.TreasuryTransferService;
 import com.hamza.account.model.domain.CustomerAccount;
@@ -365,6 +370,57 @@ class ExpenseDatabaseAcceptanceTest {
         assertEquals(0, new BigDecimal("1000.00").compareTo(decimal(balanceOf + wallet)), "the fee came back too");
         assertEquals(0, scalar("SELECT COUNT(*) FROM expenses_details WHERE fee_source_type = 11"
                 + " AND fee_source_id = " + transfer));
+    }
+
+    @Test
+    @DisplayName("the history lists: a period, a treasury at either end, a page, and totals of the whole set")
+    void historyListsAreFilteredPagedAndTotalledInSql() throws Exception {
+        signIn(AppPermissions.TREASURY_TRANSFER, AppPermissions.TREASURY_DEPOSIT);
+        int wallet = treasuryHolding("WALLET", "1000");
+        int drawer = treasuryHolding("CASH", "1000");
+        int other = treasuryHolding("BANK", "1000");
+        LocalDate today = LocalDate.now();
+        TreasuryTransferService transfers = new TreasuryTransferService(DaoFactory.INSTANCE);
+        TreasuryCashService cash = new TreasuryCashService(DaoFactory.INSTANCE);
+
+        transfers.transfer(new TreasuryTransferCommand(wallet, drawer, new BigDecimal("100"), today, STAMP,
+                OPERATOR, new BigDecimal("2")));
+        transfers.transfer(new TreasuryTransferCommand(drawer, wallet, new BigDecimal("30"), today, STAMP, OPERATOR));
+        transfers.transfer(new TreasuryTransferCommand(drawer, other, new BigDecimal("7"), today, STAMP, OPERATOR));
+        // Outside the period, so neither the rows nor the totals may carry it.
+        transfers.transfer(new TreasuryTransferCommand(wallet, drawer, new BigDecimal("500"),
+                today.minusDays(40), STAMP, OPERATOR));
+
+        // The wallet is an end of two of today's three, whichever end - and of none of the third.
+        var ofWallet = transfers.history(new TreasuryHistoryFilter(today, today, wallet, null, 0, 50));
+        assertEquals(2, ofWallet.rows().size());
+        assertEquals(2, ofWallet.totals().count());
+        assertEquals(0, new BigDecimal("130.00").compareTo(ofWallet.totals().first()));
+        assertEquals(0, new BigDecimal("2.00").compareTo(ofWallet.totals().second()), "one of the two cost a fee");
+
+        // One row a page: the totals still describe the whole set, and the extra row says there is more.
+        var firstPage = transfers.history(new TreasuryHistoryFilter(today, today, wallet, null, 0, 1));
+        assertEquals(1, firstPage.rows().size());
+        assertTrue(firstPage.hasNext());
+        assertEquals(2, firstPage.totals().count());
+        var secondPage = transfers.history(new TreasuryHistoryFilter(today, today, wallet, null, 1, 1));
+        assertEquals(1, secondPage.rows().size());
+        assertTrue(!secondPage.hasNext() && secondPage.hasPrevious());
+        assertTrue(firstPage.rows().get(0).id() != secondPage.rows().get(0).id(), "the two pages are one list");
+
+        cash.record(new CashMovementCommand(other, CashDirection.DEPOSIT, CashCategory.NORMAL, new BigDecimal("40"),
+                today, STAMP, "", OPERATOR));
+        cash.record(new CashMovementCommand(other, CashDirection.WITHDRAWAL, CashCategory.NORMAL,
+                new BigDecimal("15"), today, STAMP, "", OPERATOR));
+        var both = cash.history(new TreasuryHistoryFilter(today, today, other, null, 0, 50));
+        assertEquals(2, both.rows().size());
+        assertEquals(0, new BigDecimal("40.00").compareTo(both.totals().first()), "deposited");
+        assertEquals(0, new BigDecimal("15.00").compareTo(both.totals().second()), "withdrawn");
+        var withdrawals = cash.history(new TreasuryHistoryFilter(today, today, other, CashDirection.WITHDRAWAL, 0, 50));
+        assertEquals(1, withdrawals.rows().size());
+        assertEquals(0, withdrawals.totals().first().signum(), "a filter on withdrawals totals no deposit");
+        assertEquals(2, cash.forPrint(new TreasuryHistoryFilter(today, today, other, null, 3, 1)).rows().size(),
+                "printing reads the whole set, whatever page is on screen");
     }
 
     @Test

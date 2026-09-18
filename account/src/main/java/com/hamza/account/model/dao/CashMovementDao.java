@@ -4,6 +4,8 @@ import com.hamza.account.features.treasury.CashCategory;
 import com.hamza.account.features.treasury.CashDirection;
 import com.hamza.account.features.treasury.CashMovement;
 import com.hamza.account.features.treasury.CashMovementCommand;
+import com.hamza.account.features.treasury.TreasuryHistoryFilter;
+import com.hamza.account.features.treasury.TreasuryHistoryPage;
 import com.hamza.account.treasury.TreasuryStatements;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -61,6 +63,49 @@ public class CashMovementDao extends AbstractDao<CashMovement> {
     public List<CashMovement> capitalBetween(LocalDate from, LocalDate to) throws DaoException {
         return queryForObjects(TreasuryStatements.SELECT_CAPITAL_MOVEMENTS, this::map,
                 Date.valueOf(from), Date.valueOf(to));
+    }
+
+    /** One page and one extra row, in the filter's order. */
+    public List<CashMovement> page(TreasuryHistoryFilter filter) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(TreasuryStatements.SELECT_CASH_MOVEMENTS_PAGE)) {
+                Object[] where = whereValues(filter);
+                Object[] values = java.util.Arrays.copyOf(where, where.length + 2);
+                values[where.length] = filter.queryLimit();
+                values[where.length + 1] = filter.offset();
+                setData(statement, values);
+                List<CashMovement> rows = new java.util.ArrayList<>();
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) rows.add(map(rs));
+                }
+                return rows;
+            } catch (SQLException e) {
+                throw new DaoException("Could not read the treasury history", e);
+            }
+        });
+    }
+
+    /** The count and the two sums of the whole filtered set - the same WHERE, the same values. */
+    public TreasuryHistoryPage.Totals totals(TreasuryHistoryFilter filter) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(TreasuryStatements.SELECT_CASH_MOVEMENTS_TOTALS)) {
+                setData(statement, whereValues(filter));
+                try (ResultSet rs = statement.executeQuery()) {
+                    rs.next();
+                    return new TreasuryHistoryPage.Totals(rs.getLong("movements"),
+                            rs.getBigDecimal("first_total"), rs.getBigDecimal("second_total"));
+                }
+            } catch (SQLException e) {
+                throw new DaoException("Could not total the treasury history", e);
+            }
+        });
+    }
+
+    /** Every value the shared WHERE binds, in the order it binds them. */
+    static Object[] whereValues(TreasuryHistoryFilter filter) {
+        Integer direction = filter.direction() == null ? null : filter.direction().code();
+        return new Object[]{Date.valueOf(filter.from()), Date.valueOf(filter.to()),
+                filter.treasuryId(), filter.treasuryId(), direction, direction};
     }
 
     @Override

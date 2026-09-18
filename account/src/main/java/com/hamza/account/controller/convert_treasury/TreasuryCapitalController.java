@@ -1,24 +1,27 @@
 package com.hamza.account.controller.convert_treasury;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.features.treasury.CashCategory;
 import com.hamza.account.features.treasury.CashMovement;
 import com.hamza.account.features.treasury.TreasuryCashService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.table.ListToolbar;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.Columns;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * What the owner has put into the business and taken out of it, over a period.
@@ -57,7 +60,12 @@ public class TreasuryCapitalController {
     @FXML
     private TableView<CashMovement> movementsTable;
 
+    @FXML
+    private HBox reportActions;
+
     private final TreasuryCashService cashService;
+    private TreasuryHistoryTable<CashMovement> historyTable;
+    private List<CashMovement> shown = List.of();
 
     public TreasuryCapitalController(DaoFactory daoFactory) {
         this.cashService = new TreasuryCashService(daoFactory);
@@ -69,13 +77,23 @@ public class TreasuryCapitalController {
         fromDate.setValue(today.withDayOfYear(1));
         toDate.setValue(today);
 
-        movementsTable.getColumns().setAll(
-                Columns.date("treasury.capital.column.date", CashMovement::date),
-                Columns.text("treasury.capital.column.category",
-                        movement -> text(movement.category().labelKey())),
-                Columns.text("treasury.capital.column.treasury", CashMovement::treasuryName),
-                Columns.number("treasury.capital.column.amount", CashMovement::amount),
-                Columns.text("treasury.capital.column.statement", CashMovement::statement));
+        // No delete here: a capital movement is entered and undone on the deposits screen, and this
+        // is the report of them. A null permission with no action would still draw a button.
+        historyTable = new TreasuryHistoryTable<>(movementsTable, "treasuryCapitalTable", List.of(
+                TreasuryHistoryTable.withId("capitalDate",
+                        Columns.date("treasury.capital.column.date", CashMovement::date)),
+                TreasuryHistoryTable.withId("capitalCategory", Columns.text("treasury.capital.column.category",
+                        movement -> text(movement.category().labelKey()))),
+                TreasuryHistoryTable.withId("capitalTreasury",
+                        Columns.text("treasury.capital.column.treasury", CashMovement::treasuryName)),
+                TreasuryHistoryTable.withId("capitalAmount",
+                        Columns.money("treasury.capital.column.amount", CashMovement::amount)),
+                TreasuryHistoryTable.withId("capitalStatement",
+                        Columns.text("treasury.capital.column.statement", CashMovement::statement))));
+        new ListToolbar()
+                .print(ListToolbar.printButton(this::print))
+                .export(ListToolbar.button("treasury.history.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
+                .installIn(reportActions);
 
         reload();
     }
@@ -85,16 +103,37 @@ public class TreasuryCapitalController {
         try {
             List<CashMovement> movements =
                     cashService.capitalMovements(fromDate.getValue(), toDate.getValue());
-            movementsTable.setItems(FXCollections.observableArrayList(movements));
+            shown = movements;
+            historyTable.show(movements);
 
             BigDecimal paidIn = total(movements, CashCategory.CAPITAL_IN);
             BigDecimal drawn = total(movements, CashCategory.OWNER_DRAW);
-            paidInLabel.setText(text("treasury.capital.total.in") + " " + paidIn.toPlainString());
-            drawnLabel.setText(text("treasury.capital.total.out") + " " + drawn.toPlainString());
+            paidInLabel.setText(text("treasury.capital.total.in") + " " + Columns.money(paidIn));
+            drawnLabel.setText(text("treasury.capital.total.out") + " " + Columns.money(drawn));
             netLabel.setText(text("treasury.capital.total.net") + " "
-                    + paidIn.subtract(drawn).toPlainString());
+                    + Columns.money(paidIn.subtract(drawn)));
         } catch (DaoException e) {
             AllAlerts.handleError(text("treasury.capital.op.load"), e);
+        }
+    }
+
+    /**
+     * Capital paid in and drawings share one amount column, so the paper carries no totals line - a
+     * sum of the two means nothing. The three figures the screen shows go in the subtitle.
+     */
+    private void print() {
+        historyTable.print(text("treasury.capital.title"),
+                text("from") + ": " + fromDate.getValue() + "  |  " + text("to") + ": " + toDate.getValue()
+                        + "  |  " + paidInLabel.getText() + "  |  " + drawnLabel.getText()
+                        + "  |  " + netLabel.getText(),
+                shown, Set.of());
+    }
+
+    private void exportExcel() {
+        try {
+            historyTable.exportExcel(text("treasury.capital.title"), shown);
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.history.export.excel"), e);
         }
     }
 

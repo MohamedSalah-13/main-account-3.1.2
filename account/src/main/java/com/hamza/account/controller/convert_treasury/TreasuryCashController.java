@@ -7,9 +7,11 @@ import com.hamza.account.features.treasury.CashCategory;
 import com.hamza.account.features.treasury.CashDirection;
 import com.hamza.account.features.treasury.CashMovement;
 import com.hamza.account.features.treasury.CashMovementCommand;
+import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.features.treasury.TreasuryCashService;
+import com.hamza.account.features.treasury.TreasuryHistoryFilter;
+import com.hamza.account.features.treasury.TreasuryHistoryPage;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryBalanceService;
 import com.hamza.account.treasury.TreasuryBalanceSummary;
@@ -27,11 +29,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Puts cash into a treasury and takes it out.
@@ -48,7 +52,8 @@ import java.util.List;
 @FxmlPath(pathFile = "treasury/treasuryCash.fxml")
 public class TreasuryCashController {
 
-    private static final int RECENT_LIMIT = 50;
+    private static final String AMOUNT_COLUMN = "cashAmount";
+
 
     @FXML
     private BorderPane root;
@@ -79,6 +84,15 @@ public class TreasuryCashController {
 
     @FXML
     private TableView<CashMovement> movementsTable;
+
+    @FXML
+    private HBox historyBar;
+
+    @FXML
+    private HBox historyFooter;
+
+    private TreasuryHistoryBar history;
+    private TreasuryHistoryTable<CashMovement> historyTable;
 
     private final TreasuryCashService cashService;
     private final TreasuryBalanceService balanceService;
@@ -133,15 +147,22 @@ public class TreasuryCashController {
             directionCombo.setDisable(fixed);
         });
 
-        movementsTable.getColumns().setAll(
-                Columns.text("treasury.cash.column.treasury", CashMovement::treasuryName),
-                Columns.text("treasury.cash.column.direction",
-                        movement -> text(movement.direction().labelKey())),
-                Columns.text("treasury.cash.column.category",
-                        movement -> text(movement.category().labelKey())),
-                Columns.number("treasury.cash.column.amount", CashMovement::amount),
-                Columns.date("treasury.cash.column.date", CashMovement::date),
-                Columns.text("treasury.cash.column.statement", CashMovement::statement));
+        historyTable = new TreasuryHistoryTable<>(movementsTable, "treasuryCashMovementsTable", List.of(
+                TreasuryHistoryTable.withId("cashDate",
+                        Columns.date("treasury.cash.column.date", CashMovement::date)),
+                TreasuryHistoryTable.withId("cashTreasury",
+                        Columns.text("treasury.cash.column.treasury", CashMovement::treasuryName)),
+                TreasuryHistoryTable.withId("cashDirection", Columns.text("treasury.cash.column.direction",
+                        movement -> text(movement.direction().labelKey()))),
+                TreasuryHistoryTable.withId("cashCategory", Columns.text("treasury.cash.column.category",
+                        movement -> text(movement.category().labelKey()))),
+                TreasuryHistoryTable.withId(AMOUNT_COLUMN,
+                        Columns.money("treasury.cash.column.amount", CashMovement::amount)),
+                TreasuryHistoryTable.withId("cashStatement",
+                        Columns.text("treasury.cash.column.statement", CashMovement::statement))),
+                AppPermissions.TREASURY_DEPOSIT, this::deleteMovement);
+        history = new TreasuryHistoryBar(true, this::loadHistory, this::printHistory, this::exportHistory);
+        history.installIn(historyBar, historyFooter);
 
         treasuryCombo.getSelectionModel().selectedItemProperty().addListener(
                 (obs, was, now) -> availableLabel.setText(TreasuryCombo.availableText(now)));
@@ -154,8 +175,9 @@ public class TreasuryCashController {
         try {
             TreasuryCombo.fill(treasuryCombo, balanceService.getActiveTreasuryBalances());
             availableLabel.setText(TreasuryCombo.availableText(treasuryCombo.getValue()));
-            movementsTable.setItems(FXCollections.observableArrayList(
-                    cashService.recent(RECENT_LIMIT)));
+            // Every treasury, closed ones included: an old deposit is found under the till it was made on.
+            history.setTreasuries(balanceService.getTreasuryBalanceSummary());
+            history.load();
         } catch (DaoException e) {
             AllAlerts.handleError(text("treasury.error.load.title"), e);
         }
@@ -192,13 +214,8 @@ public class TreasuryCashController {
         }
     }
 
-    @FXML
-    private void deleteMovement() {
-        CashMovement selected = movementsTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            AllAlerts.alertError(text("treasury.cash.msg.select.to.delete"));
-            return;
-        }
+    /** The row's own button: there is no "choose a movement first" to get wrong. */
+    private void deleteMovement(CashMovement selected) {
         if (!AllAlerts.confirmDelete()) {
             return;
         }
@@ -214,15 +231,60 @@ public class TreasuryCashController {
         }
     }
 
+    private void loadHistory(TreasuryHistoryFilter filter) {
+        try {
+            TreasuryHistoryPage<CashMovement> page = cashService.history(filter);
+            historyTable.show(page.rows());
+            history.showPage(page, LanguageManager.getInstance().getString("treasury.cash.totals",
+                    page.totals().count(), Columns.money(page.totals().first()),
+                    Columns.money(page.totals().second())));
+        } catch (DaoException e) {
+            AllAlerts.handleError(text("treasury.error.load.title"), e);
+        }
+    }
+
+    /**
+     * No totals line on paper: deposits and withdrawals share one amount column, and a sum of the
+     * two is a number that means nothing. The period's two totals are in the subtitle instead.
+     */
+    private void printHistory() {
+        TreasuryHistoryFilter filter = history.filter();
+        if (filter == null) return;
+        try {
+            TreasuryHistoryPage<CashMovement> extract = cashService.forPrint(filter);
+            if (extract.truncated()) {
+                AllAlerts.alertError(text("treasury.statement.error.print.limit"));
+                return;
+            }
+            String totals = LanguageManager.getInstance().getString("treasury.cash.totals",
+                    extract.totals().count(), Columns.money(extract.totals().first()),
+                    Columns.money(extract.totals().second()));
+            historyTable.print(text("treasury.cash.report.title"), history.periodText() + "  |  " + totals,
+                    extract.rows(), Set.of());
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.statement.operation.print"), e);
+        }
+    }
+
+    private void exportHistory() {
+        TreasuryHistoryFilter filter = history.filter();
+        if (filter == null) return;
+        try {
+            historyTable.exportExcel(text("treasury.cash.report.title"), cashService.forPrint(filter).rows());
+        } catch (Exception e) {
+            AllAlerts.handleError(text("treasury.history.export.excel"), e);
+        }
+    }
+
     private void publish(int treasuryId) {
         if (eventBus != null) {
             eventBus.publish(new TreasuryMovementRecorded(treasuryId));
         }
     }
 
+    /** No session is a refusal, not user 1: a deposit filed under the administrator is one nobody made. */
     private int userId() {
-        Users user = CurrentUser.getOrNull();
-        return user == null ? 1 : user.getId();
+        return CurrentUser.get().getId();
     }
 
     private String text(String key) {
