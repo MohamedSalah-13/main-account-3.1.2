@@ -116,6 +116,12 @@ if ($Type -eq 'msi') {
     )
 }
 
+# قوالب الطباعة (.jrxml) تُقرأ من مجلد reports بجوار الملف التنفيذي (Configs.FILE_REPORTS مسار نسبي)،
+# وليست داخل الـ jar: بدونها لا يُطبع ريسيت 80mm ولا ملصق الباركود ولا تقريرا الوردية.
+$reports = Join-Path $root 'reports'
+if (-not (Test-Path (Join-Path $reports 'ar\invoice-80mm.jrxml'))) { throw "مجلد reports غير موجود أو ناقص: $reports" }
+$jpackageArgs += @('--app-content', $reports)
+
 Write-Host "==> jpackage ($Type)" -ForegroundColor Cyan
 & $jpackage @jpackageArgs
 if ($LASTEXITCODE -ne 0) {

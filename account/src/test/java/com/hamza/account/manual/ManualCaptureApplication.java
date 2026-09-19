@@ -69,6 +69,8 @@ public final class ManualCaptureApplication extends Application {
     private static final double DEFAULT_SETTLE_SECONDS = 2.5;
     /** Twice the screen's own pixels, so a figure is still readable printed on A4. */
     private static final double SCALE = 2.0;
+    private static final double CAPTURE_WIDTH = 1366;
+    private static final double CAPTURE_HEIGHT = 768;
 
     private final List<String> captured = new ArrayList<>();
     private final Map<String, String> skipped = new LinkedHashMap<>();
@@ -78,6 +80,7 @@ public final class ManualCaptureApplication extends Application {
     private Path images;
     private double settle;
     private Stage stage;
+    private boolean widerThisTime;
     private MainScreenController main;
     private ThemeManager.Theme themeBefore;
 
@@ -176,6 +179,13 @@ public final class ManualCaptureApplication extends Application {
             ApplicationNavigator navigator = new ApplicationNavigator(stage, DownLoadApplication.getDaoFactory());
             ServiceRegistry.register(ApplicationNavigator.class, navigator);
             main = new MainScreenApplication(DownLoadApplication.getDaoFactory(), navigator).show(stage);
+            // The window opens at whatever size it was left at, and that was 723x478 - smaller than
+            // any screen a customer has, so every tabbed screen was photographed cut off on its
+            // trailing side and the treasuries table fell out of its own picture. 1366x768 is the
+            // smallest screen this ships to: a figure taken there shows what that customer sees.
+            stage.setMaximized(false);
+            stage.setWidth(CAPTURE_WIDTH);
+            stage.setHeight(CAPTURE_HEIGHT);
         } catch (Exception failure) {
             fail("Could not open the main window", failure);
             return;
@@ -237,6 +247,7 @@ public final class ManualCaptureApplication extends Application {
         // screen be photographed and then closed.
         Platform.runLater(() -> {
             try {
+                restoreMainWindow();
                 button.fire();
             } catch (RuntimeException failure) {
                 skipped.put(picture, "the screen refused to open: " + failure);
@@ -265,6 +276,25 @@ public final class ManualCaptureApplication extends Application {
             }
             next(remaining, index + 1);
         });
+    }
+
+    /**
+     * Puts the main window back to the size the figures are taken at.
+     * <p>
+     * Measured, not guessed: after the invoice screens - windows of their own - had opened and
+     * closed, the stage still reported 1366x768 while its scene had shrunk to 723x478, and every
+     * tabbed screen after them was photographed at that size - the root's own preferred size in
+     * mainScreen-view.fxml. The stage has to be given a size it does not already hold: setting a
+     * property to its own value is a no-op, and nudging it and setting it back inside one pulse
+     * comes to the same nothing, which the second attempt proved. So consecutive screens differ
+     * by two points, which no reader of a figure can see and which makes every resize a real one.
+     */
+    private void restoreMainWindow() {
+        widerThisTime = !widerThisTime;
+        stage.setIconified(false);
+        stage.setMaximized(false);
+        stage.setWidth(CAPTURE_WIDTH + (widerThisTime ? 2 : 0));
+        stage.setHeight(CAPTURE_HEIGHT + (widerThisTime ? 2 : 0));
     }
 
     private Optional<Button> buttonFor(ManualPage page) {
@@ -353,6 +383,12 @@ public final class ManualCaptureApplication extends Application {
             SnapshotParameters parameters = new SnapshotParameters();
             parameters.setFill(Color.WHITE);
             parameters.setTransform(javafx.scene.transform.Transform.scale(SCALE, SCALE));
+            if (node.getScene() == stage.getScene() && main != null
+                    && node.getScene().getWidth() < CAPTURE_WIDTH - 100) {
+                // Said rather than shot in silence: a figure this narrow is a cut-off screen.
+                System.out.println("WARNING " + picture + ": the main window was photographed at "
+                        + (int) node.getScene().getWidth() + "x" + (int) node.getScene().getHeight());
+            }
             WritableImage image = node.snapshot(parameters, null);
             Path file = images.resolve(picture + ".png");
             ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file.toFile());
