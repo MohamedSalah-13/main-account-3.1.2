@@ -15,6 +15,14 @@ public interface DocumentDeletionRepository {
     void requireNoReturns(DocumentType type, List<Integer> ids) throws DaoException;
 
     /**
+     * What the documents being deleted put on the shelf, per item and warehouse, beside what the
+     * shelf holds today - the two figures {@link DocumentDeleteStockCheck} compares. Only asked of
+     * a family that moves stock <em>in</em>; the others cannot go negative by being deleted.
+     */
+    List<DocumentDeleteStockCheck.StockLine> stockLinesOf(DocumentType type, List<Integer> ids)
+            throws DaoException;
+
+    /**
      * Removes the documents with everything that has to go with them - their stock movements, the
      * reversal of their cash in the shift journal, the announcement to the other tills - and answers
      * how many headers were actually removed. Runs inside the caller's transaction.

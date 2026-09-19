@@ -285,6 +285,59 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
     }
 
     @Override
+    public List<SourceDocument> searchSources(DocumentType sourceType, int documentNumber,
+                                             String partyText, int limit) throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        DocumentTableSpec returnSpec = DocumentTableSpec.of(
+                DocumentType.of(sourceType.partyKind(), true));
+        // Sold and returned per document, each aggregated over its own line table before the
+        // join - the lesson DelegateActivityQuery's ACTIVITY_SQL states: joining first and
+        // grouping after multiplies a document by every return line against it.
+        String sql = "SELECT d." + spec.key() + " AS number, d." + spec.dateColumn() + " AS doc_date,"
+                + " p.name AS party_name, d.total - d.discount AS net,"
+                + " COALESCE(sold.units, 0) AS sold_units,"
+                + " COALESCE(back.units, 0) AS returned_units"
+                + " FROM " + spec.table() + " d"
+                + " LEFT JOIN " + spec.partyTable() + " p ON p.id = d." + spec.party()
+                + " LEFT JOIN (SELECT " + DocumentTableSpec.LINE_DOCUMENT + " AS doc,"
+                + " SUM(quantity * type_value) AS units FROM " + spec.lineTable()
+                + " GROUP BY " + DocumentTableSpec.LINE_DOCUMENT + ") sold ON sold.doc = d." + spec.key()
+                + " LEFT JOIN (SELECT h.source_invoice_number AS doc,"
+                + " SUM(r.quantity * r.type_value) AS units FROM " + returnSpec.lineTable() + " r"
+                + " JOIN " + returnSpec.table() + " h ON h." + returnSpec.key() + " = r."
+                + DocumentTableSpec.LINE_DOCUMENT
+                + " WHERE h.source_invoice_number IS NOT NULL"
+                + " GROUP BY h.source_invoice_number) back ON back.doc = d." + spec.key()
+                + " WHERE (? = 0 OR d." + spec.key() + " = ?)"
+                + " AND (? = '' OR p.name LIKE ?)"
+                + " ORDER BY d." + spec.dateColumn() + " DESC, d." + spec.key() + " DESC"
+                + " LIMIT ?";
+        return withConnection(connection -> {
+            List<SourceDocument> found = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, documentNumber);
+                statement.setInt(2, documentNumber);
+                String party = partyText == null ? "" : partyText;
+                statement.setString(3, party);
+                statement.setString(4, "%" + party + "%");
+                statement.setInt(5, Math.max(limit, 1));
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        double sold = rows.getDouble("sold_units");
+                        double back = rows.getDouble("returned_units");
+                        Date date = rows.getDate("doc_date");
+                        found.add(new SourceDocument(rows.getInt("number"),
+                                date == null ? null : date.toLocalDate(),
+                                rows.getString("party_name"), rows.getDouble("net"),
+                                sold > 0 && back >= sold - 0.000_001));
+                    }
+                }
+            }
+            return found;
+        });
+    }
+
+    @Override
     public List<ReasonCount> reasonCounts(DocumentType returnType, LocalDate from, LocalDate to)
             throws DaoException {
         DocumentTableSpec spec = DocumentTableSpec.of(returnType);

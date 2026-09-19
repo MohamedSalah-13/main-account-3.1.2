@@ -145,6 +145,16 @@ class DocumentDeletionServiceTest {
             }
         }
 
+        /** What the next {@code stockShortfalls} should find; empty unless a case sets it. */
+        private List<DocumentDeleteStockCheck.StockLine> stockLines = List.of();
+
+        @Override
+        public List<DocumentDeleteStockCheck.StockLine> stockLinesOf(
+                DocumentType type, List<Integer> ids) {
+            steps.add("stock " + type + " " + ids);
+            return stockLines;
+        }
+
         @Override
         public int deleteDocuments(DocumentType type, List<Integer> ids, String correctionReason) {
             steps.add("delete " + type + " " + ids + " " + correctionReason);

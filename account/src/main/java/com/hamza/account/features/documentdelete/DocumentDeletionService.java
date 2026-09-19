@@ -75,6 +75,22 @@ public final class DocumentDeletionService {
         return new DocumentDeletionResult(distinct.size(), deleted);
     }
 
+    /**
+     * What would go below zero on the shelf if these documents were deleted - empty for a family
+     * that puts goods back rather than taking them (a sale, a purchase return), and empty when
+     * nothing would. The screen asks before confirming; nothing here refuses, see
+     * {@link DocumentDeleteStockCheck}.
+     */
+    public List<DocumentDeleteStockCheck.Shortfall> stockShortfalls(
+            DocumentType type, List<Integer> ids) throws DaoException {
+        Objects.requireNonNull(type, "type");
+        List<Integer> distinct = distinct(ids);
+        if (distinct.isEmpty() || type.stockSign() <= 0) {
+            return List.of();
+        }
+        return DocumentDeleteStockCheck.shortfalls(repository.stockLinesOf(type, distinct));
+    }
+
     private void requireDeletable(DocumentType type, List<Integer> ids) throws DaoException {
         repository.requirePeriodOpen(type, ids);
         repository.requireNoReturns(type, ids);

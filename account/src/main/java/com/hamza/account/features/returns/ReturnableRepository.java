@@ -144,6 +144,16 @@ public interface ReturnableRepository {
     Optional<Integer> sourcePartyId(DocumentType sourceType, int sourceId) throws DaoException;
 
     /**
+     * The source documents a return could name, newest first - what the picker offers in place of
+     * asking for a number nobody has. Matched by {@link ReturnSourceSearch}: a document number, a
+     * party's name, or both. A document every line of which has already come back is still listed,
+     * with {@link SourceDocument#fullyReturned()} set, because "it is all back already" is an
+     * answer and an empty list is not.
+     */
+    List<SourceDocument> searchSources(DocumentType sourceType, int documentNumber,
+                                       String partyText, int limit) throws DaoException;
+
+    /**
      * How many returns of one type were entered for each reason in a date range, and
      * what they totalled - what a reasons report groups by. A return with no reason
      * recorded (every one before an entry screen asked for one, and any entered
@@ -170,6 +180,16 @@ public interface ReturnableRepository {
     record SourceLine(int itemId, double quantity, double price, double discount,
                       double buyPrice, int unitId, double typeValue,
                       LocalDate expirationDate) {
+    }
+
+    /**
+     * One candidate source, as the picker lists it.
+     *
+     * @param net            {@code total - discount} - what the document actually came to
+     * @param fullyReturned  whether earlier returns already account for every unit it moved
+     */
+    record SourceDocument(int number, LocalDate date, String partyName, double net,
+                          boolean fullyReturned) {
     }
 
     /** {@code total} is the lines after their own discounts; {@code discount} is the document's. */

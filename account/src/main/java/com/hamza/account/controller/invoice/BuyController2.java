@@ -19,6 +19,8 @@ import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.invoice.*;
+import com.hamza.account.features.party.statement.PartyStatementService;
+import com.hamza.account.features.returns.JdbcReturnableRepository;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
@@ -677,7 +679,13 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 employeeService::delegateById,
                 this::partyNameById,
                 error -> AllAlerts.handleError(
-                        LanguageManager.getInstance().getString("return.dialog.title"), error));
+                        LanguageManager.getInstance().getString("return.dialog.title"), error),
+                DialogReturnReason::ask,
+                new PartyStatementService()::currentBalance,
+                () -> DialogReturnSourcePicker.show(
+                        (number, party, limit) -> new JdbcReturnableRepository().searchSources(
+                                designInterface.documentType().reverses(), number, party, limit),
+                        this::logError));
         returnEntry.configure();
         // A return that names an invoice gives back its share of that invoice's own
         // discount, and the share moves with the lines.
@@ -946,7 +954,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             validateInvoiceForSave();
 
-            if (!returnEntry.confirmIfUnlinked()) {
+            // Why it has no invoice behind it, and whether settling it this way was meant.
+            if (!returnEntry.confirmBeforeSave(
+                    selectedInvoiceType() == InvoiceType.DEFER, codeAccount)) {
                 return;
             }
 

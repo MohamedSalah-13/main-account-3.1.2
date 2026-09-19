@@ -7,7 +7,10 @@ import com.hamza.account.features.invoice.ReturnedStatusService;
 import com.hamza.account.features.returns.JdbcReturnableRepository;
 import com.hamza.account.features.invoice.InvoiceLineEditService;
 import com.hamza.account.features.returns.ReturnHeaderDiscount;
+import com.hamza.account.config.PropertiesName;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.returns.ReturnReason;
+import com.hamza.account.features.returns.ReturnSettlementAdvice;
 import com.hamza.account.features.returns.ReturnableRepository;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -50,6 +53,9 @@ public final class ReturnEntryCoordinator {
     private final DelegateLookup delegateLookup;
     private final PartyLookup partyLookup;
     private final ErrorHandler errorHandler;
+    private final ReasonPrompt reasonPrompt;
+    private final SourcePicker sourcePicker;
+    private final PartyBalances partyBalances;
 
     private int sourceInvoiceNumber;
     private ReturnReason selectedReturnReason;
@@ -62,13 +68,19 @@ public final class ReturnEntryCoordinator {
                                   LineAppender lineAppender,
                                   DelegateLookup delegateLookup,
                                   PartyLookup partyLookup,
-                                  ErrorHandler errorHandler) {
+                                  ErrorHandler errorHandler,
+                                  ReasonPrompt reasonPrompt,
+                                  PartyBalances partyBalances,
+                                  SourcePicker sourcePicker) {
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.controls = Objects.requireNonNull(controls, "controls");
         this.lineAppender = Objects.requireNonNull(lineAppender, "lineAppender");
         this.delegateLookup = Objects.requireNonNull(delegateLookup, "delegateLookup");
         this.partyLookup = Objects.requireNonNull(partyLookup, "partyLookup");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler");
+        this.reasonPrompt = Objects.requireNonNull(reasonPrompt, "reasonPrompt");
+        this.sourcePicker = Objects.requireNonNull(sourcePicker, "sourcePicker");
+        this.partyBalances = Objects.requireNonNull(partyBalances, "partyBalances");
         Objects.requireNonNull(itemLookup, "itemLookup");
 
         // Only a return has a source to pick from; only a sale or purchase has
@@ -170,19 +182,100 @@ public final class ReturnEntryCoordinator {
     }
 
     /**
+     * Everything this screen has to ask before a return is written: why it has no invoice
+     * behind it, and whether the way it is being settled is really what was meant.
+     * <p>
+     * One method rather than three call sites in {@code saveInvoice}, because they are one
+     * conversation with the person at the counter and the order matters - the reason is asked
+     * first, since answering it may well be the moment they realise they meant to pick the
+     * invoice after all.
+     *
+     * @param deferred whether the return is being settled on the account rather than in cash
+     * @param partyId  the customer or supplier it is booked to
+     * @return whether the save may go ahead
+     */
+    public boolean confirmBeforeSave(boolean deferred, int partyId) {
+        if (!documentType.isReturn()) {
+            return true;
+        }
+        return confirmIfUnlinked() && confirmSettlement(deferred, partyId);
+    }
+
+    /**
      * A return with no source invoice is the one document nothing here can check - no
      * quantity to compare against, no cost to recover, no batch to pick from. Allowed,
      * and always was, but not silently.
-     *
-     * @return whether the save may go ahead
+     * <p>
+     * It asks for the reason at the same time, and that is the only place a free return can be
+     * asked for one: the reason combo lives in the picker dialog, which a free return never
+     * opens, so every return entered without an invoice reached the reasons report with no
+     * reason however deliberate the person had been. Cancelling the reason is not cancelling
+     * the save - "not given" is an answer, and it is the one every free return used to give.
      */
-    public boolean confirmIfUnlinked() {
-        if (!documentType.isReturn() || sourceInvoiceNumber > 0) {
+    private boolean confirmIfUnlinked() {
+        if (sourceInvoiceNumber > 0) {
+            return true;
+        }
+        var lang = LanguageManager.getInstance();
+        if (!AllAlerts.confirm_all(lang.getString("confirm"),
+                lang.getString("return.confirm.no.source"))) {
+            return false;
+        }
+        selectedReturnReason = reasonPrompt.ask(selectedReturnReason);
+        return true;
+    }
+
+    /**
+     * The two things about a return's settlement that are worth a word and not a refusal -
+     * {@link ReturnSettlementAdvice} states both and why. The balance behind the second is read
+     * here rather than in the rule, and a reader who may not see it simply gets no warning: the
+     * party screens are permission-guarded, and a warning is not worth failing a save over.
+     */
+    private boolean confirmSettlement(boolean deferred, int partyId) {
+        BigDecimal balance = deferred ? null : partyBalance(partyId);
+        ReturnSettlementAdvice.Concern concern = ReturnSettlementAdvice.of(
+                sourceInvoiceNumber > 0, deferred, isDefaultCashParty(partyId), balance);
+        if (concern.isSilent()) {
             return true;
         }
         var lang = LanguageManager.getInstance();
         return AllAlerts.confirm_all(lang.getString("confirm"),
-                lang.getString("return.confirm.no.source"));
+                lang.getString(concern.messageKey(),
+                        MoneyMath.text(orZero(balance))));
+    }
+
+    /**
+     * Whether this is the party the default-customer setting names - the account a cash sale
+     * lands on when nobody is named. Read from the setting rather than compared against
+     * {@code 1}: that row is seeded, not fixed, and a constant for a row of an editable table is
+     * the mistake {@code UsersType} and {@code DELEGATE_JOB} each cost this repository once.
+     */
+    private boolean isDefaultCashParty(int partyId) {
+        if (documentType.partyKind() != PartyKind.CUSTOMER || partyId <= 0) {
+            return false;
+        }
+        try {
+            return partyId == Integer.parseInt(
+                    PropertiesName.getSettingSaveNameCustomer().trim());
+        } catch (NumberFormatException notAnId) {
+            return false;
+        }
+    }
+
+    /** What the party owes today, or {@code null} when it cannot be read. */
+    private BigDecimal partyBalance(int partyId) {
+        if (partyId <= 0) {
+            return null;
+        }
+        try {
+            return partyBalances.of(documentType.partyKind(), partyId);
+        } catch (Exception cannotRead) {
+            return null;
+        }
+    }
+
+    private static BigDecimal orZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     /**
@@ -224,21 +317,11 @@ public final class ReturnEntryCoordinator {
             return;
         }
         var lang = LanguageManager.getInstance();
-        TextInputDialog numberDialog = new TextInputDialog();
-        numberDialog.setTitle(lang.getString("return.dialog.title"));
-        numberDialog.setHeaderText(null);
-        numberDialog.setContentText(lang.getString("return.dialog.invoice.number.prompt"));
-        Optional<String> entered = numberDialog.showAndWait();
-        if (entered.isEmpty() || entered.get().isBlank()) {
+        Optional<Integer> picked = sourcePicker.pick();
+        if (picked.isEmpty()) {
             return;
         }
-        int invoiceNumber;
-        try {
-            invoiceNumber = Integer.parseInt(entered.get().trim());
-        } catch (NumberFormatException e) {
-            AllAlerts.alertError(lang.getString("return.dialog.invoice.number.required"));
-            return;
-        }
+        int invoiceNumber = picked.get();
 
         // A return reverses one document. Picking from a second invoice while the first
         // one's lines are still on the table used to be refused much later and much
@@ -349,6 +432,31 @@ public final class ReturnEntryCoordinator {
     @FunctionalInterface
     public interface NameSelector {
         void select(String name);
+    }
+
+    /**
+     * Which document this return reverses. Empty when the person closed the picker without
+     * choosing - which is not an error and must leave the screen exactly as it was.
+     */
+    @FunctionalInterface
+    public interface SourcePicker {
+        Optional<Integer> pick();
+    }
+
+    /**
+     * Asks why the goods came back, for a return that names no invoice - the picker's own combo
+     * is the sourced half of the same question. Answers with what was chosen, or {@code null}
+     * for "not given", which is a legitimate answer and must not block the save.
+     */
+    @FunctionalInterface
+    public interface ReasonPrompt {
+        ReturnReason ask(ReturnReason current);
+    }
+
+    /** What a party owes today; may throw, and a throw simply means no warning. */
+    @FunctionalInterface
+    public interface PartyBalances {
+        BigDecimal of(PartyKind kind, int partyId) throws Exception;
     }
 
     /** The customer's or supplier's name, by id. */

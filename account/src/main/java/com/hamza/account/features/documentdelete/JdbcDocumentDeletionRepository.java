@@ -1,6 +1,8 @@
 package com.hamza.account.features.documentdelete;
 
+import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.invoice.JdbcInvoiceStockRepository;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.returns.ReturnLinkGuard;
@@ -13,7 +15,16 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.controlsfx.database.DaoException;
 
+import com.hamza.controlsfx.database.ConnectionManager;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** {@link DocumentDeletionRepository} over the four document tables. */
 final class JdbcDocumentDeletionRepository implements DocumentDeletionRepository {
@@ -33,6 +44,73 @@ final class JdbcDocumentDeletionRepository implements DocumentDeletionRepository
     public void requireNoReturns(DocumentType type, List<Integer> ids) throws DaoException {
         // A return has nothing returned against it, and the guard answers for that itself.
         ReturnLinkGuard.requireNoReturns(type, array(ids));
+    }
+
+    @Override
+    public List<DocumentDeleteStockCheck.StockLine> stockLinesOf(
+            DocumentType type, List<Integer> ids) throws DaoException {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        DocumentTableSpec spec = DocumentTableSpec.of(type);
+        String placeholders = "?" + ",?".repeat(ids.size() - 1);
+        // Per item AND warehouse: one document names one warehouse, but a batch of them can name
+        // several, and an item's balance is per warehouse.
+        String sql = "SELECT l." + spec.lineItem() + " AS item_id, i.nameItem AS item_name,"
+                + " d.stock_id AS stock_id, s.stock_name AS stock_name,"
+                + " SUM(l.quantity * l.type_value) AS removed"
+                + " FROM " + spec.lineTable() + " l"
+                + " JOIN " + spec.table() + " d ON d." + spec.key() + " = l."
+                + DocumentTableSpec.LINE_DOCUMENT
+                + " LEFT JOIN items i ON i.id = l." + spec.lineItem()
+                + " LEFT JOIN stocks s ON s.stock_id = d.stock_id"
+                + " WHERE d." + spec.key() + " IN (" + placeholders + ")"
+                + " GROUP BY l." + spec.lineItem() + ", i.nameItem, d.stock_id, s.stock_name";
+
+        record Removed(int itemId, String itemName, int stockId, String stockName, double base) {
+        }
+        List<Removed> removed = new ArrayList<>();
+        Connection connection = null;
+        try {
+            connection = ConnectionManager.acquire();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (int index = 0; index < ids.size(); index++) {
+                    statement.setInt(index + 1, ids.get(index));
+                }
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        removed.add(new Removed(rows.getInt("item_id"), rows.getString("item_name"),
+                                rows.getInt("stock_id"), rows.getString("stock_name"),
+                                rows.getDouble("removed")));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new DaoException("Could not read what deleting these documents would take off the shelf", e);
+        } finally {
+            ConnectionManager.release(connection);
+        }
+        if (removed.isEmpty()) {
+            return List.of();
+        }
+
+        // The balance is read through the one definition there is of it, rather than a second
+        // one written here - the mistake the treasury and the party ledger each paid for once.
+        JdbcInvoiceStockRepository balances = new JdbcInvoiceStockRepository();
+        Map<Integer, List<Removed>> byStock = new LinkedHashMap<>();
+        removed.forEach(row -> byStock.computeIfAbsent(row.stockId(), key -> new ArrayList<>()).add(row));
+        List<DocumentDeleteStockCheck.StockLine> lines = new ArrayList<>();
+        for (Map.Entry<Integer, List<Removed>> entry : byStock.entrySet()) {
+            List<Integer> itemIds = entry.getValue().stream().map(Removed::itemId).distinct().toList();
+            Map<Integer, Double> current = balances.currentBaseBalances(entry.getKey(), itemIds);
+            for (Removed row : entry.getValue()) {
+                lines.add(new DocumentDeleteStockCheck.StockLine(
+                        row.itemName() == null ? "#" + row.itemId() : row.itemName(),
+                        row.stockName() == null ? "#" + row.stockId() : row.stockName(),
+                        current.getOrDefault(row.itemId(), 0.0), row.base()));
+            }
+        }
+        return List.copyOf(lines);
     }
 
     @Override

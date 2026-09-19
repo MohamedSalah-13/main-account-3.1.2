@@ -11,7 +11,12 @@ import java.sql.SQLException;
 
 /**
  * Stamps {@code source_invoice_number} and {@code return_reason} onto a return's
- * header, still inside the transaction {@code InvoiceSaveService.persist} is already
+ * header - including a reason with <em>no</em> source, which is the ordinary free return and
+ * used to be dropped on the floor: this class returned before writing anything when the source
+ * was absent, so every return entered without an invoice reached the reasons report as "no
+ * reason given" however carefully the person had chosen one. The column is nullable for exactly
+ * that case, and the two are written together because they are one answer about one document.
+ * The header, still inside the transaction {@code InvoiceSaveService.persist} is already
  * in - the second write after the header's own insert/update, in the shape
  * {@code writeStockMovements} already is in that class.
  * <p>
@@ -26,7 +31,7 @@ public final class ReturnSourceWriter {
 
     public void writeSource(DocumentType returnType, int invoiceNumber,
                             int sourceInvoiceNumber, ReturnReason reason) throws DaoException {
-        if (sourceInvoiceNumber <= 0) {
+        if (sourceInvoiceNumber <= 0 && reason == null) {
             return;
         }
         DocumentTableSpec spec = DocumentTableSpec.of(returnType);
@@ -35,7 +40,12 @@ public final class ReturnSourceWriter {
                 + spec.key() + " = ?";
         int affected = withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, sourceInvoiceNumber);
+                // A free return names no invoice, and the column is nullable exactly for it.
+                if (sourceInvoiceNumber > 0) {
+                    statement.setInt(1, sourceInvoiceNumber);
+                } else {
+                    statement.setNull(1, java.sql.Types.INTEGER);
+                }
                 statement.setString(2, reason == null ? null : reason.storedValue());
                 statement.setInt(3, invoiceNumber);
                 return statement.executeUpdate();

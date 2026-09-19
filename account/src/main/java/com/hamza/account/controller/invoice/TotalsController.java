@@ -15,6 +15,8 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.document.TotalsSummaryRow;
 import com.hamza.account.features.backup.BackupKind;
 import com.hamza.account.features.documentdelete.DocumentDeletionResult;
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.documentdelete.DocumentDeleteStockCheck;
 import com.hamza.account.features.documentdelete.DocumentDeletionService;
 import com.hamza.account.features.employee.EmployeeScope;
 import com.hamza.account.features.employee.EmployeeService;
@@ -617,6 +619,14 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
                 .toList(), fromTickedRows, pageCount);
         if (!DeleteDocumentsDialog.confirm(window(), type.label(), preview)) return;
 
+        // What deleting would take back off the shelf. A warning, not a refusal - see
+        // DocumentDeleteStockCheck - so it is asked after the delete is confirmed and before
+        // the reason, and answering no leaves everything exactly as it was.
+        if (!confirmStockShortfalls(type, preview.documents().stream()
+                .map(TotalsDeletionPreview.Document::id).toList())) {
+            return;
+        }
+
         final Optional<String> correctionReason;
         try {
             correctionReason = ShiftCorrectionReasonPrompt.forDelete();
@@ -651,6 +661,32 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
         // A failure is already reported by the masker pane; what is left is the search it held back.
         task.setOnFailed(event -> finishFailedDelete());
         task.setOnCancelled(event -> finishFailedDelete());
+    }
+
+    /**
+     * Asks before a delete that would put an item below zero. Reading it is a query, so a failure
+     * to read must not stop the delete: the check is a courtesy and the guards that refuse are
+     * the service's.
+     */
+    private boolean confirmStockShortfalls(DocumentType type, List<Integer> ids) {
+        List<DocumentDeleteStockCheck.Shortfall> shortfalls;
+        try {
+            shortfalls = DocumentDeletionService.jdbc(daoFactory, () -> { })
+                    .stockShortfalls(type, ids);
+        } catch (Exception cannotRead) {
+            exceptionHandle(cannotRead);
+            return true;
+        }
+        if (shortfalls.isEmpty()) {
+            return true;
+        }
+        var lang = LanguageManager.getInstance();
+        StringBuilder message = new StringBuilder(
+                lang.getString("delete.stock.negative.header", shortfalls.size()));
+        shortfalls.stream().limit(10).forEach(row -> message.append(System.lineSeparator())
+                .append(lang.getString("delete.stock.negative.line", row.itemName(),
+                        row.stockName(), Columns.quantity(BigDecimal.valueOf(row.remainingBase())))));
+        return AllAlerts.confirm_all(lang.getString("confirm"), message.toString());
     }
 
     private void finishFailedDelete() {

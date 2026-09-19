@@ -222,6 +222,12 @@ class ReturnLineSelectionServiceTest {
             throw new UnsupportedOperationException("not used here");
         }
 
+
+        @Override
+        public List<SourceDocument> searchSources(DocumentType sourceType, int documentNumber,
+                                                 String partyText, int limit) {
+            throw new UnsupportedOperationException("not used here");
+        }
         @Override
         public Optional<SourceLine> lineById(
                 DocumentType sourceType, int sourceId, int sourceLineId) {

@@ -363,6 +363,12 @@ class ReturnGuardTest {
             return java.util.Optional.ofNullable(amounts);
         }
 
+
+        @Override
+        public List<SourceDocument> searchSources(DocumentType sourceType, int documentNumber,
+                                                 String partyText, int limit) {
+            throw new UnsupportedOperationException("not used here");
+        }
         @Override
         public java.util.Optional<SourceLine> lineById(
                 DocumentType sourceType, int sourceId, int sourceLineId) {
