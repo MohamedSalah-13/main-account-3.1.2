@@ -86,7 +86,7 @@ public final class InvoiceSaveService<
                 // ReturnGuard - the guard stays a pure decision over an injected policy,
                 // which is what lets ReturnGuardTest drive both settings without touching
                 // machine-wide Preferences.
-                new ReturnGuard(new JdbcReturnableRepository(), returnPolicy()),
+                new ReturnGuard(new JdbcReturnableRepository(), InvoiceSaveService::returnPolicy),
                 new ReturnSourceWriter(),
                 new ReturnCostResolver(new JdbcReturnableRepository()),
                 treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
@@ -280,7 +280,12 @@ public final class InvoiceSaveService<
         this.discountGuard = discountGuard;
     }
 
-    /** The two return settings, read here rather than inside the guard - see the constructor. */
+    /**
+     * The two return settings, read here rather than inside the guard - see the constructor - and
+     * read at every save rather than once: a screen stays open across a change of them, so reading
+     * once meant turning "a return must name an invoice" on had no effect until every open invoice
+     * window had been closed and reopened.
+     */
     private static ReturnPolicy returnPolicy() {
         if (PropertiesName.getReturnRequireSourceInvoice()) {
             return ReturnPolicy.requiringSource();

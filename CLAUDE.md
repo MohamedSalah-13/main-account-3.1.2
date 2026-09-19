@@ -243,6 +243,10 @@ Two documents govern work here and are kept current — read them before large c
   notification actually firing, and the buttons hidden from a user without the two new permissions.
   **Read it before touching anything under `features/expense`, `controller/expense`, `WalletFeeService`,
   `V64` or `V66`.**
+- **[`docs/returns-plan.md`](docs/returns-plan.md)** - the returns contract: why a return's price,
+  cost and discount share all come from the source line, the eight refusals and the two warnings, and
+  §8 what is still open. **Read it before touching anything under `features/returns`,
+  `ReturnEntryCoordinator` or the return half of `InvoiceSaveService`.**
 - **[`docs/installer-plan.md`](docs/installer-plan.md)** - **phase A of four is built** (the
   provisioning, in Java); the Inno Setup script, the upgrade path and the signing are not. One Setup file
   that wraps the jpackage image, carries MySQL, creates the service, the schema and a per-machine
@@ -996,6 +1000,61 @@ the migrations to check you did.
 Two things that are separate and were once wrongly coupled: **settling the till's variance** depends
 only on there being a difference, while **declaring a handover** depends on an enabled handover
 policy. A treasury that reconciles but never hands its cash on still has to square its own drawer.
+
+### Returns
+
+`features/returns` with `docs/returns-plan.md` as the contract. One sentence carries the area: **a
+return gives back exactly what a document took, and nothing else** - so its price, its cost, its
+share of every discount and its quantity all come from the source line, and where there is no source
+the system says so rather than pretending.
+
+**`ReturnGuard` and `ReturnCostResolver` run inside `InvoiceSaveService.persist`** and refuse, in
+order: a source that does not exist, a party different from the source's, a deferred return of a
+**cash** invoice, a line the screen typed in by hand on a return that names an invoice, a price or
+unit or line-discount share different from the sale's, more of an item than the source sold, more of
+a **line** than that line sold, and a header discount that is not the source's proportional share.
+The source is locked with `SELECT … FOR UPDATE` before "how much is left" is read; until that lock
+existed two tills returning one invoice were kept apart only by accident, because `InvoiceStockGuard`
+happens to lock the item rows first.
+
+**The per-line cap is not the per-item one.** An invoice listing one item twice - five at 100 and
+five at 60 - let all ten come back against the line at 100: ten of ten sold, every price matching the
+line it named, and 200 refunded that nobody ever paid. The price belongs to a line, so the quantity it
+may be refunded for belongs to that line too (`alreadyReturnedBySourceLine`).
+
+**A document's own discount is shared by value** (`ReturnHeaderDiscount`): the fraction of the
+source's `total` that the return's `total` is, since a document discount has no owner among the lines
+and any other allocation would be invented. Nothing carried it until 2026-09-19 - a sale of 1000 with
+100 off was paid 900, and returning all of it refunded 1000. The screen fills the box and **locks** it
+while a source is named, for the reason a picked line's price is locked. Editing a line's quantity
+recomputes its share from the **source line**, never by scaling the rounded share on the row: a
+rounded share scaled up lands a piastre off what the save expects, which is a save nobody can finish.
+
+**Two things are warnings and not refusals** (`ReturnSettlementAdvice`, the shape
+`ExpenseBalanceCheck` established): a deferred free return on the party cash sales land on - a bucket
+rather than a person, so the credit sits there for ever - and cash handed back to a party who still
+owes. Both are legitimate and usually a mistake, and the person at the counter knows which. The cash
+party is read from the default-customer setting, **never a literal `1`**. `DocumentDeleteStockCheck`
+is the same answer on the delete path: deleting a purchase or a sales return takes goods back off the
+shelf, and a shop that sells before entering the supplier's bill is already below zero on paper.
+
+**A free return is where the reason is asked for.** The reason combo lives in the picker, which a
+free return never opens, and `ReturnSourceWriter` used to return before writing anything when there
+was no source - so every one of them reached the reasons report as "none given". Two settings narrow
+free returns and both ship **off**: `return.require.source.invoice` and `return.free.limit`.
+
+**Editing a saved return is the same path, and `restoreSource` is what makes it so.** Without it
+`ReturnGuard` reads a source of `0`, treats the document as a free return it has nothing to compare
+against, and every rule above is silently off.
+
+**The source invoice is found, not recited** (`ReturnSourceSearch`): digits are a document number and
+the rest is a party's name, either or both, read through `NumberTextConverter` so ٠-٩ count - the same
+omission that made `ReturnQuantityInput` necessary after a quantity typed the ordinary way on an
+Arabic keyboard was silently a zero and its line silently left off the return.
+
+What is still open - the till is never checked on a cash refund, `InvoiceSaveService`'s ten
+telescoping constructors, and the Arabic literals under `features/invoice` - is `docs/returns-plan.md`
+§8.
 
 ### Expiry batches
 

@@ -25,13 +25,24 @@ import java.util.Objects;
 public final class ReturnGuard {
 
     private final ReturnableRepository repository;
-    private final ReturnPolicy policy;
+    private final java.util.function.Supplier<ReturnPolicy> policy;
 
     public ReturnGuard(ReturnableRepository repository) {
         this(repository, ReturnPolicy.DEFAULT);
     }
 
     public ReturnGuard(ReturnableRepository repository, ReturnPolicy policy) {
+        this(repository, () -> policy);
+    }
+
+    /**
+     * The policy as a supplier, because both settings behind it are read from
+     * {@code PropertiesName} and a screen stays open across a change of them: read once when the
+     * save service was built, turning "a return must name an invoice" on had no effect until every
+     * open invoice window had been closed and reopened.
+     */
+    public ReturnGuard(ReturnableRepository repository,
+                       java.util.function.Supplier<ReturnPolicy> policy) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.policy = Objects.requireNonNull(policy, "policy");
     }
@@ -77,7 +88,7 @@ public final class ReturnGuard {
                 returnType, sourceInvoiceNumber, excludingReturnId);
 
         ReturnEligibility.Decision decision = ReturnEligibility.check(
-                source, alreadyReturned, proposedLines(lines), policy);
+                source, alreadyReturned, proposedLines(lines), policy.get());
         if (!decision.isAllowed()) {
             throw new BusinessRuleException(
                     ((ReturnEligibility.Decision.Refused) decision).message());
@@ -128,17 +139,17 @@ public final class ReturnGuard {
      */
     private void requireFreeReturnAllowed(List<? extends BasePurchasesAndSales> lines)
             throws BusinessRuleException {
-        if (policy.requireSourceInvoice()) {
+        if (policy.get().requireSourceInvoice()) {
             throw new BusinessRuleException(message("return.error.source.required"));
         }
-        if (!policy.capsFreeReturns()) {
+        if (!policy.get().capsFreeReturns()) {
             return;
         }
         double value = goodsValue(lines);
-        if (value - policy.freeReturnLimit() > 0.005) {
+        if (value - policy.get().freeReturnLimit() > 0.005) {
             throw new BusinessRuleException(message("return.error.free.limit",
                     MoneyMath.text(MoneyMath.decimal(value)),
-                    MoneyMath.text(MoneyMath.decimal(policy.freeReturnLimit()))));
+                    MoneyMath.text(MoneyMath.decimal(policy.get().freeReturnLimit()))));
         }
     }
 
@@ -217,6 +228,7 @@ public final class ReturnGuard {
                 continue;
             }
             result.add(new ReturnEligibility.LineQuantity(line.getItems().getId(),
+                    line.getItems().getNameItem(),
                     ItemUnits.toBase(line.getQuantity(), line.getUnitsType())));
         }
         return result;

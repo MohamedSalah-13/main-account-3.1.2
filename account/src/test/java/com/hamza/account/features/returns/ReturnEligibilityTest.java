@@ -131,4 +131,31 @@ class ReturnEligibilityTest {
         assertEquals(4.0, source.remaining(ITEM, Map.of(ITEM, 6.0)));
         assertEquals(0.0, source.remaining(999, Map.of()));
     }
+
+    @Test
+    void namesTheItemInARefusalWhenItHasAName() {
+        // It used to say "الصنف رقم 2" to somebody holding the item itself.
+        ReturnableDocument source = ReturnableDocument.of(
+                com.hamza.account.document.DocumentType.SALES, 7, java.util.List.of());
+
+        ReturnEligibility.Decision decision = ReturnEligibility.check(source, java.util.Map.of(),
+                java.util.List.of(new ReturnEligibility.LineQuantity(2, "لبن جهينة", 1)),
+                ReturnPolicy.DEFAULT);
+
+        assertFalse(decision.isAllowed());
+        assertTrue(((ReturnEligibility.Decision.Refused) decision).message().contains("لبن جهينة"));
+    }
+
+    @Test
+    void fallsBackToTheIdWhenNoNameWasGiven() {
+        ReturnableDocument source = ReturnableDocument.of(
+                com.hamza.account.document.DocumentType.SALES, 7, java.util.List.of());
+
+        ReturnEligibility.Decision decision = ReturnEligibility.check(source, java.util.Map.of(),
+                java.util.List.of(new ReturnEligibility.LineQuantity(2, 1)),
+                ReturnPolicy.DEFAULT);
+
+        assertFalse(decision.isAllowed());
+        assertTrue(((ReturnEligibility.Decision.Refused) decision).message().contains("2"));
+    }
 }

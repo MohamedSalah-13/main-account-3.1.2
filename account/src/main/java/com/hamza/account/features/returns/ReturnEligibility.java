@@ -22,17 +22,22 @@ public final class ReturnEligibility {
     public static Decision check(ReturnableDocument source, Map<Integer, Double> alreadyReturned,
                                  List<LineQuantity> proposedLines, ReturnPolicy policy) {
         Map<Integer, Double> proposedByItem = new LinkedHashMap<>();
+        Map<Integer, String> namesByItem = new LinkedHashMap<>();
         for (LineQuantity line : proposedLines) {
             proposedByItem.merge(line.itemId(), line.baseQuantity(), Double::sum);
+            namesByItem.putIfAbsent(line.itemId(), line.itemName());
         }
 
         for (Map.Entry<Integer, Double> entry : proposedByItem.entrySet()) {
             int itemId = entry.getKey();
             double proposed = entry.getValue();
+            // The person reading this knows the item by its name; the id is ours.
+            String name = namesByItem.getOrDefault(itemId, null);
+            Object shown = name == null || name.isBlank() ? itemId : name;
 
             if (!source.sold(itemId)) {
                 return Decision.refused(message(
-                        "return.error.not.on.source", itemId, source.sourceId()));
+                        "return.error.not.on.source", shown, source.sourceId()));
             }
 
             if (policy.allowExceedingSource()) {
@@ -41,7 +46,7 @@ public final class ReturnEligibility {
             double remaining = source.remaining(itemId, alreadyReturned);
             if (proposed - remaining > QUANTITY_EPSILON) {
                 return Decision.refused(message(
-                        "return.error.exceeds.remaining", itemId, quantityText(remaining),
+                        "return.error.exceeds.remaining", shown, quantityText(remaining),
                         quantityText(proposed)));
             }
         }
@@ -56,8 +61,18 @@ public final class ReturnEligibility {
         return LanguageManager.getInstance().getString(key, arguments);
     }
 
-    /** One item's proposed return quantity, already converted to base units. */
-    public record LineQuantity(int itemId, double baseQuantity) {
+    /**
+     * One item's proposed return quantity, already converted to base units.
+     *
+     * @param itemName what to call it in a refusal; the id is used when it is absent, which is
+     *                 what every refusal said before - "الصنف رقم 2" in front of somebody holding
+     *                 the item itself
+     */
+    public record LineQuantity(int itemId, String itemName, double baseQuantity) {
+
+        public LineQuantity(int itemId, double baseQuantity) {
+            this(itemId, null, baseQuantity);
+        }
     }
 
     /** {@link #allowed()} or {@link #refused}, the latter carrying the Arabic reason. */

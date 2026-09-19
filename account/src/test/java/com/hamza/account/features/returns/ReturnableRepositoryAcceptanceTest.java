@@ -443,6 +443,76 @@ class ReturnableRepositoryAcceptanceTest {
     }
 
     @Test
+    void findsASourceByItsNumberAndByThePartysName() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            insertSalesLineReturningId(transaction, sales, itemId, 4, 10, 4);
+
+            // By the number: exactly the one document, whatever else the database holds.
+            var byNumber = REPOSITORY.searchSources(DocumentType.SALES, sales, "", 50);
+            assertEquals(1, byNumber.size());
+            assertEquals(sales, byNumber.get(0).number());
+            assertEquals(10.0, byNumber.get(0).net());
+            assertFalse(byNumber.get(0).fullyReturned(),
+                    "nothing has been returned against it yet");
+
+            // By the party's name - the header fixture books every document to customer 1.
+            String partyName;
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "SELECT name FROM custom WHERE id = 1")) {
+                try (ResultSet rows = statement.executeQuery()) {
+                    assertTrue(rows.next());
+                    partyName = rows.getString(1);
+                }
+            }
+            var byName = REPOSITORY.searchSources(DocumentType.SALES, 0, partyName, 200);
+            assertTrue(byName.stream().anyMatch(row -> row.number() == sales),
+                    "the document must be findable by the name it is booked to");
+
+            // Neither given is everything, newest first; a number that names nothing is nothing.
+            assertFalse(REPOSITORY.searchSources(DocumentType.SALES, 0, "", 5).isEmpty());
+            assertTrue(REPOSITORY.searchSources(
+                    DocumentType.SALES, sales + 900_000, "", 50).isEmpty());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
+    void marksASourceEveryUnitOfWhichHasAlreadyComeBack() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            int soldLine = insertSalesLineReturningId(transaction, sales, itemId, 5, 10, 4);
+
+            int returnId = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, returnId);
+            insertSalesReturnLineLinked(transaction, returnId, itemId, 2, soldLine);
+            WRITER.writeSource(DocumentType.SALES_RETURN, returnId, sales, null);
+
+            assertFalse(REPOSITORY.searchSources(DocumentType.SALES, sales, "", 5)
+                            .get(0).fullyReturned(),
+                    "2 of 5 back is not all of it");
+
+            insertSalesReturnLineLinked(transaction, returnId, itemId, 3, soldLine);
+            assertTrue(REPOSITORY.searchSources(DocumentType.SALES, sales, "", 5)
+                            .get(0).fullyReturned(),
+                    "5 of 5 back is - and it is listed and marked, never hidden");
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
     void aSavedReturnRoundTripsItsSourceOnBothTheHeaderAndItsLines() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
         assertNotNull(transaction);
