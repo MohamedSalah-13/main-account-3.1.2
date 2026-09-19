@@ -66,7 +66,7 @@ class CommissionRuleDatabaseAcceptanceTest {
     private static final int OPERATOR = 9;
     private static final String STAMP = "COM-" + System.nanoTime();
 
-    private static final CommissionRuleService SERVICE = new CommissionRuleService(new JdbcCommissionRuleRepository());
+    private static final CommissionRuleService SERVICE = new CommissionRuleService();
 
     private static String host;
     private static String port;

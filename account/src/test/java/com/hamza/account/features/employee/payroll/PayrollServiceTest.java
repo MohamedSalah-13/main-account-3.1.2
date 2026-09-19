@@ -262,6 +262,71 @@ class PayrollServiceTest {
         assertEquals(money("3500.00"), preview.get(0).netPay());
     }
 
+    // ---- an approved commission ---------------------------------------------------------------
+
+    /** A commission source that answers one figure for employee 7 and records what it was told was paid. */
+    private static final class FakeCommission implements CommissionSource {
+        private BigDecimal due = BigDecimal.ZERO;
+        private final List<String> paid = new ArrayList<>();
+
+        @Override
+        public BigDecimal dueFor(int employeeId, PayrollPeriod period) {
+            return employeeId == 7 ? due : BigDecimal.ZERO;
+        }
+
+        @Override
+        public void paidBy(int payrollRunId, int employeeId, PayrollPeriod period, int userId) {
+            paid.add(payrollRunId + ":" + employeeId + ":" + period);
+        }
+    }
+
+    @Test
+    @DisplayName("approving a payroll marks the commission it pays as paid, in the same unit as the entitlement")
+    void approvalMarksTheCommissionItPays() throws Exception {
+        signInWith(AppPermissions.PAYROLL_APPROVE);
+        FakeCommission commission = new FakeCommission();
+        commission.due = money("250.00");
+        PayrollService paying = new PayrollService(repository, AttendanceSource.NONE, commission);
+        repository.run = draft(1);
+        repository.lines = List.of(line(7, "3000", "500", "250", "0", "0"), line(8, "2000", "0", "0", "0", "0"));
+
+        paying.approveWithin(1, repository.run, repository.lines);
+
+        assertEquals(List.of("1:7:" + SEPTEMBER), commission.paid,
+                "the delegate's lines are marked, and an employee with nothing due is not looked at");
+        assertEquals(money("3750.00"), repository.ledgerWrites.get(0).amount(),
+                "the entitlement carries the commission - which is why it must not also be posted");
+    }
+
+    @Test
+    @DisplayName("a draft whose commission is not the approved one is refused, and nothing is marked or written")
+    void aStaleCommissionRefusesTheApproval() {
+        signInWith(AppPermissions.PAYROLL_APPROVE);
+        FakeCommission commission = new FakeCommission();
+        commission.due = money("500.00");
+        PayrollService paying = new PayrollService(repository, AttendanceSource.NONE, commission);
+        repository.run = draft(1);
+        // Built before the commission was approved, or typed over: it says 250 and 500 is due.
+        repository.lines = List.of(line(7, "3000", "0", "250", "0", "0"));
+
+        assertEquals("payroll.error.commission.differs", assertThrows(UserValidationException.class,
+                () -> paying.approveWithin(1, repository.run, repository.lines)).getMessage());
+        assertTrue(commission.paid.isEmpty(), "marking 500 as paid while paying 250 is the defect");
+        assertTrue(repository.ledgerWrites.isEmpty());
+    }
+
+    @Test
+    @DisplayName("with no commission runs a hand-typed commission is what it always was")
+    void withoutRunsNothingChanges() throws Exception {
+        signInWith(AppPermissions.PAYROLL_APPROVE);
+        repository.run = draft(1);
+        repository.lines = List.of(line(7, "3000", "0", "250", "0", "0"));
+
+        service.approveWithin(1, repository.run, repository.lines);
+
+        assertEquals(money("3250.00"), repository.ledgerWrites.get(0).amount());
+    }
+
     // ---- fixtures ----------------------------------------------------------------------------
 
     private static PayrollRun draft(int id) {

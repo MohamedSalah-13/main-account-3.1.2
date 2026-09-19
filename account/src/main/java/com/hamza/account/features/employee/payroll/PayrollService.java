@@ -57,8 +57,16 @@ public final class PayrollService {
      */
     private final AttendanceSource attendance;
 
+    /**
+     * Where a delegate's approved commission comes from, and where this run says it paid it.
+     * {@link CommissionSource#NONE} is a shop that approves no commission runs: nothing is due,
+     * and the commission box on a draft line is typed by hand as it always was.
+     */
+    private final CommissionSource commission;
+
     public PayrollService() {
-        this(new JdbcPayrollRepository(), AttendanceSource.fromService(new AttendanceService()));
+        this(new JdbcPayrollRepository(), AttendanceSource.fromService(new AttendanceService()),
+                new com.hamza.account.features.delegate.JdbcPayrollCommissionSource());
     }
 
     public PayrollService(PayrollRepository repository) {
@@ -66,8 +74,14 @@ public final class PayrollService {
     }
 
     public PayrollService(PayrollRepository repository, AttendanceSource attendance) {
+        this(repository, attendance, CommissionSource.NONE);
+    }
+
+    public PayrollService(PayrollRepository repository, AttendanceSource attendance,
+                          CommissionSource commission) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.attendance = Objects.requireNonNull(attendance, "attendance");
+        this.commission = Objects.requireNonNull(commission, "commission");
     }
 
     // ---- reading ---------------------------------------------------------------------------
@@ -213,6 +227,7 @@ public final class PayrollService {
         if (moved != 1) {
             throw new UserValidationException("payroll.error.not.draft");
         }
+        settleCommission(runId, run, lines);
         writeLedger(runId, run, lines);
         return moved;
     }
@@ -297,10 +312,54 @@ public final class PayrollService {
                 input.advancesOutstanding());
     }
 
+    /**
+     * Puts a delegate's approved commission on his draft line, in place of typing it.
+     * <p>
+     * Nothing due leaves the input untouched - which is every employee of a shop that approves
+     * no commission runs, so this changes nobody's payroll the day it is installed.
+     */
+    private PayrollInput withCommission(PayrollPeriod period, PayrollInput input) throws DaoException {
+        BigDecimal due = commission.dueFor(input.employeeId(), period);
+        if (due == null || due.signum() <= 0) {
+            return input;
+        }
+        return new PayrollInput(input.employeeId(), input.employeeName(), input.salaryKind(),
+                input.rate(), input.hiredOn(), input.endedOn(),
+                input.absenceDays(), input.workedDays(), input.workedHours(),
+                input.allowances(), due, input.manualDeductions(),
+                input.advancesOutstanding());
+    }
+
+    /**
+     * Marks the commission this run pays as paid, so the commission screen cannot post it to
+     * the same account a second time. Called inside the approval's transaction.
+     * <p>
+     * <b>The line has to say what is due, to the piaster.</b> The {@code ENTITLEMENT} this run
+     * is about to write is built from the line, while what gets marked as paid is the approved
+     * commission - so a draft built before the commission was approved, or a box somebody typed
+     * over, would mark 500 as paid and pay 0, or the other way about. It is refused instead, and
+     * the sentence says how to put it right: build the draft again.
+     * <p>
+     * An employee with nothing due is not looked at: a hand-typed commission there is what it
+     * always was.
+     */
+    private void settleCommission(int runId, PayrollRun run, List<PayrollLine> lines) throws DaoException {
+        for (PayrollLine line : lines) {
+            BigDecimal due = commission.dueFor(line.employeeId(), run.period());
+            if (due == null || due.signum() <= 0) {
+                continue;
+            }
+            if (due.compareTo(line.commission()) != 0) {
+                throw new UserValidationException("payroll.error.commission.differs");
+            }
+            commission.paidBy(runId, line.employeeId(), run.period(), currentUserId());
+        }
+    }
+
     private int fill(int runId, PayrollPeriod period) throws DaoException {
         int written = 0;
         for (PayrollInput candidate : repository.candidatesFor(period)) {
-            PayrollInput input = withAttendance(period, candidate);
+            PayrollInput input = withCommission(period, withAttendance(period, candidate));
             PayrollCalculation line = PayrollCalculator.calculate(period, input);
             if (line.isEmpty()) {
                 // Somebody who left before the month began, or a commission employee with

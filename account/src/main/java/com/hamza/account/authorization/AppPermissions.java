@@ -245,6 +245,22 @@ public final class AppPermissions {
      */
     public static final PermissionKey COMMISSION_REPORTS = key("commission.reports");
 
+    /**
+     * Approving a month's commission, which freezes it. Seeing a run needs only
+     * {@link #COMMISSION_SHOW}. V72 grants this and the two below to whoever holds
+     * {@link #COMMISSION_RULE_UPDATE}.
+     */
+    public static final PermissionKey COMMISSION_RUN_CREATE = key("commission.run.create");
+
+    /** Cancelling an approved run - possible only while none of it has been posted. */
+    public static final PermissionKey COMMISSION_RUN_UPDATE = key("commission.run.update");
+
+    /**
+     * Posting an approved run to the delegates' accounts. {@code POST} derives
+     * {@code CRITICAL}, which is its rank: it writes an entitlement into a person's account.
+     */
+    public static final PermissionKey COMMISSION_RUN_POST = key("commission.run.post");
+
     public static final PermissionKey ATTENDANCE_SHOW = key("attendance.show");
 
     /**

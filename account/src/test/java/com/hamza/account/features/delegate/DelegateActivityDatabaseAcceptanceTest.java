@@ -373,8 +373,15 @@ class DelegateActivityDatabaseAcceptanceTest {
                 if (name.matches("V(\\d+)__.*") && Integer.parseInt(name.substring(1, name.indexOf("__"))) >= 71) {
                     continue;
                 }
-                Files.writeString(target.resolve(name), Files.readString(file, StandardCharsets.UTF_8),
-                        StandardCharsets.UTF_8);
+                String sql = Files.readString(file, StandardCharsets.UTF_8);
+                if (name.equals("R__triggers.sql")) {
+                    // A trigger cannot be created on a table that does not exist yet, and the V72
+                    // section - kept last in the file for this - guards tables a V70 schema lacks.
+                    int cut = sql.indexOf("-- commission run (V72)");
+                    assertTrue(cut > 0, "the V72 section of R__triggers.sql is where this test expects it");
+                    sql = sql.substring(0, cut);
+                }
+                Files.writeString(target.resolve(name), sql, StandardCharsets.UTF_8);
             }
         }
         return target;

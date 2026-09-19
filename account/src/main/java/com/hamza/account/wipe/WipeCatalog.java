@@ -164,6 +164,13 @@ public final class WipeCatalog {
      */
     public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
             List.of(WipeTable.of("shift_employee_shortage_charges"),
+                    // The commission run (V72), children first. A posting points at the ledger
+                    // row and at the payroll run it was paid by, and a line at the employee and
+                    // at his rule - so all three go before any of those. Their DELETE triggers
+                    // take the @app_bulk_wipe escape; nothing else may remove one.
+                    WipeTable.of("commission_posting"),
+                    WipeTable.of("commission_line"),
+                    WipeTable.of("commission_run"),
                     WipeTable.of("employee_ledger"),
                     // payroll_line cascades from payroll_run, but the run itself is refused
                     // while a ledger row or a purpose row still points at it - so the run goes

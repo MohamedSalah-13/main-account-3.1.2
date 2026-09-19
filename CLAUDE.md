@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,785 tests** with 160 skipped (below) — the figure `mvn clean test`
+**2,824 tests** with 172 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-19. What is
 genuinely covered:
 
@@ -1390,10 +1390,12 @@ old, so nobody loses an ability on upgrade, but a role given only `employee.pay`
 
 ### Delegates and commission
 
-`features/delegate` and `docs/delegates-plan.md`. Phases A and B are shipped: the **dated commission
+`features/delegate` and `docs/delegates-plan.md`. Phases A, B and C are shipped: the **dated commission
 rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers and the rules screen opened
 from a delegate's row; then the **delegate of a collection** (`V71`), the two commission bases in SQL
-and the monthly performance report, opened from the employees screen's bar. No run and no posting yet.
+and the monthly performance report; then the **frozen monthly run** (`V72`) and its posting, once, by
+one of two roads. All three screens open from the employees screen. Phase D (the other reports, the
+discount ceiling, the notifications) has not started.
 
 **It replaces `targeted_sales`/`target_delegate`, which nothing new may read.** That row had no period,
 so the view joined it to every month in history and changing a target changed last January's
@@ -1423,13 +1425,42 @@ and no rate. Every branch comparing a nullable column says `IS NOT NULL` itself,
 table's own constraint. That class builds a scratch schema from nothing, runs from a worktree with
 `ACCOUNT_DB_ACCEPTANCE_CONFIG`, and drops the schema; nine cases, green twice on 2026-09-19.
 
-**The commission must reach the employee's ledger once, and the payroll is already a road to it.**
-`PayrollService.approve` writes one `ENTITLEMENT` = basic + allowances + **commission**
-(`payroll_line.commission`, typed by hand today). So a commission run must not write a `COMMISSION`
-ledger row of its own beside that - the plan's first draft did, and would have paid every delegate
-twice on paper. Decision 4 of the plan: the approved line feeds the payroll, a shop without payroll
-posts it explicitly, and a `commission_posting` table whose primary key is the line makes "once" a
-constraint rather than a promise. That is phase C; nothing posts anything yet.
+**A month's commission is frozen by approving it, and there is no draft** (`CommissionRunService`,
+`V72`). The preview is computed live and writes nothing; approval creates `commission_run` and its
+lines in one transaction, so a run is born `APPROVED`, and only once its month is over. A line
+carries **everything that produced the figure** - basis, target, the tiers as they stood, the month's
+three figures, the base, the tier reached - so it can be worked out again from the line alone after
+the rule has been replaced. A delegate with a rule who reached nothing gets a line of zero; one with
+no rule gets no line. **One approved run per month** is a unique index over a *generated* column
+(`active_key`, NULL once cancelled), so cancelled runs repeat freely - V66's `month_key` trick turned
+round. A run is cancelled only while nothing of it is posted, and a rule a month was computed under
+is history: amending it in place or deleting it is refused with the road that exists, a new rule from
+a later month.
+
+**The commission reaches the employee's ledger once, by one of two roads, and "once" is a primary
+key.** `PayrollService.approve` writes one `ENTITLEMENT` = basic + allowances + **commission**, so a
+run that also wrote a `COMMISSION` row - as the plan's first draft did - would pay every delegate twice
+on paper. `commission_posting(line_id PRIMARY KEY, payroll_run_id, ledger_entry_id)` with a CHECK of
+exactly one road: the payroll marks the lines it pays inside its approval, a shop without payroll
+posts them as `COMMISSION` movements from the run screen, and whoever comes second meets the key.
+The payroll side is `CommissionSource`, a seam shaped like `AttendanceSource` for the same two reasons -
+`NONE` is every shop that approves no runs, so nobody's payroll changed the day it arrived. **What the
+payroll sums and what it marks are two statements sharing everything from `FROM` on**, compared as text
+by `CommissionRunQueryTest`; it is owed what was approved for its period **or an earlier one**, since
+October is approved in November. A draft whose commission is not the approved figure is refused at
+approval (`payroll.error.commission.differs`): the entitlement is built from the line while what is
+marked is the approved amount, so a draft built too early would mark 500 paid and pay nothing.
+
+**The freeze is the database's.** Six triggers, **kept as the last section of `R__triggers.sql`** under
+`-- commission run (V72)`: a line and a posting refuse every UPDATE and a DELETE outside a wipe; the run
+moves only `APPROVED -> CANCELLED`, and not once a line is posted. They are last because
+`DelegateActivityDatabaseAcceptanceTest` builds a V70 schema and cuts the file there - a trigger cannot
+be created on a table that does not exist yet. `CommissionRunDatabaseAcceptanceTest` (12 cases on MySQL)
+proves the unique key, the freeze with and without `@app_bulk_wipe`, that a late invoice moves the
+preview and not the approved line, both roads through the real `PayrollService`, and that SQL behind
+the service is refused too. **Not built, on purpose** (`docs/delegates-plan.md` §12.4): refusing a change
+of an invoice's delegate in an approved month - the line carries its own figures - and an adjustment
+run, whose negative amounts collide with two `>= 0` CHECKs and need a decision of their own.
 
 **A collection's delegate is written at entry and never derived** (`customers_accounts.delegate_id`,
 `V71`). Read off the customer at report time, moving a customer between delegates would rewrite both
@@ -1460,10 +1491,12 @@ a **preview**, computed when read and stored nowhere. `commission.reports` opens
 a target, a rate and a commission need `commission.show` as well, and without it the rules are **not
 fetched** and the screen does not build those columns.
 
-Permissions are `commission.show` and `commission.rule.update`, granted by V70 to whoever holds
+Permissions are `commission.run.create` / `.update` / `.post` for the run (V72, granted to whoever holds
+`commission.rule.update`; `POST` derives `CRITICAL`), `commission.reports` (V71), and
+`commission.show` and `commission.rule.update`, granted by V70 to whoever holds
 `employees.show.salary` and `employee.salary.change`. **`update`, not `manage`**: the risk is derived
 from the key's last word and `MANAGE` is `CRITICAL`. A rate is a figure about a person, so
-`history`/`ruleForMonth` call `require` before any query. **Neither screen has been opened.**
+`history`/`ruleForMonth` call `require` before any query. **None of the three screens has been opened.**
 
 ### A list screen's bar
 
@@ -2408,9 +2441,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V71`, the delegate
-  of a collection; before it `V70` is the dated commission rule (see **Delegates and commission**
-  for both). Before them `V69` gives a
+  new database executes it and continues with `V2`, `V3`, … The current head is `V72`, the frozen
+  monthly commission run; before it `V71` is the delegate of a collection and `V70` the dated
+  commission rule (see **Delegates and commission** for all three). Before them `V69` gives a
   treasury its wallet or account number and a minimum balance; before it `V68` lets a
   transfer between treasuries carry a fee, and `V67` ties a wallet fee to the movement it was
   paid for (see **The treasury**). Before them, `V66` adds the

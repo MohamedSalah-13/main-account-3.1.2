@@ -346,6 +346,9 @@ public class EmployeesScreenController extends LoadData {
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_SHOW)) {
             extras.add(button("payroll.title", AppIcon.REPORT, this::openPayroll));
         }
+        if (AuthorizationGuard.isGranted(AppPermissions.COMMISSION_SHOW)) {
+            extras.add(button("commission.run.title", AppIcon.REPORT, this::openCommissionRun));
+        }
         if (AuthorizationGuard.isGranted(AppPermissions.COMMISSION_REPORTS)) {
             extras.add(button("delegate.performance.title", AppIcon.REPORT, this::openDelegatePerformance));
         }
@@ -662,6 +665,15 @@ public class EmployeesScreenController extends LoadData {
     private void openLeave() {
         try {
             new OpenApplication<>(new LeaveRequestsController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** A month's commission: its preview while open, its frozen lines once approved. */
+    private void openCommissionRun() {
+        try {
+            new OpenApplication<>(new CommissionRunController());
         } catch (Exception e) {
             report(e);
         }

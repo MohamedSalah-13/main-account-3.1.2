@@ -24,13 +24,15 @@ import java.util.Optional;
 public final class CommissionRuleService {
 
     private final CommissionRuleRepository repository;
+    private final CommissionRunRepository runs;
 
     public CommissionRuleService() {
-        this(new JdbcCommissionRuleRepository());
+        this(new JdbcCommissionRuleRepository(), new JdbcCommissionRunRepository());
     }
 
-    public CommissionRuleService(CommissionRuleRepository repository) {
+    public CommissionRuleService(CommissionRuleRepository repository, CommissionRunRepository runs) {
         this.repository = Objects.requireNonNull(repository, "repository");
+        this.runs = Objects.requireNonNull(runs, "runs");
     }
 
     /** Every rule this delegate has had, newest first. */
@@ -76,13 +78,26 @@ public final class CommissionRuleService {
             if (!repository.isDelegate(employeeId)) {
                 throw new UserValidationException("commission.error.not.delegate");
             }
+            // Saving on a day that already has a rule amends it in place. Once a month has been
+            // computed under that rule, the line's rule_id would then point at terms the month was
+            // not judged by. The road that exists: a new rule, dated from the next month.
+            if (runs.ruleOfDayUsed(employeeId, effectiveFrom)) {
+                throw new UserValidationException("commission.error.rule.used");
+            }
             return repository.save(rule, currentUserId());
         });
     }
 
     public int remove(int employeeId, int ruleId) throws DaoException {
         AuthorizationGuard.require(AppPermissions.COMMISSION_RULE_UPDATE);
-        return TransactionTemplate.execute(() -> repository.delete(employeeId, ruleId));
+        return TransactionTemplate.execute(() -> {
+            // The foreign key from commission_line refuses this too; asking first turns a
+            // reference code into a sentence.
+            if (runs.ruleUsed(ruleId)) {
+                throw new UserValidationException("commission.error.rule.used");
+            }
+            return repository.delete(employeeId, ruleId);
+        });
     }
 
     private static int currentUserId() {

@@ -35,7 +35,7 @@ class CommissionRuleServiceTest {
             List.of(new CommissionTiers.Tier(BigDecimal.ZERO, new BigDecimal("2")));
 
     private final FakeRules rules = new FakeRules();
-    private final CommissionRuleService service = new CommissionRuleService(rules);
+    private final CommissionRuleService service = new CommissionRuleService(rules, new NoRuns());
 
     private void signInWith(PermissionKey... granted) {
         UserSessionContext session = new UserSessionContext();
@@ -103,6 +103,80 @@ class CommissionRuleServiceTest {
                         BigDecimal.TEN, List.of(), null));
         assertEquals("commission.error.tier.count", noTiers.getMessage());
         assertTrue(rules.writes == 0);
+    }
+
+    /** No month has been computed under any rule - the state of every shop before its first run. */
+    private static final class NoRuns implements CommissionRunRepository {
+        @Override
+        public Optional<Integer> activeRunId(java.time.YearMonth period) {
+            return Optional.empty();
+        }
+
+        @Override
+        public int insertRun(java.time.YearMonth period, String notes, int userId) {
+            return 0;
+        }
+
+        @Override
+        public int insertLine(int runId, CommissionLine line) {
+            return 0;
+        }
+
+        @Override
+        public List<CommissionRun> runs() {
+            return List.of();
+        }
+
+        @Override
+        public Optional<CommissionRun> run(int runId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<CommissionLine> linesOf(int runId) {
+            return List.of();
+        }
+
+        @Override
+        public int cancel(int runId, int userId, String reason) {
+            return 0;
+        }
+
+        @Override
+        public List<Unposted> unpostedLinesForUpdate(int runId) {
+            return List.of();
+        }
+
+        @Override
+        public int insertLedgerCommission(int employeeId, LocalDate date, BigDecimal amount, String notes,
+                                          int userId) {
+            return 0;
+        }
+
+        @Override
+        public int insertAccountPosting(int lineId, int ledgerEntryId, int userId) {
+            return 0;
+        }
+
+        @Override
+        public BigDecimal payrollDue(int employeeId, java.time.YearMonth period) {
+            return BigDecimal.ZERO;
+        }
+
+        @Override
+        public int insertPayrollPostings(int payrollRunId, int userId, int employeeId, java.time.YearMonth period) {
+            return 0;
+        }
+
+        @Override
+        public boolean ruleOfDayUsed(int employeeId, LocalDate effectiveFrom) {
+            return false;
+        }
+
+        @Override
+        public boolean ruleUsed(int ruleId) {
+            return false;
+        }
     }
 
     private static final class FakeRules implements CommissionRuleRepository {

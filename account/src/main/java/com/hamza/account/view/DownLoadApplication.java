@@ -72,6 +72,7 @@ import com.hamza.account.features.employee.attendance.AttendanceService;
 import com.hamza.account.features.employee.attendance.LeaveService;
 import com.hamza.account.features.employee.payroll.PayrollService;
 import com.hamza.account.features.delegate.CommissionRuleService;
+import com.hamza.account.features.delegate.CommissionRunService;
 import com.hamza.account.features.delegate.DelegatePerformanceService;
 import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.features.employee.statement.EmployeeStatementService;
@@ -265,6 +266,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(EmployeeService.class, new EmployeeService());
         ServiceRegistry.register(CommissionRuleService.class, new CommissionRuleService());
         ServiceRegistry.register(DelegatePerformanceService.class, new DelegatePerformanceService());
+        ServiceRegistry.register(CommissionRunService.class, new CommissionRunService());
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
         ServiceRegistry.register(UnitsService.class, new UnitsService(daoFactory));
         ServiceRegistry.register(UsersService.class, new UsersService(daoFactory, rbacService));

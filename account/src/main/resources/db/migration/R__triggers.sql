@@ -619,3 +619,82 @@ BEGIN
                          NULL, NULL);
 END|
 DELIMITER ;
+
+-- commission run (V72)
+--
+-- KEEP THIS SECTION LAST. `DelegateActivityDatabaseAcceptanceTest` builds a V70 schema to upgrade, and
+-- cuts this file at the line above: a trigger cannot be created on a table that does not exist yet, so
+-- everything below it must belong to V72 or later.
+--
+-- A commission line and a posting are facts from the moment they are written - the run is born
+-- approved, there is no draft - so neither is ever updated, and neither is deleted outside a wipe.
+-- The DELETE guards take the @app_bulk_wipe escape and **the UPDATE guards do not** (see "Shifts" in
+-- CLAUDE.md, and V43, which assumed they were one).
+--
+-- The run itself may change in exactly one way: APPROVED -> CANCELLED, and not even that once
+-- anything of it has been posted - a posted commission is an entitlement in somebody's account, and
+-- cancelling its run would orphan it. The period and who approved it never move.
+DROP TRIGGER IF EXISTS prevent_commission_line_update;
+DROP TRIGGER IF EXISTS prevent_commission_line_delete;
+DROP TRIGGER IF EXISTS prevent_commission_posting_update;
+DROP TRIGGER IF EXISTS prevent_commission_posting_delete;
+DROP TRIGGER IF EXISTS guard_commission_run_update;
+DROP TRIGGER IF EXISTS prevent_commission_run_delete;
+
+DELIMITER |
+CREATE TRIGGER prevent_commission_line_update
+BEFORE UPDATE ON commission_line FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A commission line is immutable';
+END|
+
+CREATE TRIGGER prevent_commission_line_delete
+BEFORE DELETE ON commission_line FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A commission line is immutable';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_commission_posting_update
+BEFORE UPDATE ON commission_posting FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A commission posting is immutable';
+END|
+
+CREATE TRIGGER prevent_commission_posting_delete
+BEFORE DELETE ON commission_posting FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A commission posting is immutable';
+    END IF;
+END|
+
+CREATE TRIGGER guard_commission_run_update
+BEFORE UPDATE ON commission_run FOR EACH ROW
+BEGIN
+    DECLARE posted INT;
+    IF NOT (OLD.status = 'APPROVED' AND NEW.status = 'CANCELLED')
+        OR NEW.period_year <> OLD.period_year OR NEW.period_month <> OLD.period_month
+        OR NEW.user_id <> OLD.user_id OR NEW.approved_at <> OLD.approved_at THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A commission run may only move from APPROVED to CANCELLED';
+    END IF;
+    SELECT COUNT(*) INTO posted
+    FROM commission_posting p
+             JOIN commission_line l ON l.id = p.line_id
+    WHERE l.run_id = OLD.id;
+    IF posted > 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A commission run with a posted line cannot be cancelled';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_commission_run_delete
+BEFORE DELETE ON commission_run FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A commission run is immutable';
+    END IF;
+END|
+DELIMITER ;
