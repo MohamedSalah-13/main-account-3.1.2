@@ -85,6 +85,38 @@ public final class ReturnGuard {
     }
 
     /**
+     * A return of a discounted invoice gives back its share of that discount - the second
+     * half of {@link #validate}, asked separately because it is about the document's two
+     * header figures rather than its lines, and called straight after it, inside the same
+     * transaction and under the lock {@code validate} already took on the source.
+     * <p>
+     * Equal, not "at least", for the reason {@code ReturnCostResolver} gives for a line:
+     * refunding less than was paid is as wrong as refunding more, only quieter. A free
+     * return has no source to take a share of and is left alone.
+     *
+     * @param returnTotal    the return's {@code total} - its lines after their own discounts
+     * @param returnDiscount the discount entered on the return as a whole
+     */
+    public void validateDiscount(DocumentType returnType, int sourceInvoiceNumber,
+                                 double returnTotal, double returnDiscount) throws DaoException {
+        Objects.requireNonNull(returnType, "returnType");
+        if (!returnType.isReturn() || sourceInvoiceNumber <= 0) {
+            return;
+        }
+        ReturnableRepository.SourceAmounts source = repository
+                .sourceAmounts(returnType.reverses(), sourceInvoiceNumber)
+                .orElseThrow(() -> new BusinessRuleException(
+                        message("return.error.source.not.found")));
+        double expected = ReturnHeaderDiscount.shareFor(
+                source.total(), source.discount(), returnTotal);
+        if (!ReturnHeaderDiscount.matches(returnDiscount, expected)) {
+            throw new BusinessRuleException(message("return.error.header.discount.differs",
+                    MoneyMath.text(MoneyMath.decimal(returnDiscount)),
+                    MoneyMath.text(MoneyMath.decimal(expected)), sourceInvoiceNumber));
+        }
+    }
+
+    /**
      * What a return with no source invoice is allowed to be.
      * <p>
      * Two settings, and they are deliberately separate questions.

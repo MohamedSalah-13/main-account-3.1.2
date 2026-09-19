@@ -107,7 +107,19 @@ class ReturnedStatusServiceTest {
         }
 
         @Override
-        public Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) {
+        public Map<Integer, Double> alreadyReturnedBySourceLine(
+                DocumentType returnType, int sourceId, int excludingReturnId) {
+            throw new UnsupportedOperationException("not used here");
+        }
+
+        @Override
+        public Optional<SourceAmounts> sourceAmounts(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException("not used here");
+        }
+
+        @Override
+        public Optional<SourceLine> lineById(
+                DocumentType sourceType, int sourceId, int sourceLineId) {
             throw new UnsupportedOperationException();
         }
 

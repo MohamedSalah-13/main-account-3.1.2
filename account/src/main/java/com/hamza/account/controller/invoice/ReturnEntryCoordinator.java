@@ -5,7 +5,10 @@ import com.hamza.account.features.invoice.InvoiceLineDraft;
 import com.hamza.account.features.invoice.ReturnLineSelectionService;
 import com.hamza.account.features.invoice.ReturnedStatusService;
 import com.hamza.account.features.returns.JdbcReturnableRepository;
+import com.hamza.account.features.invoice.InvoiceLineEditService;
+import com.hamza.account.features.returns.ReturnHeaderDiscount;
 import com.hamza.account.features.returns.ReturnReason;
+import com.hamza.account.features.returns.ReturnableRepository;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.Employees;
@@ -50,6 +53,8 @@ public final class ReturnEntryCoordinator {
 
     private int sourceInvoiceNumber;
     private ReturnReason selectedReturnReason;
+    /** The picked source's header figures, or {@code null} while the return names none. */
+    private ReturnableRepository.SourceAmounts sourceAmounts;
 
     public ReturnEntryCoordinator(DocumentType documentType,
                                   Controls controls,
@@ -109,13 +114,59 @@ public final class ReturnEntryCoordinator {
     public void restoreSource(int sourceInvoiceNumber, String storedReason) {
         this.sourceInvoiceNumber = Math.max(sourceInvoiceNumber, 0);
         this.selectedReturnReason = ReturnReason.fromStoredValue(storedReason);
+        try {
+            adoptSourceAmounts(this.sourceInvoiceNumber);
+        } catch (Exception e) {
+            errorHandler.handle(e);
+        }
     }
 
     /** Clears the picked source and reason, and hides the badge. */
     public void reset() {
         sourceInvoiceNumber = 0;
         selectedReturnReason = null;
+        sourceAmounts = null;
+        controls.headerDiscount().lock(false);
         show(controls.returnedBadge(), false);
+    }
+
+    /**
+     * Keeps the return's own discount equal to its share of the source invoice's, every time
+     * the lines change - the screen's half of {@link ReturnHeaderDiscount}, whose other half
+     * is {@code ReturnGuard.validateDiscount} refusing a save that disagrees. The box is
+     * locked while a source is named, for the reason a picked line's price is: a figure the
+     * save will accept no other value for is not a figure to offer for typing.
+     * <p>
+     * Does nothing on a return with no source, where the discount is the user's to enter.
+     */
+    public void totalsChanged() {
+        if (sourceAmounts == null || sourceInvoiceNumber <= 0) {
+            return;
+        }
+        controls.headerDiscount().show(ReturnHeaderDiscount.shareFor(
+                sourceAmounts.total(), sourceAmounts.discount(),
+                controls.headerDiscount().returnTotal()));
+    }
+
+    /**
+     * What a picked return row's source line sold and took off - how
+     * {@link InvoiceLineEditService} keeps the row's discount share in step when its
+     * quantity is edited. Empty on anything that is not a return naming an invoice.
+     */
+    public Optional<InvoiceLineEditService.SourceLineTerms.Terms> sourceLineTerms(
+            int sourceLineId) throws com.hamza.controlsfx.database.DaoException {
+        if (lineSelection == null || sourceInvoiceNumber <= 0) {
+            return Optional.empty();
+        }
+        return lineSelection.lineTerms(sourceInvoiceNumber, sourceLineId);
+    }
+
+    private void adoptSourceAmounts(int invoiceNumber) throws Exception {
+        sourceAmounts = lineSelection == null || invoiceNumber <= 0
+                ? null
+                : lineSelection.sourceAmounts(invoiceNumber).orElse(null);
+        controls.headerDiscount().lock(sourceAmounts != null);
+        totalsChanged();
     }
 
     /**
@@ -218,6 +269,7 @@ public final class ReturnEntryCoordinator {
             }
             sourceInvoiceNumber = invoiceNumber;
             selectedReturnReason = result.get().reason();
+            adoptSourceAmounts(invoiceNumber);
             applySourceParty(invoiceNumber);
             applySourceDelegate(invoiceNumber);
         } catch (Exception e) {
@@ -272,13 +324,25 @@ public final class ReturnEntryCoordinator {
 
     /** The form controls this coordinator owns. */
     public record Controls(Button returnFromInvoice, Label returnedBadge,
-                           NameSelector delegateSelector, NameSelector partySelector) {
+                           NameSelector delegateSelector, NameSelector partySelector,
+                           HeaderDiscount headerDiscount) {
         public Controls {
+            Objects.requireNonNull(headerDiscount, "headerDiscount");
             Objects.requireNonNull(returnFromInvoice, "returnFromInvoice");
             Objects.requireNonNull(returnedBadge, "returnedBadge");
             Objects.requireNonNull(delegateSelector, "delegateSelector");
             Objects.requireNonNull(partySelector, "partySelector");
         }
+    }
+
+    /** The form's additional-discount box, and the lines' total it is a share of. */
+    public interface HeaderDiscount {
+        /** The return's lines after their own discounts - what its header stores as total. */
+        double returnTotal();
+
+        void show(double discount);
+
+        void lock(boolean locked);
     }
 
     /** Puts a name into one of the form's own selectors - the delegate combo, or the party search. */

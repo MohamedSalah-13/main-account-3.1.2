@@ -19,9 +19,10 @@ import java.time.LocalDate;
  * @param price           what that line charged per {@link #unit}
  * @param buyPrice        what that line's items cost, per {@link #unit} - preserved by
  *                        {@code ReturnCostResolver} once the return is saved
- * @param remainingBaseQuantity what is left to return of this <em>item</em> across the
- *                        whole source invoice, in base units - not this line alone, and
- *                        not reduced within one dialog session as sibling lines of the
+ * @param remainingBaseQuantity what is left to return on this line, in base units: the
+ *                        lower of what is left of the line itself and what is left of
+ *                        its <em>item</em> across the whole source invoice - not
+ *                        reduced within one dialog session as sibling lines of the
  *                        same item are picked; {@code ReturnGuard} stays the
  *                        authoritative check at save time, exactly as it already is for
  *                        the quantity a picked expiry batch reports

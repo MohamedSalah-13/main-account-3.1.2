@@ -54,7 +54,7 @@ class ReturnCostResolverTest {
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
         assembled.setPrice(10.0);
 
-        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, List.of(originalRow), List.of(assembled));
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(originalRow), List.of(assembled));
 
         assertEquals(COST_AT_SALE, assembled.getBuy_price());
     }
@@ -71,7 +71,7 @@ class ReturnCostResolverTest {
         assembled.setPrice(150.0);
 
         BusinessRuleException refused = assertThrows(BusinessRuleException.class,
-                () -> resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE,
+                () -> resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                         List.of(originalRow), List.of(assembled)));
         assertTrue(refused.getMessage().contains("150"), refused.getMessage());
         assertTrue(refused.getMessage().contains("120"), refused.getMessage());
@@ -85,7 +85,7 @@ class ReturnCostResolverTest {
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
         assembled.setPrice(120.0);
 
-        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE,
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(returnRow(SOURCE_LINE)), List.of(assembled));
 
         assertEquals(120.0, assembled.getPrice());
@@ -102,7 +102,7 @@ class ReturnCostResolverTest {
         assembled.setPrice(100.0);
 
         assertThrows(BusinessRuleException.class, () -> resolver.apply(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE,
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
     }
 
@@ -116,7 +116,7 @@ class ReturnCostResolverTest {
         correct.setPrice(100.0);
         correct.setQuantity(2);
         correct.setDiscount(20.0);
-        assertDoesNotThrow(() -> resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE,
+        assertDoesNotThrow(() -> resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(returnRow(SOURCE_LINE)), List.of(correct)));
 
         // Dropping the discount refunds the full price on discounted goods.
@@ -125,7 +125,7 @@ class ReturnCostResolverTest {
         noDiscount.setQuantity(2);
         noDiscount.setDiscount(0.0);
         assertThrows(BusinessRuleException.class, () -> resolver.apply(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE,
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(returnRow(SOURCE_LINE)), List.of(noDiscount)));
     }
 
@@ -141,7 +141,7 @@ class ReturnCostResolverTest {
         assembled.setUnitsType(new com.hamza.account.model.domain.UnitsModel(2, "كرتونة", 12));
 
         assertThrows(BusinessRuleException.class, () -> resolver.apply(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE,
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
     }
 
@@ -152,7 +152,7 @@ class ReturnCostResolverTest {
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
         assembled.setPrice(999.0);
 
-        resolver.apply(DocumentType.SALES_RETURN, 0,
+        resolver.apply(DocumentType.SALES_RETURN, 0, 0,
                 List.of(returnRow(0)), List.of(assembled));
 
         assertEquals(999.0, assembled.getPrice());
@@ -165,7 +165,7 @@ class ReturnCostResolverTest {
         Sales_Return originalRow = returnRow(0);
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
 
-        resolver.apply(DocumentType.SALES_RETURN, 0, List.of(originalRow), List.of(assembled));
+        resolver.apply(DocumentType.SALES_RETURN, 0, 0, List.of(originalRow), List.of(assembled));
 
         assertEquals(COST_TODAY, assembled.getBuy_price());
     }
@@ -177,7 +177,7 @@ class ReturnCostResolverTest {
         Sales assembled = new Sales();
         assembled.setBuy_price(COST_TODAY);
 
-        resolver.apply(DocumentType.SALES, SOURCE_INVOICE, List.of(originalRow), List.of(assembled));
+        resolver.apply(DocumentType.SALES, SOURCE_INVOICE, 0, List.of(originalRow), List.of(assembled));
 
         assertEquals(COST_TODAY, assembled.getBuy_price());
     }
@@ -190,7 +190,7 @@ class ReturnCostResolverTest {
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
 
         assertThrows(BusinessRuleException.class, () -> resolver.apply(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE,
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(originalRow), List.of(assembled)));
     }
 
@@ -204,7 +204,7 @@ class ReturnCostResolverTest {
         Purchase_Return assembled = new Purchase_Return();
         assembled.setPrice(6.0);
 
-        resolver.apply(DocumentType.PURCHASE_RETURN, SOURCE_INVOICE, List.of(originalRow), List.of(assembled));
+        resolver.apply(DocumentType.PURCHASE_RETURN, SOURCE_INVOICE, 0, List.of(originalRow), List.of(assembled));
 
         assertEquals(DocumentType.PURCHASE, repository.lastSourceTypeAsked);
     }
@@ -219,7 +219,7 @@ class ReturnCostResolverTest {
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
                 ITEM, 1.0, 10.0, 0.0, COST_AT_SALE, 1, 1.0, null));
 
-        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, List.of(originalRow), List.of());
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(originalRow), List.of());
     }
 
     @Test
@@ -243,7 +243,7 @@ class ReturnCostResolverTest {
         typed.setQuantity(1);
 
         assertThrows(BusinessRuleException.class, () -> resolver.apply(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE,
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
                 List.of(pickedRow, typedRow), List.of(picked, typed)));
     }
 
@@ -255,8 +255,104 @@ class ReturnCostResolverTest {
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
         assembled.setPrice(55.0);
 
-        assertDoesNotThrow(() -> resolver.apply(DocumentType.SALES_RETURN, 0,
+        assertDoesNotThrow(() -> resolver.apply(DocumentType.SALES_RETURN, 0, 0,
                 List.of(returnRow(0)), List.of(assembled)));
+    }
+
+    @Test
+    void refusesMoreThanTheNamedLineSoldEvenWhenTheItemHasMoreOnTheInvoice() {
+        // The invoice lists the item twice: five at 100 and five at 60. ReturnGuard counts
+        // ten of the item and passes ten; every price here matches the line it names. Only
+        // the line's own quantity says that 1000 is being refunded for goods that cost 800.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 5.0, 100.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(100.0);
+        assembled.setQuantity(10);
+
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
+    }
+
+    @Test
+    void countsWhatEarlierReturnsAlreadyTookFromTheLine() {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 5.0, 100.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+        repository.returnedByLine.put(SOURCE_LINE, 4.0);
+
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(100.0);
+        assembled.setQuantity(2);
+
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
+    }
+
+    @Test
+    void theSameLinePickedTwiceOnOneReturnIsOneRequest() {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 5.0, 100.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return first = assembledSalesReturnLine(COST_TODAY);
+        first.setPrice(100.0);
+        first.setQuantity(3);
+        Sales_Return second = assembledSalesReturnLine(COST_TODAY);
+        second.setPrice(100.0);
+        second.setQuantity(3);
+
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                List.of(returnRow(SOURCE_LINE), returnRow(SOURCE_LINE)),
+                List.of(first, second)));
+    }
+
+    @Test
+    void allowsExactlyWhatIsLeftOfTheLine() {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 5.0, 100.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+        repository.returnedByLine.put(SOURCE_LINE, 2.0);
+
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(100.0);
+        assembled.setQuantity(3);
+
+        assertDoesNotThrow(() -> resolver.apply(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
+    }
+
+    @Test
+    void asksForTheLineAsALineOfTheNamedInvoice() throws DaoException {
+        // The repository answers "no such line" for a line of any other document, which is
+        // what turns a row tagged with invoice 9's line into a refusal on a return of 77.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 1.0, 10.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(10.0);
+
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled));
+
+        assertEquals(SOURCE_INVOICE, repository.lastSourceIdAsked);
+    }
+
+    @Test
+    void refusesARowWhoseSourceLineIsAnotherItems() {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 1.0, 10.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(10.0);
+        com.hamza.account.model.domain.ItemsModel other =
+                new com.hamza.account.model.domain.ItemsModel();
+        other.setId(ITEM + 1);
+        assembled.setItems(other);
+
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
     }
 
     private static Sales_Return returnRow(int sourceLineId) {
@@ -296,9 +392,25 @@ class ReturnCostResolverTest {
             throw new UnsupportedOperationException("not used by ReturnCostResolver");
         }
 
+        final Map<Integer, Double> returnedByLine = new HashMap<>();
+        int lastSourceIdAsked;
+
         @Override
-        public Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) {
+        public Map<Integer, Double> alreadyReturnedBySourceLine(
+                DocumentType returnType, int sourceId, int excludingReturnId) {
+            return returnedByLine;
+        }
+
+        @Override
+        public Optional<SourceAmounts> sourceAmounts(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException("not used by ReturnCostResolver");
+        }
+
+        @Override
+        public Optional<SourceLine> lineById(
+                DocumentType sourceType, int sourceId, int sourceLineId) {
             lastSourceTypeAsked = sourceType;
+            lastSourceIdAsked = sourceId;
             return Optional.ofNullable(lines.get(sourceLineId));
         }
 

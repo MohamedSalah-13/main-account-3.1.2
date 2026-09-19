@@ -34,7 +34,11 @@ class ReturnSourceAcceptanceTest {
 
     @BeforeAll
     static void connect() throws Exception {
-        File configFile = new File("config.xml");
+        // ACCOUNT_DB_ACCEPTANCE_CONFIG names the file outright, which is how this runs from a
+        // worktree - where there is deliberately no config.xml to read.
+        String named = System.getenv("ACCOUNT_DB_ACCEPTANCE_CONFIG");
+        File configFile = named == null || named.isBlank()
+                ? new File("config.xml") : new File(named);
         if (!configFile.isFile()) configFile = new File("../config.xml");
         HashMap<String, String> config = new CryptoDatabaseConfig(
                 CryptoDatabaseConfig.resolveConfigKey())

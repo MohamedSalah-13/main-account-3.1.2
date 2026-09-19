@@ -43,7 +43,11 @@ class ReturnableRepositoryAcceptanceTest {
 
     @BeforeAll
     static void connect() throws Exception {
-        File configFile = new File("config.xml");
+        // ACCOUNT_DB_ACCEPTANCE_CONFIG names the file outright, which is how this runs from a
+        // worktree - where there is deliberately no config.xml to read.
+        String named = System.getenv("ACCOUNT_DB_ACCEPTANCE_CONFIG");
+        File configFile = named == null || named.isBlank()
+                ? new File("config.xml") : new File(named);
         if (!configFile.isFile()) configFile = new File("../config.xml");
         HashMap<String, String> config = new CryptoDatabaseConfig(
                 CryptoDatabaseConfig.resolveConfigKey())
@@ -81,7 +85,7 @@ class ReturnableRepositoryAcceptanceTest {
         assertTrue(REPOSITORY.rawLines(DocumentType.SALES, noSuchInvoice).isEmpty());
         assertTrue(REPOSITORY.alreadyReturnedBaseQuantities(
                 DocumentType.SALES_RETURN, noSuchInvoice, 0).isEmpty());
-        assertTrue(REPOSITORY.lineById(DocumentType.SALES, noSuchInvoice).isEmpty());
+        assertTrue(REPOSITORY.lineById(DocumentType.SALES, noSuchInvoice, 1).isEmpty());
         assertTrue(REPOSITORY.sourceExpiryBatches(
                 DocumentType.SALES, noSuchInvoice, 1).isEmpty());
         assertTrue(REPOSITORY.sourceDelegateId(noSuchInvoice).isEmpty());
@@ -153,13 +157,15 @@ class ReturnableRepositoryAcceptanceTest {
             // this specific line recorded at the time, not the item's price today.
             raiseItemBuyPrice(transaction, itemId, 9.0);
 
-            var line = REPOSITORY.lineById(DocumentType.SALES, lineId);
+            var line = REPOSITORY.lineById(DocumentType.SALES, sales, lineId);
             assertTrue(line.isPresent());
             assertEquals(itemId, line.get().itemId());
             assertEquals(12.5, line.get().price());
             assertEquals(4.0, line.get().buyPrice());
 
-            assertTrue(REPOSITORY.lineById(DocumentType.SALES, lineId + 999_000).isEmpty());
+            assertTrue(REPOSITORY.lineById(DocumentType.SALES, sales, lineId + 999_000).isEmpty());
+            // A real line, of some other document: not a line of this one.
+            assertTrue(REPOSITORY.lineById(DocumentType.SALES, sales + 999_000, lineId).isEmpty());
         } finally {
             transaction.rollback();
             ConnectionManager.endTransaction(transaction);
@@ -194,7 +200,7 @@ class ReturnableRepositoryAcceptanceTest {
                 }
             }
 
-            var line = REPOSITORY.lineById(DocumentType.PURCHASE, lineId);
+            var line = REPOSITORY.lineById(DocumentType.PURCHASE, purchase, lineId);
             assertTrue(line.isPresent());
             assertEquals(8.5, line.get().price());
             assertEquals(0.0, line.get().buyPrice());
@@ -395,6 +401,47 @@ class ReturnableRepositoryAcceptanceTest {
      * {@code ReturnGuard} read a source of 0, called it a free return, and returned
      * without checking anything.
      */
+    @Test
+    void countsWhatWasReturnedPerSourceLineAndReadsTheSourceHeadersTwoFigures() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            // The same item twice on one invoice - the case the per-item total cannot tell apart.
+            int firstLine = insertSalesLineReturningId(transaction, sales, itemId, 5, 10, 4);
+            int secondLine = insertSalesLineReturningId(transaction, sales, itemId, 5, 10, 4);
+
+            int firstReturn = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, firstReturn);
+            insertSalesReturnLineLinked(transaction, firstReturn, itemId, 2, firstLine);
+            insertSalesReturnLineLinked(transaction, firstReturn, itemId, 1, firstLine);
+            // A return written before a line could be named: counted per item, not per line.
+            insertSalesReturnLine(transaction, firstReturn, itemId, 1);
+            WRITER.writeSource(DocumentType.SALES_RETURN, firstReturn, sales, null);
+
+            var byLine = REPOSITORY.alreadyReturnedBySourceLine(
+                    DocumentType.SALES_RETURN, sales, 0);
+            assertEquals(3.0, byLine.get(firstLine));
+            assertFalse(byLine.containsKey(secondLine));
+            assertEquals(1, byLine.size());
+
+            // Saving that return again must not count its own lines against itself.
+            assertTrue(REPOSITORY.alreadyReturnedBySourceLine(
+                    DocumentType.SALES_RETURN, sales, firstReturn).isEmpty());
+
+            var amounts = REPOSITORY.sourceAmounts(DocumentType.SALES, sales);
+            assertTrue(amounts.isPresent());
+            assertEquals(10.0, amounts.get().total());
+            assertEquals(0.0, amounts.get().discount());
+            assertTrue(REPOSITORY.sourceAmounts(DocumentType.SALES, sales + 999_000).isEmpty());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
     @Test
     void aSavedReturnRoundTripsItsSourceOnBothTheHeaderAndItsLines() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();

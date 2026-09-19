@@ -206,6 +206,49 @@ class InvoiceLineEditServiceTest {
         assertEquals(5, line.getDiscount());
     }
 
+    @Test
+    void aPickedReturnLinesDiscountShareFollowsItsQuantity() throws Exception {
+        // Sold 5 with 10 off the line; 2 of them picked, carrying 4. Editing the 2 to 3 used
+        // to keep the 4, the save then refused it for not being 6, and editDiscount refuses
+        // to let anybody type the 6 - the row could only be deleted and picked again.
+        Sales line = line(item(false), PIECE, 10);
+        line.setSourceLineId(501);
+        line.setQuantity(2);
+        line.setDiscount(4);
+        InvoiceLineEditService service = new InvoiceLineEditService(
+                DocumentType.SALES_RETURN,
+                new InvoiceItemCatalogService(DocumentType.SALES_RETURN,
+                        new TrackingRepository(item(false)), (item, price, tier) -> false),
+                () -> 1,
+                sourceLineId -> java.util.Optional.of(
+                        new InvoiceLineEditService.SourceLineTerms.Terms(5, 10)));
+
+        service.editQuantity(line, 3.0);
+
+        assertEquals(6, line.getDiscount());
+        assertEquals(24, line.getTotal_after_discount());
+    }
+
+    @Test
+    void aShareIsWorkedOutFromTheSourceLineNotScaledFromTheRoundedOneOnTheRow() throws Exception {
+        // 10 off 3 sold: one of them carries 3.33. Scaled back up to three that is 9.99,
+        // a piastre short of the 10 the save expects.
+        Sales line = line(item(false), PIECE, 10);
+        line.setSourceLineId(501);
+        line.setDiscount(3.33);
+        InvoiceLineEditService service = new InvoiceLineEditService(
+                DocumentType.SALES_RETURN,
+                new InvoiceItemCatalogService(DocumentType.SALES_RETURN,
+                        new TrackingRepository(item(false)), (item, price, tier) -> false),
+                () -> 1,
+                sourceLineId -> java.util.Optional.of(
+                        new InvoiceLineEditService.SourceLineTerms.Terms(3, 10)));
+
+        service.editQuantity(line, 3.0);
+
+        assertEquals(10, line.getDiscount());
+    }
+
     private static InvoiceLineEditService editService(
             DocumentType type, TrackingRepository repository,
             InvoiceItemCatalogService.ItemPriceUpdater updater) {

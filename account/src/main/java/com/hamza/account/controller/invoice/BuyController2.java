@@ -635,7 +635,23 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                         name -> comboDelegate.getSelectionModel().select(name),
                         // Setting the search text is what the party is chosen by
                         // everywhere on this screen; its listener resolves the code.
-                        this::selectPartyByName),
+                        this::selectPartyByName,
+                        new ReturnEntryCoordinator.HeaderDiscount() {
+                            @Override
+                            public double returnTotal() {
+                                return editor.totals().netAmount().doubleValue();
+                            }
+
+                            @Override
+                            public void show(double discount) {
+                                txtOtherDiscount.setText(String.valueOf(discount));
+                            }
+
+                            @Override
+                            public void lock(boolean locked) {
+                                txtOtherDiscount.setEditable(!locked);
+                            }
+                        }),
                 itemsService::findItemById,
                 new ReturnEntryCoordinator.LineAppender() {
                     @Override
@@ -663,6 +679,10 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 error -> AllAlerts.handleError(
                         LanguageManager.getInstance().getString("return.dialog.title"), error));
         returnEntry.configure();
+        // A return that names an invoice gives back its share of that invoice's own
+        // discount, and the share moves with the lines.
+        editor.totalsProperty().addListener(
+                (observable, before, now) -> returnEntry.totalsChanged());
     }
 
     /**
@@ -1410,7 +1430,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         InvoiceItemCatalogService catalogService = new InvoiceItemCatalogService(
                 documentType, itemsService, invoiceBuy::updateItemPrice);
         lineEditService = new InvoiceLineEditService(
-                documentType, catalogService, () -> invoiceStockId);
+                documentType, catalogService, () -> invoiceStockId,
+                sourceLineId -> returnEntry.sourceLineTerms(sourceLineId));
         new InvoiceTableCoordinator<>(table, editor.lines(), lineEditService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
                 editor::refreshTotals, getClass(), CurrentUser.get().getId() == 1,

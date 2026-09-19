@@ -84,19 +84,36 @@ class ReturnLineSelectionServiceTest {
     }
 
     @Test
-    void twoLinesOfTheSameItemShareOneRemainingFigure() throws DaoException {
+    void aLineOffersNoMoreThanItSoldItself() throws DaoException {
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
                 new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 10, 0, 4, 1, 1, null),
                 new ReturnableRepository.SourceLineRow(12, ITEM_A, 2, 10, 0, 4, 1, 1, null)));
-        // 5 sold total across both lines, 1 already returned - 4 remain for either.
+        // 5 sold across both lines and 1 already returned by a return that named no line,
+        // so 4 remain of the item - but neither line may offer more than it sold itself,
+        // which is what ReturnCostResolver will hold the save to.
 
         repository.alreadyReturned.put(ITEM_A, 1.0);
 
         List<ReturnableLineSelection> selections = service.selectableLines(SOURCE);
 
-        assertEquals(4.0, selections.get(0).remainingBaseQuantity());
-        assertEquals(4.0, selections.get(1).remainingBaseQuantity());
+        assertEquals(3.0, selections.get(0).remainingBaseQuantity());
+        assertEquals(2.0, selections.get(1).remainingBaseQuantity());
+    }
+
+    @Test
+    void whatWasAlreadyReturnedAgainstALineComesOffThatLineAlone() throws DaoException {
+        repository.existingSources.add(SOURCE);
+        repository.lines.put(SOURCE, List.of(
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 10, 0, 4, 1, 1, null),
+                new ReturnableRepository.SourceLineRow(12, ITEM_A, 2, 10, 0, 4, 1, 1, null)));
+        repository.alreadyReturned.put(ITEM_A, 2.0);
+        repository.returnedByLine.put(11, 2.0);
+
+        List<ReturnableLineSelection> selections = service.selectableLines(SOURCE);
+
+        assertEquals(1.0, selections.get(0).remainingBaseQuantity());
+        assertEquals(2.0, selections.get(1).remainingBaseQuantity());
     }
 
     @Test
@@ -192,8 +209,22 @@ class ReturnLineSelectionServiceTest {
             return new LinkedHashMap<>(alreadyReturned);
         }
 
+        final Map<Integer, Double> returnedByLine = new HashMap<>();
+
         @Override
-        public Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) {
+        public Map<Integer, Double> alreadyReturnedBySourceLine(
+                DocumentType returnType, int sourceId, int excludingReturnId) {
+            return returnedByLine;
+        }
+
+        @Override
+        public Optional<SourceAmounts> sourceAmounts(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException("not used here");
+        }
+
+        @Override
+        public Optional<SourceLine> lineById(
+                DocumentType sourceType, int sourceId, int sourceLineId) {
             throw new UnsupportedOperationException("not used by ReturnLineSelectionService");
         }
 

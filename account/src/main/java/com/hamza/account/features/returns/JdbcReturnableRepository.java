@@ -97,7 +97,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
     }
 
     @Override
-    public Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId)
+    public Optional<SourceLine> lineById(DocumentType sourceType, int sourceId, int sourceLineId)
             throws DaoException {
         DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
         // Only a `sales` line carries its own cost to preserve; `purchase` has no
@@ -106,10 +106,12 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         String sql = "SELECT " + spec.lineItem() + " AS item_id, quantity, price, discount, "
                 + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
                 + " type_value, expiration_date FROM " + spec.lineTable()
-                + " WHERE " + DocumentTableSpec.LINE_KEY + " = ?";
+                + " WHERE " + DocumentTableSpec.LINE_KEY + " = ? AND "
+                + DocumentTableSpec.LINE_DOCUMENT + " = ?";
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, sourceLineId);
+                statement.setInt(2, sourceId);
                 try (ResultSet rows = statement.executeQuery()) {
                     if (!rows.next()) {
                         return Optional.empty();
@@ -120,6 +122,50 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                             rows.getDouble("discount"), rows.getDouble("buy_price"),
                             rows.getInt("unit_id"), rows.getDouble("type_value"),
                             expiry == null ? null : expiry.toLocalDate()));
+                }
+            }
+        });
+    }
+
+    @Override
+    public Map<Integer, Double> alreadyReturnedBySourceLine(
+            DocumentType returnType, int sourceId, int excludingReturnId) throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(returnType);
+        String sql = "SELECT r.source_line_id, SUM(r.quantity) AS quantity FROM "
+                + spec.lineTable() + " r JOIN " + spec.table() + " h ON h." + spec.key()
+                + " = r." + DocumentTableSpec.LINE_DOCUMENT
+                + " WHERE h.source_invoice_number = ? AND h." + spec.key() + " <> ?"
+                + " AND r.source_line_id IS NOT NULL GROUP BY r.source_line_id";
+        return withConnection(connection -> {
+            Map<Integer, Double> quantities = new LinkedHashMap<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceId);
+                statement.setInt(2, excludingReturnId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        quantities.put(rows.getInt("source_line_id"), rows.getDouble("quantity"));
+                    }
+                }
+            }
+            return quantities;
+        });
+    }
+
+    @Override
+    public Optional<SourceAmounts> sourceAmounts(DocumentType sourceType, int sourceId)
+            throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        String sql = "SELECT total, discount FROM " + spec.table()
+                + " WHERE " + spec.key() + " = ?";
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    if (!rows.next()) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(new SourceAmounts(
+                            rows.getDouble("total"), rows.getDouble("discount")));
                 }
             }
         });

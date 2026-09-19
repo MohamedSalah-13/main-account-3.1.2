@@ -63,6 +63,8 @@ public final class ReturnLineSelectionService {
         }
         Map<Integer, Double> alreadyReturned =
                 repository.alreadyReturnedBaseQuantities(returnType, sourceInvoiceNumber, 0);
+        Map<Integer, Double> returnedByLine =
+                repository.alreadyReturnedBySourceLine(returnType, sourceInvoiceNumber, 0);
 
         List<ReturnableLineSelection> selections = new ArrayList<>(rawLines.size());
         for (ReturnableRepository.SourceLineRow row : rawLines) {
@@ -74,12 +76,43 @@ public final class ReturnLineSelectionService {
             UnitsModel unit = unitOf(item, row.unitId(), row.typeValue());
             double soldBase = soldByItem.getOrDefault(row.itemId(), 0.0);
             double returnedBase = alreadyReturned.getOrDefault(row.itemId(), 0.0);
-            double remainingBase = Math.max(0.0, soldBase - returnedBase);
+            // Both ceilings, whichever is lower: what is left of the item across the
+            // invoice (which also counts returns written before a return named its line)
+            // and what is left of this line itself - ReturnCostResolver refuses more than
+            // the line sold, so offering the item's whole remainder on every line of it
+            // would offer a quantity the save then turns down.
+            double lineRemainingBase = (row.quantity()
+                    - returnedByLine.getOrDefault(row.lineId(), 0.0)) * row.typeValue();
+            double remainingBase = Math.max(0.0,
+                    Math.min(soldBase - returnedBase, lineRemainingBase));
             selections.add(new ReturnableLineSelection(row.lineId(), item, unit,
                     row.quantity(), row.price(), row.discount(), row.buyPrice(),
                     remainingBase, row.expirationDate()));
         }
         return selections;
+    }
+
+    /**
+     * The source header's total and its own discount - what the return screen computes the
+     * return's share of that discount from, see {@code ReturnHeaderDiscount}.
+     */
+    public java.util.Optional<ReturnableRepository.SourceAmounts> sourceAmounts(
+            int sourceInvoiceNumber) throws DaoException {
+        if (sourceInvoiceNumber <= 0) {
+            return java.util.Optional.empty();
+        }
+        return repository.sourceAmounts(returnType.reverses(), sourceInvoiceNumber);
+    }
+
+    /** One source line's sold quantity and discount, for a row already picked from it. */
+    public java.util.Optional<InvoiceLineEditService.SourceLineTerms.Terms> lineTerms(
+            int sourceInvoiceNumber, int sourceLineId) throws DaoException {
+        if (sourceInvoiceNumber <= 0 || sourceLineId <= 0) {
+            return java.util.Optional.empty();
+        }
+        return repository.lineById(returnType.reverses(), sourceInvoiceNumber, sourceLineId)
+                .map(line -> new InvoiceLineEditService.SourceLineTerms.Terms(
+                        line.quantity(), line.discount()));
     }
 
     /**

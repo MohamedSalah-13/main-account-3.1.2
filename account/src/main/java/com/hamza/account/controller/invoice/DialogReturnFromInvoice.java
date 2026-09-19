@@ -1,11 +1,13 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.controller.others.DialogButtons;
+import com.hamza.account.features.invoice.ReturnQuantityInput;
 import com.hamza.account.features.invoice.ReturnableLineSelection;
 import com.hamza.account.features.returns.ReturnReason;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.table.Columns;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -59,6 +61,8 @@ public final class DialogReturnFromInvoice {
                         row -> row.line().item().getNameItem()),
                 readOnlyColumn(lang.getString("return.dialog.column.unit"),
                         row -> row.line().unit().getUnit_name()),
+                readOnlyColumn(lang.getString("return.dialog.column.price"),
+                        row -> Columns.money(BigDecimal.valueOf(row.line().price()))),
                 readOnlyColumn(lang.getString("return.dialog.column.sold"),
                         row -> quantityText(row.line().soldQuantity())),
                 readOnlyColumn(lang.getString("return.dialog.column.remaining"),
@@ -70,8 +74,19 @@ public final class DialogReturnFromInvoice {
         reasonCombo.setConverter(reasonConverter());
         reasonCombo.setPromptText(lang.getString("return.dialog.reason.prompt"));
 
+        // The ordinary return is the whole invoice, and typing every remainder by hand is
+        // how a quantity gets typed wrong.
+        Button returnAll = new Button(lang.getString("return.dialog.all"));
+        returnAll.setOnAction(event -> {
+            for (Row row : rows) {
+                row.quantityText().set(quantityText(row.remainingInUnit()));
+            }
+            table.refresh();
+        });
+
         VBox content = new VBox(10, table,
-                new HBox(10, new Label(lang.getString("return.dialog.reason.label")), reasonCombo));
+                new HBox(10, new Label(lang.getString("return.dialog.reason.label")), reasonCombo,
+                        returnAll));
         dialog.getDialogPane().setContent(content);
 
         dialog.setResultConverter(button -> {
@@ -80,7 +95,8 @@ public final class DialogReturnFromInvoice {
             }
             List<Selected> selected = new ArrayList<>();
             for (Row row : rows) {
-                double quantityInUnit = parseQuantity(row.quantityText().get());
+                double quantityInUnit = ReturnQuantityInput.within(
+                        row.quantityText().get(), row.remainingInUnit());
                 if (quantityInUnit > 0) {
                     selected.add(new Selected(row.line(), quantityInUnit));
                 }
@@ -103,7 +119,14 @@ public final class DialogReturnFromInvoice {
         column.setCellValueFactory(cell -> cell.getValue().quantityText());
         column.setCellFactory(TextFieldTableCell.forTableColumn(new DefaultStringConverter()));
         column.setEditable(true);
-        column.setOnEditCommit(event -> event.getRowValue().quantityText().set(event.getNewValue()));
+        // Written back as what will be returned, so a quantity above what is left shows as
+        // the remainder it is held to, and text that is no number shows as the zero it means.
+        column.setOnEditCommit(event -> {
+            Row row = event.getRowValue();
+            row.quantityText().set(quantityText(ReturnQuantityInput.within(
+                    event.getNewValue(), row.remainingInUnit())));
+            event.getTableView().refresh();
+        });
         return column;
     }
 
@@ -119,18 +142,6 @@ public final class DialogReturnFromInvoice {
                 return null;
             }
         };
-    }
-
-    private static double parseQuantity(String text) {
-        if (text == null) {
-            return 0;
-        }
-        try {
-            double value = Double.parseDouble(text.trim());
-            return Math.max(value, 0);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     private static String quantityText(double value) {

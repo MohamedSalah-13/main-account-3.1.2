@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -241,6 +242,53 @@ class ReturnGuardTest {
                 InvoiceType.CASH, 1, List.of(lineOf(ITEM, 1))));
     }
 
+    @Test
+    void refusesAReturnThatGivesBackNoneOfTheInvoicesOwnDiscount() {
+        // Sold 1000 with 100 off - 900 paid. All of it returned at the lines' prices with
+        // the discount box left at zero refunds 1000.
+        repository.amounts = new ReturnableRepository.SourceAmounts(1000, 100);
+
+        BusinessRuleException refused = assertThrows(BusinessRuleException.class,
+                () -> guard.validateDiscount(
+                        DocumentType.SALES_RETURN, SOURCE_INVOICE, 1000, 0));
+        assertTrue(refused.getMessage().contains("100.00"), refused.getMessage());
+    }
+
+    @Test
+    void refusesMoreDiscountThanTheShareAsMuchAsLess() {
+        repository.amounts = new ReturnableRepository.SourceAmounts(1000, 100);
+
+        assertThrows(BusinessRuleException.class, () -> guard.validateDiscount(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 500, 80));
+    }
+
+    @Test
+    void allowsAPartialReturnCarryingItsShareOfTheDiscount() {
+        repository.amounts = new ReturnableRepository.SourceAmounts(1000, 100);
+
+        assertDoesNotThrow(() -> guard.validateDiscount(
+                DocumentType.PURCHASE_RETURN, SOURCE_INVOICE, 250, 25));
+    }
+
+    @Test
+    void anInvoiceWithNoDiscountOfItsOwnAllowsNoneOnItsReturn() {
+        repository.amounts = new ReturnableRepository.SourceAmounts(1000, 0);
+
+        assertDoesNotThrow(() -> guard.validateDiscount(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 400, 0));
+        assertThrows(BusinessRuleException.class, () -> guard.validateDiscount(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 400, 10));
+    }
+
+    @Test
+    void aFreeReturnsDiscountIsItsOwnAndAnythingNotAReturnIsNotAsked() {
+        assertDoesNotThrow(() -> guard.validateDiscount(
+                DocumentType.SALES_RETURN, 0, 400, 35));
+        assertDoesNotThrow(() -> guard.validateDiscount(
+                DocumentType.SALES, SOURCE_INVOICE, 400, 35));
+        assertTrue(repository.calls.stream().noneMatch("sourceAmounts"::equals));
+    }
+
     private static Sales_Return pricedLine(int itemId, double quantity, double price) {
         Sales_Return line = lineOf(itemId, quantity);
         line.setPrice(price);
@@ -300,8 +348,24 @@ class ReturnGuardTest {
             return new LinkedHashMap<>(alreadyReturned);
         }
 
+        SourceAmounts amounts;
+
         @Override
-        public java.util.Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) {
+        public Map<Integer, Double> alreadyReturnedBySourceLine(
+                DocumentType returnType, int sourceId, int excludingReturnId) {
+            throw new UnsupportedOperationException("not used by ReturnGuard");
+        }
+
+        @Override
+        public java.util.Optional<SourceAmounts> sourceAmounts(
+                DocumentType sourceType, int sourceId) {
+            calls.add("sourceAmounts");
+            return java.util.Optional.ofNullable(amounts);
+        }
+
+        @Override
+        public java.util.Optional<SourceLine> lineById(
+                DocumentType sourceType, int sourceId, int sourceLineId) {
             calls.add("lineById");
             return java.util.Optional.empty();
         }

@@ -7,7 +7,10 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.language.LanguageManager;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,6 +38,8 @@ public final class ReturnCostResolver {
     /** Half a piastre - below this two prices are the same price. */
     private static final double PRICE_EPSILON = 0.005;
 
+    private static final double QUANTITY_EPSILON = 0.000_001;
+
     private final ReturnableRepository repository;
 
     public ReturnCostResolver(ReturnableRepository repository) {
@@ -46,29 +51,79 @@ public final class ReturnCostResolver {
      *                            return entered without one. It is what tells a line
      *                            with no source apart from a whole document with none -
      *                            see {@link #requireLineComesFromTheSource}.
+     * @param excludingReturnId   the return's own id when one already saved is being saved
+     *                            again, so its stored lines are not counted against it;
+     *                            {@code 0} for a new one
      */
     public <T extends BasePurchasesAndSales> void apply(
-            DocumentType returnType, int sourceInvoiceNumber,
+            DocumentType returnType, int sourceInvoiceNumber, int excludingReturnId,
             List<? extends BasePurchasesAndSales> originalRows,
             List<T> persistedLines) throws DaoException {
         if (!returnType.isReturn() || originalRows.size() != persistedLines.size()) {
             return;
         }
         DocumentType sourceType = returnType.reverses();
+        Map<Integer, Double> takenByLine = new HashMap<>();
+        Map<Integer, Double> returnedByLine = null;
         for (int index = 0; index < originalRows.size(); index++) {
             BasePurchasesAndSales original = originalRows.get(index);
             if (original == null || original.getSourceLineId() <= 0) {
                 requireLineComesFromTheSource(sourceInvoiceNumber);
                 continue;
             }
+            int sourceLineId = original.getSourceLineId();
             ReturnableRepository.SourceLine source = repository
-                    .lineById(sourceType, original.getSourceLineId())
+                    .lineById(sourceType, sourceInvoiceNumber, sourceLineId)
                     .orElseThrow(() -> new BusinessRuleException(LanguageManager.getInstance()
-                            .getString("return.error.source.line.missing",
-                                    original.getSourceLineId())));
+                            .getString("return.error.source.line.missing", sourceLineId)));
             T persisted = persistedLines.get(index);
+            requireSameItemAsSold(persisted, source);
             requireSameTermsAsSold(persisted, source);
+            if (returnedByLine == null) {
+                returnedByLine = repository.alreadyReturnedBySourceLine(
+                        returnType, sourceInvoiceNumber, excludingReturnId);
+            }
+            double taken = takenByLine.merge(sourceLineId, persisted.getQuantity(), Double::sum);
+            requireWithinTheLine(source, returnedByLine.getOrDefault(sourceLineId, 0.0), taken);
             persisted.setBuy_price(source.buyPrice());
+        }
+    }
+
+    /**
+     * A line is returned against <em>its</em> line, up to what that line sold.
+     * <p>
+     * {@code ReturnGuard} counts per item across the whole invoice, which is the right
+     * question for "did this invoice sell that much" and the wrong one for money: an invoice
+     * listing one item twice - five at 100, five at 60 - let all ten come back against the
+     * line at 100. Ten of ten sold, the price equal to the line it named, and 200 refunded
+     * that nobody ever paid. The price belongs to a line, so the quantity it may be refunded
+     * for belongs to that line too.
+     * <p>
+     * In the line's own unit: {@link #requireSameTermsAsSold} has already held the return to
+     * it. {@code taken} is everything this document asks of the line so far, so the same
+     * line picked twice on one return is one request, not two that each fit.
+     */
+    private static void requireWithinTheLine(ReturnableRepository.SourceLine source,
+                                             double alreadyReturned, double taken)
+            throws BusinessRuleException {
+        double remaining = source.quantity() - alreadyReturned;
+        if (taken - remaining > QUANTITY_EPSILON) {
+            throw new BusinessRuleException(message("return.error.exceeds.line",
+                    quantity(Math.max(remaining, 0)), quantity(taken)));
+        }
+    }
+
+    /**
+     * The line a return row points at has to be a line of the item it returns. Nothing on
+     * the screen can produce the mismatch - the picker tags a row with the line it was built
+     * from - but this is the enforcement, and a price and a cost read from some other item's
+     * line are wrong in a way every later check would pass.
+     */
+    private static void requireSameItemAsSold(
+            BasePurchasesAndSales line, ReturnableRepository.SourceLine source)
+            throws BusinessRuleException {
+        if (line.getItems() != null && line.getItems().getId() != source.itemId()) {
+            throw new BusinessRuleException(message("return.error.line.item.differs"));
         }
     }
 
@@ -143,6 +198,10 @@ public final class ReturnCostResolver {
         }
         return MoneyMath.asDouble(MoneyMath.multiply(
                 source.discount(), returnedQuantity / source.quantity()));
+    }
+
+    private static String quantity(double value) {
+        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
     }
 
     private static String money(double value) {

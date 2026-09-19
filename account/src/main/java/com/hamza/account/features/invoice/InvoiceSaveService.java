@@ -323,6 +323,8 @@ public final class InvoiceSaveService<
         returnGuard.validate(documentType, command.sourceInvoiceNumber(),
                 command.updating() ? command.existingInvoiceId() : 0,
                 payment.invoiceType(), command.partyId(), command.lines());
+        returnGuard.validateDiscount(documentType, command.sourceInvoiceNumber(),
+                payment.subtotal(), payment.discount());
         Employees delegate = documentType.hasDelegate()
                 ? delegateLookup.find(command.delegateName())
                 : null;
@@ -341,6 +343,7 @@ public final class InvoiceSaveService<
         List<T1> persistedLines = InvoiceLineAssembler.assemble(
                 command.lines(), invoiceNumber, invoiceFactory::object_TableData);
         returnCostResolver.apply(documentType, command.sourceInvoiceNumber(),
+                command.updating() ? command.existingInvoiceId() : 0,
                 command.lines(), persistedLines);
         T3 party = invoiceFactory.objectName(command.partyId(), command.partyName());
         Treasury treasury = treasuryLookup.find(command.treasuryName());

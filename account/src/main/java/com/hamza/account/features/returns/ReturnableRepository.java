@@ -53,8 +53,10 @@ public interface ReturnableRepository {
 
     /**
      * One exact original line - what {@code ReturnCostResolver} reads to recover the
-     * price and cost it was sold or bought at, rather than today's. Empty when the id
-     * names no line, which is refused rather than silently ignored: a return that
+     * price and cost it was sold or bought at, rather than today's. Asked for by the
+     * document as well as by the line: a line of some <em>other</em> invoice is not a line
+     * of this one, however real it is, and a return naming invoice 5 must not be priced from
+     * a line of invoice 9. Empty when the id names no line of that document, which is refused rather than silently ignored: a return that
      * claims to reverse a line that does not exist has a data problem worth surfacing,
      * not a cost worth guessing at.
      *
@@ -66,7 +68,33 @@ public interface ReturnableRepository {
      * @param unitId    the unit the line was in
      * @param typeValue that unit's factor into the item's base unit, on this line
      */
-    Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) throws DaoException;
+    Optional<SourceLine> lineById(DocumentType sourceType, int sourceId, int sourceLineId)
+            throws DaoException;
+
+    /**
+     * What has already been returned of each <em>line</em> of this source invoice, keyed by
+     * the source line's id and counted in that line's own unit - a return line picked from a
+     * source line is held to its unit, so the two are the same unit by the time they are
+     * compared. Excludes {@code excludingReturnId} exactly as
+     * {@link #alreadyReturnedBaseQuantities} does.
+     * <p>
+     * The per-item total is not enough on its own: an invoice that lists one item twice,
+     * five at 100 and five at 60, would let all ten be returned against the line at 100 -
+     * ten against ten sold, every price matching the line it names, and 200 more refunded
+     * than was ever charged. A return written before {@code source_line_id} existed names no
+     * line and is not counted here; the per-item total still counts it.
+     */
+    Map<Integer, Double> alreadyReturnedBySourceLine(
+            DocumentType returnType, int sourceId, int excludingReturnId) throws DaoException;
+
+    /**
+     * The source header's own two figures: its {@code total}, which is the lines after their
+     * own discounts, and the {@code discount} taken on the document as a whole. What a return
+     * needs to give back its share of that second discount rather than refunding at the
+     * lines' prices a customer never paid in full. Empty when the invoice does not exist.
+     */
+    Optional<SourceAmounts> sourceAmounts(DocumentType sourceType, int sourceId)
+            throws DaoException;
 
     /**
      * The expiry batches a source invoice actually sold or bought of one item - what a
@@ -142,6 +170,10 @@ public interface ReturnableRepository {
     record SourceLine(int itemId, double quantity, double price, double discount,
                       double buyPrice, int unitId, double typeValue,
                       LocalDate expirationDate) {
+    }
+
+    /** {@code total} is the lines after their own discounts; {@code discount} is the document's. */
+    record SourceAmounts(double total, double discount) {
     }
 
     record ExpiryBatch(LocalDate expirationDate, double baseQuantity) {
