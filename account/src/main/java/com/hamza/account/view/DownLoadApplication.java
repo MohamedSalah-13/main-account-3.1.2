@@ -71,6 +71,7 @@ import com.hamza.account.features.expense.recurring.ExpenseRecurringService;
 import com.hamza.account.features.employee.attendance.AttendanceService;
 import com.hamza.account.features.employee.attendance.LeaveService;
 import com.hamza.account.features.employee.payroll.PayrollService;
+import com.hamza.account.features.delegate.CommissionRuleService;
 import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.features.employee.statement.EmployeeStatementService;
 import com.hamza.account.service.*;
@@ -261,6 +262,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ItemMergeService.class, new ItemMergeService(daoFactory, productFeatures));
         ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService());
+        ServiceRegistry.register(CommissionRuleService.class, new CommissionRuleService());
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
         ServiceRegistry.register(UnitsService.class, new UnitsService(daoFactory));
         ServiceRegistry.register(UsersService.class, new UsersService(daoFactory, rbacService));

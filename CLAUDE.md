@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,717 tests** with 142 skipped (below) — the figure `mvn clean test`
+**2,763 tests** with 152 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-19. What is
 genuinely covered:
 
@@ -275,8 +275,8 @@ Two documents govern work here and are kept current — read them before large c
   its own folder failed every backup it was asked for.
 - **[`docs/product-plan.md`](docs/product-plan.md)** - the order the large items are built in and why
   (one developer, so one item open at a time), the hybrid selling model, and §4 the ideas log: an idea
-  that arrives mid-item is written there in one line, not built. Two plans hang off it, **neither with
-  code yet**: [`docs/licensing-server-plan.md`](docs/licensing-server-plan.md) - the licence stays
+  that arrives mid-item is written there in one line, not built. Two plans hang off it, **each with
+  its phase A built and nothing after it**: [`docs/licensing-server-plan.md`](docs/licensing-server-plan.md) - the licence stays
   verified offline and the server only issues it, the server gets a **second key** because
   `ReleaseSigningKey` also signs emergency recovery, and an expiry never reaches `failAndExit` - and
   [`docs/delegates-plan.md`](docs/delegates-plan.md) - the dated commission rule, the frozen monthly
@@ -1388,6 +1388,53 @@ offers the headings from `expenses` and the person paying chooses — a constant
 act is creating an expense, so a payment needs both; `V58` grants the new one to whoever holds the
 old, so nobody loses an ability on upgrade, but a role given only `employee.pay` cannot pay anybody.
 
+### Delegates and commission
+
+`features/delegate` and `docs/delegates-plan.md`. Phase A is what is shipped: the **dated commission
+rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers, and the rules screen
+opened from a delegate's row on the employees screen. No run, no report and no posting yet.
+
+**It replaces `targeted_sales`/`target_delegate`, which nothing new may read.** That row had no period,
+so the view joined it to every month in history and changing a target changed last January's
+commission; its `IF` chain ended in an unconditional third rate, so a delegate at 1% of target was
+paid it on everything. The rule now carries `effective_from` exactly as `employee_compensation`
+does, and **a month is judged by the rule in force on its first day** - a rule starting on the 10th
+governs from the next month, so no month is split between two targets and none is raised after its
+sales are in. The old rows are **not** translated: their defaults cannot be read as rising
+thresholds without guessing.
+
+**`CommissionTiers` is the arithmetic and has no database.** One to three tiers, lowest threshold
+first; **below the lowest there is nothing**. A threshold is compared as an *amount*
+(`target x percent / 100`), never as the rounded percentage on screen - 99,996 of 100,000 shows
+100.00% and is not the target. `WHOLE` pays the reached rate on everything, `MARGINAL` each tier
+on the part inside it; a base of zero or less earns zero, never a negative commission; with no
+target only a tier starting at zero can be reached, and the rule accepts nothing else.
+
+**An empty box is not a zero** (`CommissionRuleForm`): an empty pair is "no such tier", `0` and `0`
+is a tier from zero. The second and third tiers therefore take `setOptionalNumberFormatter` - the
+seeding one would make every rule three tiers at zero, refused for having no order, on a form nobody
+typed into. The filter-field lesson, at an entry form.
+
+**A MySQL CHECK passes when it evaluates to NULL.** V70's first draft wrote
+`tier2_from > tier1_from AND tier2_rate BETWEEN 0 AND 100`, which accepts a tier with a threshold
+and no rate. Every branch comparing a nullable column says `IS NOT NULL` itself, and
+`CommissionRuleDatabaseAcceptanceTest` inserts the bad rows and checks the refusal came from this
+table's own constraint. That class builds a scratch schema from nothing, runs from a worktree with
+`ACCOUNT_DB_ACCEPTANCE_CONFIG`, and drops the schema; nine cases, green twice on 2026-09-19.
+
+**The commission must reach the employee's ledger once, and the payroll is already a road to it.**
+`PayrollService.approve` writes one `ENTITLEMENT` = basic + allowances + **commission**
+(`payroll_line.commission`, typed by hand today). So a commission run must not write a `COMMISSION`
+ledger row of its own beside that - the plan's first draft did, and would have paid every delegate
+twice on paper. Decision 4 of the plan: the approved line feeds the payroll, a shop without payroll
+posts it explicitly, and a `commission_posting` table whose primary key is the line makes "once" a
+constraint rather than a promise. That is phase C; nothing posts anything yet.
+
+Permissions are `commission.show` and `commission.rule.update`, granted by V70 to whoever holds
+`employees.show.salary` and `employee.salary.change`. **`update`, not `manage`**: the risk is derived
+from the key's last word and `MANAGE` is `CRITICAL`. A rate is a figure about a person, so
+`history`/`ruleForMonth` call `require` before any query. The rules screen has **not been opened**.
+
 ### A list screen's bar
 
 `account.table.ListToolbar` places the controls above a list, and the order is its decision, not
@@ -2331,7 +2378,8 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V69`, which gives a
+  new database executes it and continues with `V2`, `V3`, … The current head is `V70`, the dated
+  commission rule of a delegate (see **Delegates and commission**). Before it `V69` gives a
   treasury its wallet or account number and a minimum balance; before it `V68` lets a
   transfer between treasuries carry a fee, and `V67` ties a wallet fee to the movement it was
   paid for (see **The treasury**). Before them, `V66` adds the

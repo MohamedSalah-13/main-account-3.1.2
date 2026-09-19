@@ -455,6 +455,8 @@ public class EmployeesScreenController extends LoadData {
                         AppPermissions.EMPLOYEE_ACCOUNT_SHOW, this::openStatement),
                 RowAction.of("employee.action.salary", AppIcon.TREASURY_CASH, "app-neutral-button",
                         AppPermissions.EMPLOYEE_SALARY_CHANGE, this::openSalary),
+                RowAction.of("employee.action.commission", AppIcon.REPORT, "app-neutral-button",
+                        AppPermissions.COMMISSION_SHOW, this::openCommission),
                 RowAction.of("employee.action.toggle", AppIcon.SECURITY, "app-neutral-button",
                         AppPermissions.EMPLOYEE_UPDATE, this::toggleActive));
         return RowActionsColumn.of("employee.column.actions", RowAction.permitted(actions));
@@ -590,6 +592,24 @@ public class EmployeesScreenController extends LoadData {
     private void open(int employeeId) {
         try {
             new AddForAllApplication(employeeId, new EmployeeFormController(employeeId));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * A delegate's commission rules. The button is in every row because a row action cannot
+     * depend on its row; an employee whose job is not a delegate's is told so rather than
+     * shown a form whose save the service would refuse.
+     */
+    private void openCommission(Employee employee) {
+        if (!employee.delegate()) {
+            AllAlerts.alertError(text("commission.error.not.delegate"));
+            return;
+        }
+        try {
+            new AddForAllApplication(employee.id(),
+                    new CommissionRulesController(employee.id(), employee.name()));
         } catch (Exception e) {
             report(e);
         }

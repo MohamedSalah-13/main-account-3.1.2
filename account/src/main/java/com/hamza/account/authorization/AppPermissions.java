@@ -220,6 +220,23 @@ public final class AppPermissions {
     public static final PermissionKey PAYROLL_APPROVE = key("payroll.approve");
     public static final PermissionKey PAYROLL_PAY = key("payroll.pay");
 
+    /**
+     * Seeing a delegate's commission rules: his target and his rates.
+     * <p>
+     * A rate is a figure about a person, as a salary is, so it is not fetched for a reader who
+     * may not see one. V70 grants it to whoever already holds {@link #EMPLOYEES_SHOW_SALARY}.
+     */
+    public static final PermissionKey COMMISSION_SHOW = key("commission.show");
+
+    /**
+     * Setting the rule a delegate's commission is computed by.
+     * <p>
+     * Separate from {@link #EMPLOYEE_UPDATE} for the reason {@link #EMPLOYEE_SALARY_CHANGE} is:
+     * correcting a telephone number is not deciding what somebody is paid. V70 grants it to
+     * whoever holds the salary one, so nobody loses an ability on upgrade.
+     */
+    public static final PermissionKey COMMISSION_RULE_UPDATE = key("commission.rule.update");
+
     public static final PermissionKey ATTENDANCE_SHOW = key("attendance.show");
 
     /**
