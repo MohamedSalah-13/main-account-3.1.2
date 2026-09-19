@@ -261,6 +261,17 @@ public final class AppPermissions {
      */
     public static final PermissionKey COMMISSION_RUN_POST = key("commission.run.post");
 
+    /**
+     * Saving a sales invoice discounted beyond its delegate's ceiling
+     * ({@code employees.max_discount_percent}, V73).
+     * <p>
+     * It guards no write of its own - the invoice's create or update permission does that - it
+     * decides which of two answers {@code DelegateDiscountGuard} gives. V73 grants it to whoever
+     * holds {@link #COMMISSION_RULE_UPDATE}, <b>not</b> to whoever may sell: granted to every
+     * cashier, a ceiling the owner sets would stop nobody.
+     */
+    public static final PermissionKey SALES_DISCOUNT_OVERRIDE = key("sales.discount.override");
+
     public static final PermissionKey ATTENDANCE_SHOW = key("attendance.show");
 
     /**
@@ -434,7 +445,8 @@ public final class AppPermissions {
             // RESTORE replaces every table in the database from a file. There is no
             // action here that undoes more, so it cannot be the LOW the default gives it.
             case "DELETE", "BYPASS", "MANAGE", "POST", "RESTORE" -> PermissionRisk.CRITICAL;
-            case "UPDATE", "ADD", "CREATE", "MOVE" -> PermissionRisk.HIGH;
+            // OVERRIDE sets a rule aside for one document; it is not the LOW the default gives.
+            case "UPDATE", "ADD", "CREATE", "MOVE", "OVERRIDE" -> PermissionRisk.HIGH;
             case "INVOICE", "PRICE", "SALARY", "PROFIT" -> PermissionRisk.MEDIUM;
             default -> PermissionRisk.LOW;
         };

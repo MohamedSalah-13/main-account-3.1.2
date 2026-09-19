@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,840 tests** with 173 skipped (below) — the figure `mvn clean test`
+**2,893 tests** with 186 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-19. What is
 genuinely covered:
 
@@ -1394,8 +1394,8 @@ old, so nobody loses an ability on upgrade, but a role given only `employee.pay`
 rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers and the rules screen opened
 from a delegate's row; then the **delegate of a collection** (`V71`), the two commission bases in SQL
 and the monthly performance report; then the **frozen monthly run** (`V72`) and its posting, once, by
-one of two roads; then D1, the delegate's commission statement and two reminders. The screens open from
-the employees screen. D2 (the discount ceiling and the detail reports) has not started.
+one of two roads; then D1, the delegate's commission statement and two reminders; then, of D2, the
+discount ceiling (`V73`) and the month-in-detail report. The screens open from the employees screen.
 
 **It replaces `targeted_sales`/`target_delegate`, which nothing new may read.** That row had no period,
 so the view joined it to every month in history and changing a target changed last January's
@@ -1507,6 +1507,29 @@ pace" projects `base / days elapsed x days in the month` and judges **only from 
 month's own length, for an active delegate with a target. Both are silent for a shop that gives no
 delegate a rule - so upgrading raises nothing - and each is enabled only for a reader who may see what
 it says. **Neither has been seen firing.**
+
+**A delegate may carry a discount ceiling** (`employees.max_discount_percent`, `V73`; NULL is no ceiling,
+which is everybody on upgrade, and zero is a real one). `DiscountCeiling` judges **the lines' discounts
+and the header's together** against the lines before discount - a ceiling on the header alone is walked
+round through a line's discount column - and compares **amounts, never the rounded percentage**.
+`DelegateDiscountGuard` is asked inside `InvoiceSaveService.persist` **before the number is allocated**
+(the counter does not roll back), of a **sale** alone. `sales.discount.override` is granted to whoever
+holds `commission.rule.update`, **not** to whoever may sell - a deliberate departure from "nobody loses an
+ability on upgrade": no ceiling exists until somebody sets one, and granted to every cashier a ceiling
+would stop nobody. It is read with `isGranted` on purpose - it guards no write, it picks which of two
+answers a rule gives. The ceiling is edited on the commission rules screen, in a card of its own that the
+rule's save does not touch.
+
+**One delegate's month in detail explains a figure and never offers a second one**
+(`features/delegate/report`, opened from his row of the performance report). By customer and by area are
+read off the documents (`total - discount`, `ACTIVITY_SQL`'s own expression); by item and by group off
+the lines (`total_sel_price - discount`), and **a discount taken on a whole invoice is not shared out
+among items** - that would be an invented rule - but shown as a figure of its own, so lines less header
+discounts is the same net. `DelegateDetailDatabaseAcceptanceTest` holds all four breakdowns to the
+activity query's net, read rather than typed twice. No profit column: a line's `total_profit` is not
+this system's definition of profit. **Not built from D2:** the delegate filter on the ageing and
+balances screens, and the delegate trend; and none of D2 has been seen on a screen
+(`docs/delegates-plan.md` §14.4).
 
 Permissions are `commission.run.create` / `.update` / `.post` for the run (V72, granted to whoever holds
 `commission.rule.update`; `POST` derives `CRITICAL`), `commission.reports` (V71), and
@@ -2467,8 +2490,8 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V72`, the frozen
-  monthly commission run; before it `V71` is the delegate of a collection and `V70` the dated
+  new database executes it and continues with `V2`, `V3`, … The current head is `V73`, a delegate's
+  discount ceiling; before it `V72` is the frozen monthly commission run, `V71` is the delegate of a collection and `V70` the dated
   commission rule (see **Delegates and commission** for all three). Before them `V69` gives a
   treasury its wallet or account number and a minimum balance; before it `V68` lets a
   transfer between treasuries carry a fee, and `V67` ties a wallet fee to the movement it was

@@ -1,6 +1,8 @@
 package com.hamza.account.controller.employee;
 
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.delegate.DiscountCeilingService;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.delegate.CommissionBasis;
@@ -79,6 +81,8 @@ public class CommissionRulesController implements AddInterface {
     private final TextField txtNotes = new TextField();
     private final TextField txtTryAmount = new TextField();
     private final Label tryResult = new Label();
+    private final TextField txtCeiling = new TextField();
+    private final DiscountCeilingService ceilingService = new DiscountCeilingService();
 
     @FXML
     private VBox box;
@@ -132,7 +136,7 @@ public class CommissionRulesController implements AddInterface {
 
         buildTable();
         resetData();
-        box.getChildren().setAll(header(), entryCard(), table);
+        box.getChildren().setAll(header(), entryCard(), ceilingCard(), table);
         VBox.setVgrow(table, Priority.ALWAYS);
     }
 
@@ -190,6 +194,52 @@ public class CommissionRulesController implements AddInterface {
         VBox card = new VBox(8, first, monthHint, tiers, tierHint, row(txtNotes), tryOut);
         card.getStyleClass().addAll("app-card", "party-form-card");
         return card;
+    }
+
+    /**
+     * The delegate's discount ceiling. It is not part of a rule - it has no date, and it judges
+     * an invoice rather than a month - so it has a box and a button of its own, and the dialog's
+     * save leaves it alone. An empty box is "no ceiling"; zero is a delegate who may discount
+     * nothing, which is why the box takes the optional formatter and not the seeding one.
+     */
+    private VBox ceilingCard() {
+        setOptionalNumberFormatter(txtCeiling);
+        txtCeiling.setPrefColumnCount(5);
+        javafx.scene.control.Button save = new javafx.scene.control.Button(
+                text("delegate.ceiling.save"), AppIcon.SAVE.graphic());
+        save.getStyleClass().add("app-neutral-button");
+        save.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        save.setOnAction(event -> saveCeiling());
+        boolean mayDecide = AuthorizationGuard.isGranted(AppPermissions.COMMISSION_RULE_UPDATE);
+        txtCeiling.setDisable(!mayDecide);
+        save.setDisable(!mayDecide);
+
+        Label hint = new Label(text("delegate.ceiling.hint"));
+        hint.getStyleClass().add("form-hint");
+        hint.setWrapText(true);
+        VBox card = new VBox(8, row(caption("delegate.ceiling.caption"), txtCeiling, save), hint);
+        card.getStyleClass().addAll("app-card", "party-form-card");
+        showCeiling();
+        return card;
+    }
+
+    private void showCeiling() {
+        try {
+            txtCeiling.setText(ceilingService.ceilingOf(employeeId)
+                    .map(ceiling -> plain(ceiling.maxPercent())).orElse(""));
+        } catch (Exception e) {
+            AllAlerts.handleError(text("commission.error.operation"), e);
+        }
+    }
+
+    private void saveCeiling() {
+        try {
+            ceilingService.update(employeeId, optional(txtCeiling));
+            showCeiling();
+            AllAlerts.alertSave();
+        } catch (Exception e) {
+            AllAlerts.handleError(text("commission.error.operation"), e);
+        }
     }
 
     private void buildTable() {

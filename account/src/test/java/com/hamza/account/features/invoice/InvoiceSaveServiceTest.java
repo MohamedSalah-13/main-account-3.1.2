@@ -3,7 +3,13 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.delegate.DelegateDiscountGuard;
+import com.hamza.account.features.delegate.DiscountCeiling;
+import com.hamza.account.features.delegate.DiscountCeilingRepository;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.shift.ShiftAttributionWriter;
+import com.hamza.account.features.shift.ShiftCashLedger;
+import com.hamza.account.features.shift.ShiftGate;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.returns.ReturnCostResolver;
@@ -188,6 +194,59 @@ class InvoiceSaveServiceTest {
         verify(dao, never()).update(any());
         verifyNoInteractions(stockMovementDao);
         verifyNoInteractions(returnSourceWriter);
+    }
+
+    /**
+     * The fixture's document is 20 before discount, 2 off on the line and 3 on the header: 25%.
+     * A ceiling on the header alone would read 3 of 18 and miss what the line took.
+     */
+    @Test
+    void aSaleAboveItsDelegatesCeilingIsRefusedBeforeANumberIsTaken() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        var guarded = withCeiling(new BigDecimal("20"), false);
+
+        InvoiceValidationException refusal = assertThrows(InvoiceValidationException.class,
+                () -> guarded.save(command(0, 5)));
+
+        assertEquals(InvoiceSaveValidator.Target.DISCOUNT, refusal.target());
+        assertEquals(DelegateDiscountGuard.REFUSAL_KEY, refusal.getMessage());
+        verifyNoInteractions(numberAllocator);
+        verify(dao, never()).insert(any());
+        verifyNoInteractions(stockMovementDao);
+    }
+
+    @Test
+    void theSameSaleIsSavedInsideTheCeilingOrByWhoeverMayOverrideIt() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        when(numberAllocator.next(DocumentType.SALES)).thenReturn(45);
+        when(dao.insert(any())).thenReturn(1);
+
+        assertEquals(45, withCeiling(new BigDecimal("25"), false).save(command(0, 5)).invoiceNumber());
+        assertEquals(45, withCeiling(new BigDecimal("20"), true).save(command(0, 5)).invoiceNumber());
+    }
+
+    private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> withCeiling(
+            BigDecimal maxPercent, boolean mayOverride) {
+        DiscountCeilingRepository ceilings = new DiscountCeilingRepository() {
+            @Override
+            public java.util.Optional<DiscountCeiling> ceilingOf(int employeeId) {
+                return employeeId == 2 ? DiscountCeiling.ofStored(maxPercent) : java.util.Optional.empty();
+            }
+
+            @Override
+            public int write(int employeeId, BigDecimal value) {
+                return 0;
+            }
+        };
+        return new InvoiceSaveService<>(new SalesInvoice(), repository,
+                DocumentType.SALES, Clock.fixed(Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
+                numberAllocator, InvoiceTransactionExecutor.direct(),
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
+                name -> new Treasury(1, name, BigDecimal.ZERO),
+                name -> new Employees(2, name), stockMovementDao,
+                ShiftGate.disabled(), ShiftAttributionWriter.disabled(), ShiftCashLedger.disabled(), null,
+                changeAnnouncer, InvoiceWalletFee.none(),
+                new DelegateDiscountGuard(ceilings, () -> mayOverride));
     }
 
     private InvoiceSaveCommand command(int existingId, double paid) {

@@ -5,6 +5,7 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.document.DocumentWriteGuard;
+import com.hamza.account.features.delegate.DelegateDiscountGuard;
 import com.hamza.account.features.returns.JdbcReturnableRepository;
 import com.hamza.account.features.returns.ReturnCostResolver;
 import com.hamza.account.features.returns.ReturnGuard;
@@ -63,6 +64,7 @@ public final class InvoiceSaveService<
     private final JdbcShiftCashEffectReader shiftEffectReader;
     private final ChangeAnnouncer changeAnnouncer;
     private final InvoiceWalletFee walletFee;
+    private final DelegateDiscountGuard discountGuard;
 
     /**
      * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
@@ -89,7 +91,7 @@ public final class InvoiceSaveService<
                 new ReturnCostResolver(new JdbcReturnableRepository()),
                 treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
                 ShiftAttributionWriter.jdbc(), ShiftCashLedger.jdbc(), new JdbcShiftCashEffectReader(),
-                ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc());
+                ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc(), DelegateDiscountGuard.jdbc());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -231,6 +233,31 @@ public final class InvoiceSaveService<
                        JdbcShiftCashEffectReader shiftEffectReader,
                        ChangeAnnouncer changeAnnouncer,
                        InvoiceWalletFee walletFee) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver, treasuryLookup,
+                delegateLookup, stockMovementDao, shiftGate, shiftAttribution, shiftCashLedger,
+                shiftEffectReader, changeAnnouncer, walletFee, DelegateDiscountGuard.none());
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution,
+                       ShiftCashLedger shiftCashLedger,
+                       JdbcShiftCashEffectReader shiftEffectReader,
+                       ChangeAnnouncer changeAnnouncer,
+                       InvoiceWalletFee walletFee,
+                       DelegateDiscountGuard discountGuard) {
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -250,6 +277,7 @@ public final class InvoiceSaveService<
         this.shiftEffectReader = shiftEffectReader;
         this.changeAnnouncer = changeAnnouncer;
         this.walletFee = walletFee;
+        this.discountGuard = discountGuard;
     }
 
     /** The two return settings, read here rather than inside the guard - see the constructor. */
@@ -284,16 +312,29 @@ public final class InvoiceSaveService<
         InvoicePaymentTerms payment = InvoicePaymentTerms.resolve(
                 command.invoiceType(), lineTotals.netAmount(),
                 command.invoiceDiscount(), command.enteredPaid());
-        return transactions.execute(() -> persist(command, payment));
+        return transactions.execute(() -> persist(command, payment, lineTotals));
     }
 
     private InvoiceSaveResult persist(InvoiceSaveCommand command,
-                                      InvoicePaymentTerms payment)
+                                      InvoicePaymentTerms payment,
+                                      InvoiceLineTotals lineTotals)
             throws DaoException {
         stockGuard.validate(command);
         returnGuard.validate(documentType, command.sourceInvoiceNumber(),
                 command.updating() ? command.existingInvoiceId() : 0,
                 payment.invoiceType(), command.partyId(), command.lines());
+        Employees delegate = documentType.hasDelegate()
+                ? delegateLookup.find(command.delegateName())
+                : null;
+        // A delegate's discount ceiling (V73) judges the lines' discounts and the header's
+        // together: a ceiling on the header alone is walked round through a line's discount
+        // column. Asked before the number is allocated - the counter does not roll back, so a
+        // refusal after it would leave a hole in the numbering for every refused attempt.
+        if (delegate != null && discountGuard.refuses(documentType, delegate.getId(),
+                lineTotals.grossAmount(), lineTotals.discountAmount(), payment.discountAmount())) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.DISCOUNT,
+                    DelegateDiscountGuard.REFUSAL_KEY);
+        }
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);
@@ -303,9 +344,6 @@ public final class InvoiceSaveService<
                 command.lines(), persistedLines);
         T3 party = invoiceFactory.objectName(command.partyId(), command.partyName());
         Treasury treasury = treasuryLookup.find(command.treasuryName());
-        Employees delegate = documentType.hasDelegate()
-                ? delegateLookup.find(command.delegateName())
-                : null;
         if (treasury == null) {
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
                     "الخزينة المحددة غير موجودة");

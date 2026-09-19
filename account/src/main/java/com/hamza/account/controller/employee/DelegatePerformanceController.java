@@ -8,6 +8,8 @@ import com.hamza.account.features.delegate.DelegatePerformanceRow;
 import com.hamza.account.features.delegate.DelegatePerformanceService;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.ListToolbar;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
@@ -65,6 +67,8 @@ import java.util.prefs.Preferences;
  */
 @Log4j2
 public class DelegatePerformanceController implements AppSettingInterface {
+
+    private static final String ACTIONS = "delegate-actions";
 
     private static final Set<String> TOTALLED = Set.of("delegate-sales", "delegate-returns",
             "delegate-net", "delegate-collected", "delegate-commission");
@@ -194,6 +198,11 @@ public class DelegatePerformanceController implements AppSettingInterface {
         table.setPlaceholder(new Label(text("delegate.performance.empty")));
 
         List<TableColumn<DelegatePerformanceRow, ?>> columns = new ArrayList<>(List.of(
+                // First, not last: a column appended to the end lands behind the horizontal scroll.
+                // No permission of its own - whoever reads this row may read what it is made of.
+                named(ACTIONS, RowActionsColumn.of("employee.column.actions", List.of(
+                        RowAction.of("delegate.detail.title", AppIcon.SHOW, "app-neutral-button",
+                                null, this::openDetail)))),
                 named("delegate-name", Columns.text("delegate.performance.column.name", DelegatePerformanceRow::name)),
                 named("delegate-sales", Columns.money("delegate.performance.column.sales",
                         row -> row.activity().sales())),
@@ -228,7 +237,17 @@ public class DelegatePerformanceController implements AppSettingInterface {
         return new TableColumnViews<>(preferences, "view.mode", TableColumnViews.Preset.FULL,
                 Set.of("delegate-name", "delegate-net", "delegate-collected", "delegate-achievement",
                         "delegate-commission"),
-                Set.of());
+                Set.of(ACTIONS));
+    }
+
+    /** The row's month taken apart - on the month this report is showing, not on today's. */
+    private void openDetail(DelegatePerformanceRow row) {
+        try {
+            new com.hamza.account.view.OpenApplication<>(
+                    new DelegateDetailController(row.activity().employeeId(), row.name(), month));
+        } catch (Exception e) {
+            report(e);
+        }
     }
 
     // ---- loading ---------------------------------------------------------------------------
@@ -296,7 +315,7 @@ public class DelegatePerformanceController implements AppSettingInterface {
         if (target == null) {
             return;
         }
-        TablePdfLayout layout = TablePdfLayout.from(table, shown.rows(), Set.of(), TOTALLED, text("total"));
+        TablePdfLayout layout = TablePdfLayout.from(table, shown.rows(), Set.of(ACTIONS), TOTALLED, text("total"));
         TablePdfReport.write(target, title, subtitle(), layout, () -> { });
     }
 
@@ -306,7 +325,7 @@ public class DelegatePerformanceController implements AppSettingInterface {
         }
         try {
             int written = ExportData.exportDataToExcel(shown.rows(),
-                    VisibleColumnsExcelWriter.of(text("delegate.performance.title"), table, Set.of(), shown.rows()));
+                    VisibleColumnsExcelWriter.of(text("delegate.performance.title"), table, Set.of(ACTIONS), shown.rows()));
             if (written >= 1) {
                 AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
             }
