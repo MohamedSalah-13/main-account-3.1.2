@@ -44,10 +44,25 @@ jobs:
       - name: Build main project
         run: mvn clean package
 
-      # 8. إنشاء الإصدار التلقائي ورفع الـ JAR
+      # 8. ملاحظة الإصدار المكتوبة: docs/release-notes/<الوسم>.md، وعنوانها أول سطر فيها.
+      #    وسم بلا ملف (إصدار عاجل مثلًا) يرجع إلى الملاحظات المولَّدة آليًا بدل أن يفشل الإصدار.
+      - name: Find the written release notes
+        id: notes
+        run: |
+          file="docs/release-notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$file" ]; then
+            echo "file=$file" >> "$GITHUB_OUTPUT"
+            echo "title=$(head -n 1 "$file" | tr -d '\r' | sed 's/^#\+ *//')" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::no $file - falling back to generated release notes"
+          fi
+
+      # 9. إنشاء الإصدار ورفع الـ JAR
       - name: Create GitHub Release and Upload JAR
         uses: softprops/action-gh-release@v2
         with:
           # البحث عن ملف الـ JAR في أي مجلد target ورفعه
           files: '**/target/*.jar'
-          generate_release_notes: true
+          name: ${{ steps.notes.outputs.title || github.ref_name }}
+          body_path: ${{ steps.notes.outputs.file }}
+          generate_release_notes: ${{ steps.notes.outputs.file == '' }}
