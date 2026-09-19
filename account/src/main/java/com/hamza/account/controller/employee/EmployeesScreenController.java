@@ -346,6 +346,9 @@ public class EmployeesScreenController extends LoadData {
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_SHOW)) {
             extras.add(button("payroll.title", AppIcon.REPORT, this::openPayroll));
         }
+        if (AuthorizationGuard.isGranted(AppPermissions.COMMISSION_REPORTS)) {
+            extras.add(button("delegate.performance.title", AppIcon.REPORT, this::openDelegatePerformance));
+        }
         if (AuthorizationGuard.isGranted(AppPermissions.ATTENDANCE_SHOW)) {
             extras.add(button("attendance.title", AppIcon.SELECT_ALL, this::openAttendance));
             extras.add(button("leave.title", AppIcon.INFO, this::openLeave));
@@ -659,6 +662,15 @@ public class EmployeesScreenController extends LoadData {
     private void openLeave() {
         try {
             new OpenApplication<>(new LeaveRequestsController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** What the delegates sold and collected in a month; the service behind it still requires. */
+    private void openDelegatePerformance() {
+        try {
+            new OpenApplication<>(new DelegatePerformanceController());
         } catch (Exception e) {
             report(e);
         }

@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,763 tests** with 152 skipped (below) — the figure `mvn clean test`
+**2,785 tests** with 160 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-19. What is
 genuinely covered:
 
@@ -1390,9 +1390,10 @@ old, so nobody loses an ability on upgrade, but a role given only `employee.pay`
 
 ### Delegates and commission
 
-`features/delegate` and `docs/delegates-plan.md`. Phase A is what is shipped: the **dated commission
-rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers, and the rules screen
-opened from a delegate's row on the employees screen. No run, no report and no posting yet.
+`features/delegate` and `docs/delegates-plan.md`. Phases A and B are shipped: the **dated commission
+rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers and the rules screen opened
+from a delegate's row; then the **delegate of a collection** (`V71`), the two commission bases in SQL
+and the monthly performance report, opened from the employees screen's bar. No run and no posting yet.
 
 **It replaces `targeted_sales`/`target_delegate`, which nothing new may read.** That row had no period,
 so the view joined it to every month in history and changing a target changed last January's
@@ -1430,10 +1431,39 @@ twice on paper. Decision 4 of the plan: the approved line feeds the payroll, a s
 posts it explicitly, and a `commission_posting` table whose primary key is the line makes "once" a
 constraint rather than a promise. That is phase C; nothing posts anything yet.
 
+**A collection's delegate is written at entry and never derived** (`customers_accounts.delegate_id`,
+`V71`). Read off the customer at report time, moving a customer between delegates would rewrite both
+delegates' history. `AccountCustomerService.save` writes it inside the insert's own transaction with
+`DelegateActivityQuery.ATTRIBUTE_COLLECTION_SQL`: the delegate of the invoice the collection is
+allocated to, else the customer's default - read *through* `employees`, because
+`custom.default_delegate_id` has no key (V56, on purpose: a preference) while this column does (a
+fact, like `total_sales.delegate_id`, and declared in `DeleteRegistry.EMPLOYEES`). Only a row that
+moved cash, and only one naming nobody yet. **Everything before V71 stays NULL and no migration may
+guess it** - `DelegateActivityQueryTest` fails on a backfill - and the report shows "collected with
+no delegate" as a figure of its own rather than dropping it. It is a second statement rather than a
+column of the insert because that insert is shared with suppliers and pinned in `PartyLedgerSpec`.
+
+**The two bases are one statement, each side grouped before the join** (`ACTIVITY_SQL`): joining the
+three tables and grouping after multiplies an invoice by every collection of its delegate. Sales are
+`total - discount`; a return counts in the month of the *return*; collected is cash in both
+directions - the invoices' `paid_up`, plus attributed collections, **less cash refunded on returns**.
+`purchase` is never read, which is the whole of how "a credit note is nobody's collection" is kept.
+**"بيع مباشر" (employee 1) is the no-delegate row for invoices**: `total_sales.delegate_id` has been
+NOT NULL since V1, so the rows add up to the month's sales with no synthetic row.
+`DelegateActivityDatabaseAcceptanceTest` works October out by hand - including a return dated October
+of a September invoice - drives the collections through the real `save`, and upgrades a V70 schema
+holding collections; eight cases, green twice on 2026-09-19.
+
+**The report is by the month, and that is the rule rather than a limit**: the rule, the target and the
+run are all a month's, and an achievement beside a fortnight's sales means nothing. Its commission is
+a **preview**, computed when read and stored nowhere. `commission.reports` opens the activity;
+a target, a rate and a commission need `commission.show` as well, and without it the rules are **not
+fetched** and the screen does not build those columns.
+
 Permissions are `commission.show` and `commission.rule.update`, granted by V70 to whoever holds
 `employees.show.salary` and `employee.salary.change`. **`update`, not `manage`**: the risk is derived
 from the key's last word and `MANAGE` is `CRITICAL`. A rate is a figure about a person, so
-`history`/`ruleForMonth` call `require` before any query. The rules screen has **not been opened**.
+`history`/`ruleForMonth` call `require` before any query. **Neither screen has been opened.**
 
 ### A list screen's bar
 
@@ -2378,8 +2408,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V70`, the dated
-  commission rule of a delegate (see **Delegates and commission**). Before it `V69` gives a
+  new database executes it and continues with `V2`, `V3`, … The current head is `V71`, the delegate
+  of a collection; before it `V70` is the dated commission rule (see **Delegates and commission**
+  for both). Before them `V69` gives a
   treasury its wallet or account number and a minimum balance; before it `V68` lets a
   transfer between treasuries carry a fee, and `V67` ties a wallet fee to the movement it was
   paid for (see **The treasury**). Before them, `V66` adds the

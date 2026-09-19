@@ -237,6 +237,14 @@ public final class AppPermissions {
      */
     public static final PermissionKey COMMISSION_RULE_UPDATE = key("commission.rule.update");
 
+    /**
+     * The delegates' performance report: what each sold and collected in a month.
+     * <p>
+     * It does <b>not</b> open a target, a rate or a commission - those columns are fetched only
+     * for a reader who also holds {@link #COMMISSION_SHOW}. V71 grants it to whoever holds that.
+     */
+    public static final PermissionKey COMMISSION_REPORTS = key("commission.reports");
+
     public static final PermissionKey ATTENDANCE_SHOW = key("attendance.show");
 
     /**

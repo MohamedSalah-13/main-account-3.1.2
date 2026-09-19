@@ -128,6 +128,9 @@ public final class DeleteRegistry {
             .protectId(1, "delete.protect.employee.direct_sale")
             .referencedBy("total_sales", "delegate_id", "delete.ref.sales_invoice")
             .referencedBy("total_sales_re", "delegate_id", "delete.ref.sales_return")
+            // A collection this delegate made (V71). A fact like the invoice above it, not a
+            // preference like custom.default_delegate_id, which V56 left without a key on purpose.
+            .referencedBy("customers_accounts", "delegate_id", "delete.ref.customer_account_movement")
             // The real link, and the one the application writes (V23). Until then the
             // only declared reference was expense_salary below, which nothing has
             // ever written to: it blocked the deletion of the one employee its three

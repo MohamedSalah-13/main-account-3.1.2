@@ -135,8 +135,8 @@ class CommissionRuleDatabaseAcceptanceTest {
     @Order(1)
     @DisplayName("from nothing: the table, its seven checks, the two permissions, and no helper left behind")
     void freshInstall() throws Exception {
-        assertEquals(70, scalar("SELECT MAX(CAST(version AS UNSIGNED)) FROM flyway_schema_history"
-                + " WHERE success = 1 AND version IS NOT NULL"), "V70 is the head and it applied");
+        // Not "the head is 70": the next migration would fail this test for being written.
+        assertEquals(1, scalar("SELECT COUNT(*) FROM flyway_schema_history WHERE version = '70' AND success = 1"));
         assertEquals(1, scalar("SELECT COUNT(*) FROM information_schema.tables"
                 + " WHERE table_schema = DATABASE() AND table_name = 'employee_commission_rule'"));
         assertEquals(7, scalar("SELECT COUNT(*) FROM information_schema.table_constraints"

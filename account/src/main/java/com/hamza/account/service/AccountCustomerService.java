@@ -12,6 +12,7 @@ import com.hamza.account.treasury.WalletFee;
 import com.hamza.account.features.treasury.WalletFeeService;
 import com.hamza.account.features.treasury.WalletFeeSource;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.features.delegate.JdbcDelegateActivityRepository;
 import com.hamza.controlsfx.database.TransactionTemplate;
 import lombok.extern.log4j.Log4j2;
 
@@ -138,6 +139,10 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                     : java.util.OptionalInt.empty();
             int rows = accountDao().insert(account);
             if (rows == 1 && movesCash) {
+                // Whose collection this is, written now and never derived later: read off the
+                // customer at report time, moving a customer between delegates would rewrite
+                // both delegates' history (docs/delegates-plan.md, decision 3).
+                new JdbcDelegateActivityRepository().attributeCollection(account.getId());
                 ShiftAttributionWriter.jdbc().assignParty(PartyKind.CUSTOMER, account.getId(), shiftId);
                 ShiftCashLedger.jdbc().created(shiftId, account.getUsers().getId(),
                         ShiftCashEffect.incoming(ShiftCashSource.CUSTOMER_ACCOUNT, account.getId(),
