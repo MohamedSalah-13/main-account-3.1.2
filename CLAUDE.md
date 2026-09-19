@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,644 tests** with 142 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-18. What is
+**2,717 tests** with 142 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-19. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -243,7 +243,8 @@ Two documents govern work here and are kept current — read them before large c
   notification actually firing, and the buttons hidden from a user without the two new permissions.
   **Read it before touching anything under `features/expense`, `controller/expense`, `WalletFeeService`,
   `V64` or `V66`.**
-- **[`docs/installer-plan.md`](docs/installer-plan.md)** - a plan, **no code yet**: one Inno Setup file
+- **[`docs/installer-plan.md`](docs/installer-plan.md)** - **phase A of four is built** (the
+  provisioning, in Java); the Inno Setup script, the upgrade path and the signing are not. One Setup file
   that wraps the jpackage image, carries MySQL, creates the service, the schema and a per-machine
   `config.xml`. The decisions that matter: the data lives in `%ProgramData%\AccountK\mysql-data` and
   neither an upgrade nor an uninstall ever touches it; nothing secret is shared between two installs
@@ -251,6 +252,27 @@ Two documents govern work here and are kept current — read them before large c
   provisioning is Java (`--provision-local`), not Pascal; and the service is ours on **3307**, because
   3306 is taken on half the machines it will meet. **Read it before touching `packaging/` or
   `features/dbsetup`.**
+
+  What phase A is: `LocalServerProvisioner`, reached with no window through
+  `AccountK-Database-Setup.exe --provision-local`. Three rules carry it, each pinned by a test. **It is
+  inert over existing data** - a data directory with anything in it means no initialization, no account
+  and no `config.xml`, which is what lets an upgrade run the same command. **A failure removes what the
+  run made and nothing else**, because a half-made data directory would make the next run inert over a
+  server that never worked; a `license.dat` in the same folder is not the installer's and is never
+  listed, moved or deleted. **No secret leaves the JVM**: both passwords are generated inside, used over
+  JDBC, and there is deliberately no option that takes one - an argument is visible in the process list.
+  The server is shut down *before* `config.xml` is written, so one that will not stop is a failure with
+  nothing pointing at it. The root password goes to a file restricted with `icacls` **by SID**, since
+  `BUILTIN\Administrators` is a localized name and this ships to a Windows that is not in English.
+  `LocalServerProvisioningAcceptanceTest` is gated on `-Daccount.installer.acceptance=true` with
+  `-Daccount.installer.mysqlHome=<a MySQL distribution>`, and is the only thing that says any of it
+  works: it initializes a real `mysqld` under JUnit's temporary folder on a free port from 3307, starts
+  it again from `my.ini` alone as the service will, and signs in as the restricted account through the
+  `config.xml` that was written. **It touches no database that exists.** Green three times on MySQL
+  8.0.31; what it has not been run as - elevated, from inside the jpackage image, on a second machine -
+  is in the plan's §8.4. And `MysqlTools` now finds the bundled `mysqldump` beside the launcher
+  (`jpackage.app-path`) rather than in the working directory, where a program started from anywhere but
+  its own folder failed every backup it was asked for.
 - **[`docs/product-plan.md`](docs/product-plan.md)** - the order the large items are built in and why
   (one developer, so one item open at a time), the hybrid selling model, and §4 the ideas log: an idea
   that arrives mid-item is written there in one line, not built. Two plans hang off it, **neither with
