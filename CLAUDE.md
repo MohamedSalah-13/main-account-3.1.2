@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,824 tests** with 172 skipped (below) — the figure `mvn clean test`
+**2,840 tests** with 173 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-19. What is
 genuinely covered:
 
@@ -1394,8 +1394,8 @@ old, so nobody loses an ability on upgrade, but a role given only `employee.pay`
 rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers and the rules screen opened
 from a delegate's row; then the **delegate of a collection** (`V71`), the two commission bases in SQL
 and the monthly performance report; then the **frozen monthly run** (`V72`) and its posting, once, by
-one of two roads. All three screens open from the employees screen. Phase D (the other reports, the
-discount ceiling, the notifications) has not started.
+one of two roads; then D1, the delegate's commission statement and two reminders. The screens open from
+the employees screen. D2 (the discount ceiling and the detail reports) has not started.
 
 **It replaces `targeted_sales`/`target_delegate`, which nothing new may read.** That row had no period,
 so the view joined it to every month in history and changing a target changed last January's
@@ -1491,12 +1491,29 @@ a **preview**, computed when read and stored nowhere. `commission.reports` opens
 a target, a rate and a commission need `commission.show` as well, and without it the rules are **not
 fetched** and the screen does not build those columns.
 
+**A frozen figure and live data are shown side by side rather than kept in step**
+(`CommissionStatementService`, opened from the rules screen). Phase C declined to refuse a change of an
+invoice's delegate in an approved month; the statement is what it promised instead: each approved month
+with the same month **computed again today**, by the run's own two steps. A difference is not an error
+and corrects nothing - the screen says so in a sentence, because a column of non-zero numbers beside
+approved figures reads as an accusation. A delegate the month no longer names has a live figure of
+**zero**, not "none"; "none" is kept for the one case of no rule in force on that day any more. A
+cancelled run is not on the statement.
+
+**The two reminders decide nothing themselves** (`CommissionSources`, in `NotificationBootstrap`): the
+day and the threshold are `DelegateAlerts`', over plain values, with a test per boundary. "Last month is
+not approved" fires only when approving it would write a line; "will not reach his lowest tier at this
+pace" projects `base / days elapsed x days in the month` and judges **only from the 20th**, by the
+month's own length, for an active delegate with a target. Both are silent for a shop that gives no
+delegate a rule - so upgrading raises nothing - and each is enabled only for a reader who may see what
+it says. **Neither has been seen firing.**
+
 Permissions are `commission.run.create` / `.update` / `.post` for the run (V72, granted to whoever holds
 `commission.rule.update`; `POST` derives `CRITICAL`), `commission.reports` (V71), and
 `commission.show` and `commission.rule.update`, granted by V70 to whoever holds
 `employees.show.salary` and `employee.salary.change`. **`update`, not `manage`**: the risk is derived
 from the key's last word and `MANAGE` is `CRITICAL`. A rate is a figure about a person, so
-`history`/`ruleForMonth` call `require` before any query. **None of the three screens has been opened.**
+`history`/`ruleForMonth` call `require` before any query. **None of the four screens has been opened.**
 
 ### A list screen's bar
 

@@ -137,7 +137,14 @@ public final class NotificationBootstrap {
                             MasterDataController.showWindow(kind);
                         }),
                 new BackupHealthSource(),
-                recurringExpenses());
+                recurringExpenses(),
+                // Both silent for a shop that gives no delegate a commission rule.
+                new CommissionSources.AwaitingApproval(() -> {
+                    AuthorizationGuard.require(com.hamza.account.authorization.AppPermissions.COMMISSION_SHOW);
+                    new com.hamza.account.view.OpenApplication<>(
+                            new com.hamza.account.controller.employee.CommissionRunController());
+                }),
+                new CommissionSources.LaggingTarget());
     }
 
     /**

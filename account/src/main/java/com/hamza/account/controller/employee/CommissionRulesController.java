@@ -139,11 +139,28 @@ public class CommissionRulesController implements AddInterface {
     private HBox header() {
         Label title = new Label(text("commission.rules.title") + " - " + employeeName);
         title.getStyleClass().add("party-screen-title");
-        HBox bar = new HBox(12, AppIcon.REPORT.graphic(24), title);
+        // His approved months, beside the rules that produced them. A plain button: it names no
+        // row, it names the delegate this whole screen is about.
+        javafx.scene.control.Button statement = new javafx.scene.control.Button(
+                text("commission.statement.title"), AppIcon.REPORT.graphic());
+        statement.getStyleClass().add("app-neutral-button");
+        statement.setOnAction(event -> openStatement());
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox bar = new HBox(12, AppIcon.REPORT.graphic(24), title, spacer, statement);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.getStyleClass().add("party-screen-header");
         return bar;
+    }
+
+    private void openStatement() {
+        try {
+            new com.hamza.account.view.OpenApplication<>(
+                    new CommissionStatementController(employeeId, employeeName));
+        } catch (Exception e) {
+            AllAlerts.handleError(text("commission.statement.title"), e);
+        }
     }
 
     private VBox entryCard() {

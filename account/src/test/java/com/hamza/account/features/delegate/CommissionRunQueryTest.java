@@ -122,6 +122,16 @@ class CommissionRunQueryTest {
         assertEquals(2, parameters(CommissionRunQuery.RULE_OF_DAY_USED_SQL));
     }
 
+    /** A cancelled run was withdrawn: its line is not a second copy of the month on the statement. */
+    @Test
+    void aDelegatesStatementReadsApprovedRunsOnlyNewestFirst() {
+        String sql = CommissionRunQuery.EMPLOYEE_LINES_SQL;
+        assertTrue(sql.contains("AND r.status = 'APPROVED'"));
+        assertTrue(sql.contains("ORDER BY r.period_year DESC, r.period_month DESC"));
+        assertTrue(sql.endsWith("LIMIT ?"));
+        assertEquals(2, parameters(sql));
+    }
+
     // ---- the line ------------------------------------------------------------------------------
 
     @Test

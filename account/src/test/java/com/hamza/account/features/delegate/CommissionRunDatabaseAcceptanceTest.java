@@ -367,6 +367,37 @@ class CommissionRunDatabaseAcceptanceTest {
         assertEquals(1, scalar("SELECT COUNT(*) FROM commission_run WHERE id = " + secondRun + " AND status = 'APPROVED'"));
     }
 
+    // ---- the statement --------------------------------------------------------------------------
+
+    /**
+     * The delegate's statement against the same database: one row for October - the approved run's,
+     * not the cancelled one's - saying it went with the payroll, and a second late invoice showing as
+     * a difference while the approved 22.00 stays where it was.
+     */
+    @Test
+    @Order(13)
+    @DisplayName("the statement lists the approved month once, where it went, and what it comes to today")
+    void theStatement() throws Exception {
+        signIn(AppPermissions.COMMISSION_SHOW);
+        CommissionStatementService statements = new CommissionStatementService();
+
+        List<CommissionStatementService.Row> before = statements.forDelegate(onSales);
+        assertEquals(1, before.size(), "the cancelled run's line is not a second October");
+        assertEquals(OCTOBER, before.get(0).period());
+        assertMoney("22.00", before.get(0).approved().amount());
+        assertMoney("22.00", before.get(0).live());
+        assertEquals(CommissionLine.Posting.PAYROLL, before.get(0).approved().posting());
+
+        invoice(9011, "2026-10-28", "1000", "0", onSales);
+        CommissionStatementService.Row after = statements.forDelegate(onSales).get(0);
+        assertMoney("22.00", after.approved().amount());
+        assertMoney("42.00", after.live(), "2100 of a 1000 target is the 100% tier at 2%");
+        assertMoney("20.00", after.difference());
+
+        assertEquals(CommissionLine.Posting.ACCOUNT,
+                statements.forDelegate(onCollected).get(0).approved().posting());
+    }
+
     // ---- fixtures ------------------------------------------------------------------------------
 
     private static void seed() throws Exception {

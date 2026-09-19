@@ -50,6 +50,25 @@ public final class CommissionRunQuery {
             ORDER BY e.column_name""";
 
     /**
+     * One delegate's approved months, newest first - his commission statement. A cancelled run
+     * is not on it: it was withdrawn, and the month's approved figure is the one that replaced it.
+     */
+    public static final String EMPLOYEE_LINES_SQL = """
+            SELECT r.period_year, r.period_month,
+                   l.id, l.run_id, l.employee_id, e.column_name, l.rule_id, l.basis, l.tier_mode, l.target,
+                   l.tiers_snapshot, l.sales, l.sales_returns, l.collected, l.base_amount,
+                   l.achievement_percent, l.tier, l.rate_percent, l.amount,
+                   p.payroll_run_id, p.ledger_entry_id
+            FROM commission_line l
+                     JOIN commission_run r ON r.id = l.run_id
+                     JOIN employees e ON e.id = l.employee_id
+                     LEFT JOIN commission_posting p ON p.line_id = l.id
+            WHERE l.employee_id = ?
+              AND r.status = 'APPROVED'
+            ORDER BY r.period_year DESC, r.period_month DESC
+            LIMIT ?""";
+
+    /**
      * The status the caller read is in the WHERE, so two people cancelling at once give one
      * cancellation and one refusal. The trigger refuses it as well when anything was posted.
      */

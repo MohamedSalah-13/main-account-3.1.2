@@ -25,6 +25,15 @@ public interface CommissionRunRepository {
 
     List<CommissionLine> linesOf(int runId) throws DaoException;
 
+    /** An approved line with the month it belongs to. */
+    record PeriodLine(YearMonth period, CommissionLine line) {
+    }
+
+    /** One delegate's approved months, newest first. */
+    default List<PeriodLine> linesOfEmployee(int employeeId, int limit) throws DaoException {
+        return List.of();
+    }
+
     /** 1 when the run moved from APPROVED to CANCELLED, 0 when it was no longer APPROVED. */
     int cancel(int runId, int userId, String reason) throws DaoException;
 

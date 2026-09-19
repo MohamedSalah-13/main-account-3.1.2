@@ -70,6 +70,24 @@ public final class JdbcCommissionRunRepository extends AbstractDao<CommissionRun
     }
 
     @Override
+    public List<PeriodLine> linesOfEmployee(int employeeId, int limit) throws DaoException {
+        return withConnection(connection -> {
+            List<PeriodLine> lines = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(CommissionRunQuery.EMPLOYEE_LINES_SQL)) {
+                statement.setInt(1, employeeId);
+                statement.setInt(2, limit);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        lines.add(new PeriodLine(
+                                YearMonth.of(rs.getInt("period_year"), rs.getInt("period_month")), line(rs)));
+                    }
+                }
+            }
+            return lines;
+        });
+    }
+
+    @Override
     public int cancel(int runId, int userId, String reason) throws DaoException {
         return executeUpdate(CommissionRunQuery.CANCEL_RUN_SQL, userId, reason, runId);
     }
