@@ -113,6 +113,9 @@ public class CommissionRunController implements AppSettingInterface {
         screen.getStyleClass().addAll("app-root", "screen-employees");
         screen.getStylesheets().add(ThemeManager.getStylesheet());
         screen.setId("commission-run");
+        // A dialog takes its size from this node, and twelve content-sized columns need more than
+        // the top bar asks for: the last column - the posting - opened behind a scroll bar.
+        screen.setPrefSize(1240, 640);
 
         Platform.runLater(this::load);
         return screen;

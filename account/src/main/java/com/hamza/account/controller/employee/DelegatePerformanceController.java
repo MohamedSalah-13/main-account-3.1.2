@@ -109,6 +109,9 @@ public class DelegatePerformanceController implements AppSettingInterface {
         screen.getStyleClass().addAll("app-root", "screen-employees");
         screen.getStylesheets().add(ThemeManager.getStylesheet());
         screen.setId("delegate-performance");
+        // A dialog takes its size from this node: without one the last column - the commission
+        // itself - opened behind a scroll bar. Fits a 1366x768 screen.
+        screen.setPrefSize(1240, 640);
 
         Platform.runLater(this::load);
         return screen;

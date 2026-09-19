@@ -461,7 +461,7 @@ public class EmployeesScreenController extends LoadData {
                         AppPermissions.EMPLOYEE_ACCOUNT_SHOW, this::openStatement),
                 RowAction.of("employee.action.salary", AppIcon.TREASURY_CASH, "app-neutral-button",
                         AppPermissions.EMPLOYEE_SALARY_CHANGE, this::openSalary),
-                RowAction.of("employee.action.commission", AppIcon.REPORT, "app-neutral-button",
+                RowAction.of("employee.action.commission", AppIcon.PERCENT, "app-neutral-button",
                         AppPermissions.COMMISSION_SHOW, this::openCommission),
                 RowAction.of("employee.action.toggle", AppIcon.SECURITY, "app-neutral-button",
                         AppPermissions.EMPLOYEE_UPDATE, this::toggleActive));

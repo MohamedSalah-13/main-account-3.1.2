@@ -1513,7 +1513,16 @@ Permissions are `commission.run.create` / `.update` / `.post` for the run (V72, 
 `commission.show` and `commission.rule.update`, granted by V70 to whoever holds
 `employees.show.salary` and `employee.salary.change`. **`update`, not `manage`**: the risk is derived
 from the key's last word and `MANAGE` is `CRITICAL`. A rate is a figure about a person, so
-`history`/`ruleForMonth` call `require` before any query. **None of the four screens has been opened.**
+`history`/`ruleForMonth` call `require` before any query. **All four screens were opened on 2026-09-19 on a copy of a real database**, where the app applied
+V66-V72 itself: a rule saved and tried out, the performance figures equal to MySQL's, August approved
+and posted (`commission_posting` -> one `COMMISSION` ledger row), the statement showing approved beside
+computed-today, and a rule a month was computed under refusing its delete. What only the screen showed:
+**a dialog takes its size from its root node**, and three of these had none, so the last column - the
+commission itself - opened behind a scroll bar; each root now sets a preferred size that fits 1366x768.
+Still unseen: the two reminders firing, the payroll road on screen, English, and a reader without
+`commission.show`. **And a launch from a worktree is an unlicensed launch**: `license.dat` is
+git-ignored, so the app took the trial path and charged this machine a failure in `trial.dat`. Put the
+licence beside the `config.xml` that `ACCOUNT_CONFIG_DIR` names before running a worktree build.
 
 ### A list screen's bar
 

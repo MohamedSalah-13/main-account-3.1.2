@@ -84,6 +84,8 @@ public class CommissionStatementController implements AppSettingInterface {
         screen.getStyleClass().addAll("app-root", "screen-employees");
         screen.getStylesheets().add(ThemeManager.getStylesheet());
         screen.setId("commission-statement");
+        // Nine content-sized columns: at 760 the last one - how the month was posted - was cut.
+        screen.setPrefSize(920, 560);
 
         Platform.runLater(this::load);
         return screen;
