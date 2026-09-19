@@ -1,6 +1,10 @@
 package com.hamza.account.trial;
 
 import com.hamza.account.config.MachineId;
+import com.hamza.account.features.license.LicenseClock;
+import com.hamza.account.features.license.LicenseDecision;
+import com.hamza.account.features.license.LicenseService;
+import com.hamza.account.features.license.LicenseStatus;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
@@ -43,7 +47,6 @@ public class TrialManager {
     private static final String TRIAL_FILE_PATH = APP_DATA_FOLDER + "\\trial.dat";
     private static final String FILE_VERSION = "v1";
     private static final int MAX_FAILS = 1;
-    private static final String LICENSE_FILE_PATH = System.getProperty("user.dir") + "\\license.dat";
     /** One copy, shared with support recovery - see {@link ReleaseSigningKey}. */
     private static final String LICENSE_PUBLIC_KEY_PEM = ReleaseSigningKey.PEM;
 
@@ -53,8 +56,15 @@ public class TrialManager {
         this.connection = connection;
     }
 
-    public static Path getLicensePath() {
-        return Paths.get(LICENSE_FILE_PATH);
+    /**
+     * Where a licence file is <b>put</b>. It is read from here and from the program's own
+     * folder ({@code LicenseFiles.candidates()}), but an installed program's folder is under
+     * Program Files, where the About screen's import could not write at all.
+     */
+    public static Path getLicensePath() throws java.io.IOException {
+        Path target = LicenseService.forThisWorkstation().files().writeTarget();
+        Files.createDirectories(target.getParent());
+        return target;
     }
 
     public void checkTrialStatus() {
@@ -428,7 +438,62 @@ public class TrialManager {
     }
 
     private boolean isLicenseValid() {
-        return validateLicense(Paths.get(LICENSE_FILE_PATH), true).valid;
+        return currentLicense(true).valid;
+    }
+
+    /**
+     * The licence of this machine, whichever format and whichever folder it is in.
+     *
+     * <p>A server-issued licence is asked first and answers through {@code features/license},
+     * which charges no failure for anything - a subscription that has run out included: it
+     * still skips the trial, because the trial path would meet a years-old installation date,
+     * call it an expired trial, and end the install. What an expired licence may still do is
+     * {@link LicenseDecision#mayRecord()}'s question, not this method's.
+     *
+     * <p>Only files that do not claim the server format reach {@link #validateLicense}, whose
+     * {@code strict} behaviour is exactly what it was.
+     */
+    private LicenseCheckResult currentLicense(boolean strict) {
+        LicenseService licenses = LicenseService.forThisWorkstation();
+        LicenseDecision decision = licenses.check(this::licenseClock);
+        if (decision.skipsTrial()) {
+            LicenseCheckResult licensed = new LicenseCheckResult();
+            licensed.present = true;
+            licensed.valid = true;
+            return licensed;
+        }
+        LicenseCheckResult result = new LicenseCheckResult();
+        for (Path older : licenses.filesForOlderReader()) {
+            result = validateLicense(older, strict);
+            if (result.valid) {
+                return result;
+            }
+        }
+        if (!result.present && decision.status() != LicenseStatus.ABSENT) {
+            result.present = true;
+            result.error = "License not accepted: " + decision.status();
+        }
+        return result;
+    }
+
+    /** The computer's day against the database server's; see {@link LicenseClock}. */
+    private LicenseClock licenseClock() {
+        LocalDate database = null;
+        if (connection != null) {
+            try (Statement statement = connection.createStatement();
+                 ResultSet row = statement.executeQuery("SELECT CURRENT_DATE")) {
+                if (row.next()) {
+                    database = row.getDate(1).toLocalDate();
+                }
+            } catch (Exception unanswered) {
+                log.debug("The database was not asked the date for the licence clock", unanswered);
+            }
+        }
+        LicenseClock clock = LicenseClock.of(LocalDate.now(), database, null);
+        if (clock.rolledBack()) {
+            log.warn("This computer's clock is behind the database server's; the licence is judged on {}", clock.today());
+        }
+        return clock;
     }
 
     private PublicKey loadPublicKey(String pem) throws Exception {
@@ -444,7 +509,7 @@ public class TrialManager {
     public TrialDisplayInfo getDisplayInfo() {
         TrialDisplayInfo info = new TrialDisplayInfo();
         try {
-            LicenseCheckResult license = validateLicense(Paths.get(LICENSE_FILE_PATH), false);
+            LicenseCheckResult license = currentLicense(false);
             info.licensePresent = license.present;
             info.licenseValid = license.valid;
             info.licenseError = license.error;

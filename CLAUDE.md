@@ -2464,6 +2464,22 @@ them would take an install's own history with them. The identity comes from `con
 is the reader lifted out of this class unchanged so the backup owner and the machine registry answer to
 the same value the licence is bound to.
 
+**A second licence format exists beside that one, and it charges no failure for anything**
+(`features/license`, phase A of `docs/licensing-server-plan.md`; no server issues one yet).
+`HAMZA_LICENSE2|machine|customer|edition|issued|updatesUntil|expires` is signed by
+`LicenseServerKey` - a second key, **blank until the server's pair exists**, and blank is a state
+(`SERVER_KEY_MISSING`), not tampering. It is second because `ReleaseSigningKey` also signs emergency
+recovery, and a licence server faces the internet. `TrialManager.currentLicense` asks the new package
+first and hands the old reader only `LicenseService.filesForOlderReader()`: **a server-format file must
+never reach `validateLicense`**, which checks with the release key and ends the install over the
+signature that file would always fail. `license.dat` is now read from beside `config.xml` first and the
+program folder second, and written only to the first - the program folder is under Program Files.
+The rule easiest to break: **an expired subscription (`READ_ONLY`) still skips the trial.** Sent down the
+trial path it meets a years-old installation date, which is "trial expired", which is the one failure
+an install gets. The question there is `skipsTrial()`, never `mayRecord()`, and
+`LicensingArchitectureTest` pins both that and the routing. Nothing asks `mayRecord()` yet - the
+read-only guard is phase D.
+
 ## Localization
 
 `LanguageManager` (singleton) with bundles at `controlsfx/src/main/resources/i18n/messages*.properties`;
