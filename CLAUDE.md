@@ -251,6 +251,16 @@ Two documents govern work here and are kept current — read them before large c
   provisioning is Java (`--provision-local`), not Pascal; and the service is ours on **3307**, because
   3306 is taken on half the machines it will meet. **Read it before touching `packaging/` or
   `features/dbsetup`.**
+- **[`docs/product-plan.md`](docs/product-plan.md)** - the order the large items are built in and why
+  (one developer, so one item open at a time), the hybrid selling model, and §4 the ideas log: an idea
+  that arrives mid-item is written there in one line, not built. Two plans hang off it, **neither with
+  code yet**: [`docs/licensing-server-plan.md`](docs/licensing-server-plan.md) - the licence stays
+  verified offline and the server only issues it, the server gets a **second key** because
+  `ReleaseSigningKey` also signs emergency recovery, and an expiry never reaches `failAndExit` - and
+  [`docs/delegates-plan.md`](docs/delegates-plan.md) - the dated commission rule, the frozen monthly
+  run, and why a collection's delegate is written at entry rather than derived. **Read the first before
+  starting any large item, and the matching one before touching `TrialManager` or anything under
+  `features/delegate`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
