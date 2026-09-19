@@ -243,6 +243,14 @@ Two documents govern work here and are kept current — read them before large c
   notification actually firing, and the buttons hidden from a user without the two new permissions.
   **Read it before touching anything under `features/expense`, `controller/expense`, `WalletFeeService`,
   `V64` or `V66`.**
+- **[`docs/installer-plan.md`](docs/installer-plan.md)** - a plan, **no code yet**: one Inno Setup file
+  that wraps the jpackage image, carries MySQL, creates the service, the schema and a per-machine
+  `config.xml`. The decisions that matter: the data lives in `%ProgramData%\AccountK\mysql-data` and
+  neither an upgrade nor an uninstall ever touches it; nothing secret is shared between two installs
+  (the 4.1.3 installer shipped one populated `data` folder and one `config.xml` to everybody); the
+  provisioning is Java (`--provision-local`), not Pascal; and the service is ours on **3307**, because
+  3306 is taken on half the machines it will meet. **Read it before touching `packaging/` or
+  `features/dbsetup`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
