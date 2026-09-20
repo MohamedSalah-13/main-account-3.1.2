@@ -340,7 +340,8 @@ and they touch almost nothing - §7.9, in a number rather than an argument.
 - The roadmap's reference test with two warehouses (11.5).
 - The five screens on a copy of a real database with a second warehouse in it, in English as well
   as Arabic, at 1366x768 - where every other area of this system found defects no test could.
-- Everything in §12: phase A is unit-tested and has not been opened on a screen.
+- Most of §12: phase A is unit-tested, and only its reversal warning has been watched on a screen.
+- §13 was watched on 2026-09-20 - see the section itself for what that covered and what it did not.
 
 ## 12. What phase A delivered (2026-09-20)
 
@@ -482,6 +483,44 @@ trigger, wrote down that it "conflicts with `INSERT IGNORE`", and ranked it fift
 running a transfer against a real database, which §11 said had never happened, and it is the answer
 to why the plan insists on that.
 
-**Still not seen on a screen.** No part of this has been opened. The three new summary cards, the
-disabled button on a transfer row, what a count row reads in the kind column, and all of it in
-English: unseen.
+### Watched on a screen, 2026-09-20
+
+On a throwaway MySQL started from the developer's own binaries on port 3399 - their server was not
+running and was not started - with a schema migrated from nothing to V73 by the application's own
+migrations, two warehouses, and one movement of every kind. The backup folder was redirected first
+and restored byte for byte after; the scheduled backup did fire into the sink, which is why that
+step is not optional.
+
+**The item card, main warehouse, for an item that had been purchased, sold, transferred twice and
+counted:**
+
+| row | party column | quantity | running balance |
+|---|---|---|---|
+| purchase | مورد عام | 20 | 120 |
+| sale | بيع نقدي | 5 | 115 |
+| transfer out | **مخزن الفرع** | 30 | 85 |
+| transfer out | **مخزن الفرع** | 6 | 79 |
+| posted count | **جرد شهري** (the sheet's note) | **-2** | **77** |
+
+Opening 100, net movement -23, closing **77** - and 100 - 23 = 77, the three figures on one row
+agreeing for the first time. The quantities tab read purchases 20, sales 5, **transfers out 36,
+transfers in 0, count adjustment -2**, which decomposes the net exactly. The inventory sheet beside
+it read **77.000** for the same item and warehouse, and the database read 77: **one number on both
+screens**, which is the whole of what phase B was for.
+
+**The branch warehouse's card** showed the other half: two rows named **الرئيسي**, 30 then 36,
+opening 0, transfers in 36, closing 36. Before this work that card was empty with a balance of zero
+while the goods were on the shelf.
+
+**The "open" button is disabled on the three new kinds** and enabled on the purchase and the sale -
+zoomed in to be sure rather than read off a full-screen capture. A transfer is not a document, and
+the button says so instead of producing a reference code.
+
+**The reversal warning fires with the right arithmetic.** With the branch down to 2 after a sale,
+reversing the transfer that brought 30 in was met with *"هذا الحذف سيجعل رصيد 1 صنف بالسالب: - زيت
+عافية 1 لتر في مخزن الفرع: -28"* - the same two message keys the totals screen uses for a document
+delete, not a new sentence. Cancelling left both transfers and every balance exactly as they were.
+
+**Still unseen:** the transfer screen's own entry (the Arabic-digit quantity and one item in two
+units are unit-tested only), the inventory sheet for a reader without `inventory.show`, and all of
+it in English.
