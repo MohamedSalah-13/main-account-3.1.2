@@ -181,8 +181,12 @@ return reopened with its discount box read-only and `excludingReturnId` letting 
 - **Arabic literals** remain in `InvoicePaymentTerms` and `InvoiceLineEditService`, where a service
   should throw a message key.
 - **The reasons report and the returned-status badge have never been watched on screen**, nor the
-  warning about a deferred free return on the cash party: the invoice screen's party field is
-  read-only and the button beside it pins the party rather than choosing one, so the party could not
-  be changed from the screen at all. That is worth its own look - it is the same screen's own gap.
+  warning about a deferred free return on the cash party. This used to say the party could not be
+  changed at all, because the field looked inert on a scratch schema holding one customer - and a
+  search with no match hides its list rather than saying so. **That was wrong**: the field is a
+  `PartySuggestionField`, typable and searched as you type, installed for all four families with
+  nothing disabling it, and the button beside it is the pin every other header control has. Watched
+  on 2026-09-20 on a copy of a real database: typing "ام" listed eight customers and Enter chose one.
+  So nothing blocks that warning being seen; it simply has not been.
 - **Returns written before 2026-08-18 carry no `source_line_id`**, so the per-line rules cannot
   apply to them; the per-item rules still do.
