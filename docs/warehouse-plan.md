@@ -292,7 +292,9 @@ sees and come before anything new.
 
 **B - one balance on two screens. Delivered 2026-09-20, see §13.**
 
-**C - permissions and evidence** (`V74`). `stock.transfer.show` and `stock.count.create`, granted to
+**C - permissions and evidence** (`V74`). Deleting `StockTransferDatabaseAcceptanceTest`, now that
+`StockTransferEndToEndAcceptanceTest` says what it only appeared to.
+`stock.transfer.show` and `stock.count.create`, granted to
 whoever holds the key that stood in for them, so nobody loses an ability on upgrade; the count's
 Arabic literals become keys; audit triggers on the five tables, in `R__triggers.sql`;
 `stock_count_lines.item_id` stops cascading and `DeleteRegistry.ITEMS` declares it.
@@ -445,7 +447,9 @@ counted during trading hours.
   `items_stock` row is given one, and a user **who is not user 1** and does not hold
   `stock.transfer.post` is refused before anything is written. `StockTransferDatabaseAcceptanceTest`
   stays as it was for now: it has no fixture, asserts one boolean, and CI finishes it in four
-  milliseconds - it is superseded rather than deleted, which is §14's first line.
+  milliseconds. It is superseded rather than deleted, and deleting it belongs to phase C with the
+  rest of the evidence work: a class that runs and proves nothing is worse than no class, because
+  a green run beside its name reads as coverage.
 
 **Still not seen on a screen.** No part of this has been opened. The three new summary cards, the
 disabled button on a transfer row, what a count row reads in the kind column, and all of it in
