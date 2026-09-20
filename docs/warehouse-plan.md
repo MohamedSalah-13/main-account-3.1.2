@@ -451,6 +451,28 @@ counted during trading hours.
   rest of the evidence work: a class that runs and proves nothing is worse than no class, because
   a green run beside its name reads as coverage.
 
+### The defect the transfer test found on its first run
+
+**A transfer into a warehouse that already held the item failed outright**, with
+"هذه البيانات موجودة بالفعل", before it moved anything. That is the ordinary case: a new
+warehouse backfills an `items_stock` row for every item and a new item one for every warehouse, so
+the destination almost always has the row already.
+
+`StockTransferService` gives the destination a row for each item first - the arriving quantity
+needs something to add itself onto - and writes it as `INSERT IGNORE`, because most items already
+have one. But `before_items_stock_insert` signalled SQLSTATE 45000 for a duplicate (item, stock),
+and **an error a trigger signals is not suppressed by `INSERT IGNORE`**, while the duplicate-key
+error from `items_stock_uk` is. The trigger enforced nothing the unique key did not, and broke the
+one statement written to rely on that key's error being ignorable.
+
+It is dropped, not recreated - the same way `V5` replaced `before_items_units_insert` - and the
+`DROP` stays in `R__triggers.sql` so an install that ran an older copy loses it too.
+
+**Nothing in a green build could see this, and no amount of reading found it**: the review read the
+trigger, wrote down that it "conflicts with `INSERT IGNORE`", and ranked it fifteenth. It took
+running a transfer against a real database, which §11 said had never happened, and it is the answer
+to why the plan insists on that.
+
 **Still not seen on a screen.** No part of this has been opened. The three new summary cards, the
 disabled button on a transfer row, what a count row reads in the kind column, and all of it in
 English: unseen.
