@@ -318,10 +318,19 @@ afterwards. What that proved, in the database and then on screen:
   `auth_role_permission`. All three places the name is rendered were checked: the role's permission
   table, the effective-access tab, and the module column beside them.
 - **And the screen found what the database could not**: the القسم column read "عام" for 134 of the
-  162 keys, four of `categoryLabel`'s eight categories being unreachable. That is §2.8, and it is
-  fixed - the second run of the same copy shows the 13 group names in `module_key` where the 34
-  derived ones used to be. **The column itself has not been re-read on screen**: the run stopped at
-  the login window, and a password is the one thing this cannot supply for itself.
+  162 keys, four of `categoryLabel`'s eight categories being unreachable. That is §2.8.
+
+**The section fix, read back on the same screen** (second run, a fresh copy of the same database):
+
+- `synchronizeCatalog` replaced the **34** derived module values with the **13** group names on its
+  first start-up, with no migration - watched in the table, then on the screen.
+- The `purchase.` family reads **"المشتريات"** where the first run had it reading "عام", and
+  `total.purchase.show` sits with it rather than in a section called `TOTAL`.
+- Unfiltered, the list now opens grouped: every row of "المناديب والعمولة" together, then the next
+  section, because `PERMISSIONS_SQL` orders by `module_key` and that column finally means something.
+- `sales.discount.override` reads **"المناديب والعمولة"**, which is the key claimed by name rather
+  than by prefix - the one decision in §2.8 that a reader could have disagreed with, and it is where
+  the rule says it should be.
 
 **Still not verified:**
 
@@ -329,12 +338,16 @@ afterwards. What that proved, in the database and then on screen:
   180 points - two rows - under the parent-roles table stacked above it. It was read by maximising
   the window to 1920x1040, which the shop's screen cannot do. This is the case
   `CLAUDE.md` § **A row's detail** describes, and the screen it ships to is exactly the one that
-  cannot show it.
+  cannot show it. **It is the largest thing still wrong with this screen.**
 - **English was not opened.** `PermissionLabelsTest` resolves all 162 keys in both languages and
-  `PermissionCatalogArchitectureTest` holds all three bundles, so the text exists; what has not been
-  seen is how it sits in the column. Switching the language writes the choice into the developer's
-  own Java `Preferences`, which is why it was not done in passing.
-- **A fresh install was not migrated.** The copy was an existing database at V65; the disable path
-  over a schema built from nothing has not been watched.
+  `PermissionCatalogArchitectureTest` holds all three bundles plus the thirteen section labels, so
+  the text exists; what has not been seen is how it sits in the column. Switching the language writes
+  the choice into the developer's own Java `Preferences`, which is why it was not done in passing.
+- **A fresh install was not migrated.** Both copies were existing databases at V65; the disable path
+  and the module rewrite over a schema built from nothing have not been watched.
 - **A reader without `roles.manage`** has not opened the screen.
 - The gated acceptance classes were not run; this worktree has no database configuration, by design.
+
+**What will happen on the first real start-up of this build**: `synchronizeCatalog` rewrites
+`module_key` for all 162 keys and sets `enabled = 0` on the eight that are gone. Nothing else changes,
+and nothing is deleted.
