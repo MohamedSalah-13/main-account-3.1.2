@@ -132,6 +132,13 @@ Everything in §3's last two rows, §4, §5's reason, §6, and:
 - **`lineById` is asked for the line *of the named document***, and a row's item must be its line's
   item. Nothing on the screen produces either mismatch; a price and a cost read from another item's
   line are wrong in a way every later check would pass.
+- **a refusal names the item, not its id.** "الصنف رقم 2" reached somebody holding the item itself;
+  `ReturnEligibility.LineQuantity` carries the name and falls back to the id only where there is
+  none.
+- **`ReturnPolicy` is read at every save**, not once when the save service is built. Turning "a
+  return must name an invoice" on had no effect until every open invoice window had been closed and
+  reopened - a setting that appears to do nothing is worse than one that is not there. The guard
+  takes a `Supplier<ReturnPolicy>`.
 - **deleting a document warns when it would take the shelf below zero** (`DocumentDeleteStockCheck`).
   Deleting reverses the stock effect, so a purchase or a sales return takes goods back out; if they
   have since been sold the balance lands under zero, found weeks later at a count. A warning and not
@@ -173,10 +180,6 @@ return reopened with its discount box read-only and `excludingReturnId` letting 
   critical class with no behaviour change, and worth its own change.
 - **Arabic literals** remain in `InvoicePaymentTerms` and `InvoiceLineEditService`, where a service
   should throw a message key.
-- **`ReturnEligibility` names an item by id** in its refusal - "الصنف رقم 2" - where the person
-  reading it knows the name.
-- **`ReturnPolicy` is read once**, when the save service is built, so changing either setting does
-  not reach a return screen that is already open.
 - **The reasons report and the returned-status badge have never been watched on screen**, nor the
   warning about a deferred free return on the cash party: the invoice screen's party field is
   read-only and the button beside it pins the party rather than choosing one, so the party could not
