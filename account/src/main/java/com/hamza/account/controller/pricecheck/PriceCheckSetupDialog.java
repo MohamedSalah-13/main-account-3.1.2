@@ -54,7 +54,7 @@ public class PriceCheckSetupDialog {
         var stockService = ServiceRegistry.get(StockService.class);
         var priceNames = ServiceRegistry.get(SelPriceItemService.class);
 
-        List<Stock> stocks = stockService.getStocks();
+        List<Stock> stocks = stockService.stocksForPicker();
         if (stocks.isEmpty()) {
             return Optional.empty();
         }
@@ -156,7 +156,7 @@ public class PriceCheckSetupDialog {
     private void reloadStocks(ComboBox<Stock> comboStock, StockService stockService) {
         try {
             Stock picked = comboStock.getSelectionModel().getSelectedItem();
-            List<Stock> stocks = stockService.getStocks();
+            List<Stock> stocks = stockService.stocksForPicker();
             comboStock.setItems(FXCollections.observableArrayList(stocks));
             stocks.stream()
                     .filter(stock -> picked != null && stock.getId() == picked.getId())
