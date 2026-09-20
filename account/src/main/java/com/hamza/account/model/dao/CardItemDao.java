@@ -65,15 +65,22 @@ public class CardItemDao extends AbstractDao<CardItems> {
     /**
      * What the item's balance was on {@code date}, in base units.
      * <p>
-     * The same three terms {@code quantity_items_table} adds up, and deliberately so:
-     * the opening balance, every invoice line in base units, and what posted stock
-     * counts corrected the balance by. A count is a movement like any other - leaving
-     * it out would give the card a closing balance that reconciles with nothing after
-     * the first inventory.
+     * <b>Every term {@code quantity_items_table} adds up, and deliberately so</b>: the
+     * warehouse's opening balance, every invoice line in base units, <b>both halves of
+     * every transfer</b>, and what posted stock counts corrected the balance by. A
+     * balance has one definition in this system, and a second answer to it is the
+     * defect, not a convenience.
      * <p>
-     * It reads the four line tables directly rather than {@code card_item_view}: the
-     * view unions them and joins three more tables per row for names this query never
-     * looks at, and the item predicate would only be applied after all of it.
+     * The transfers were missing until 2026-09-20, and this javadoc said "the same three
+     * terms" while naming three of four. So on any warehouse a transfer had touched, this
+     * query and the inventory sheet reported two different numbers for one shelf, and
+     * which a person read was decided by which screen they opened.
+     * {@code ItemCardBalanceAcceptanceTest} now holds the two together against a real
+     * MySQL, by reading the view rather than by asserting arithmetic of its own.
+     * <p>
+     * It reads the line tables directly rather than {@code card_item_view}: the view
+     * unions them and joins three more tables per row for names this query never looks
+     * at, and the item predicate would only be applied after all of it.
      *
      * @param inclusive whether {@code date} itself counts - the closing balance of a
      *                  period includes its last day, the opening balance does not
@@ -102,6 +109,16 @@ public class CardItemDao extends AbstractDao<CardItems> {
                            FROM purchase_re r
                            JOIN total_buy_re h ON h.id = r.invoice_number
                            WHERE h.stock_id = ? AND r.item_id = ? AND h.invoice_date %s ?
+                           UNION ALL
+                           SELECT tl.quantity * tl.type_value
+                           FROM stock_transfer_list tl
+                           JOIN stock_transfer h ON h.id = tl.stock_transfer_id
+                           WHERE h.stock_to = ? AND tl.item_id = ? AND h.transfer_date %s ?
+                           UNION ALL
+                           SELECT -(tl.quantity * tl.type_value)
+                           FROM stock_transfer_list tl
+                           JOIN stock_transfer h ON h.id = tl.stock_transfer_id
+                           WHERE h.stock_from = ? AND tl.item_id = ? AND h.transfer_date %s ?
                        ) movements), 0)
                      + COALESCE((SELECT SUM(l.counted_qty * l.type_value - l.system_qty)
                                  FROM stock_count_lines l
@@ -110,7 +127,8 @@ public class CardItemDao extends AbstractDao<CardItems> {
                                    AND c.count_date %s ?), 0) AS balance
                 FROM items_stock ist
                 WHERE ist.item_id = ? AND ist.stock_id = ?
-                """.formatted(comparison, comparison, comparison, comparison, comparison);
+                """.formatted(comparison, comparison, comparison, comparison,
+                comparison, comparison, comparison);
     }
 
     public CardItemDao() {
@@ -156,7 +174,11 @@ public class CardItemDao extends AbstractDao<CardItems> {
             try (var statement = connection.prepareStatement(balanceSql(inclusive))) {
                 Date on = Date.valueOf(date);
                 int parameter = 1;
-                for (int branch = 0; branch < 5; branch++) {
+                // Seven branches, each binding the warehouse, the item and the date in that
+                // order: the four documents, the two halves of a transfer, and the posted
+                // counts. A branch added to the statement without one added here shifts every
+                // parameter after it.
+                for (int branch = 0; branch < 7; branch++) {
                     statement.setInt(parameter++, stockId);
                     statement.setInt(parameter++, itemId);
                     statement.setDate(parameter++, on);

@@ -72,13 +72,14 @@ class CardItemDaoStatementsTest {
     class Balance {
 
         /**
-         * The three terms {@code quantity_items_table} adds up: the opening balance,
-         * the invoice lines in base units, and what posted stock counts corrected the
-         * balance by. Dropping any of them gives the card a balance no other screen
-         * agrees with.
+         * Every term {@code quantity_items_table} adds up: the opening balance, the
+         * invoice lines in base units, both halves of every transfer, and what posted
+         * stock counts corrected the balance by. Dropping any of them gives the card a
+         * balance no other screen agrees with - which is what dropping the transfers did
+         * until 2026-09-20.
          */
         @Test
-        void addsOpeningBalanceMovementsAndPostedStockCounts() {
+        void addsOpeningBalanceMovementsTransfersAndPostedStockCounts() {
             String sql = normalise(CardItemDao.balanceSql(true));
 
             assertTrue(sql.contains("select ist.first_balance"));
@@ -91,7 +92,36 @@ class CardItemDaoStatementsTest {
             assertTrue(sql.contains("sum(l.counted_qty * l.type_value - l.system_qty)"));
             assertTrue(sql.contains("c.status = 'posted'"), "a draft count moves nothing");
             assertEquals(6, occurrences(sql, "stock_id = ?"));
-            assertEquals(17, sql.chars().filter(character -> character == '?').count());
+            assertEquals(23, sql.chars().filter(character -> character == '?').count());
+        }
+
+        /**
+         * A transfer is two movements, not one: it arrives in {@code stock_to} and leaves
+         * {@code stock_from}, and the card reads one warehouse at a time, so each half has
+         * to be there with its own sign or one end of every transfer is invisible.
+         */
+        @Test
+        void countsBothHalvesOfATransfer() {
+            String sql = normalise(CardItemDao.balanceSql(true));
+
+            assertTrue(sql.contains("tl.quantity * tl.type_value"), "the quantity arriving");
+            assertTrue(sql.contains("-(tl.quantity * tl.type_value)"), "the quantity leaving");
+            assertEquals(1, occurrences(sql, "h.stock_to = ?"));
+            assertEquals(1, occurrences(sql, "h.stock_from = ?"));
+            assertEquals(2, occurrences(sql, "join stock_transfer h on h.id = tl.stock_transfer_id"));
+        }
+
+        /**
+         * Seven branches bind the warehouse, the item and the date in that order, and
+         * {@code balanceOn} binds them in one loop - so a branch added to the statement
+         * without the loop's bound moving shifts every parameter after it. This is the
+         * arithmetic that says the two agree.
+         */
+        @Test
+        void bindsThreeParametersPerBranchAndTwoForTheOpeningRow() {
+            String sql = normalise(CardItemDao.balanceSql(true));
+
+            assertEquals(7 * 3 + 2, sql.chars().filter(character -> character == '?').count());
         }
 
         @Test
@@ -99,8 +129,8 @@ class CardItemDaoStatementsTest {
             String closing = normalise(CardItemDao.balanceSql(true));
             String opening = normalise(CardItemDao.balanceSql(false));
 
-            assertEquals(5, occurrences(closing, "<= ?"));
-            assertEquals(5, occurrences(opening, "< ?"));
+            assertEquals(7, occurrences(closing, "<= ?"));
+            assertEquals(7, occurrences(opening, "< ?"));
             assertFalse(opening.contains("<= ?"), "an opening balance stops before its own day");
         }
     }
