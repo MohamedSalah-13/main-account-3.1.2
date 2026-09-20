@@ -1,0 +1,111 @@
+name: Database acceptance tests
+
+# اختبارات القبول الثلاثون مقفولة على -Daccount.db.acceptance=true وتحتاج MySQL،
+# فلم تكن تعمل في أي مكان: لا محليًا مع mvn clean test، ولا على CI. هذا ما يشغّلها.
+#
+# وهي - بحسب CLAUDE.md - الشيء الوحيد الذي يقول إن الـviews والأرصدة تعطي الرقم نفسه
+# الذي يعطيه DocumentLedgerEffect، وإن migration جديدة تنطبق أصلًا على قاعدة من الصفر:
+# V55 وV56 وV57 شحنت كلها وهي لا تنطبق، ولم يرَ ذلك أي بناء أخضر.
+#
+# وظيفة منفصلة عن البناء عمدًا: البناء يظل هو البوابة حتى تثبت هذه، فلا يصير main
+# أحمر من اختبار جديد لم يُجرَّب - وهذا بالضبط ما كلّف تسعة عشر commit قبل 1b2fa6ec.
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+
+    # قاعدة بيانات تُرمى مع الوظيفة. لا علاقة لها بأي قاعدة حقيقية.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-throwaway-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-throwaway-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # لا سرّ هنا: الخادم يعيش دقائق ويُرمى، ولا يستمع إلا داخل الوظيفة.
+      CI_DB_USER: root
+      CI_DB_PASSWORD: ci-throwaway-root
+      CI_DB_NAME: account_ci_acceptance
+      # الأصناف التي تطلب حسابًا يستطيع إنشاء schema - مثل AuditLogDatabaseAcceptanceTest.
+      ACCOUNT_DB_ACCEPTANCE_ADMIN_USER: root
+      ACCOUNT_DB_ACCEPTANCE_ADMIN_PASSWORD: ci-throwaway-root
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Checkout fx-commons library
+        uses: actions/checkout@v4
+        with:
+          repository: MohamedSalah-13/fx-commons
+          path: fx-commons-lib
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install fx-commons library locally
+        run: mvn -B clean install -DskipTests
+        working-directory: ./fx-commons-lib
+
+      - name: Build the project without running its tests
+        run: mvn -B clean install -DskipTests
+
+      # الـmigrations تنشئ triggers وprocedures من حساب ليس SUPER، وMySQL يرفض ذلك
+      # والـbinary log مفتوح ما لم تُضبط هذه. وهي نفس السطر الذي في my.ini الذي يكتبه المثبّت.
+      - name: Let a non-SUPER account create triggers, and make the schema
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -p"$CI_DB_PASSWORD" -e "
+            SET GLOBAL log_bin_trust_function_creators = 1;
+            CREATE DATABASE \`$CI_DB_NAME\` DEFAULT CHARACTER SET utf8mb4;"
+
+      # من الصفر إلى الرأس. أي migration لا تنطبق على قاعدة جديدة تسقط هنا، وهو
+      # الصنف الوحيد من الأعطال الذي لا يراه بناء أخضر إطلاقًا.
+      - name: Migrate the schema from nothing
+        run: |
+          mvn -B -q -pl account -am dependency:build-classpath -Dmdep.outputFile=cp.txt
+          java -cp "account/target/classes:$(cat account/cp.txt)" .github/ci/MigrateSchema.java \
+            "jdbc:mysql://127.0.0.1:3306/$CI_DB_NAME?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=LOCAL" \
+            "$CI_DB_USER" "$CI_DB_PASSWORD"
+
+      # ثمانية أصناف تقرأ ACCOUNT_DB_ACCEPTANCE_CONFIG، والباقي يقرأ config.xml بجوار
+      # الوحدة (مجلد surefire هو الوحدة، لا جذر المستودع). فنكتب الملفين معًا.
+      - name: Write a throwaway config.xml for the run
+        run: |
+          ACCOUNT_CONFIG_KEY="$(openssl rand -base64 16)"
+          echo "ACCOUNT_CONFIG_KEY=$ACCOUNT_CONFIG_KEY" >> "$GITHUB_ENV"
+          export ACCOUNT_CONFIG_KEY
+          java -cp "controlsfx/target/classes:$(cat account/cp.txt)" \
+            com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig encrypt \
+            3306 127.0.0.1 "$CI_DB_NAME" "$CI_DB_USER" "$CI_DB_PASSWORD" account/config.xml
+
+      - name: Run the gated acceptance classes
+        env:
+          ACCOUNT_DB_ACCEPTANCE_CONFIG: ${{ github.workspace }}/account/config.xml
+        run: |
+          mvn -B -pl account -am test \
+            -Daccount.db.acceptance=true \
+            -Dtest='*AcceptanceTest' \
+            -Dsurefire.failIfNoSpecifiedTests=false
+
+      # الملف يُكتب في مساحة العمل ويُرمى معها؛ حذفه هنا حتى لا يلتقطه أي step لاحق.
+      - name: Remove the config
+        if: always()
+        run: rm -f account/config.xml account/cp.txt
