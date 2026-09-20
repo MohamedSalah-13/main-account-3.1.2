@@ -3,6 +3,8 @@ package com.hamza.account.features.dbsetup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
@@ -78,7 +80,23 @@ class LocalServerPiecesTest {
     @Nested
     class Ini {
 
+        /**
+         * The whole file, character for character - <b>on Windows</b>, which is the only place
+         * it is ever written: the provisioning runs {@code mysqld.exe}, restricts a file with
+         * {@code icacls} and lives under {@code %ProgramData%}.
+         * <p>
+         * It has to say so, because {@code "C:\\Program Files"} is a path only on Windows.
+         * Elsewhere {@code Path.of} reads it as one relative file name with backslashes in it,
+         * and {@code MysqlIni.slashes} calls {@code toAbsolutePath()} - so on the Linux runner
+         * the working directory was prepended and this assertion could never pass. It failed on
+         * every CI build from {@code 465e4f4a} until it was noticed, which is what an
+         * unconditional test of a platform-specific fact costs: the build stops meaning
+         * anything, and nineteen commits went onto a red one.
+         * <p>
+         * {@link #everyLineButTheTwoPaths()} is what still runs everywhere.
+         */
         @Test
+        @EnabledOnOs(OS.WINDOWS)
         @DisplayName("my.ini, character for character - loopback, our port, no collation and no time zone")
         void pinned() {
             assertEquals("""
@@ -98,6 +116,34 @@ class LocalServerPiecesTest {
                     Path.of("C:\\ProgramData\\AccountK\\mysql-data"), 3307, false));
         }
 
+        /**
+         * The same pin with the two path lines supplied rather than asserted, so every other
+         * line - the port, the bind address, {@code mysqlx=0}, the charset, the buffer pool, the
+         * trust-function-creators line, the blank line and the {@code [client]} section - is held
+         * character for character on a runner of any kind. Only the paths are the platform's.
+         */
+        @Test
+        @DisplayName("every line but the two paths, on any platform")
+        void everyLineButTheTwoPaths() {
+            Path home = Path.of("program", "mysql");
+            Path data = Path.of("shared", "mysql-data");
+            assertEquals("""
+                    [mysqld]
+                    basedir=%s
+                    datadir=%s
+                    port=3307
+                    bind-address=127.0.0.1
+                    mysqlx=0
+                    character-set-server=utf8mb4
+                    innodb_buffer_pool_size=256M
+                    log_bin_trust_function_creators=1
+
+                    [client]
+                    port=3307
+                    """.formatted(MysqlIni.slashes(home), MysqlIni.slashes(data)),
+                    MysqlIni.render(home, data, 3307, false));
+        }
+
         @Test
         @DisplayName("every interface only when other machines will connect")
         void reachable() {
@@ -106,6 +152,11 @@ class LocalServerPiecesTest {
             assertTrue(ini.contains("port=3308"));
         }
 
+        /**
+         * On Windows the input carries the backslashes this is about; elsewhere the platform's
+         * own separator is already a slash and the check is trivially true - which is fine, it
+         * is the Windows run that has something to prove and it is the one that ships.
+         */
         @Test
         @DisplayName("no backslash reaches the file: in an option file it starts an escape")
         void forwardSlashes() {
