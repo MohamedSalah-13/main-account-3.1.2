@@ -733,11 +733,25 @@ without a credit limit and a price tier; everything else that differed was accid
 kept deliberately and are commented as such: the supplier's date column is `date_insert` where the
 customer's is `created_at` — **was**, until `V10__supplier_created_at.sql` renamed the supplier's to
 match, finishing what `V4` started when it renamed `custom`, `customers_accounts` and `items` and
-stopped. The other nineteen tables keep `date_insert`: they are not paired with anything. The supplier's
-searches do **not** join `table_area`. The customer's
-join is a **`LEFT` join**: it is there to read the area's name, and it was an inner join, which dropped a
-customer whose area row had been deleted out of every list and every search while a supplier in the same
-state stayed. `PartyDaoStatementsTest` pins all of it.
+stopped. The other nineteen tables keep `date_insert`: they are not paired with anything.
+`PartyDaoStatementsTest` pins every statement, character for character.
+
+**Neither party joins `table_area` any more, and the join's history is the lesson.** It was there so
+`map` could read `area_name`, and nothing else - no statement filtered or ordered by it. The
+customer's was an INNER join once, which dropped a customer whose area row had been deleted out of
+every list and every search; that was corrected to `LEFT`. **The supplier's listing was still INNER**
+- so a supplier in that state was missing from `loadAll` while answering `getDataById` perfectly well
+- and it survived the first correction because the supplier's *searches* never joined at all, which
+was mistaken for the whole story. `PartyLookups` ended both: it reads `table_area` and `type_price`
+**once per query** and the mapper takes the names from it, so the join had nothing left to do.
+
+**That snapshot is `ItemsCatalogLookups` applied to the parties, for the same defect.**
+`CustomerDao.map` resolved the price tier with a `getDataById` of its own per row, and
+`SuppliersDao.map` the area - so reading the party list cost one query plus one per row, over a
+`type_price` holding **three** rows. Measured on a schema migrated from nothing, same machine, same
+harness: **88 ms → 16 ms at 147 parties, and 529 ms → 55 ms at 2,000**, which is the shape of it -
+the old cost grows with the table and the new one does not. Build one per query and let it go with
+the list it mapped; it is a snapshot, not a cache, and the one-row `map` fetches its own.
 
 `PartyLedgerSpec` does the same for the two account tables. Only **payments** live in
 `customers_accounts` and `suppliers_accounts`; the invoice side of a statement comes from the view

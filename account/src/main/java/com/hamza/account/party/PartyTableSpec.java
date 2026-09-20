@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
  * - the credit limit and which price tier they buy at - and that is the whole of the
  * difference. Everything else that differs between {@code custom} and {@code suppliers}
  * is accident, and less of it every time: the date column was {@code created_at} on one
- * and {@code date_insert} on the other until {@code V10__supplier_created_at.sql}, and
- * the supplier's queries still write their join in lower case.
+ * and {@code date_insert} on the other until {@code V10__supplier_created_at.sql}, and the
+ * two carried different joins to the areas table until neither needed one.
  * <p>
  * Collecting it here is what lets one statement serve both, the way
  * {@link com.hamza.account.document.DocumentTableSpec} does for the four documents.
@@ -24,15 +24,6 @@ import java.util.regex.Pattern;
  *
  * @param kind           which party this describes
  * @param table          the table written to
- * @param listJoin       the area join the listing query carries, or empty. It is a
- *                       {@code LEFT} join: it is there to read the area's name, and a
- *                       customer whose area row has been deleted is still a customer.
- *                       It was an inner join, which quietly dropped them from every
- *                       list and every search while the supplier in the same state
- *                       stayed - the supplier's queries never joined at all
- * @param searchJoin     the area join the search, paging and by-id queries carry, or
- *                       empty. Empty for suppliers, whose {@code map} looks the area up
- *                       with a query of its own
  * @param createdColumn  when the row was entered. One name on both sides since V10;
  *                       it stays a field because the tables are still two
  * @param insertColumns  the insert, in the order the DAO fills it
@@ -48,8 +39,6 @@ import java.util.regex.Pattern;
 public record PartyTableSpec(
         PartyKind kind,
         String table,
-        String listJoin,
-        String searchJoin,
         String createdColumn,
         List<String> insertColumns,
         List<String> updateColumns,
@@ -69,8 +58,6 @@ public record PartyTableSpec(
 
     public static final PartyTableSpec CUSTOMER = new PartyTableSpec(
             PartyKind.CUSTOMER, "custom",
-            "LEFT JOIN table_area ON custom.area_id = table_area.id",
-            "LEFT JOIN table_area ON custom.area_id = table_area.id",
             "created_at",
             List.of("name", "tel", "address", "notes", "limit_num", "first_balance",
                     "opening_balance_date", "price_id", "user_id", "area_id",
@@ -82,8 +69,6 @@ public record PartyTableSpec(
 
     public static final PartyTableSpec SUPPLIER = new PartyTableSpec(
             PartyKind.SUPPLIER, "suppliers",
-            "join table_area on suppliers.area_id = table_area.id",
-            "",
             "created_at",
             List.of("name", "tel", "address", "notes", "first_balance", "opening_balance_date",
                     "user_id", "area_id",
@@ -117,13 +102,16 @@ public record PartyTableSpec(
     // ---- listing and lookup ----------------------------------------------------------
 
     public String selectAllSql() {
-        return "SELECT * FROM " + table + inline(listJoin);
+        return searchFrom();
     }
 
     /**
-     * One party by its id. It carries {@link #searchJoin} rather than {@link #listJoin}:
-     * for the supplier those differ, and which join a statement carries is a thing to
-     * decide deliberately and not to acquire by sharing a statement.
+     * One party by its id.
+     * <p>
+     * It used to carry a different join from {@link #selectAllSql()} - the supplier's
+     * listing joined the areas and its by-id read did not - and the two are one statement
+     * now because neither joins anything: {@code PartyLookups} gives the mapper the area's
+     * name, and no statement here has ever filtered or ordered by it.
      */
     public String selectByIdSql() {
         return searchFrom() + " WHERE " + table + "." + KEY + " = ?";
@@ -256,7 +244,7 @@ public record PartyTableSpec(
     public String searchByNumberSql(PartySearchScope scope) {
         return """
                 SELECT * FROM %1$s
-                %2$sWHERE (%1$s.id = ? OR %1$s.tel = ?)%4$s
+                WHERE (%1$s.id = ? OR %1$s.tel = ?)%3$s
                 ORDER BY
                     CASE
                         WHEN %1$s.id = ? THEN 0
@@ -264,14 +252,14 @@ public record PartyTableSpec(
                         ELSE 2
                     END,
                     %1$s.id DESC
-                LIMIT %3$d
-                """.formatted(table, line(searchJoin), SEARCH_LIMIT, activeClause(scope));
+                LIMIT %2$d
+                """.formatted(table, SEARCH_LIMIT, activeClause(scope));
     }
 
     public String searchByPrefixSql(PartySearchScope scope) {
         return """
                 SELECT * FROM %1$s
-                %2$sWHERE (%1$s.name LIKE ? OR %1$s.tel LIKE ?)%4$s
+                WHERE (%1$s.name LIKE ? OR %1$s.tel LIKE ?)%3$s
                 ORDER BY
                     CASE
                         WHEN %1$s.name LIKE ? THEN 0
@@ -279,17 +267,17 @@ public record PartyTableSpec(
                         ELSE 2
                     END,
                     %1$s.id DESC
-                LIMIT %3$d
-                """.formatted(table, line(searchJoin), SEARCH_LIMIT, activeClause(scope));
+                LIMIT %2$d
+                """.formatted(table, SEARCH_LIMIT, activeClause(scope));
     }
 
     public String searchByFragmentSql(PartySearchScope scope) {
         return """
                 SELECT * FROM %1$s
-                %2$sWHERE (%1$s.name LIKE ? OR %1$s.tel LIKE ?)%4$s
+                WHERE (%1$s.name LIKE ? OR %1$s.tel LIKE ?)%3$s
                 ORDER BY %1$s.id DESC
-                LIMIT %3$d
-                """.formatted(table, line(searchJoin), SEARCH_LIMIT, activeClause(scope));
+                LIMIT %2$d
+                """.formatted(table, SEARCH_LIMIT, activeClause(scope));
     }
 
     /**
@@ -310,14 +298,6 @@ public record PartyTableSpec(
     }
 
     private String searchFrom() {
-        return "SELECT * FROM " + table + inline(searchJoin);
-    }
-
-    private static String inline(String join) {
-        return join.isEmpty() ? "" : " " + join;
-    }
-
-    private static String line(String join) {
-        return join.isEmpty() ? "" : join + "\n";
+        return "SELECT * FROM " + table;
     }
 }

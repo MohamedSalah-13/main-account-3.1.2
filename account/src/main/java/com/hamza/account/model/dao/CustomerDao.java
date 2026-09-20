@@ -1,6 +1,5 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Area;
 import com.hamza.account.party.PartyTableSpec;
 import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.party.PartyWriteGuard;
@@ -10,6 +9,7 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.opening.OpeningBalanceGuard;
 import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.GenericMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,7 +45,6 @@ public class CustomerDao extends AbstractDao<Customers> {
     private final String TABLE = SPEC.table();
     private final String USER_ID = "user_id";
     private final String AREA_ID = "area_id";
-    private final String AREA_NAME = "area_name";
     private final String DATE_INSERT = SPEC.createdColumn();
     private final DaoFactory daoFactory;
 
@@ -56,7 +55,20 @@ public class CustomerDao extends AbstractDao<Customers> {
 
     @Override
     public List<Customers> loadAll() throws DaoException {
-        return queryForObjects(selectAllSql(), this::map);
+        return queryForObjects(selectAllSql(), rowMapper());
+    }
+
+    /**
+     * One mapper for one query, carrying the lookups that query's rows will need.
+     * <p>
+     * Built per query and thrown away with it - see {@link PartyLookups}. Every read below
+     * goes through this rather than {@code this::map}, so no row resolves a name with a
+     * query of its own; {@code getFilterCustomers} builds one and uses it for all three
+     * phases of the search, which is one set of lookups for the whole answer.
+     */
+    private GenericMapper<Customers> rowMapper() throws DaoException {
+        PartyLookups lookups = PartyLookups.load(daoFactory, SPEC.kind());
+        return resultSet -> map(resultSet, lookups);
     }
 
     // ---- the statements ---------------------------------------------------------
@@ -171,12 +183,12 @@ public class CustomerDao extends AbstractDao<Customers> {
 
     @Override
     public Customers getDataById(int id) throws DaoException {
-        return queryForObject(selectByIdSql(), this::map, id);
+        return queryForObject(selectByIdSql(), rowMapper(), id);
     }
 
     @Override
     public Customers getDataByString(String s) throws DaoException {
-        return queryForObject(selectByNameSql(), this::map, s);
+        return queryForObject(selectByNameSql(), rowMapper(), s);
     }
 
     @Override
@@ -198,8 +210,18 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getId()};
     }
 
+    /**
+     * A single row on its own, which has to fetch the lookups it needs. Two small queries
+     * where there used to be one, and the same mapping rule as every list read - the
+     * alternative was a second copy of it for one row, which is how two answers to one
+     * question get into a codebase.
+     */
     @Override
     public Customers map(ResultSet rs) throws DaoException {
+        return map(rs, PartyLookups.load(daoFactory, SPEC.kind()));
+    }
+
+    private Customers map(ResultSet rs, PartyLookups lookups) throws DaoException {
         Customers customers = new Customers();
         try {
             customers.setId(rs.getInt(ID));
@@ -214,12 +236,10 @@ public class CustomerDao extends AbstractDao<Customers> {
             // back as 5000, so the screen showed one number and saved another.
             customers.setCredit_limit(rs.getDouble(LIMIT_NUM));
             customers.setFirst_balance(rs.getDouble(FIRST_BALANCE));
-            customers.setSelPriceObject(daoFactory.getItemsSelPriceDao().getDataById(rs.getInt(ITEMS_SEL_PRICE_ID)));
-            // The area join is a LEFT join, so the name is absent for a customer whose
-            // area row has been deleted. The id it still carries is what the area combo
-            // needs; an empty name reads as "no area" rather than throwing.
-            String areaName = rs.getString(AREA_NAME);
-            customers.setArea(new Area(rs.getInt(AREA_ID), areaName == null ? "" : areaName));
+            customers.setSelPriceObject(lookups.priceTier(rs.getInt(ITEMS_SEL_PRICE_ID)));
+            // An area row that has been deleted leaves the id and an empty name, which
+            // reads as "no area" rather than throwing - what the LEFT join used to give.
+            customers.setArea(lookups.area(rs.getInt(AREA_ID)));
             customers.setEmail(rs.getString(EMAIL));
             customers.setTax_number(rs.getString(TAX_NUMBER));
             customers.setPayment_terms_days(rs.getInt(PAYMENT_TERMS));
@@ -244,7 +264,7 @@ public class CustomerDao extends AbstractDao<Customers> {
      */
     public List<Customers> getFilterCustomers(String searchText, PartySearchScope scope) throws DaoException {
         if (searchText == null || searchText.trim().isEmpty()) {
-            return queryForObjects(filterAllSql(scope), this::map);
+            return queryForObjects(filterAllSql(scope), rowMapper());
         }
 
         String q = searchText.trim();
@@ -258,7 +278,7 @@ public class CustomerDao extends AbstractDao<Customers> {
             } catch (NumberFormatException ignored) {
             } // في حال كان رقم الهاتف طويلاً جداً
 
-            return queryForObjects(filterNumericSql(scope), this::map, id, q, id, q);
+            return queryForObjects(filterNumericSql(scope), rowMapper(), id, q, id, q);
         }
 
         // 2) نص/مختلط: مرحلتين startsWith ثم contains
@@ -266,11 +286,13 @@ public class CustomerDao extends AbstractDao<Customers> {
         final String likeContains = "%" + q + "%";
 
         Map<Integer, Customers> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+        // One set of lookups for both phases: they answer one search.
+        GenericMapper<Customers> mapper = rowMapper();
 
         // Phase A: startsWith (سريع)
         List<Customers> starts = queryForObjects(
                 filterStartsSql(scope),
-                this::map,
+                mapper,
                 likeStarts, likeStarts, // WHERE
                 likeStarts, likeStarts  // ORDER BY
         );
@@ -283,7 +305,7 @@ public class CustomerDao extends AbstractDao<Customers> {
         if (result.size() < FILTER_LIMIT) {
             List<Customers> contains = queryForObjects(
                     filterContainsSql(scope),
-                    this::map,
+                    mapper,
                     likeContains, likeContains // WHERE
             );
             for (Customers c : contains) {
@@ -296,7 +318,7 @@ public class CustomerDao extends AbstractDao<Customers> {
     }
 
     public List<Customers> getProducts(int rowsPerPage, int offset) throws DaoException {
-        return queryForObjects(pageSql(), this::map, rowsPerPage, offset);
+        return queryForObjects(pageSql(), rowMapper(), rowsPerPage, offset);
     }
 
     public int getCountItems() {

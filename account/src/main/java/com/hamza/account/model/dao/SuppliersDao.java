@@ -8,6 +8,7 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.opening.OpeningBalanceGuard;
 import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.GenericMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,7 +41,6 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     private final String TABLE_NAME = SPEC.table();
     private final String USER_ID = "user_id";
     private final String AREA_ID = "area_id";
-    private final String AREA_NAME = "area_name";
     private final String DATE_INSERT = SPEC.createdColumn();
     private final DaoFactory daoFactory;
 
@@ -51,7 +51,20 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
 
     @Override
     public List<Suppliers> loadAll() throws DaoException {
-        return queryForObjects(selectAllSql(), this::map);
+        return queryForObjects(selectAllSql(), rowMapper());
+    }
+
+    /**
+     * One mapper for one query, carrying the lookups that query's rows will need.
+     * <p>
+     * Built per query and thrown away with it - see {@link PartyLookups}. Every read below
+     * goes through this rather than {@code this::map}, so no row resolves a name with a
+     * query of its own; {@code getFilterSuppliers} builds one and uses it for both phases
+     * of the search, which is one set of lookups for the whole answer.
+     */
+    private GenericMapper<Suppliers> rowMapper() throws DaoException {
+        PartyLookups lookups = PartyLookups.load(daoFactory, SPEC.kind());
+        return resultSet -> map(resultSet, lookups);
     }
 
     // ---- the statements ---------------------------------------------------------
@@ -157,7 +170,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
 
     @Override
     public Suppliers getDataById(int id) throws DaoException {
-        return queryForObject(selectByIdSql(), this::map, id);
+        return queryForObject(selectByIdSql(), rowMapper(), id);
     }
 
     @Override
@@ -176,8 +189,17 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getId()};
     }
 
+    /**
+     * A single row on its own, which has to fetch the lookups it needs - one query for the
+     * areas where there used to be one for this row's area, and the same mapping rule as
+     * every list read.
+     */
     @Override
     public Suppliers map(ResultSet resultSet) throws DaoException {
+        return map(resultSet, PartyLookups.load(daoFactory, SPEC.kind()));
+    }
+
+    private Suppliers map(ResultSet resultSet, PartyLookups lookups) throws DaoException {
         Suppliers suppliers = new Suppliers();
         try {
             suppliers.setId(resultSet.getInt(ID));
@@ -192,8 +214,9 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             suppliers.setNotes(notes == null ? "" : notes);
 
             suppliers.setFirst_balance(resultSet.getDouble(FIRST_BALANCE));
-//            suppliers.setArea(new Area(resultSet.getInt(AREA_ID), resultSet.getString(AREA_NAME)));
-            suppliers.setArea(daoFactory.areaDao().getDataById(resultSet.getInt(AREA_ID)));
+            // Was a query per row, and answered null for an area row that had been
+            // deleted - so a supplier could reach a caller with no area object at all.
+            suppliers.setArea(lookups.area(resultSet.getInt(AREA_ID)));
             suppliers.setEmail(resultSet.getString(EMAIL));
             suppliers.setTax_number(resultSet.getString(TAX_NUMBER));
             suppliers.setPayment_terms_days(resultSet.getInt(PAYMENT_TERMS));
@@ -217,7 +240,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
      */
     public List<Suppliers> getFilterSuppliers(String searchText, PartySearchScope scope) throws DaoException {
         if (searchText == null || searchText.trim().isEmpty()) {
-            return queryForObjects(filterAllSql(scope), this::map);
+            return queryForObjects(filterAllSql(scope), rowMapper());
         }
 
         String q = searchText.trim();
@@ -231,7 +254,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             } catch (NumberFormatException ignored) {
             }
 
-            return queryForObjects(filterNumericSql(scope), this::map, id, q, id, q);
+            return queryForObjects(filterNumericSql(scope), rowMapper(), id, q, id, q);
         }
 
         // 2) نص/مختلط: مرحلتين startsWith ثم contains
@@ -239,11 +262,13 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
         final String likeContains = "%" + q + "%";
 
         Map<Integer, Suppliers> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+        // One set of lookups for both phases: they answer one search.
+        GenericMapper<Suppliers> mapper = rowMapper();
 
         // Phase A: startsWith
         List<Suppliers> starts = queryForObjects(
                 filterStartsSql(scope),
-                this::map,
+                mapper,
                 likeStarts, likeStarts, // WHERE
                 likeStarts, likeStarts  // ORDER BY
         );
@@ -256,7 +281,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
         if (result.size() < FILTER_LIMIT) {
             List<Suppliers> contains = queryForObjects(
                     filterContainsSql(scope),
-                    this::map,
+                    mapper,
                     likeContains, likeContains // WHERE
             );
             for (Suppliers s : contains) {
@@ -269,7 +294,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     }
 
     public List<Suppliers> getProducts(int rowsPerPage, int offset) throws DaoException {
-        return queryForObjects(pageSql(), this::map, rowsPerPage, offset);
+        return queryForObjects(pageSql(), rowMapper(), rowsPerPage, offset);
     }
 
     public int getCountItems() {

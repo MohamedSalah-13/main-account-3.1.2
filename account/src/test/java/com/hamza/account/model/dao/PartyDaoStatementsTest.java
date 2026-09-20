@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code CustomerDao} and {@code SuppliersDao} are the same file twice - the same
  * columns, the same opening-balance rule, and the same sixty-line three-phase search -
  * differing in the table name, two columns a supplier has no use for, and a handful of
- * details nobody chose - the supplier queries write their join in lower case, and until
+ * details nobody chose - the supplier queries wrote their join in lower case, and until
  * {@code V10__supplier_created_at.sql} the two spelled their date column differently.
  * Pinned here so a merge has to keep answering exactly what they answer now.
  */
@@ -91,26 +91,25 @@ class PartyDaoStatementsTest {
         }
 
         /**
-         * The area join is a LEFT join. It was an INNER join, which dropped a customer
-         * whose area row had been deleted out of every list and every search - while a
-         * supplier in the same state stayed, its queries never joining at all. The join
-         * is here to read the area's name, not to decide who is a customer.
+         * <b>No join.</b> There was one - a LEFT join on the areas, itself a correction of
+         * an INNER join that had dropped a customer whose area row was deleted out of every
+         * list and every search. It existed only so {@code map} could read {@code area_name},
+         * and no statement here ever filtered or ordered by it, so when {@code PartyLookups}
+         * began answering the area from a snapshot the join became a join for nothing. The
+         * supplier's went with it, and that one was still INNER.
          */
         @Test
         void queries() {
-            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id",
-                    dao.selectAllSql());
+            assertEquals("SELECT * FROM custom", dao.selectAllSql());
             // Normalised when these moved to the specification: the keyword was written
             // "where" in lower case here and "WHERE" everywhere else. SQL keywords are
             // not case sensitive, so this is the whole of the change.
-            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
-                    + "WHERE custom.id = ?", dao.selectByIdSql());
-            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
-                    + "WHERE custom.name = ?", dao.selectByNameSql());
-            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
-                    + "ORDER BY custom.id DESC LIMIT 50", dao.filterAllSql(EVERYONE));
-            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
-                    + "ORDER BY custom.id DESC LIMIT ? OFFSET ?", dao.pageSql());
+            assertEquals("SELECT * FROM custom WHERE custom.id = ?", dao.selectByIdSql());
+            assertEquals("SELECT * FROM custom WHERE custom.name = ?", dao.selectByNameSql());
+            assertEquals("SELECT * FROM custom ORDER BY custom.id DESC LIMIT 50",
+                    dao.filterAllSql(EVERYONE));
+            assertEquals("SELECT * FROM custom ORDER BY custom.id DESC LIMIT ? OFFSET ?",
+                    dao.pageSql());
         }
 
         /** The search the name box runs: an exact id or telephone first. */
@@ -118,7 +117,6 @@ class PartyDaoStatementsTest {
         void numericSearch() {
             assertEquals("""
                     SELECT * FROM custom
-                    LEFT JOIN table_area ON custom.area_id = table_area.id
                     WHERE (custom.id = ? OR custom.tel = ?)
                     ORDER BY
                         CASE
@@ -136,7 +134,6 @@ class PartyDaoStatementsTest {
         void textSearch() {
             assertEquals("""
                     SELECT * FROM custom
-                    LEFT JOIN table_area ON custom.area_id = table_area.id
                     WHERE (custom.name LIKE ? OR custom.tel LIKE ?)
                     ORDER BY
                         CASE
@@ -149,7 +146,6 @@ class PartyDaoStatementsTest {
                     """, dao.filterStartsSql(EVERYONE));
             assertEquals("""
                     SELECT * FROM custom
-                    LEFT JOIN table_area ON custom.area_id = table_area.id
                     WHERE (custom.name LIKE ? OR custom.tel LIKE ?)
                     ORDER BY custom.id DESC
                     LIMIT 50
@@ -218,20 +214,24 @@ class PartyDaoStatementsTest {
         }
 
         /**
-         * Note what is not here: the by-id query does not join the areas, because
-         * {@code map} looks the area up with a query of its own. The customer's does.
+         * The supplier and the customer now produce the same statements, which they never
+         * did: the listing joined the areas and the by-id read did not, and the listing's
+         * join was an <b>INNER</b> one - so a supplier whose area row had been deleted was
+         * missing from {@code loadAll} while the same supplier answered {@code getDataById}
+         * perfectly well. That is the defect the customer's join was changed from INNER to
+         * LEFT to fix, left standing here because the supplier's <em>searches</em> never
+         * joined and that was mistaken for the whole story. Neither joins now.
          */
         @Test
         void queries() {
-            assertEquals("SELECT * FROM suppliers join table_area on suppliers.area_id = table_area.id",
-                    dao.selectAllSql());
+            assertEquals("SELECT * FROM suppliers", dao.selectAllSql());
             // Normalised the same way: the id is now written suppliers.id, and the
-            // spacing is the generator's. The join is still absent, which matters - an
-            // inner join would drop a supplier whose area row is gone.
+            // spacing is the generator's.
             assertEquals("SELECT * FROM suppliers WHERE suppliers.id = ?", dao.selectByIdSql());
             assertEquals("SELECT * FROM suppliers ORDER BY suppliers.id DESC LIMIT 50", dao.filterAllSql(EVERYONE));
-            // Also normalised: the ordering column is now qualified, as the customer's
-            // always had to be - with a join in the query an unqualified id is ambiguous.
+            // Also normalised: the ordering column is qualified. It had to be while the
+            // customer's query carried a join, under which a bare id is ambiguous; it is
+            // kept now that neither does, because the qualified form is never wrong.
             assertEquals("SELECT * FROM suppliers ORDER BY suppliers.id DESC LIMIT ? OFFSET ?", dao.pageSql());
         }
 
