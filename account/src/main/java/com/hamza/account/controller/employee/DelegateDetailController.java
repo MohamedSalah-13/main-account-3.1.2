@@ -92,6 +92,8 @@ public class DelegateDetailController implements AppSettingInterface {
     private int generation;
     private List<DelegateDetailRow> shownBreakdown = List.of();
     private List<DelegateCollectionRow> shownCollections = List.of();
+    private DelegateDetailSummary shownSummary;
+    private boolean shownLines;
 
     public DelegateDetailController(int delegateId, String delegateName, YearMonth month) {
         this.delegateId = delegateId;
@@ -275,6 +277,8 @@ public class DelegateDetailController implements AppSettingInterface {
         collectionTable.setVisible(false);
 
         DelegateDetailSummary summary = loaded.summary();
+        shownSummary = summary;
+        shownLines = breakdown.readOffLines();
         captionFirst.setText(text("delegate.performance.column.sales"));
         captionSecond.setText(text("delegate.performance.column.returns"));
         statFirst.setText(Columns.money(summary.sales()));
@@ -289,6 +293,7 @@ public class DelegateDetailController implements AppSettingInterface {
     private void paint(DelegateDetailService.Collections loaded) {
         shownCollections = loaded.rows();
         shownBreakdown = List.of();
+        shownSummary = null;
         collectionTable.setItems(FXCollections.observableArrayList(loaded.rows()));
         collectionSizing.layout(collectionTable);
         collectionTable.setVisible(true);
@@ -349,13 +354,22 @@ public class DelegateDetailController implements AppSettingInterface {
         }
     }
 
-    /** Whose, which month, which view - and the figure that is not a row, so the paper reconciles too. */
+    /**
+     * Whose, which month, which view - and, for rows read off the lines, the two figures that are
+     * not rows: what was taken off whole invoices, <b>and the net it leaves</b>. The first print
+     * of this report carried the discount and not the net, so the paper's totals line read
+     * "net 10,213.50" on a month whose net is 10,203.50 - the screen says so on a card, and a
+     * page has no cards. Written from the held summary, never read back out of a label.
+     */
     private String subtitle() {
         String which = delegateName + "  |  " + text("delegate.performance.month") + ": " + month
                 + "  |  " + comboView.getConverter().toString(comboView.getValue());
-        return discountCard.isVisible()
-                ? which + "  |  " + text("delegate.detail.stat.header.discount") + ": " + statDiscount.getText()
-                : which;
+        if (shownSummary == null || !shownLines) {
+            return which;
+        }
+        return which + "  |  " + text("delegate.detail.stat.header.discount") + ": "
+                + Columns.money(shownSummary.headerDiscount())
+                + "  |  " + text("delegate.detail.print.net") + ": " + Columns.money(shownSummary.net());
     }
 
     private boolean nothingToWrite(String key) {

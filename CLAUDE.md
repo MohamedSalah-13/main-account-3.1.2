@@ -1587,8 +1587,19 @@ among items** - that would be an invented rule - but shown as a figure of its ow
 discounts is the same net. `DelegateDetailDatabaseAcceptanceTest` holds all four breakdowns to the
 activity query's net, read rather than typed twice. No profit column: a line's `total_profit` is not
 this system's definition of profit. **Not built from D2:** the delegate filter on the ageing and
-balances screens, and the delegate trend; and none of D2 has been seen on a screen
-(`docs/delegates-plan.md` §14.4).
+balances screens, and the delegate trend (`docs/delegates-plan.md` §14.4).
+
+**D2 was then watched on a copy of a real database** (§14.5), signed in as an ordinary user - user 1
+bypasses the override like every permission. A sale of 300 discounted 50 against a ceiling of 10% was
+refused with its sentence, the caret went to the discount box, and **the number counter did not move**;
+discounted 20 it saved as the very next number. The detail report's by-item view met a month with a
+real header discount: lines 10,213.50 less 10.00 is the performance report's 10,203.50. **What only
+the paper showed:** the PDF's totals line read "net 10,213.50" and the true net was nowhere on the
+page - a screen says it on a card and a page has no cards - so the subtitle now carries it, written
+from the held summary rather than read back out of a label. Found on the way and **not fixed here**: a
+user whose grants were imported from the legacy system sells but holds no `stock.show`, so the sales
+screen raises a refusal and opens with an empty warehouse combo; and a hyphenated product code is
+reversed in every PDF (`owala-5250` prints `5250-owala`).
 
 Permissions are `commission.run.create` / `.update` / `.post` for the run (V72, granted to whoever holds
 `commission.rule.update`; `POST` derives `CRITICAL`), `commission.reports` (V71), and
