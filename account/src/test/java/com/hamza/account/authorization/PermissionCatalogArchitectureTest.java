@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -188,6 +190,107 @@ class PermissionCatalogArchitectureTest {
         assertTrue(redundant.isEmpty(),
                 "these keys declare the risk their last word already derives, so the same fact is "
                         + "written twice: " + redundant);
+    }
+
+    /**
+     * The rule the section column lacked. It was a module derived from the key's first word against
+     * a {@code switch} over eight words chosen in the controller, and nothing could tell the two
+     * they disagreed - four of the eight matched nothing, so 134 of 162 keys read "general".
+     */
+    @Test
+    void everyKeyBelongsToExactlyOneGroup() {
+        List<String> unowned = new ArrayList<>();
+        List<String> contested = new ArrayList<>();
+        for (PermissionDefinition definition : AppPermissions.definitions()) {
+            String key = definition.key().value();
+            List<PermissionGroup> matches = PermissionGroup.allMatching(key);
+            if (matches.isEmpty()) unowned.add(key);
+            if (matches.size() > 1) contested.add(key + " -> " + matches);
+        }
+        assertTrue(unowned.isEmpty(),
+                "these keys belong to no PermissionGroup, so the roles screen would file them under "
+                        + "\"general\" - give one of the groups their prefix: " + unowned);
+        assertTrue(contested.isEmpty(), """
+                these keys match more than one group. The longest prefix wins at runtime, so the \
+                screen is not wrong - but which section a key is under should be read off one \
+                declaration, not worked out from prefix lengths: %s""".formatted(contested));
+    }
+
+    /**
+     * A key a group claims by name has to exist. A typo there does nothing visible - the key falls
+     * back to whichever prefix covers it and lands in the neighbouring section, which is the quiet
+     * half of the defect this whole class exists for.
+     */
+    @Test
+    void aKeyClaimedByNameIsARealKey() {
+        Set<String> declared = AppPermissions.definitions().stream()
+                .map(definition -> definition.key().value())
+                .collect(java.util.stream.Collectors.toSet());
+        List<String> unknown = Arrays.stream(PermissionGroup.values())
+                .flatMap(group -> group.keys().stream().map(key -> group + " claims " + key))
+                .filter(claim -> !declared.contains(claim.substring(claim.indexOf(" claims ") + 8)))
+                .toList();
+        assertTrue(unknown.isEmpty(),
+                "a group names a key that AppPermissions does not declare, so the claim does nothing "
+                        + "and the key is filed by prefix instead: " + unknown);
+    }
+
+    /** A group nothing is filed under is a section header for an empty list. */
+    @Test
+    void everyGroupOwnsAtLeastOneKey() {
+        Set<PermissionGroup> used = AppPermissions.definitions().stream()
+                .map(definition -> PermissionGroup.of(definition.key().value()).orElseThrow())
+                .collect(java.util.stream.Collectors.toCollection(() -> EnumSet.noneOf(PermissionGroup.class)));
+        List<PermissionGroup> empty = Arrays.stream(PermissionGroup.values())
+                .filter(group -> !used.contains(group))
+                .toList();
+        assertTrue(empty.isEmpty(), "groups that own no permission: " + empty);
+    }
+
+    @Test
+    void everyGroupHasALabelInAllThreeBundles() throws IOException {
+        Map<String, Properties> bundles = bundles();
+        Map<String, List<String>> missing = new LinkedHashMap<>();
+        List<String> labelKeys = new ArrayList<>(
+                Arrays.stream(PermissionGroup.values()).map(PermissionGroup::labelKey).toList());
+        labelKeys.add(PermissionGroup.UNKNOWN_LABEL_KEY);
+        for (String labelKey : labelKeys) {
+            for (var entry : bundles.entrySet()) {
+                String value = entry.getValue().getProperty(labelKey);
+                if (value == null || value.isBlank()) {
+                    missing.computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>()).add(labelKey);
+                }
+            }
+        }
+        assertTrue(missing.isEmpty(), "group labels missing from the bundles: " + missing);
+    }
+
+    /**
+     * The module written to {@code auth_permission.module_key} has to be a group's name, or the
+     * column read back cannot be resolved to a label and the screen says "general" again.
+     */
+    @Test
+    void theStoredModuleIsAlwaysAGroupName() {
+        List<String> unresolvable = AppPermissions.definitions().stream()
+                .filter(definition -> PermissionGroup.byName(definition.module()).isEmpty())
+                .map(definition -> definition.key() + " -> " + definition.module())
+                .toList();
+        assertTrue(unresolvable.isEmpty(),
+                "modules that no group answers to, so the screen would fall back to general: "
+                        + unresolvable);
+    }
+
+    /** The switch that could not see the derivation must not come back. */
+    @Test
+    void theSectionLabelIsNotASwitchInAScreen() throws IOException {
+        Path controller = SOURCE.resolve(
+                Path.of("com", "hamza", "account", "controller", "users", "UserPermissionController.java"));
+        String code = COMMENTS.matcher(Files.readString(controller)).replaceAll(" ");
+        assertFalse(code.contains("case \"PURCHASES\"") || code.contains("case \"SETTINGS\""), """
+                UserPermissionController is matching module names it chose itself again. Four of the \
+                eight it used to list could never match what AppPermissions derives - PURCHASE is not \
+                PURCHASES and SETTING is not SETTINGS - and 134 of 162 permissions read "general" for \
+                as long as nobody opened the screen. The section belongs to PermissionGroup.""");
     }
 
     @Test

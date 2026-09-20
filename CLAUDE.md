@@ -448,6 +448,20 @@ next startup, so the migration's answer never survived a restart. Seventeen keys
 `definition()` moved there too, and a declaration that merely restates what derivation already gets
 right fails the build.
 
+**The section a permission is shown under is `PermissionGroup`, and used to be decided twice.**
+`AppPermissions` derived the module from the key's first word - `TOTAL`, `SHOW`, `UPDATE`, `SEL` -
+while `UserPermissionController.categoryLabel` matched that against a `switch` over eight words it
+had chosen itself, four of which could never match: the derivation gives `PURCHASE` where the switch
+said `PURCHASES`, `SETTING` where it said `SETTINGS`, `CUSTOMER`/`SUPPLIERS` for `PARTIES` and
+`USERS`/`ROLES` for `SECURITY`. Two differ by one letter, and **134 of the 162 keys read "عام"** -
+invisible to every test and every query, because each half did exactly what it was told, and obvious
+the moment the screen was opened. Thirteen groups own the key prefixes now, and four rules hold them:
+a key belongs to **exactly one** group (a group may claim a key **by name** where a prefix would reach
+into another family's - `DELEGATES` does that with `sales.discount.override`, because V73 grants it
+with `commission.rule.update` and not with selling); a key claimed by name has to exist, or the claim
+silently does nothing; every group owns a key; and every group has a label in all three bundles. It
+needs no migration - `synchronizeCatalog` rewrites `module_key` on every start-up.
+
 **"Is this the administrator" is `CurrentUser.isSystemAdministrator()`, asked in one place.** Three
 screens wrote `CurrentUser.get().getId() == 1` themselves — the invoice lines table's column menu, the
 sidebar's role caption, the help button — which is the numbered-administrator test this whole system

@@ -502,9 +502,18 @@ public final class AppPermissions {
                 .toList();
     }
 
+    /**
+     * The module is the key's {@link PermissionGroup}, and used to be {@code parts[0]} uppercased -
+     * which is what put {@code TOTAL}, {@code SHOW} and {@code SEL} in the roles screen's section
+     * column and left 134 of 162 keys reading "general". A key belonging to no group is a build
+     * failure rather than a silent {@code GENERAL}: see {@code PermissionCatalogArchitectureTest}.
+     */
     private static PermissionDefinition definition(PermissionKey key, int sortOrder) {
         String[] parts = key.value().split("\\.");
-        String module = parts[0].toUpperCase(Locale.ROOT);
+        String module = PermissionGroup.of(key.value())
+                .map(Enum::name)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No PermissionGroup owns " + key.value() + " - add its prefix to one."));
         String action = parts[parts.length - 1].toUpperCase(Locale.ROOT);
         String resource = String.join(".", Arrays.copyOf(parts, parts.length - 1));
         PermissionRisk permissionRisk = DECLARED_RISKS.getOrDefault(key.value(), risk(action));

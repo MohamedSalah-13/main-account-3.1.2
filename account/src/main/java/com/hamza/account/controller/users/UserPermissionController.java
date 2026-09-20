@@ -2,6 +2,7 @@ package com.hamza.account.controller.users;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.PermissionGroup;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.authorization.PermissionLabels;
 import com.hamza.account.config.AppIcon;
@@ -511,20 +512,15 @@ public final class UserPermissionController implements AppSettingInterface {
                 textRoleDescription.getText(), false, checkRoleActive.isSelected());
     }
 
+    /**
+     * The section a permission is shown under. It was a {@code switch} over eight words chosen here,
+     * against a module {@code AppPermissions} derived from the key's first word - and four of the
+     * eight could never match one, so 134 of the 162 keys read "عام". Both halves now come from
+     * {@link PermissionGroup}, which is one declaration rather than two lists that had no way of
+     * telling each other they disagreed.
+     */
     private String categoryLabel(String category) {
-        LanguageManager lm = LanguageManager.getInstance();
-        if (category == null) return lm.getString("user.category.general");
-        return switch (category) {
-            case "PURCHASES" -> lm.getString("user.category.purchases");
-            case "SALES" -> lm.getString("user.category.sales");
-            case "PARTIES" -> lm.getString("user.category.parties");
-            case "INVENTORY" -> lm.getString("user.category.inventory");
-            case "TREASURY" -> lm.getString("user.category.treasury");
-            case "REPORTS" -> lm.getString("user.category.reports");
-            case "SETTINGS" -> lm.getString("user.category.settings");
-            case "SECURITY" -> lm.getString("user.category.security");
-            default -> lm.getString("user.category.general");
-        };
+        return LanguageManager.getInstance().getString(PermissionGroup.labelKeyFor(category));
     }
 
     private void report(Exception e) {

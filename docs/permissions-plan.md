@@ -156,16 +156,7 @@ permission taken away from a cashier on another till never reaches them. `data_c
   today; a refusal is the honest answer.
 - **Four read methods have no guard** - `roles()`, `permissions()`, `roleIdsForUser()`,
   `permissionIdsForRole()`. Low risk, but `users.show` is the obvious floor.
-- **`module` is the key's first word**, which produces `TOTAL`, `SHOW`, `UPDATE`, `MAIN`, `SUB` and
-  `SEL` as headings in the roles screen. §4.2.
-- **And the القسم column is worse than that: 134 of the 162 keys read "عام".**
-  `UserPermissionController.categoryLabel` is a `switch` over eight names, and four of them match
-  nothing that `AppPermissions.definition()` can produce - it derives `PURCHASE`, not `PURCHASES`;
-  `CUSTOMER`/`SUPPLIERS`, not `PARTIES`; `SETTING`, not `SETTINGS`; `USERS`/`ROLES`, not `SECURITY`.
-  Two of the four are off by a single letter. Only `SALES` (9 keys), `REPORTS` (11), `TREASURY` (7)
-  and `INVENTORY` (1) ever match, so the column names a section for 28 keys and says "general" for
-  the rest. **Found by opening the screen**, and it is the concrete form of §4.2: the fix is
-  `PermissionGroups`, not four more `case` labels.
+- **The section column said "عام" for 134 of the 162 keys — fixed, see §2.8.**
 - **The key names are not consistent**: `employee.*` beside `employees.show.salary`, `customer.*`
   beside `suppliers.*`, `user.shift.manage` beside `shift.*`. Renaming one costs a migration and a
   grant transfer, so it is only worth doing with something else.
@@ -173,6 +164,48 @@ permission taken away from a cashier on another till never reaches them. `data_c
   of every machine.** Inside one transaction, so it is safe; but a machine running an older build with
   the same migration head would disable the newer keys until an updated till starts. Unlikely, since a
   new key almost always arrives with a migration, and `refuseADatabaseNewerThanThisBuild` catches that.
+
+### 2.8 The section column said "عام" for 134 of the 162 keys
+
+Two halves decided it and neither could see the other. `AppPermissions.definition()` derived the
+module as **the key's first word uppercased** - so `TOTAL`, `SHOW`, `UPDATE`, `MAIN`, `SUB` and `SEL`
+were section names - while `UserPermissionController.categoryLabel` matched that against a `switch`
+over **eight words it had chosen itself**. Four of the eight could never match anything the
+derivation produces:
+
+| the switch says | the derivation produces |
+|---|---|
+| `PURCHASES` | `PURCHASE` |
+| `SETTINGS` | `SETTING` |
+| `PARTIES` | `CUSTOMER`, `SUPPLIERS` |
+| `SECURITY` | `USERS`, `ROLES`, `AUDIT` |
+
+Two of them differ by a single letter. Only `SALES`, `REPORTS`, `TREASURY` and `INVENTORY` ever
+matched - 28 keys - and everything else fell to the `default`. **Found by opening the screen**: the
+treasury family named its section and the purchases family beside it said "general", which no test
+and no query would ever have reported, because each half was doing exactly what it was told.
+
+`PermissionGroup` is the one declaration: thirteen sections, each owning the key prefixes that belong
+to it, used by `AppPermissions` for the module and by the screen for the label. All 162 keys land in
+a named section and none in "general" - SALES 12, PURCHASES 12, ITEMS 23, STOCK 9, PARTIES 22,
+TREASURY 7, EXPENSES 9, EMPLOYEES 21, DELEGATES 7, SHIFTS 9, REPORTS 12, SECURITY 9, SETTINGS 10.
+
+Four rules hold it together, and the first two caught real mistakes while being written:
+
+- **A key belongs to exactly one group.** `sales.discount.override` matched both `sales.` and a
+  `sales.discount.` prefix, and the first draft settled it by prefix length - which means the section
+  a key appears under is worked out rather than read. A group may instead claim a key **by name**,
+  which is what `DELEGATES` does with that one: it is granted with `commission.rule.update` and not
+  with selling (V73), so that is where somebody building a role will look for it.
+- **A key claimed by name has to exist.** A typo there does nothing visible: the key falls back to
+  whichever prefix covers it and quietly lands in the neighbouring section.
+- **Every group owns at least one key**, or it is a heading over an empty list.
+- **Every group has a label in all three bundles**, and the stored `module_key` always resolves to a
+  group - otherwise the column falls back to "general" again by a different road.
+
+It needs **no migration**: `synchronizeCatalog` rewrites `module_key` for every declared key on every
+start-up. Watched on a copy of a real database - the 34 old module values (`TOTAL`, `SHOW`, `SEL`, …)
+were replaced by the 13 group names the moment the new build started.
 
 ---
 
@@ -212,13 +245,17 @@ The caption is the odd one out: it is a **label**, not an ability, and the right
 user's actual role names rather than a two-valued guess. That needs `roleIdsForUser` + `roles()` at
 `setupUser` time, on the FX thread, which is why it was not done as part of a tidy-up.
 
-### 4.2 The roles screen: groups and the risk badge
+### 4.2 The roles screen: using the groups, and the risk badge
 
-~160 rows in one flat table, grouped by a `module` that is the key's first word. Two changes belong
-together: a `PermissionGroups` mapping (SALES, TREASURY, HR, …) replacing `parts[0]`, and a coloured
-risk badge per row from `risk_level`, which is already stored and shown nowhere. Then "select all" per
-group, an extra confirmation on granting `CRITICAL`, and a "copy role" button - building
-"cashier + returns" today means ticking twenty boxes from scratch.
+The sections exist now (§2.8) but the table is still 162 flat rows that merely *carry* a section
+name. What is left: collapsible headers per group with "select all" for each, a coloured risk badge
+per row from `risk_level` - already stored, still shown nowhere - an extra confirmation on granting
+`CRITICAL`, and a "copy role" button, since building "cashier + returns" today means ticking twenty
+boxes from scratch.
+
+And the layout: the dialog gives its permission table about two rows at 1366x768, under the
+parent-roles table stacked above it (§5). That is the case `CLAUDE.md` § **A row's detail** describes,
+on the screen this actually ships to.
 
 ### 4.3 The report keys and the profit column
 
@@ -280,9 +317,11 @@ afterwards. What that proved, in the database and then on screen:
   search exactly four - the removed keys are gone from the screen while their grants sit untouched in
   `auth_role_permission`. All three places the name is rendered were checked: the role's permission
   table, the effective-access tab, and the module column beside them.
-- **And the screen found what the database could not**: the القسم column reads "عام" for 134 of the
-  162 keys, four of `categoryLabel`'s eight categories being unreachable - see the last bullet of
-  §2.7.
+- **And the screen found what the database could not**: the القسم column read "عام" for 134 of the
+  162 keys, four of `categoryLabel`'s eight categories being unreachable. That is §2.8, and it is
+  fixed - the second run of the same copy shows the 13 group names in `module_key` where the 34
+  derived ones used to be. **The column itself has not been re-read on screen**: the run stopped at
+  the login window, and a password is the one thing this cannot supply for itself.
 
 **Still not verified:**
 
