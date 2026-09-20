@@ -290,10 +290,7 @@ sees and come before anything new.
 
 **A - the quick ones, no migration. Delivered 2026-09-20, see §12.**
 
-**B - one balance on two screens. Delivered 2026-09-20, see §13**, except the transfer-end-to-end
-acceptance class, which is still owed: a transfer posted through the real service with the period
-lock, the reversal and a second connection meeting the lock, signed in as an ordinary user rather
-than as the administrator who bypasses every permission.
+**B - one balance on two screens. Delivered 2026-09-20, see §13.**
 
 **C - permissions and evidence** (`V74`). `stock.transfer.show` and `stock.count.create`, granted to
 whoever holds the key that stood in for them, so nobody loses an ability on upgrade; the count's
@@ -440,6 +437,15 @@ snapshot under a lock. It does not, because the premise was wrong - see §7.3, l
 Working through the arithmetic while writing the guard is what showed it, and the guard was deleted
 rather than shipped. A warning about a balance that had "moved" would have been noise on every sheet
 counted during trading hours.
+
+- **The transfer finally has an acceptance class that means it**
+  (`StockTransferEndToEndAcceptanceTest`): a transfer posted through the real service moves the
+  balance out of one warehouse and into the other, one item in two units is one demand of the
+  source, two lines of fifteen are refused against a balance of twenty, a destination with no
+  `items_stock` row is given one, and a user **who is not user 1** and does not hold
+  `stock.transfer.post` is refused before anything is written. `StockTransferDatabaseAcceptanceTest`
+  stays as it was for now: it has no fixture, asserts one boolean, and CI finishes it in four
+  milliseconds - it is superseded rather than deleted, which is §14's first line.
 
 **Still not seen on a screen.** No part of this has been opened. The three new summary cards, the
 disabled button on a transfer row, what a count row reads in the kind column, and all of it in
