@@ -93,9 +93,17 @@ public final class WipeCatalog {
      * that no longer exist. The three tier names are configuration; erasing the
      * items now leaves them alone.
      * <p>
-     * The stock-transfer tables are here rather than in a warehouse target of
-     * their own: multi-warehouse support was removed, so nothing writes them any
-     * more, but old rows still point at items and would refuse the delete.
+     * The stock-transfer tables are here rather than in a warehouse target of their
+     * own: a transfer is a movement of items, so erasing the catalogue has to take
+     * the rows that name them or they would refuse the delete. This paragraph used
+     * to say multi-warehouse support was removed and nothing writes these tables -
+     * true when {@code 0853cf4} took the screens away, untrue since {@code fbadd53}
+     * brought them back. The tables were never dropped, which is why they needed no
+     * data migration and why this list never changed.
+     * <p>
+     * {@code stocks} is deliberately not wiped by anything: a warehouse is where the
+     * shop keeps its goods, not data the shop entered, and a wipe that emptied it
+     * would take {@code DefaultStock.ID} with it.
      */
     /**
      * The physical counts (V8). Its lines point at {@code units}, which the items

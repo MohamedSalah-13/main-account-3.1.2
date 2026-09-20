@@ -68,8 +68,12 @@ sale and a transfer out of one warehouse are serialized against each other. A ne
 stock out locks the same rows in the same order, or it deadlocks with these two or races them.
 
 **A transfer line carries the unit and factor it was entered in** (`V19`) and is converted to base
-units before the source balance is judged. Reversing one goes through
-`DeletionService`/`DeleteRegistry.STOCK_TRANSFERS`, whole, never partly.
+units before the source balance is judged. **An item may appear on more than one line, in more than
+one unit, and what the source must cover is the sum of them** (`StockTransferCommand
+.baseQuantityByItem`) - the same thing `InvoiceStockGuard` does for a document, which judges the
+whole document's effect on an item rather than a line at a time. Reversing a transfer goes through
+`DeletionService`/`DeleteRegistry.STOCK_TRANSFERS`, whole, never partly, and **warns before it takes
+the destination below zero**.
 
 **A count in progress moves nothing.** Only `POSTED` sheets are in `adjustment_agg`; a shop has at
 most one open draft per warehouse, and opening the screen continues it.
@@ -83,7 +87,10 @@ most one open draft per warehouse, and opening the screen continues it.
   the balance. An expiry batch is never oversold whatever the setting says.
 - **Deleting a purchase or a sales return is a warning** (`DocumentDeleteStockCheck`): a shop that
   sells before entering the supplier's bill is already below zero on paper, and refusing would stop
-  it correcting the bill.
+  it correcting the bill. **Reversing a transfer is the same warning**, read by
+  `StockTransferService.deleteShortfalls` over the destination warehouse and asked after the
+  reversal is confirmed. A failure to read it is logged and passed over: the check is a courtesy,
+  and a reference code in front of somebody reversing a transfer reads as a refusal.
 - Nothing at the database level refuses a negative balance, and nothing should: the balance is not a
   column.
 
@@ -135,7 +142,9 @@ ledger that somebody starts reading is the `treasury_movements` mistake with a h
 
 ## 7. What the 2026-09-20 review found
 
-Ordered by what it costs. **Read, not reproduced.**
+Ordered by what it costs. **Read, not reproduced** - that was true when this section was written
+and is the reason §12 exists: phase A closed items 2, 4, 7, 10, 11, 15 and the stale javadocs, and
+says for each whether anything reproduced it. Everything still open here is still only read.
 
 ### Figures a user sees
 
@@ -269,11 +278,7 @@ Written down so they are taken once, on purpose, rather than by whoever gets the
 One item open at a time (`docs/product-plan.md`). A and B are defects in figures a user already
 sees and come before anything new.
 
-**A - the quick ones, no migration.** Arabic digits in the transfer quantity; one decision between
-the screen and `StockTransferCommand` about an item in two units, with a message key; a warning on
-deleting a transfer the destination can no longer cover (a warning, not a refusal - §3);
-`require(INVENTORY_SHOW)` in `InventoryService`; the count's name-search fallback resolved **in the
-warehouse being counted** (§7.2); the three stale javadocs and the roadmap's ticks.
+**A - the quick ones, no migration. Delivered 2026-09-20, see §12.**
 
 **B - one balance on two screens.** The card reads transfers, posted counts and the opening balance
 as rows, from the same expressions `quantity_items_table` uses, pinned the way
@@ -314,9 +319,66 @@ purpose: every phase before it removes a way for the two sides to disagree.
 
 ## 11. What has never been run
 
-- **Any of §7.** Reproduce before fixing.
-- A transfer or a count against MySQL under test. The reconciliation report on a database holding a
-  transfer. The backfill tool on a customer's data.
+**`.github/workflows/acceptance.yml` changed what this section can say.** Since 2026-09-20 every
+class named `*AcceptanceTest` runs on each push to main and each pull request against it, on a
+MySQL container that is thrown away, over a schema **migrated from nothing to the head**. So two of
+the things this section used to list are now automatic: a new migration is proved to apply to a
+fresh database before it can merge, and a new acceptance class needs no workflow edit to be run.
+What it cannot do is open a screen.
+
+That run also measured something this plan had only reasoned about: `StockTransferDatabaseAcceptanceTest`
+finishes in **4 milliseconds** and `StockLedgerReconciliationAcceptanceTest` in 47. They are green
+and they touch almost nothing - §7.9, in a number rather than an argument.
+
+- **The open items of §7.** Reproduce before fixing.
+- A transfer or a count against MySQL under test, *meaning* it. The reconciliation report on a
+  database holding a transfer. The backfill tool on a customer's data.
 - The roadmap's reference test with two warehouses (11.5).
 - The five screens on a copy of a real database with a second warehouse in it, in English as well
   as Arabic, at 1366x768 - where every other area of this system found defects no test could.
+- Everything in §12: phase A is unit-tested and has not been opened on a screen.
+
+## 12. What phase A delivered (2026-09-20)
+
+No migration, no schema change, and nothing that needed a database to prove. What each item was,
+and what says it is right:
+
+- **A transfer may carry one item in two units, and the source must cover their sum.** The decision
+  §7.11 left open, taken the way the invoice already answers it. `StockTransferCommand` no longer
+  throws `IllegalArgumentException` for a repeated item - the screen built such a line and the save
+  then reached the user as a reference code - and `baseQuantityByItem()` sums the lines per item.
+  **That refusal was load-bearing and this is why it could not simply be deleted**: the balance was
+  compared once per *line*, so two lines of ten would both have passed against a balance of fifteen.
+  `StockTransferService` now compares the item's total. `StockTransferCommandTest`.
+- **The transfer quantity is read the way every other number in this application is read.**
+  `TransferQuantityInput` over `NumberTextConverter`, out of the controller because a controller
+  cannot be tested. It was `Double.parseDouble`, so ٠-٩ - what the keyboard these tills carry
+  produces - came back as zero and the screen told the person that what they had just typed
+  correctly was not a number. `TransferQuantityInputTest`, six cases.
+- **Reversing a transfer warns before it takes the destination below zero.** Goods that arrived and
+  have since been sold left the destination short, silently, while deleting a purchase in the same
+  state warned. `StockTransferService.deleteShortfalls` feeds the destination's balances to
+  `DocumentDeleteStockCheck` - the same pure check, the same two message keys - and the screen asks
+  after the reversal is confirmed. A failure to read it is logged and passed over.
+- **A scan that finds an item by name now resolves it in the warehouse being counted** (§7.2). The
+  fallback was `ItemsService.getFilterItems`, which folds every warehouse, and `lineFor` snapshots
+  whatever it is handed as `system_qty` - so an item found by name while counting warehouse 2
+  carried the whole business's balance as "what the system says", and the difference posted was
+  wrong by everything held elsewhere. Invisible with one warehouse.
+- **`InventoryService` asks for `inventory.show` before answering.** The key existed as a menu hint
+  alone, so a reader without it could not see the button and could still reach the sheet - which is
+  every item's cost and every warehouse's valuation.
+- **`StockTransferDao.balances` reads through `ItemStockBalanceSql`** instead of joining
+  `quantity_items_table` for named items (§7.15). The same definition, pinned against the view by
+  `ItemStockBalanceSqlTest`; it matters more now that a delete warning asks the same question.
+- **Three documents stopped saying untrue things.** `MovementType`'s javadoc claimed transfers have
+  no live write path because the screens were removed - they came back in `fbadd53`, and the gap is
+  now stated as a gap. `WipeCatalog`'s claimed multi-warehouse support was removed. And `CLAUDE.md`
+  described `V51` and `V52` as stock counts and their variance settlement; they are the optimistic
+  lock and `data_change.revision`, and no variance settlement exists.
+
+**What this phase does not claim.** Nothing here was reproduced against a database or seen on a
+screen; the two defects that produce wrong figures - the item card and the count's snapshot at
+post - are phase B and are untouched. The transfer screen still posts and prints on the JavaFX
+thread, its history is still the last 200 with no period, and a posted count still cannot be opened
+again.

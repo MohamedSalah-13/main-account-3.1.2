@@ -1,9 +1,11 @@
 package com.hamza.account.features.stocktransfer;
 
+import com.hamza.account.features.items.ItemStockBalanceSql;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -30,12 +32,19 @@ final class StockTransferDao extends AbstractDao<Void> {
         });
     }
 
-    /** Current base-unit balance of every requested item in {@code stockId}. */
+    /**
+     * Current base-unit balance of every requested item in {@code stockId}.
+     * <p>
+     * Read through {@link ItemStockBalanceSql}, not through {@code quantity_items_table}: each of
+     * that view's seven CTEs is a {@code GROUP BY} over a whole line table, and MySQL builds all
+     * of them before it can answer for one item. The helper computes the view's own columns for
+     * named items with correlated subqueries that reach their lines through the item's index -
+     * the same definition, pinned against the view by {@code ItemStockBalanceSqlTest}.
+     */
     Map<Integer, Double> balances(int stockId, List<Integer> itemIds) throws DaoException {
-        String marks = String.join(",", Collections.nCopies(itemIds.size(), "?"));
         String sql = "SELECT item_id, first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment "
-                + "- quantitySales - quantityPurchaseRe - fromStock AS balance "
-                + "FROM quantity_items_table WHERE stock_id = ? AND item_id IN (" + marks + ")";
+                + "- quantitySales - quantityPurchaseRe - fromStock AS balance FROM ("
+                + ItemStockBalanceSql.forItems(itemIds.size()) + ") balances_for_items";
         return withConnection(connection -> {
             Map<Integer, Double> result = new HashMap<>();
             try (var statement = connection.prepareStatement(sql)) {
@@ -69,6 +78,37 @@ final class StockTransferDao extends AbstractDao<Void> {
             }
             return null;
         });
+    }
+
+    /**
+     * What a posted transfer put into its destination, summed per item - the figure reversing it
+     * would take back out. One row per item however many lines of it the transfer carries.
+     */
+    List<IncomingLine> incoming(int transferId) throws DaoException {
+        String sql = "SELECT l.item_id, i.nameItem, t.stock_to, s.stock_name, "
+                + "SUM(l.quantity * l.type_value) AS moved "
+                + "FROM stock_transfer t "
+                + "JOIN stock_transfer_list l ON l.stock_transfer_id = t.id "
+                + "JOIN items i ON i.id = l.item_id "
+                + "JOIN stocks s ON s.stock_id = t.stock_to "
+                + "WHERE t.id = ? GROUP BY l.item_id, i.nameItem, t.stock_to, s.stock_name";
+        return withConnection(connection -> {
+            List<IncomingLine> result = new ArrayList<>();
+            try (var statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, transferId);
+                try (var rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        result.add(new IncomingLine(rows.getInt(1), rows.getString(2),
+                                rows.getInt(3), rows.getString(4), rows.getDouble(5)));
+                    }
+                }
+            }
+            return result;
+        });
+    }
+
+    /** One item a transfer moved into {@code stockId}, in base units. */
+    record IncomingLine(int itemId, String itemName, int stockId, String stockName, double movedBase) {
     }
 
     long insert(StockTransferCommand command) throws DaoException {

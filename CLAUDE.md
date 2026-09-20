@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,893 tests** with 186 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-19. What is
+**2,985 tests** with 190 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-20. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -917,8 +917,38 @@ fifty returned the same items in the same order with the same balances; the sear
   refused inside a closed period (`PeriodLockRegistry.STOCK_TRANSFER`), and is reversed through
   `DeleteRegistry`/`DeletionService` rather than by a delete of its own.
 
+**What the source must cover is the item's total, never a line's.** An item may appear on a transfer
+twice - two cartons and three pieces is an ordinary thing to type, and the screen builds it, since it
+replaces a pending line only when the item *and* the unit match. `StockTransferCommand` used to refuse
+a repeated item with an `IllegalArgumentException`, so that line was accepted at entry and the save
+then reached the user as a reference code. **That refusal was protecting a check with a hole in it**:
+the balance was compared once per line, so two lines of ten each both passed against a balance of
+fifteen. `baseQuantityByItem()` sums them, which is what `InvoiceStockGuard` already does for a
+document - it judges the whole document's effect on an item. The same record answers `itemIds()`, the
+distinct ids in the order `lockSource` takes them.
+
+**Reversing a transfer warns before it takes the destination below zero**
+(`StockTransferService.deleteShortfalls`, feeding `DocumentDeleteStockCheck`). Goods that arrived and
+have since been sold left the destination short with no word, while deleting a purchase in the same
+state warned. A warning and never a refusal, for the reason that check carries; and a failure to read
+it is logged and passed over, because a reference code in front of somebody reversing a transfer reads
+as a refusal.
+
+**A quantity typed into these screens is read with `NumberTextConverter`, never `Double.parseDouble`**
+(`TransferQuantityInput`). The transfer screen read ٠-٩ as zero and then told the person their
+quantity was invalid - the omission that had already cost `ReturnQuantityInput` its existence.
+
 `mini_quantity_view`'s company-wide total is deliberately a *different question* from the per-warehouse
 check the sale-time low-stock alert makes, and is documented as such rather than "fixed".
+
+**`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
+warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see
+the button and could still reach a sheet carrying every item's cost. The second fell back to
+`ItemsService.getFilterItems`, which folds every warehouse, and `StockCountService.lineFor` snapshots
+whatever it is handed as `system_qty` - so an item found by name while counting warehouse 2 carried
+the whole business's balance as "what the system says", and the difference posted was wrong by
+everything held elsewhere. Invisible with one warehouse. Both fixed 2026-09-20; the rest of that
+review, including the two defects that still produce wrong figures, is `docs/warehouse-plan.md` §7.
 
 ### The treasury
 

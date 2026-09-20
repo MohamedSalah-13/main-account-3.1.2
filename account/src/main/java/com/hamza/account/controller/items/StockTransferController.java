@@ -5,10 +5,12 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
+import com.hamza.account.features.documentdelete.DocumentDeleteStockCheck;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.events.StockBalancesChanged;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.stocktransfer.StockTransferCommand;
+import com.hamza.account.features.stocktransfer.TransferQuantityInput;
 import com.hamza.account.features.stocktransfer.StockTransferLine;
 import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.features.stocktransfer.StockTransferService;
@@ -33,6 +35,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.Columns;
+import lombok.extern.log4j.Log4j2;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -71,6 +74,7 @@ import java.util.List;
  * each too short to use on a 768px screen. Reversing deletes the transfer outright, which
  * is the only undo there is, and it is a button on the row it reverses.
  */
+@Log4j2
 @FxmlPath(pathFile = "items/stock-transfer-view.fxml")
 public class StockTransferController {
 
@@ -264,7 +268,7 @@ public class StockTransferController {
         if (unit == null) {
             unit = ItemUnits.baseUnit(item);
         }
-        double quantity = parseQuantity(txtQuantity.getText());
+        double quantity = TransferQuantityInput.parse(txtQuantity.getText());
         if (quantity <= 0) {
             AllAlerts.alertError(message("stocks.transfer.error.invalid.quantity"));
             return;
@@ -275,14 +279,6 @@ public class StockTransferController {
                                   && pending.unit().getUnit_id() == resolvedUnit.getUnit_id());
         lines.add(new PendingLine(item, resolvedUnit, quantity));
         txtQuantity.clear();
-    }
-
-    private double parseQuantity(String text) {
-        try {
-            return Double.parseDouble(text == null ? "" : text.trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     private void removeSelectedLine() {
@@ -380,6 +376,12 @@ public class StockTransferController {
                 message("stocks.transfer.confirm.reverse.body"))) {
             return;
         }
+        // What reversing would take back out of the warehouse it went to. A warning, not a
+        // refusal - the same answer the totals screen gives before deleting a purchase - so it
+        // is asked after the reverse is confirmed, and answering no leaves everything as it was.
+        if (!confirmDestinationShortfalls(transfer)) {
+            return;
+        }
         try {
             transferService.delete(transfer.id());
             AllAlerts.alertDeleteWithMessage(message("stocks.transfer.msg.reversed"));
@@ -388,6 +390,32 @@ public class StockTransferController {
         } catch (Exception e) {
             reportFailure(e);
         }
+    }
+
+    /**
+     * Asks before a reversal that would put an item below zero in the destination. Reading it is
+     * a query, so a failure to read must not stop the reversal: the check is a courtesy, and what
+     * refuses is the service's business.
+     */
+    private boolean confirmDestinationShortfalls(StockTransferSummary transfer) {
+        List<DocumentDeleteStockCheck.Shortfall> shortfalls;
+        try {
+            shortfalls = transferService.deleteShortfalls(transfer.id());
+        } catch (Exception cannotRead) {
+            // Logged and passed over, never shown: a reference code in front of somebody
+            // reversing a transfer reads as a refusal.
+            log.error("Could not check what reversing transfer {} would do to the stock: {}",
+                    transfer.id(), cannotRead.getMessage(), cannotRead);
+            return true;
+        }
+        if (shortfalls.isEmpty()) {
+            return true;
+        }
+        StringBuilder body = new StringBuilder(message("delete.stock.negative.header", shortfalls.size()));
+        shortfalls.stream().limit(10).forEach(row -> body.append(System.lineSeparator())
+                .append(message("delete.stock.negative.line", row.itemName(), row.stockName(),
+                        Columns.quantity(BigDecimal.valueOf(row.remainingBase())))));
+        return AllAlerts.confirm_all(message("confirm"), body.toString());
     }
 
     // ------------------------------------------------------------------
