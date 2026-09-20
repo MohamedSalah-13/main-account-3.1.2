@@ -389,9 +389,17 @@ public class StockCountController {
                     return byBarcode;
                 }
                 // Falls back to the shared item search, which covers the item's name, its
-                // extra barcodes and the codes on its units.
+                // extra barcodes and the codes on its units - but answers a balance with
+                // every warehouse folded into it. What a count compares against is the
+                // balance of the warehouse being counted: lineFor snapshots it as
+                // system_qty, and the difference posted is counted minus that. So the match
+                // is resolved again here in this warehouse, and an item with no row in it
+                // is not on this sheet at all.
                 List<ItemsModel> matches = itemsService.getFilterItems(text);
-                return matches.isEmpty() ? null : matches.getFirst();
+                if (matches.isEmpty()) {
+                    return null;
+                }
+                return itemsService.getItemByItemIdAndStockId(matches.getFirst().getId(), stockId);
             }
         };
         task.setOnSucceeded(event -> {
