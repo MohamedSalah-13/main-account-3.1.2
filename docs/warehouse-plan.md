@@ -1,0 +1,322 @@
+# The warehouse contract
+
+What a stock balance is, who may move one, what the 2026-09-20 review found, and the order the
+rest is built in. Read it before touching anything under `features/inventory`,
+`features/stocktransfer`, `features/stockcount`, `features/stockledger`, `features/itemcard`,
+`InvoiceStockGuard`, `StockService`, `Items_StockDao`, or the stock half of `R__views.sql`
+(`quantity_items_table`, `stock_transfer_view`, `card_item_view*`, `mini_quantity_view`).
+
+Sections 1-6 are the contract as it stands. §7 is what the review found wrong, §8 what does not
+exist, §9 the decisions nobody has taken yet, §10 the phases, §11 what has never been run.
+**The review was a reading of the code, the migrations and the tests. Nothing was run** - so every
+defect in §7 is read, not reproduced, and the first act of fixing one is reproducing it.
+
+The history in one paragraph: the warehouse screens were removed in `0853cf4` and came back in
+`fbadd53`, over a schema that was never dropped. `docs/erp-roadmap.md` §11 is the record of what had
+to be true before they could come back (its 11.4 and 11.5 are still unticked there although the
+screens shipped - that document is stale on this point, this one is current). Roadmap step 8 is the
+stock ledger, and §5 below is where the two meet.
+
+## 1. A balance is derived, and there is one place it comes from
+
+**`quantity_items_table`, keyed by (item, warehouse)** = the warehouse's opening balance
+(`items_stock.first_balance`) + purchases - sales - purchase returns + sales returns - transfers out
++ transfers in + the adjustments of **posted** stock counts. Every quantity is
+`quantity * type_value`, the factor stored on the line, so a balance is always in base units and a
+later change of an item's factor never rewrites it.
+
+The same rule as `treasury_current_balance`, for the same reason: a stored balance is a second
+answer waiting to disagree with the first. Three consequences:
+
+- **The view has no balance column.** It answers the eight components and each caller adds them up.
+  `ItemStockBalanceSql` is the same definition for *named* items (`ItemStockBalanceSqlTest` holds
+  the two together); a catalogue-wide read uses the view, a read for named items must not.
+- **The driver is `items_stock`.** A missing (item, warehouse) row is a silently dropped balance, so
+  a new warehouse backfills a row per item and a new item a row per warehouse (`StockService`,
+  `ItemsDao`, `Items_StockDao`), `V18` backfilled the warehouses that predate that, and
+  `StockTransferDao.ensureDestination` covers a row still missing on the receiving side.
+- **A query that names no warehouse must aggregate before it joins** (`QUERY_ITEMS_ALL_STOCKS`), or
+  it returns one row per warehouse, each describing one warehouse's movements as the total.
+
+**The warehouse of a document is its header's.** `stock_id` is on `total_buy`, `total_sales` and the
+two returns; the line tables carry none. A document moves one warehouse, and the invoice screen
+disables `comboStock` once lines exist, which is what keeps an edit from reversing its original
+lines against a different warehouse than the one they left.
+
+**`mini_quantity_view` is company-wide on purpose** - "should we reorder" is asked of the business,
+"can this till sell it" of a warehouse. `StockLevelAlert` asks the second. The two are different
+questions and are documented as such in the view.
+
+## 2. What may move a balance
+
+Four things, and nothing else:
+
+| Writer | Where | Refuses, in order |
+|---|---|---|
+| A document (four families) | `InvoiceSaveService.persist` → `InvoiceStockGuard` | permission, period lock, then the stock effect of the **whole** document |
+| A transfer | `StockTransferService.transfer` | `stock.transfer.post`, period lock (`STOCK_TRANSFER`), source rows locked, source balance |
+| A posted stock count | `StockCountService.post` | `stock.count.post`, editable, period lock (`STOCK_COUNT`), not empty, `WHERE status = 'DRAFT'` |
+| An item's opening balance | `ItemsDao` → `Items_StockDao.updateOpeningBalance` | `OpeningBalanceGuard` / `BulkOpeningBalance`: only while nothing has moved the item |
+
+**There is no fifth.** Correcting a balance is a stock count - dated, posted once, read-only after,
+recorded under whoever posted it. Editing `first_balance` to make a number come right rewrote what
+the opening balance *was* and every report before it; that is what `V8` ended.
+
+**The lock is the `items_stock` rows of the warehouse being drawn from, `FOR UPDATE`, in item-id
+order.** `InvoiceStockGuard` and `StockTransferDao.lockSource` take the same rows, which is why a
+sale and a transfer out of one warehouse are serialized against each other. A new writer that takes
+stock out locks the same rows in the same order, or it deadlocks with these two or races them.
+
+**A transfer line carries the unit and factor it was entered in** (`V19`) and is converted to base
+units before the source balance is judged. Reversing one goes through
+`DeletionService`/`DeleteRegistry.STOCK_TRANSFERS`, whole, never partly.
+
+**A count in progress moves nothing.** Only `POSTED` sheets are in `adjustment_agg`; a shop has at
+most one open draft per warehouse, and opening the screen continues it.
+
+## 3. Below zero
+
+- **A sale may go below zero only when the shop says so**: `item.sel.without.balance`
+  (`SharedSettingKeys`, so it is the shop's and not the computer's), off by default, and it lifts
+  the check for `SALES` alone.
+- **A purchase return, a transfer out, and any edit that takes stock out are always refused** below
+  the balance. An expiry batch is never oversold whatever the setting says.
+- **Deleting a purchase or a sales return is a warning** (`DocumentDeleteStockCheck`): a shop that
+  sells before entering the supplier's bill is already below zero on paper, and refusing would stop
+  it correcting the bill.
+- Nothing at the database level refuses a negative balance, and nothing should: the balance is not a
+  column.
+
+## 4. `DefaultStock.ID` is "which one, if nothing else says"
+
+Never "the only one". `DefaultStockUsageArchitectureTest` carries the sixteen files allowed to name
+it, and the review sorted them: nine are a combo's initial selection or the protected row of
+`DeleteRegistry.STOCKS`; six are compatibility overloads for callers that predate the parameter
+(`CardItemDao`, `JdbcInvoiceStockRepository`, `InvoiceSaveCommand`, `StockCountService`,
+`StockService`, `DataInterface`); and **one is a real gap** - `ItemsDao` (insert, update, bulk edit)
+and `AddItemController` write an item's opening balance to the default warehouse only. No screen can
+enter an opening balance for a second warehouse; §10 phase D.
+
+## 5. The ledger: `stock_movements`
+
+Declared in `V1` - typed, signed by an in/out pair with a CHECK that exactly one is positive,
+carrying the unit, the factor and a `(reference_type, reference_id, reference_line_id)` - and
+written since 2026-08-17 by `features/stockledger` as a **dual write**: the documents and the posted
+count write it while `quantity_items_table` goes on being the answer. **Nothing reads it.**
+
+**The decision is already taken, in `docs/erp-roadmap.md` step 8: the ledger becomes the source.**
+8.6 rewrites `quantity_items_table`, then `card_item_view` and `mini_quantity_view`, to read from
+it - *the same numbers exactly* - and 8.1 gives it `unit_cost`, which is the only road to a cost
+that is not today's price (§9.1). This document does not reopen that; it records how far from it
+the code is:
+
+- **Five of six producers write it. The transfer does not**, and the opening balance does not.
+  `MovementType`'s javadoc still says transfers "have no live write path" - they have had one since
+  `fbadd53`. `StockLedgerReconciliationReport` counts transfers on the view's side only, so it
+  should report a mismatch for every item a real transfer ever moved. Not run.
+- **An edit and a delete rewrite the ledger's rows rather than reversing them**
+  (`deleteByReference`). Acceptable while nothing reads it, and the roadmap says it must become a
+  reversal before 8.6. **No trigger makes the table append-only**, unlike `shift_cash_ledger`; when
+  it becomes the source it gets the same pair of triggers and the same `@app_bulk_wipe` rule.
+- **`WipeCatalog`'s `SALES`, `PURCHASES` and `STOCK_COUNTS` targets do not list it**, so wiping
+  documents without wiping items leaves their movements behind, pointing at nothing. Its javadoc
+  also still says multi-warehouse was removed.
+- The backfill tool (`StockMovementBackfillRunner`, dry run by default, refuses to commit over any
+  mismatch) **has never been run on a customer's database.**
+
+**Until 8.6, the ledger is a consistency check and must not be read for a figure.** A half-written
+ledger that somebody starts reading is the `treasury_movements` mistake with a head start.
+
+## 6. Permissions
+
+`inventory.show`; `stock.show` / `.create` / `.update` / `.delete`; `stock.transfer.post` /
+`.delete`; `stock.count.show` / `.post`. The write paths ask through `require` or through their
+`DeleteRule`. What is wrong with the set is in §7.6.
+
+## 7. What the 2026-09-20 review found
+
+Ordered by what it costs. **Read, not reproduced.**
+
+### Figures a user sees
+
+1. **The item card does not know transfers exist.** `card_item_view` unions the four line tables;
+   `CardItemDao.balanceSql` adds the opening balance and posted counts and nothing from
+   `stock_transfer_list` - the word "transfer" does not occur in `CardItemDao`, `CardItemService`,
+   `CardController` or `features/itemcard`. So for any warehouse that sent or received a transfer,
+   the card's opening and closing balance disagree with the inventory sheet beside it, and the
+   transfer is not a row. A posted count *is* in the card's balance and is not a row either. The
+   comment in `R__views.sql` that the card and `quantity_items_table` "cannot drift apart" is true
+   of documents only. Two screens, two balances - the defect the party and treasury work removed.
+2. **A count's `system_qty` may be the company's balance, not the warehouse's.** A scan resolves
+   through `getItemByBarcodeAndStockId(text, stockId)`, which is per warehouse. When that finds
+   nothing the screen falls back to `itemsService.getFilterItems(text)` - the invoice's name search,
+   which folds every warehouse - and `lineFor` snapshots `item.getSumAllBalance()` from whichever it
+   was handed. An item found by name while counting warehouse 2 would carry the total of all
+   warehouses as "what the system says", and the difference posted is wrong by everything held
+   elsewhere. Invisible with one warehouse.
+3. **Posting a count takes no lock and trusts a snapshot.** `system_qty` is what the system said
+   when the line was *added*; the adjustment is `counted - system_qty`. A sale between the scan and
+   the post is inside that difference, so the post undoes it. Nothing re-reads the balance at post,
+   nothing locks the `items_stock` rows, and nothing looks at whether the result is below zero.
+4. **Deleting a transfer checks nothing.** Goods received and since sold leave the destination
+   negative without a word; the same situation on a purchase delete warns.
+5. **The opening balance is stored twice and a trigger keeps overwriting one copy.**
+   `after_items_update` (`R__triggers.sql`) copies `items.first_balance` into the warehouse-1 row of
+   `items_stock` on **every** update of an item, whatever was updated. And
+   `items_stock.current_quantity` is written at insert in four places, updated by nothing and read
+   by no view: a dead column that looks exactly like a live balance.
+6. **`stock_count_lines.item_id` is `ON DELETE CASCADE`**, so deleting an item removes its lines
+   from posted counts - a recorded correction, gone with no trace. `DeleteRegistry.ITEMS` cannot
+   refuse what it does not list, and by the catalogue's own rule a cascading key is not listed; the
+   key itself is what is wrong.
+
+### Authorization and evidence
+
+7. `InventoryService` has no `require` - `inventory.show` only hides a menu entry.
+   `StockCountService.save` asks `stock.count.show` to write, and `deleteDraft` asks
+   `stock.count.post` to delete. There is no `stock.transfer.show`, so reading the transfer history
+   needs the right to post one.
+8. **No audit trigger** on `stocks`, `stock_transfer`, `stock_transfer_list`, `stock_count` or
+   `stock_count_lines`, and none of them has the microsecond `updated_at` that `V50` gave items and
+   documents to compare as a version, so two people editing one draft count overwrite each other.
+   Who renamed a warehouse or reversed a transfer is recorded nowhere.
+9. `StockTransferDatabaseAcceptanceTest` has no fixture and **signs in as user 1**, who bypasses
+   every permission - it proves nothing about a transfer. No test on MySQL posts a transfer or a
+   count.
+
+### Screens
+
+10. `StockTransferController.parseQuantity` is `Double.parseDouble`: ٠-٩ is a zero and the line is
+    refused. The `ReturnQuantityInput` lesson.
+11. One item in two units passes the screen (it de-duplicates by item **and** unit) and then
+    `StockTransferCommand` throws `IllegalArgumentException` for the repeated item, which reaches
+    the user as a reference code. Either the command is right or the screen is; they cannot both be.
+12. **The transfer history is "the last 200"** - no period, no filter, no page. An older transfer
+    cannot be found and so cannot be reversed; the treasury history had this and
+    `TreasuryHistoryFilter` is the answer that exists.
+13. **A posted count can never be seen again.** `StockCountService.recent` and `findById` have no
+    caller: no list of counts, no variance report, no print. The one document that corrects a
+    balance is the one document with no paper.
+14. The stocks screen does everything on the JavaFX thread, its table has no id (so its widths are
+    shared with every id-less table in the package), its delete is a toolbar button over "the
+    selected row", and `addStock-view.fxml` is dead. The transfer screen posts, loads and prints on
+    the JavaFX thread.
+15. Arabic literals thrown from `StockCountService` (three), and Arabic labels in `StockFilter`,
+    `InventoryColumns`, `StockCountStatus` and `LowStockSource` - all on
+    `LocalizationArchitectureTest`'s allow-list. `model/domain/Stock` still carries JavaFX
+    properties. `StockDao.deleteById` writes `id == 1`. `StockTransferService` ignores the
+    `DaoFactory` it is given and builds its DAO itself. `StockTransferDao.balances` reads
+    `quantity_items_table` for named items, which is the plan `ItemStockBalanceSql` exists to avoid.
+
+### Documents that say something untrue
+
+`MovementType`'s and `WipeCatalog`'s javadoc (§5); roadmap 11.4/11.5 unticked; and `CLAUDE.md`
+described `V51` and `V52` as stock counts and their variance settlement - they are
+`V51__data_change_revisions` and `V52__party_optimistic_lock_versions`. **The last migration to
+touch a stock table is `V19`**, and a variance settlement for a stock count exists nowhere.
+
+## 8. What does not exist
+
+Each was searched for before being written here.
+
+- An opening balance for any warehouse but the default (§4).
+- **A cost.** No average, no FIFO; a sold line snapshots `ItemUnits.buyPrice` and the inventory
+  valuation multiplies today's balance by **today's** `items.buy_price` - so last month's valuation
+  changes when a price does. `stock_movements` has no cost column. §9.1.
+- A write-off document (damage, expiry, samples). A stock count is the only way to lower a balance,
+  and it cannot say why.
+- A transfer with a state (sent / received), an edit of a transfer, a slip for one transfer, a note
+  on a transfer.
+- **Expiry batches across a transfer**: a transfer line has no expiry date and
+  `expiryBalancesSql` reads the four document families only, so a batch never leaves the warehouse
+  it was bought into. Inferred from the SQL; §9.3.
+- A user limited to certain warehouses (roadmap 7.3), a minimum quantity per warehouse, a
+  warehouse that can be switched off instead of deleted (there is no `is_active`, and a warehouse
+  holding an `items_stock` row per item can in practice never be deleted), a keeper or a type.
+- In the count: import from a spreadsheet, a count of one group, a sheet pre-filled with a
+  warehouse's items, printed count sheets.
+- A warehouse in `ItemCatalogFilter` or `ItemReportRequest`: valuation, slow-moving, expiring and
+  stock-level reports are all company-wide.
+- A notification for an expiring batch or for a draft count left open. `items_package` has no screen
+  and no stock effect. There are no serial numbers.
+
+## 9. Decisions still open
+
+Written down so they are taken once, on purpose, rather than by whoever gets there first.
+
+1. **The costing method.** The roadmap recommends a moving weighted average and says to document it
+   before a line is written, because changing it later changes stored figures. Still to decide:
+   whether the average is per warehouse or per item across the business (a transfer at cost makes
+   the second simpler and is what a single legal entity wants); what a sale below zero is costed at;
+   and whether an edit of an old purchase re-costs the sales after it (it should not - the
+   `InvoiceWalletFee` rule about a month already reported).
+2. **Which copy of the opening balance survives.** `items_stock.first_balance` is what the view
+   reads since `V18`; `items.first_balance` is what the item screen writes and the trigger copies.
+   The end state is one column and no trigger, but `OpeningBalanceGuard`, the bulk editor, the Excel
+   import and `ItemMergeStatements` all touch it, so it is a phase and not a line.
+3. **Whether a transfer moves a batch.** Either a transfer line carries an expiry date and is picked
+   from the batches on hand exactly as a sale is (`EXISTING_BATCH`), or expiry stays a
+   whole-business question. The first is right and is more than a column.
+4. **Whether a transfer has two steps.** One step is right for a shop with a back room; two (sent,
+   then received) is what two branches need. If it comes it is a state on the header and goods in
+   transit belong to neither warehouse - a third place the balance view has to know about.
+5. **Whether a posted count's difference is money.** A shortage is an expense and a surplus is
+   income to an accountant; today it is neither. This waits for the general ledger (roadmap step 9)
+   and must not be improvised before it - the `treasury_movements` rule.
+
+## 10. The phases
+
+One item open at a time (`docs/product-plan.md`). A and B are defects in figures a user already
+sees and come before anything new.
+
+**A - the quick ones, no migration.** Arabic digits in the transfer quantity; one decision between
+the screen and `StockTransferCommand` about an item in two units, with a message key; a warning on
+deleting a transfer the destination can no longer cover (a warning, not a refusal - §3);
+`require(INVENTORY_SHOW)` in `InventoryService`; the count's name-search fallback resolved **in the
+warehouse being counted** (§7.2); the three stale javadocs and the roadmap's ticks.
+
+**B - one balance on two screens.** The card reads transfers, posted counts and the opening balance
+as rows, from the same expressions `quantity_items_table` uses, pinned the way
+`ItemStockBalanceSqlTest` pins its own. Posting a count locks the warehouse's `items_stock` rows in
+item-id order and re-reads `system_qty` inside the transaction; the screen shows what moved since
+the scan rather than silently posting over it. **Two acceptance classes on a scratch schema, signed
+in as an ordinary user**: a transfer end to end (balance leaves one warehouse and reaches the other,
+the period lock, the reversal, a second connection blocking on the lock) and a count end to end -
+each asserting the card and the inventory sheet answer one number for a warehouse that has seen a
+transfer.
+
+**C - permissions and evidence** (`V74`). `stock.transfer.show` and `stock.count.create`, granted to
+whoever holds the key that stood in for them, so nobody loses an ability on upgrade; the count's
+Arabic literals become keys; audit triggers on the five tables, in `R__triggers.sql`;
+`stock_count_lines.item_id` stops cascading and `DeleteRegistry.ITEMS` declares it.
+
+**D - what a transfer and a count are owed.** The transfer history by period
+(`TreasuryHistoryFilter`'s shape: one `WHERE` for the page and its totals), a slip for one transfer
+through `DocumentPdfPage`, a note on the header. A list of past counts with a `RowDetailDrawer` of
+their lines, a variance report, a printed count sheet. The stocks screen rebuilt in code with row
+actions and a `Task`.
+
+**E - the warehouse as a record** (`V75`). `stocks.is_active` with a scope argument and **no
+default**, the way `PartySearchScope` and `EmployeeScope` have none; an opening balance per
+warehouse from the item screen; decision §9.2 carried out - one column, the trigger and
+`current_quantity` dropped.
+
+**F - the ledger becomes the source** (roadmap 8.1, 8.4's sixth producer, 8.6). Transfers and
+openings write `stock_movements`; an edit and a delete become reversals; the append-only triggers;
+`WipeCatalog` lists it; the reconciliation run on a copy of a real database until it reports
+nothing; then, and only then, the views read from it - *the same numbers exactly*. `unit_cost`
+after decision §9.1. This is the most dangerous step in the whole roadmap and it is last here on
+purpose: every phase before it removes a way for the two sides to disagree.
+
+**After F:** a write-off document (the first movement type that is not one of the six, so roadmap
+8.2's registered types come with it); a warehouse per user (roadmap 7.3); batches across a transfer
+(§9.3); the warehouse filter in the item reports; a minimum per warehouse.
+
+## 11. What has never been run
+
+- **Any of §7.** Reproduce before fixing.
+- A transfer or a count against MySQL under test. The reconciliation report on a database holding a
+  transfer. The backfill tool on a customer's data.
+- The roadmap's reference test with two warehouses (11.5).
+- The five screens on a copy of a real database with a second warehouse in it, in English as well
+  as Arabic, at 1366x768 - where every other area of this system found defects no test could.

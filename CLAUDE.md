@@ -247,6 +247,15 @@ Two documents govern work here and are kept current — read them before large c
   cost and discount share all come from the source line, the eight refusals and the two warnings, and
   §8 what is still open. **Read it before touching anything under `features/returns`,
   `ReturnEntryCoordinator` or the return half of `InvoiceSaveService`.**
+- **[`docs/warehouse-plan.md`](docs/warehouse-plan.md)** - the warehouse contract: a balance is
+  derived and `quantity_items_table` is the one place it comes from, the four things that may move
+  one and the rows they lock, and why `stock_movements` is a consistency check that **nothing may
+  read for a figure** until the roadmap's step 8.6. §7 is what the 2026-09-20 review found - first
+  that the item card does not know transfers exist, so it and the inventory sheet answer two
+  balances for one warehouse - **read and not reproduced**; §9 the five decisions nobody has taken
+  (the costing method first); §10 the phases. **Read it before touching anything under
+  `features/inventory`, `features/stocktransfer`, `features/stockcount`, `features/stockledger`,
+  `features/itemcard`, `InvoiceStockGuard` or the stock half of `R__views.sql`.**
 - **[`docs/installer-plan.md`](docs/installer-plan.md)** - **phase A of four is built** (the
   provisioning, in Java); the Inno Setup script, the upgrade path and the signing are not. One Setup file
   that wraps the jpackage image, carries MySQL, creates the service, the schema and a per-machine
@@ -2580,8 +2589,12 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
   (`*.account.adjust`, granted to whoever held `*.account.create`) with the ledger's date indexes;
   see **A party's statement** and **A movement on a party's account**. V54 adds the
   signed singleton product profile and its append-only application history. V53 corrects opening
-  shift baselines, V52 adds stock-count variance settlement, V51 adds stock counts, and V50 adds
-  treasury statement support. V49 adds the audit-administration export permission and the
+  shift baselines, V52 gives the customer and supplier rows the microsecond `updated_at` their
+  editors compare as a version, V51 gives `data_change` a `revision` counter so the cross-machine
+  relay does not compare wall clocks, and V50 gives items and the four document headers the same
+  microsecond version. (This sentence used to call V51 and V52 "stock counts" and their "variance
+  settlement": the stock count is `V8`, the last migration to touch a stock table is `V19`, and a
+  variance settlement exists nowhere - see `docs/warehouse-plan.md`.) V49 adds the audit-administration export permission and the
   direct-source activity index. V48 adds the
   administration-browser permission and its secondary query indexes. V47 adds the immutable
   audit-administration journal, safe-disabled retention settings, and the dedicated export and retention
