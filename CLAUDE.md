@@ -37,15 +37,19 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — eighteen `*ArchitectureTest` classes now (twenty files: `ErrorHandlingArchitectureTest`
-  and `TableColumnArchitectureTest` exist once per module), plus `DefaultRoleAcceptanceTest`:
-  `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
+- **Architecture rules** — twenty-two `*ArchitectureTest` classes now (twenty-four files:
+  `ErrorHandlingArchitectureTest` and `TableColumnArchitectureTest` exist once per module), plus
+  `DefaultRoleAcceptanceTest`:
+  `AuthorizationArchitectureTest`, `PermissionCatalogArchitectureTest`, `ErrorHandlingArchitectureTest`,
+  `DocumentPackageArchitectureTest`,
   `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
   `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`,
   `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`,
   `MessageKeyArchitectureTest`, `ConnectionTimeZoneArchitectureTest`, `MultiDeviceRefreshArchitectureTest`,
-  `PasswordChangeArchitectureTest`, `ProductProfileWiringArchitectureTest` and
-  `TreasuryStatementScreenArchitectureTest`. They
+  `PasswordChangeArchitectureTest`, `ProductProfileWiringArchitectureTest`,
+  `TreasuryStatementScreenArchitectureTest`, `ListToolbarArchitectureTest`,
+  `LicensingArchitectureTest` and `ThemeTokenArchitectureTest` — the last three were already in the
+  tree and missing from this list, which is what a count written by hand does. They
   fail when a new service skips the permission guard, a new exception escapes the error boundary,
   `account.document` starts importing one of the two packages that import it, or a new stock-aware
   operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
@@ -287,6 +291,16 @@ Two documents govern work here and are kept current — read them before large c
   run, and why a collection's delegate is written at entry rather than derived. **Read the first before
   starting any large item, and the matching one before touching `TrialManager` or anything under
   `features/delegate`.**
+- **[`docs/permissions-plan.md`](docs/permissions-plan.md)** - the authorization contract: why a
+  permission is a string key with no database id, why a declared key must be read by something (eight
+  were not), why a permission's name comes from the bundles and not from
+  `auth_permission.description` (which holds the key itself for 108 of the 162 rows), and why removing
+  a key needs no migration. §2 is what the 2026-09-20 review found; §3 the four keys granted to a
+  default role and read by nothing; §4 the six decisions nobody has taken - the administrator-only
+  behaviours, the roles screen's grouping and risk badge, the report keys, refreshing a running
+  session, `update.data.before.month`, and which settings tabs deserve a key. §5 says what was not
+  verified, which is every screen. **Read it before touching `account.authorization`,
+  `features/rbac`, `V11`-`V13`, or any migration that adds a key.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -393,10 +407,80 @@ pagination control starts describing a different set of rows than the table show
 
 ### Authorization
 
+`docs/permissions-plan.md` is the contract, and §4 is what is still undecided. **Read it before
+touching `account.authorization`, `features/rbac` or any migration that adds a key.**
+
 `UserPermissionType` — the ~130-entry enum with ids hand-matched to table rows — **is gone**.
 Permissions are now string keys: `AppPermissions.SALES_CREATE` is `key("sales.create")`, and adding one
-is a single constant. No database id, no switch, no permission-screen edit; the metadata (module,
-resource, action, risk) is derived from the key itself and synchronized on startup.
+is a single constant plus a `permission.<key>` line in each of the three bundles. No database id, no
+switch, no permission-screen edit, **and no migration**; the metadata (module, resource, action, risk)
+is derived from the key itself and synchronized on startup.
+
+Three rules about the catalogue itself, all three pinned by `PermissionCatalogArchitectureTest` and all
+three written for something that had shipped:
+
+- **A declared key must be read by something.** Eight were not — four settings tabs, both price-tier
+  keys, a treasury balance and the read half of the month rule — so they were tick boxes in the roles
+  screen that changed nothing a user could do, and a role built out of them granted nothing. They are
+  gone. Four more (`items.add.excel` and three `reports.show.*`) are *granted by `V13`* and read by
+  nothing, which is worse because `DefaultRoleAcceptanceTest` pins those grants: they sit in
+  `DECLARED_BUT_UNREAD` with a reason each, and that list fails in both directions.
+- **A permission's name comes from the bundles, never from the database.** `V1` seeds the permission
+  rows with names and no descriptions, and `synchronizeCatalog` writes `description = permission_key`
+  for a row it inserts and never returns to it — so `COALESCE(description, permission_key)` put
+  **108 of 162 keys on the Arabic screen as their Latin key**, `treasury.capital` and
+  `shift.force.close` among them, while English derived `Total · Sales · Re · Show` from the key.
+  `PermissionLabels` reads `permission.<key>` and falls back to a stored description only where the
+  bundle has none.
+- **Removing a key needs no migration.** `synchronizeCatalog` disables every system permission and
+  re-enables the declared ones, so a constant that goes leaves its row `enabled = 0`: out of the screen
+  and out of `findEffectivePermissions`, with the grants that named it dormant rather than deleted. Put
+  the key back and they work again.
+
+**The risk is derived from the key's last word, and is declared where that is wrong.** DELETE, BYPASS,
+MANAGE, POST and RESTORE derive `CRITICAL`; CREATE and UPDATE `HIGH`; everything else falls through to
+`LOW` — which covered CAPITAL, OPENING, TRANSFER, DEPOSIT, PAY, APPROVE, ADJUST and MERGE. The owner's
+capital and a treasury's opening balance, both documented as the owner's alone, were `LOW`. Worse, two
+places said two things: `V55` inserts `customer.account.adjust` as `HIGH` and
+`ON DUPLICATE KEY UPDATE risk_level = VALUES(risk_level)` overwrote it with the derived `LOW` on the
+next startup, so the migration's answer never survived a restart. Seventeen keys now pass their risk to
+`key(value, risk)` beside the sentence that justifies it, the four `audit.*` keys' `equals` chain inside
+`definition()` moved there too, and a declaration that merely restates what derivation already gets
+right fails the build.
+
+**The section a permission is shown under is `PermissionGroup`, and used to be decided twice.**
+`AppPermissions` derived the module from the key's first word - `TOTAL`, `SHOW`, `UPDATE`, `SEL` -
+while `UserPermissionController.categoryLabel` matched that against a `switch` over eight words it
+had chosen itself, four of which could never match: the derivation gives `PURCHASE` where the switch
+said `PURCHASES`, `SETTING` where it said `SETTINGS`, `CUSTOMER`/`SUPPLIERS` for `PARTIES` and
+`USERS`/`ROLES` for `SECURITY`. Two differ by one letter, and **134 of the 162 keys read "عام"** -
+invisible to every test and every query, because each half did exactly what it was told, and obvious
+the moment the screen was opened. Thirteen groups own the key prefixes now, and four rules hold them:
+a key belongs to **exactly one** group (a group may claim a key **by name** where a prefix would reach
+into another family's - `DELEGATES` does that with `sales.discount.override`, because V73 grants it
+with `commission.rule.update` and not with selling); a key claimed by name has to exist, or the claim
+silently does nothing; every group owns a key; and every group has a label in all three bundles. It
+needs no migration - `synchronizeCatalog` rewrites `module_key` on every start-up.
+
+**The roles dialog folds what is secondary and puts the count on the header.** It opened 735 points
+tall on a 768 screen, and a `SplitPane` split what was left between the inheritance table and the
+permissions table, which came out at **two rows of 162**. It is not a `RowDetailDrawer` case - the two
+tables do not depend on each other's selection, as **A row's detail** says - so it uses the other
+idiom this repository has: the role's fields and the inheritance table are collapsed `TitledPane`s,
+the inheritance header carries how many roles are inherited and follows a tick live, the `SplitPane`
+is gone and the permissions table is the `center`. Two rows became six at a real 1366x768. **Nothing
+opens a section on the user's behalf**: the first draft expanded the inheritance when a role inherited
+something, which cost the table five of its six rows the moment such a role was picked - the count is
+what says there is something inside, and opening it as well spends the height to say it twice.
+
+**"Is this the administrator" is `CurrentUser.isSystemAdministrator()`, asked in one place.** Three
+screens wrote `CurrentUser.get().getId() == 1` themselves — the invoice lines table's column menu, the
+sidebar's role caption, the help button — which is the numbered-administrator test this whole system
+replaced, and is wrong on any install where the owner is not user number one.
+`theAdministratorIdIsAskedInOnePlace` fails on a fourth, and it subsumes
+`AuthorizationArchitectureTest`'s older rule, which hunted `usersVo.getId() == 1` in six named files and
+could not see the `CurrentUser` spelling at all. Whether those three should be permissions is
+`docs/permissions-plan.md` §4.1.
 
 `AuthorizationGuard` is the single gateway, and it answers two different questions with two methods —
 using the wrong one is the mistake to avoid:

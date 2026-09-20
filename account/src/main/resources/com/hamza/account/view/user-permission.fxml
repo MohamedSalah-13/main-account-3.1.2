@@ -5,14 +5,18 @@
 <?import javafx.scene.layout.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.UserPermissionController"
-           prefHeight="650.0" prefWidth="980.0" styleClass="settings-root,rbac-root">
+           prefHeight="620.0" prefWidth="980.0" styleClass="settings-root,rbac-root">
     <children>
         <VBox spacing="12.0" styleClass="page-container">
             <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
             <children>
+                <!--
+                  The subtitle used to sit here, above the tabs, where it cost every tab about
+                  fifty points of height while describing only the first one. It is in that tab
+                  now: no sentence was dropped, and the permissions table two tabs along keeps
+                  the height on a 1366x768 screen.
+                -->
                 <Label text="%user.rbac.page.title" styleClass="page-title"/>
-                <Label text="%user.rbac.page.subtitle"
-                       styleClass="page-subtitle" wrapText="true"/>
                 <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                     <tabs>
                         <Tab text="%user.rbac.tab.user.roles">
@@ -21,6 +25,8 @@
                                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                                     <children>
                                         <Label fx:id="labelUser" text="%user.rbac.section.roles.assigned" styleClass="section-title"/>
+                                        <Label text="%user.rbac.page.subtitle"
+                                               styleClass="page-subtitle" wrapText="true"/>
                                         <Label text="%user.rbac.info.roles.assigned"
                                                styleClass="info-text"/>
                                         <TableView fx:id="tableUserRoles" editable="true" VBox.vgrow="ALWAYS">
@@ -49,28 +55,53 @@
                                                         <Button fx:id="btnDeleteRole" text="%user.rbac.btn.delete.role" styleClass="danger-button"/>
                                                     </children>
                                                 </HBox>
-                                                <GridPane hgap="10" vgap="8">
-                                                    <columnConstraints>
-                                                        <ColumnConstraints minWidth="100"/>
-                                                        <ColumnConstraints hgrow="ALWAYS"/>
-                                                        <ColumnConstraints minWidth="100"/>
-                                                        <ColumnConstraints hgrow="ALWAYS"/>
-                                                    </columnConstraints>
-                                                    <children>
-                                                        <Label text="%user.rbac.label.role.code" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="form-label"/>
-                                                        <TextField fx:id="textRoleCode" promptText="SALES_MANAGER" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                                                        <Label text="%user.rbac.role.name" GridPane.columnIndex="2" GridPane.rowIndex="0" styleClass="form-label"/>
-                                                        <TextField fx:id="textRoleName" promptText="%user.rbac.prompt.role.name.example" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-                                                        <Label text="%user.rbac.label.description" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
-                                                        <TextArea fx:id="textRoleDescription" prefRowCount="2" wrapText="true"
-                                                                  GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1"/>
-                                                        <CheckBox fx:id="checkRoleActive" text="%user.rbac.check.role.active" selected="true"
-                                                                  GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                                                        <CheckBox fx:id="checkAssignNewRole" text="%user.rbac.check.assign.new.role"
-                                                                  GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2"/>
-                                                    </children>
-                                                </GridPane>
-                                                <Separator/>
+                                                <!--
+                                                  The role's own fields and the inheritance table are
+                                                  collapsed until they are wanted. They used to sit
+                                                  open above the permissions table, which left it two
+                                                  rows of 162 at 1366x768 - the screen this ships to.
+                                                  Same idiom as ListToolbar's filters panel, count on
+                                                  the header included.
+                                                -->
+                                                <TitledPane fx:id="paneRoleDetails" text="%user.rbac.section.role.details"
+                                                            expanded="false" animated="false" styleClass="rbac-section">
+                                                    <content>
+                                                        <GridPane hgap="10" vgap="8">
+                                                            <padding><Insets top="8" right="4" bottom="4" left="4"/></padding>
+                                                            <columnConstraints>
+                                                                <ColumnConstraints minWidth="100"/>
+                                                                <ColumnConstraints hgrow="ALWAYS"/>
+                                                                <ColumnConstraints minWidth="100"/>
+                                                                <ColumnConstraints hgrow="ALWAYS"/>
+                                                            </columnConstraints>
+                                                            <children>
+                                                                <Label text="%user.rbac.label.role.code" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="form-label"/>
+                                                                <TextField fx:id="textRoleCode" promptText="SALES_MANAGER" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                                                <Label text="%user.rbac.role.name" GridPane.columnIndex="2" GridPane.rowIndex="0" styleClass="form-label"/>
+                                                                <TextField fx:id="textRoleName" promptText="%user.rbac.prompt.role.name.example" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+                                                                <Label text="%user.rbac.label.description" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
+                                                                <TextArea fx:id="textRoleDescription" prefRowCount="2" wrapText="true"
+                                                                          GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1"/>
+                                                                <CheckBox fx:id="checkRoleActive" text="%user.rbac.check.role.active" selected="true"
+                                                                          GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                                                <CheckBox fx:id="checkAssignNewRole" text="%user.rbac.check.assign.new.role"
+                                                                          GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2"/>
+                                                            </children>
+                                                        </GridPane>
+                                                    </content>
+                                                </TitledPane>
+                                                <TitledPane fx:id="paneInheritedRoles" text="%user.rbac.section.inherit.roles"
+                                                            expanded="false" animated="false" styleClass="rbac-section">
+                                                    <content>
+                                                        <TableView fx:id="tableParentRoles" editable="true" prefHeight="150">
+                                                            <columns>
+                                                                <TableColumn fx:id="colParentRoleInherited" text="%user.rbac.column.inherit" prefWidth="70"/>
+                                                                <TableColumn fx:id="colParentRoleName" text="%user.rbac.role.name" prefWidth="380"/>
+                                                                <TableColumn fx:id="colParentRoleCode" text="%code" prefWidth="300"/>
+                                                            </columns>
+                                                        </TableView>
+                                                    </content>
+                                                </TitledPane>
                                                 <HBox spacing="8" alignment="CENTER_RIGHT">
                                                     <children>
                                                         <Label text="%user.rbac.section.role.permissions" styleClass="section-title"/>
@@ -82,31 +113,15 @@
                                         </VBox>
                                     </top>
                                     <center>
-                                        <SplitPane orientation="VERTICAL" dividerPositions="0.28">
-                                            <BorderPane.margin><Insets top="10"/></BorderPane.margin>
-                                            <items>
-                                                <VBox spacing="6">
-                                                    <children>
-                                                        <Label text="%user.rbac.section.inherit.roles" styleClass="section-title"/>
-                                                        <TableView fx:id="tableParentRoles" editable="true" VBox.vgrow="ALWAYS">
-                                                            <columns>
-                                                                <TableColumn fx:id="colParentRoleInherited" text="%user.rbac.column.inherit" prefWidth="70"/>
-                                                                <TableColumn fx:id="colParentRoleName" text="%user.rbac.role.name" prefWidth="380"/>
-                                                                <TableColumn fx:id="colParentRoleCode" text="%code" prefWidth="300"/>
-                                                            </columns>
-                                                        </TableView>
-                                                    </children>
-                                                </VBox>
-                                                <TableView fx:id="tablePermissions" editable="true">
-                                                    <columns>
-                                                        <TableColumn fx:id="colPermissionGranted" text="%user.rbac.column.permission.granted.direct" prefWidth="105"/>
-                                                        <TableColumn fx:id="colPermissionCategory" text="%user.rbac.column.category" prefWidth="150"/>
-                                                        <TableColumn fx:id="colPermissionDescription" text="%user.rbac.permission" prefWidth="330"/>
-                                                        <TableColumn fx:id="colPermissionCode" text="%user.rbac.column.key" prefWidth="285"/>
-                                                    </columns>
-                                                </TableView>
-                                            </items>
-                                        </SplitPane>
+                                        <TableView fx:id="tablePermissions" editable="true">
+                                            <BorderPane.margin><Insets top="8"/></BorderPane.margin>
+                                            <columns>
+                                                <TableColumn fx:id="colPermissionGranted" text="%user.rbac.column.permission.granted.direct" prefWidth="105"/>
+                                                <TableColumn fx:id="colPermissionCategory" text="%user.rbac.column.category" prefWidth="150"/>
+                                                <TableColumn fx:id="colPermissionDescription" text="%user.rbac.permission" prefWidth="330"/>
+                                                <TableColumn fx:id="colPermissionCode" text="%user.rbac.column.key" prefWidth="285"/>
+                                            </columns>
+                                        </TableView>
                                     </center>
                                 </BorderPane>
                             </content>

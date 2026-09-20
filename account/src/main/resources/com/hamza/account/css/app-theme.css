@@ -2805,8 +2805,24 @@
     -fx-font-size: 0.92em;
 }
 
-.rbac-root .split-pane-divider {
-    -fx-padding: 0 1 0 1;
+/* The role's own fields and the roles it inherits from, folded away until they are wanted so the
+   permissions table keeps the height. A quiet header - this is a section of a form, not an
+   accordion in a sidebar - and no border of its own when closed, so two closed sections read as
+   two lines rather than two empty boxes. */
+.rbac-root .rbac-section > .title {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -app-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0.364em 0.182em 0.364em 0.182em;
+}
+
+.rbac-root .rbac-section > .title > .text {
+    -fx-font-weight: bold;
+}
+
+.rbac-root .rbac-section > *.content {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 
 /* Saved invoice details: a document-like header, readable financial hierarchy and a
