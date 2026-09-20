@@ -3,6 +3,7 @@ package com.hamza.account.controller.users;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.authorization.PermissionLabels;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.UsersChanged;
@@ -29,7 +30,6 @@ import javafx.scene.layout.Pane;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -368,18 +368,13 @@ public final class UserPermissionController implements AppSettingInterface {
         return permission == null ? "" : permissionLabel(permission.code(), permission.description());
     }
 
-    /** Permission descriptions are legacy Arabic database data; English derives a readable label from the stable key. */
+    /**
+     * The name is {@link PermissionLabels}'. It used to be the stored description in Arabic and the
+     * key's own words in English - which meant the Arabic screen showed {@code treasury.capital} for
+     * every key no migration had described, and there are 108 of those.
+     */
     private String permissionLabel(String code, String storedDescription) {
-        if (!LanguageManager.getInstance().isEnglish() || code == null || code.isBlank()) {
-            return storedDescription == null ? "" : storedDescription;
-        }
-        return Arrays.stream(code.split("\\."))
-                .map(part -> Arrays.stream(part.split("_"))
-                        .filter(word -> !word.isBlank())
-                        .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT)
-                                + word.substring(1).toLowerCase(Locale.ROOT))
-                        .collect(Collectors.joining(" ")))
-                .collect(Collectors.joining(" · "));
+        return PermissionLabels.describe(code, storedDescription);
     }
 
     private static String text(String key) {

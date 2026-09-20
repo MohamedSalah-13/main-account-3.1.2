@@ -1442,9 +1442,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         lineEditService = new InvoiceLineEditService(
                 documentType, catalogService, () -> invoiceStockId,
                 sourceLineId -> returnEntry.sourceLineTerms(sourceLineId));
+        // The column menu on the lines table is the administrator's alone, which is how it has always
+        // been - through CurrentUser.get().getId() == 1 written out here. It asks CurrentUser now, so
+        // the one place that knows what "the administrator" means is UserSessionContext.
         new InvoiceTableCoordinator<>(table, editor.lines(), lineEditService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
-                editor::refreshTotals, getClass(), CurrentUser.get().getId() == 1,
+                editor::refreshTotals, getClass(), CurrentUser.isSystemAdministrator(),
                 AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE))
                 .configure();
     }

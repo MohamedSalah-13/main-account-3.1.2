@@ -557,7 +557,8 @@ public class MainScreenController extends MainItems implements Initializable {
         String username = user.getUsername();
         var lm = LanguageManager.getInstance();
         lblUserName.setText(username == null || username.isBlank() ? "-" : username);
-        lblUserRole.setText(CurrentUser.get().getId() == 1 ? lm.getString("nav.user.role.admin") : lm.getString("nav.user.role.user"));
+        lblUserRole.setText(CurrentUser.isSystemAdministrator()
+                ? lm.getString("nav.user.role.admin") : lm.getString("nav.user.role.user"));
         lblUserInitial.setText(username == null || username.isBlank() ? "?" : username.substring(0, 1).toUpperCase());
     }
 
@@ -581,7 +582,7 @@ public class MainScreenController extends MainItems implements Initializable {
             }
         });
 
-        boolean isAdmin = CurrentUser.getOrNull() != null && CurrentUser.get().getId() == 1;
+        boolean isAdmin = CurrentUser.isSystemAdministrator();
         btnYouTube.setVisible(isAdmin);
         btnYouTube.setManaged(isAdmin);
     }
