@@ -88,7 +88,13 @@ public final class DocumentDeletionService {
         if (distinct.isEmpty() || type.stockSign() <= 0) {
             return List.of();
         }
-        return DocumentDeleteStockCheck.shortfalls(repository.stockLinesOf(type, distinct));
+        // Inside a transaction, because the balance is read through JdbcInvoiceStockRepository -
+        // the one definition there is of it - and that class refuses to work outside one: its own
+        // reads take FOR UPDATE row locks, which are meaningless with no transaction to hold them.
+        // Asking it from the screen's thread without this turned a courtesy warning into a
+        // reference-code error in front of somebody deleting an invoice.
+        return transaction.execute(() ->
+                DocumentDeleteStockCheck.shortfalls(repository.stockLinesOf(type, distinct)));
     }
 
     private void requireDeletable(DocumentType type, List<Integer> ids) throws DaoException {

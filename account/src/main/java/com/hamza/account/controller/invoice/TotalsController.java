@@ -674,7 +674,10 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount> impl
             shortfalls = DocumentDeletionService.jdbc(daoFactory, () -> { })
                     .stockShortfalls(type, ids);
         } catch (Exception cannotRead) {
-            exceptionHandle(cannotRead);
+            // Logged and passed over, never shown: this is a courtesy the delete does not depend
+            // on, and a reference code in front of somebody deleting an invoice reads as a refusal.
+            log.error("Could not check what deleting would do to the stock: {}",
+                    cannotRead.getMessage(), cannotRead);
             return true;
         }
         if (shortfalls.isEmpty()) {

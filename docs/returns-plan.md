@@ -138,6 +138,23 @@ Everything in §3's last two rows, §4, §5's reason, §6, and:
   a refusal, because a shop that sells before entering the supplier's bill is already below zero on
   paper and refusing would block the very correction that puts it right.
 
+**Watched on screen, 2026-09-20**, and the screen found what 2,948 green tests could not: the delete
+warning asked `JdbcInvoiceStockRepository` for the balance - rightly, it is the one definition there
+is of it - from the JavaFX thread with no transaction open, and that class refuses to work outside
+one because its own reads take `FOR UPDATE` locks. So pressing delete produced a reference-code error
+instead of a warning, which reads as a refusal: a courtesy feature frightening somebody out of a
+legitimate delete is worse than no feature. It runs inside the service's own `transaction.execute`
+now, and a failure to read is **logged and passed over** rather than shown. This is the trap
+`JdbcReturnableRepository`'s javadoc already records - a `requireTransaction` guard copied from that
+same class once broke every read-only caller of the returns repository.
+
+What else the run showed working: the source found by an Arabic name and by ٠-٩ digits, an unmatched
+name giving an empty list, the cash-refund warning with the right figure (900.00) and cancelling it
+writing nothing, a free return refused while `return.require.source.invoice` was on, **the same
+screen accepting it once the setting was turned off** - which is the policy-per-save fix - the reason
+prompt storing `DAMAGED` against a NULL source, and the delete warning naming the item and the
+warehouse and predicting `-14`, which is exactly where the balance landed once it was confirmed.
+
 **Proven against MySQL** on a schema migrated from nothing to V73: `ReturnableRepositoryAcceptanceTest`
 and `ReturnSourceAcceptanceTest`, 13 cases, twice, no residue. **Watched on screen** on that schema:
 the header-discount share filling and following the quantity, the per-line cap refusing with nothing
@@ -160,6 +177,9 @@ return reopened with its discount box read-only and `excludingReturnId` letting 
   reading it knows the name.
 - **`ReturnPolicy` is read once**, when the save service is built, so changing either setting does
   not reach a return screen that is already open.
-- **The reasons report and the returned-status badge have never been watched on screen.**
+- **The reasons report and the returned-status badge have never been watched on screen**, nor the
+  warning about a deferred free return on the cash party: the invoice screen's party field is
+  read-only and the button beside it pins the party rather than choosing one, so the party could not
+  be changed from the screen at all. That is worth its own look - it is the same screen's own gap.
 - **Returns written before 2026-08-18 carry no `source_line_id`**, so the per-line rules cannot
   apply to them; the per-item rules still do.
