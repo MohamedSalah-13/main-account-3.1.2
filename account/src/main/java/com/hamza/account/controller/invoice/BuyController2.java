@@ -102,7 +102,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final InvoicePrintService invoicePrintService = new InvoicePrintService();
-    private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
@@ -311,11 +310,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         applyPinnedDefaults();
         try {
             if (selectedPartyId() == 0) {
-                if (dataInterface.designInterface().showDataForCustomer()) {
-                    selectPartyByName(SettingTabLanguageController.publishCustomer(customerService));
-                } else {
-                    selectPartyById(1);
-                }
+                selectPartyById(dataInterface.designInterface().showDataForCustomer()
+                        ? defaultCustomerId() : 1);
             }
             if (dataInterface.designInterface().documentType().hasDelegate()
                     && selectedDelegateId() == 0) {
@@ -387,8 +383,32 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         return field.appliesTo(documentType()) ? getInvoicePinnedValue(documentType(), field) : 0;
     }
 
+    /**
+     * The party on the form, or {@code null}.
+     * <p>
+     * The field holds it: {@code choose} sets {@code chosenParty} before {@code chosenName},
+     * so a listener on the name sees the new party. Everything on this screen that wants the
+     * party asks here - it used to read every customer in the database and find it by name,
+     * twice per selection, which on a 147-party database measured 101 ms a read.
+     * <p>
+     * The name is compared because {@code textSearchName.set(name)} can put a name on the
+     * field without choosing anybody, leaving a party behind that is no longer the one
+     * written there.
+     */
+    private T3 selectedParty() {
+        if (nameSearchField == null) {
+            return null;
+        }
+        T3 chosen = nameSearchField.chosenPartyProperty().get();
+        String shown = textSearchName == null ? null : textSearchName.get();
+        if (chosen == null || shown == null || !shown.equals(chosen.getName())) {
+            return null;
+        }
+        return chosen;
+    }
+
     private int selectedPartyId() {
-        T3 selected = nameSearchField == null ? null : nameSearchField.chosenPartyProperty().get();
+        T3 selected = selectedParty();
         return selected == null ? 0 : selected.getId();
     }
 
@@ -408,30 +428,36 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void selectPartyById(int partyId) {
-        if (partyId <= 0 || nameSearchField == null) {
-            return;
-        }
-        try {
-            nameAndAccountInterface.nameList().stream()
-                    .filter(party -> party != null && party.getId() == partyId)
-                    .findFirst()
-                    .ifPresent(nameSearchField::select);
-        } catch (Exception e) {
-            logError(e);
-        }
+        selectPartyById(partyId, null);
     }
 
-    private void selectPartyByName(String name) {
-        if (name == null || name.isBlank() || nameSearchField == null) {
+    /**
+     * Puts a party on the form by its id - one row, on the primary key.
+     * <p>
+     * It read {@code nameList()} and filtered in Java: every party in the database, each one
+     * resolving its area and its price tier with a query of its own, to select one.
+     * {@code AddNameController.selectData} had the same defect and was fixed this way; this
+     * screen was missed, and it is the screen a cashier opens for every sale.
+     *
+     * @param fallbackName shown when the id resolves to nothing, so a saved document still
+     *                     reopens carrying the name it was written with
+     */
+    private void selectPartyById(int partyId, String fallbackName) {
+        if (nameSearchField == null) {
             return;
         }
-        try {
-            nameAndAccountInterface.nameList().stream()
-                    .filter(party -> party != null && name.equals(party.getName()))
-                    .findFirst()
-                    .ifPresentOrElse(nameSearchField::select, () -> textSearchName.set(name));
-        } catch (Exception e) {
-            logError(e);
+        T3 party = null;
+        if (partyId > 0) {
+            try {
+                party = nameAndAccountInterface.getNameById(partyId);
+            } catch (Exception e) {
+                logError(e);
+            }
+        }
+        if (party != null) {
+            nameSearchField.select(party);
+        } else if (fallbackName != null && !fallbackName.isBlank()) {
+            textSearchName.set(fallbackName);
         }
     }
 
@@ -560,10 +586,13 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         textSearchName.addListener((observableValue, s, string) -> {
             try {
-                getCodeAccountAndBalance(string);
+                // No query at all: the field set chosenParty immediately before the name
+                // this listener is answering. Both figures below came from reading the
+                // whole party table, once each.
+                T3 party = selectedParty();
+                codeAccount = party == null ? 0 : party.getId();
                 txtBarcode.requestFocus();
-                var object = nameService.getObject(nameAndAccountInterface.nameList(), string);
-                priceTypeByNameId = t3NameData.priceId(object);
+                priceTypeByNameId = t3NameData.priceId(party);
                 if (itemEntry != null) {
                     itemEntry.setPriceTier(priceTypeByNameId);
                 }
@@ -635,9 +664,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 new ReturnEntryCoordinator.Controls(
                         btnReturnFromInvoice, labelReturnedBadge,
                         name -> comboDelegate.getSelectionModel().select(name),
-                        // Setting the search text is what the party is chosen by
-                        // everywhere on this screen; its listener resolves the code.
-                        this::selectPartyByName,
+                        // By id: the coordinator reads the source invoice's party id, and
+                        // this is the same one row every other party selection here takes.
+                        this::selectPartyById,
                         new ReturnEntryCoordinator.HeaderDiscount() {
                             @Override
                             public double returnTotal() {
@@ -677,7 +706,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                     }
                 },
                 employeeService::delegateById,
-                this::partyNameById,
                 error -> AllAlerts.handleError(
                         LanguageManager.getInstance().getString("return.dialog.title"), error),
                 DialogReturnReason::ask,
@@ -694,15 +722,19 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     /**
-     * The customer's or supplier's name, whichever side this screen is serving.
+     * The party a cash sale lands on when nothing else is chosen.
+     * <p>
+     * The setting stores an id, and {@code publishCustomer} turned it into a name for a
+     * screen that then had to find the party by that name. Falls back to party 1 exactly
+     * as that method does.
      */
-    private String partyNameById(int partyId) throws Exception {
-        for (T3 party : nameAndAccountInterface.nameList()) {
-            if (party != null && party.getId() == partyId) {
-                return party.getName();
-            }
+    private int defaultCustomerId() {
+        try {
+            int id = Integer.parseInt(getSettingSaveNameCustomer().trim());
+            return id > 0 ? id : 1;
+        } catch (RuntimeException e) {
+            return 1;
         }
-        return null;
     }
 
     private BasePurchasesAndSales appendReturnLine(InvoiceLineDraft draft) throws DaoException {
@@ -763,7 +795,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             throw new UserValidationException(
                     LanguageManager.getInstance().getString("invoice.error.name.required"));
         }
-        T3 party = nameService.getObject(nameAndAccountInterface.nameList(), selectedName);
+        T3 party = selectedParty();
         if (party == null) {
             throw new UserValidationException(
                     LanguageManager.getInstance().getString("invoice.error.name.not.found"));
@@ -783,18 +815,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.scale.barcode.title"), error);
         } else {
             logError(error);
-        }
-    }
-
-    private void getCodeAccountAndBalance(String newValue) {
-        if (newValue != null) {
-            List<T3> nameList;
-            try {
-                nameList = nameAndAccountInterface.nameList();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            codeAccount = nameService.getCodeByName(nameList, newValue);
         }
     }
 
@@ -899,7 +919,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             String invoiceDate = dataById.getDate();
 
             date.setValue(LocalDate.parse(invoiceDate));
-            selectPartyByName(header.partyName());
+            selectPartyById(header.partyId(), header.partyName());
             comboDelegate.getSelectionModel().select(header.delegateName());
             selectStoredTreasury(dataById.getTreasuryModel());
             txtNum.setText(String.valueOf(id));

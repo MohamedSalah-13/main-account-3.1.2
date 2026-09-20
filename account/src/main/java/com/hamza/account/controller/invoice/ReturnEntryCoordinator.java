@@ -51,7 +51,6 @@ public final class ReturnEntryCoordinator {
     private final ReturnedStatusService returnedStatus;
     private final LineAppender lineAppender;
     private final DelegateLookup delegateLookup;
-    private final PartyLookup partyLookup;
     private final ErrorHandler errorHandler;
     private final ReasonPrompt reasonPrompt;
     private final SourcePicker sourcePicker;
@@ -67,7 +66,6 @@ public final class ReturnEntryCoordinator {
                                   ReturnLineSelectionService.ItemLookup itemLookup,
                                   LineAppender lineAppender,
                                   DelegateLookup delegateLookup,
-                                  PartyLookup partyLookup,
                                   ErrorHandler errorHandler,
                                   ReasonPrompt reasonPrompt,
                                   PartyBalances partyBalances,
@@ -76,7 +74,6 @@ public final class ReturnEntryCoordinator {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.lineAppender = Objects.requireNonNull(lineAppender, "lineAppender");
         this.delegateLookup = Objects.requireNonNull(delegateLookup, "delegateLookup");
-        this.partyLookup = Objects.requireNonNull(partyLookup, "partyLookup");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler");
         this.reasonPrompt = Objects.requireNonNull(reasonPrompt, "reasonPrompt");
         this.sourcePicker = Objects.requireNonNull(sourcePicker, "sourcePicker");
@@ -371,10 +368,7 @@ public final class ReturnEntryCoordinator {
         if (partyId.isEmpty()) {
             return;
         }
-        String partyName = partyLookup.nameOf(partyId.get());
-        if (partyName != null && !partyName.isBlank()) {
-            controls.partySelector().select(partyName);
-        }
+        controls.partySelector().select(partyId.get());
     }
 
     /**
@@ -407,7 +401,7 @@ public final class ReturnEntryCoordinator {
 
     /** The form controls this coordinator owns. */
     public record Controls(Button returnFromInvoice, Label returnedBadge,
-                           NameSelector delegateSelector, NameSelector partySelector,
+                           NameSelector delegateSelector, PartySelector partySelector,
                            HeaderDiscount headerDiscount) {
         public Controls {
             Objects.requireNonNull(headerDiscount, "headerDiscount");
@@ -459,10 +453,17 @@ public final class ReturnEntryCoordinator {
         BigDecimal of(PartyKind kind, int partyId) throws Exception;
     }
 
-    /** The customer's or supplier's name, by id. */
+    /**
+     * Points the screen at a party by its id.
+     * <p>
+     * It used to be a {@link NameSelector}: this class held the id, asked a lookup for the
+     * name, and handed the name over - and the screen then read every customer in the
+     * database to find the party again. Two whole-table reads to select a party whose id
+     * was in hand the entire time.
+     */
     @FunctionalInterface
-    public interface PartyLookup {
-        String nameOf(int partyId) throws Exception;
+    public interface PartySelector {
+        void select(int partyId) throws Exception;
     }
 
     /**
