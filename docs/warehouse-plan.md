@@ -468,6 +468,15 @@ one statement written to rely on that key's error being ignorable.
 It is dropped, not recreated - the same way `V5` replaced `before_items_units_insert` - and the
 `DROP` stays in `R__triggers.sql` so an install that ran an older copy loses it too.
 
+**And it would have broken the stock count next.** The count's post now gives every counted item a
+row through the same `INSERT IGNORE`, added earlier in this same phase - so with the trigger in
+place, every posted count would have failed the same way, in code that had not shipped yet and had
+no test of its own. `StockCountPostAcceptanceTest` is that test now: a count moves the balance by
+the difference it found, a sale made while the sheet was open survives the post (23, not 28 - the
+case that says the adjustment is a difference and not a target), an item with no row in the
+warehouse is given one, a user without `stock.count.post` is refused, and a posted sheet cannot be
+posted twice.
+
 **Nothing in a green build could see this, and no amount of reading found it**: the review read the
 trigger, wrote down that it "conflicts with `INSERT IGNORE`", and ranked it fifteenth. It took
 running a transfer against a real database, which §11 said had never happened, and it is the answer
