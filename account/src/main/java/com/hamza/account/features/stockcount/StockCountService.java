@@ -37,7 +37,6 @@ import java.util.List;
  */
 public record StockCountService(DaoFactory daoFactory) {
 
-
     private StockCountDao dao() {
         return daoFactory.stockCountDao();
     }
@@ -173,10 +172,10 @@ public record StockCountService(DaoFactory daoFactory) {
      * <b>It deliberately takes no lock and re-reads no snapshot.</b> A line's {@code system_qty}
      * is fixed when the item is scanned, and that is correct rather than an oversight: the
      * adjustment posted is a <em>difference</em> against that moment, not the balance to end at,
-     * so a sale made while the shop counts is counted once by the sale and once by nobody. Book
+     * so a sale made while the shop is counting is counted by the sale and by nothing else. Book
      * 10, shelf 9, a sale of 2, counted 9: the adjustment is -1 and the balance lands on 7, which
      * is what is on the shelf. Re-reading the snapshot at post time is what would swallow the
-     * sale.
+     * sale, and {@code StockCountPostAcceptanceTest} holds that case against a real database.
      */
     private void ensureEveryCountedItemHasARow(StockCount count) throws DaoException {
         List<Integer> itemIds = count.getLines().stream()
@@ -192,5 +191,4 @@ public record StockCountService(DaoFactory daoFactory) {
             throw new BusinessRuleException("الجرد المرحّل لا يمكن تعديله");
         }
     }
-
 }
