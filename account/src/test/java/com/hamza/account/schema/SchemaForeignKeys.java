@@ -49,7 +49,12 @@ public final class SchemaForeignKeys {
             "V57__employee_core.sql", "V58__employee_ledger.sql", "V59__payroll.sql",
             "V60__attendance.sql", "V64__expense_headings.sql",
             "V66__expense_budget_and_recurring.sql", "V70__commission_rule.sql",
-            "V71__collection_delegate.sql", "V72__commission_run.sql");
+            "V71__collection_delegate.sql", "V72__commission_run.sql",
+            // V75 does not add a key, it replaces one: V8 declared
+            // stock_count_lines.item_id as ON DELETE CASCADE, which this reader skips, and
+            // V75 puts it back as RESTRICT. Without this line the two catalogs go on seeing
+            // a cascading key and the rule that declares it fails as "not in the schema".
+            "V75__stock_count_lines_keep_history.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

@@ -108,15 +108,21 @@ public final class StockTransferService {
         });
     }
 
-    /** Recent history, for the screen that lets a transfer be found and reversed. */
+    /**
+     * Recent history, for the screen that lets a transfer be found and reversed.
+     * <p>
+     * Asks {@code stock.transfer.show} since V74. It asked for the right to <em>post</em> a
+     * transfer, so a storekeeper who was only meant to see what had moved had to be given the
+     * ability to move it.
+     */
     public List<StockTransferSummary> recent(int limit) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.STOCK_TRANSFER_POST);
+        AuthorizationGuard.require(AppPermissions.STOCK_TRANSFER_SHOW);
         return dao.recent(limit);
     }
 
     /** Line-level detail over a date range, for the printed transfer log. */
     public List<StockTransferReportRow> reportRows(java.time.LocalDate from, java.time.LocalDate to) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.STOCK_TRANSFER_POST);
+        AuthorizationGuard.require(AppPermissions.STOCK_TRANSFER_SHOW);
         return dao.reportRows(from, to);
     }
 

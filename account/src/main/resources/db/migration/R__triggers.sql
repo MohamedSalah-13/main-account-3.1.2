@@ -303,6 +303,105 @@ DELIMITER ;
 -- The DROP stays: an install that ran an older copy of this file still carries it.
 DROP TRIGGER IF EXISTS before_items_stock_insert;
 
+-- warehouses, transfers and counts (warehouse plan phase C)
+--
+-- Who created a warehouse, who moved stock between two of them, and who turned a count
+-- sheet into a posted correction. None of it was recorded anywhere: the audit triggers
+-- reached items, parties, documents and treasuries, and stopped at the shelf. A transfer
+-- and a posted count each move a balance exactly as an invoice does.
+--
+-- **The line tables are deliberately not audited**, the same decision `items_units` carries
+-- above. `StockCountDao.save` deletes and re-inserts every line of a sheet on each save, so
+-- a trigger there would write a row per line per keystroke of a count that may run to
+-- hundreds of items; `stock_transfer_list` is written once and taken by its header's
+-- cascade, which is the header's entry to explain. What a transfer moved is its lines, and
+-- they are in `stock_transfer_list` until the transfer is reversed - the log says who and
+-- when, and the rows themselves say what.
+--
+-- A stock count's UPDATE is the one that matters: `status` moving from DRAFT to POSTED is
+-- the moment the sheet becomes a correction to every balance on it.
+
+DROP TRIGGER IF EXISTS audit_stocks_insert;
+DROP TRIGGER IF EXISTS audit_stocks_update;
+DROP TRIGGER IF EXISTS audit_stocks_delete;
+DROP TRIGGER IF EXISTS audit_stock_transfer_insert;
+DROP TRIGGER IF EXISTS audit_stock_transfer_delete;
+DROP TRIGGER IF EXISTS audit_stock_count_insert;
+DROP TRIGGER IF EXISTS audit_stock_count_update;
+DROP TRIGGER IF EXISTS audit_stock_count_delete;
+
+DELIMITER |
+CREATE TRIGGER audit_stocks_insert AFTER INSERT ON stocks FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stocks', NEW.stock_id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('stock_id', NEW.stock_id, 'stock_name', NEW.stock_name,
+                    'stock_address', NEW.stock_address, 'user_id', NEW.user_id),
+        'Warehouse created');
+END|
+
+CREATE TRIGGER audit_stocks_update AFTER UPDATE ON stocks FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stocks', NEW.stock_id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('stock_id', OLD.stock_id, 'stock_name', OLD.stock_name,
+                    'stock_address', OLD.stock_address, 'user_id', OLD.user_id),
+        JSON_OBJECT('stock_id', NEW.stock_id, 'stock_name', NEW.stock_name,
+                    'stock_address', NEW.stock_address, 'user_id', NEW.user_id),
+        'Warehouse updated');
+END|
+
+CREATE TRIGGER audit_stocks_delete AFTER DELETE ON stocks FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stocks', OLD.stock_id, 'DELETE', @app_user_id,
+        JSON_OBJECT('stock_id', OLD.stock_id, 'stock_name', OLD.stock_name,
+                    'stock_address', OLD.stock_address, 'user_id', OLD.user_id), NULL,
+        'Warehouse deleted');
+END|
+
+CREATE TRIGGER audit_stock_transfer_insert AFTER INSERT ON stock_transfer FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stock_transfer', NEW.id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('id', NEW.id, 'transfer_date', NEW.transfer_date,
+                    'stock_from', NEW.stock_from, 'stock_to', NEW.stock_to,
+                    'user_id', NEW.user_id),
+        'Stock transfer posted');
+END|
+
+CREATE TRIGGER audit_stock_transfer_delete AFTER DELETE ON stock_transfer FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stock_transfer', OLD.id, 'DELETE', @app_user_id,
+        JSON_OBJECT('id', OLD.id, 'transfer_date', OLD.transfer_date,
+                    'stock_from', OLD.stock_from, 'stock_to', OLD.stock_to,
+                    'user_id', OLD.user_id), NULL,
+        'Stock transfer reversed');
+END|
+
+CREATE TRIGGER audit_stock_count_insert AFTER INSERT ON stock_count FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stock_count', NEW.id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('id', NEW.id, 'stock_id', NEW.stock_id, 'count_date', NEW.count_date,
+                    'status', NEW.status, 'notes', NEW.notes, 'user_id', NEW.user_id),
+        'Stock count sheet opened');
+END|
+
+CREATE TRIGGER audit_stock_count_update AFTER UPDATE ON stock_count FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stock_count', NEW.id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('id', OLD.id, 'stock_id', OLD.stock_id, 'count_date', OLD.count_date,
+                    'status', OLD.status, 'notes', OLD.notes, 'posted_at', OLD.posted_at),
+        JSON_OBJECT('id', NEW.id, 'stock_id', NEW.stock_id, 'count_date', NEW.count_date,
+                    'status', NEW.status, 'notes', NEW.notes, 'posted_at', NEW.posted_at),
+        'Stock count changed');
+END|
+
+CREATE TRIGGER audit_stock_count_delete AFTER DELETE ON stock_count FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stock_count', OLD.id, 'DELETE', @app_user_id,
+        JSON_OBJECT('id', OLD.id, 'stock_id', OLD.stock_id, 'count_date', OLD.count_date,
+                    'status', OLD.status, 'notes', OLD.notes), NULL,
+        'Stock count draft removed');
+END|
+DELIMITER ;
+
 -- items_units
 --
 -- `before_items_units_insert` used to reject a second row for the same

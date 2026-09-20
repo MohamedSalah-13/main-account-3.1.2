@@ -88,3 +88,7 @@ account/dependency-reduced-pom.xml
 # the rendered PDF is not - it is 1.3 MB that changes on every release and regenerates
 # exactly from what is committed.
 docs/manual/*.pdf
+
+# Maven dependency:build-classpath output, written when running the app or the
+# acceptance tools by hand. The CI job deletes it; it should never have been committed.
+cp.txt

@@ -407,7 +407,27 @@ public final class AppPermissions {
     public static final PermissionKey REPORTS_SHOW_PROFIT = key("reports.show.profit");
     public static final PermissionKey REPORTS_SHOW_RETURNS = key("reports.show.returns");
     public static final PermissionKey STOCK_COUNT_SHOW = key("stock.count.show");
+    /**
+     * Entering a count sheet and keeping it as a draft (V74).
+     * <p>
+     * {@code save} asked {@link #STOCK_COUNT_SHOW}, so everyone who could open the screen could
+     * write on it, and {@code deleteDraft} asked {@link #STOCK_COUNT_POST}, so discarding a sheet
+     * that has moved nothing needed the right to move balances with one. A draft is not a count:
+     * {@code adjustment_agg} reads only {@code POSTED}.
+     * <p>
+     * {@code HIGH} rather than the {@code CREATE} default, and for once that is the same answer:
+     * what is being created is the sheet a posting is later made from.
+     */
+    public static final PermissionKey STOCK_COUNT_CREATE = key("stock.count.create");
     public static final PermissionKey STOCK_COUNT_POST = key("stock.count.post");
+    /**
+     * Reading the transfer history and its report (V74).
+     * <p>
+     * Both asked {@link #STOCK_TRANSFER_POST} until then: seeing what had been moved required the
+     * right to move it. The same borrowing {@code V35} ended when the areas list stopped asking
+     * for {@code items.show}.
+     */
+    public static final PermissionKey STOCK_TRANSFER_SHOW = key("stock.transfer.show");
     public static final PermissionKey STOCK_TRANSFER_POST = key("stock.transfer.post");
     public static final PermissionKey STOCK_TRANSFER_DELETE = key("stock.transfer.delete");
     public static final PermissionKey STOCK_SHOW = key("stock.show");

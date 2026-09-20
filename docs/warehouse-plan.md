@@ -136,9 +136,18 @@ ledger that somebody starts reading is the `treasury_movements` mistake with a h
 
 ## 6. Permissions
 
-`inventory.show`; `stock.show` / `.create` / `.update` / `.delete`; `stock.transfer.post` /
-`.delete`; `stock.count.show` / `.post`. The write paths ask through `require` or through their
-`DeleteRule`. What is wrong with the set is in §7.6.
+`inventory.show`; `stock.show` / `.create` / `.update` / `.delete`; `stock.transfer.show` /
+`.post` / `.delete`; `stock.count.show` / `.create` / `.post`. The write paths ask through
+`require` or through their `DeleteRule`, and every read worth guarding asks too - which is what
+§7.7 was about and what `V74` ended.
+
+**Two of them existed only as other keys until then.** Reading the transfer history asked for the
+right to *post* a transfer, and saving a count sheet asked only for the right to *see* one while
+discarding a draft asked for the right to post it. Each new key is granted to whoever held the key
+that stood in for it, so nobody loses an ability on upgrade - and on a fresh install `V13` grants
+no default role `stock.transfer.post` at all, so `stock.transfer.show` starts with no holders
+either. That is not something `V74` introduced: warehouses and transfers have never been in a
+default role, and only the administrator reaches them.
 
 ## 7. What the 2026-09-20 review found
 
@@ -292,12 +301,7 @@ sees and come before anything new.
 
 **B - one balance on two screens. Delivered 2026-09-20, see §13.**
 
-**C - permissions and evidence** (`V74`). Deleting `StockTransferDatabaseAcceptanceTest`, now that
-`StockTransferEndToEndAcceptanceTest` says what it only appeared to.
-`stock.transfer.show` and `stock.count.create`, granted to
-whoever holds the key that stood in for them, so nobody loses an ability on upgrade; the count's
-Arabic literals become keys; audit triggers on the five tables, in `R__triggers.sql`;
-`stock_count_lines.item_id` stops cascading and `DeleteRegistry.ITEMS` declares it.
+**C - permissions and evidence. Delivered 2026-09-20, see §14.**
 
 **D - what a transfer and a count are owed.** The transfer history by period
 (`TreasuryHistoryFilter`'s shape: one `WHERE` for the page and its totals), a slip for one transfer
@@ -524,3 +528,49 @@ delete, not a new sentence. Cancelling left both transfers and every balance exa
 **Still unseen:** the transfer screen's own entry (the Arabic-digit quantity and one item in two
 units are unit-tested only), the inventory sheet for a reader without `inventory.show`, and all of
 it in English.
+
+## 14. What phase C delivered (2026-09-20)
+
+Two migrations, eight audit triggers, and the deletion of a test that proved nothing. Every part of
+it was applied to a schema built from nothing before it was pushed - 79 migrations to `V75` - and
+then exercised rather than inspected.
+
+- **`V74`: `stock.transfer.show` and `stock.count.create`.** The first because the transfer history
+  and its report asked for the right to *post* a transfer: a storekeeper meant only to see what had
+  moved had to be given the ability to move it. The second because `save` asked only
+  `stock.count.show`, so every reader of the count screen was a writer of it, while `deleteDraft`
+  asked `stock.count.post` - throwing away a sheet that has moved nothing needed the right to move
+  balances with one. Both granted to whoever held the key that stood in for them; on the scratch
+  schema `stock.count.create` landed on exactly the two roles that hold `stock.count.show`.
+- **`V75`: a posted count sheet survives its item.** `stock_count_lines.item_id` was
+  `ON DELETE CASCADE`, so deleting an item took its lines out of every posted sheet with no refusal
+  and no trace - and because this repository's rule is that a cascading key is never declared in
+  `DeleteRegistry`, nothing could have refused it. The key is `RESTRICT` now and the rule declares
+  it, which was checked by trying: `ERROR 1451` where the row used to vanish. The merge is
+  unaffected - `ItemReferenceRegistry.STOCK_COUNT_LINES` sums the two items' lines onto the target
+  before the source is deleted, so there is nothing left to refuse.
+- **`SchemaForeignKeys` had to be told about `V75`**, and that is worth its own line: it reads the
+  migrations for keys and skips the cascading ones, so without the new file in its list both
+  catalogs went on seeing `V8`'s cascading key and the declaration failed as "not in the schema".
+  A migration that *replaces* a key is invisible to a reader that only knows how to *add* one.
+- **Eight audit triggers** on `stocks`, `stock_transfer` and `stock_count`. Who created a
+  warehouse, who moved stock between two of them, and who turned a sheet into a posted correction
+  were recorded nowhere: the audit triggers reached items, parties, documents and treasuries and
+  stopped at the shelf. The `UPDATE` on `stock_count` is the one that matters and it was watched
+  firing - `"DRAFT"` before, `"POSTED"` after.
+- **The line tables are deliberately not audited**, the decision `items_units` already carries.
+  `StockCountDao.save` deletes and re-inserts every line on each save, so a trigger there would
+  write a row per line per save of a sheet that may run to hundreds of items.
+- **`StockCountService` throws message keys.** Three Arabic sentences left a service that ships with
+  an English bundle, and the file left `LocalizationArchitectureTest`'s allow-list - which fails in
+  both directions, so it cannot go back quietly.
+- **`StockTransferDatabaseAcceptanceTest` is deleted.** It had no fixture, asserted one boolean and
+  finished in four milliseconds, and `StockTransferEndToEndAcceptanceTest` now says what it only
+  appeared to. A class that runs and proves nothing is worse than no class: the green beside its
+  name reads as coverage.
+- **Three `cp.txt` files were committed by accident** in phase B - `dependency:build-classpath`
+  output from running the app by hand. Removed and ignored.
+
+**Not seen on a screen.** The two permissions were proven on a scratch database, not by signing in
+as a user who holds one and not the other; and the refusal `V75` now produces has been seen as
+MySQL's error, not as the sentence `DeletionService` turns it into.

@@ -50,6 +50,10 @@ public final class DeleteRegistry {
             .referencedBy("purchase_re", "item_id", "delete.ref.purchase_return_line")
             .referencedBy("stock_movements", "item_id", "delete.ref.stock_movement")
             .referencedBy("stock_transfer_list", "item_id", "delete.ref.stock_transfer_line")
+            // V75 stopped this key cascading: a posted count sheet is a correction that was
+            // actually made, and deleting the item used to take its lines out of one with no
+            // refusal and no trace. Declarable only because it no longer cascades.
+            .referencedBy("stock_count_lines", "item_id", "delete.ref.stock_count_line")
             .build();
 
     /** Customer 1 is "بيع نقدى", which the sales screen falls back to. */
