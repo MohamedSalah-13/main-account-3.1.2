@@ -206,7 +206,11 @@ public class CardItemDao extends AbstractDao<CardItems> {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(firstMovementSql())) {
                 int parameter = 1;
-                for (int branch = 0; branch < 4; branch++) {
+                // Seven branches, the same seven the balance counts: the four documents,
+                // both halves of a transfer, and the posted counts. The card opens on the
+                // item's whole history, and a history that starts after the movement that
+                // began it opens on a balance nobody can account for.
+                for (int branch = 0; branch < 7; branch++) {
                     statement.setInt(parameter++, stockId);
                     statement.setInt(parameter++, itemId);
                 }
@@ -240,6 +244,21 @@ public class CardItemDao extends AbstractDao<CardItems> {
                     FROM purchase_re r
                     JOIN total_buy_re h ON h.id = r.invoice_number
                     WHERE h.stock_id = ? AND r.item_id = ?
+                    UNION ALL
+                    SELECT MIN(h.transfer_date)
+                    FROM stock_transfer_list tl
+                    JOIN stock_transfer h ON h.id = tl.stock_transfer_id
+                    WHERE h.stock_to = ? AND tl.item_id = ?
+                    UNION ALL
+                    SELECT MIN(h.transfer_date)
+                    FROM stock_transfer_list tl
+                    JOIN stock_transfer h ON h.id = tl.stock_transfer_id
+                    WHERE h.stock_from = ? AND tl.item_id = ?
+                    UNION ALL
+                    SELECT MIN(c.count_date)
+                    FROM stock_count_lines l
+                    JOIN stock_count c ON c.id = l.count_id
+                    WHERE c.status = 'POSTED' AND c.stock_id = ? AND l.item_id = ?
                 ) firsts
                 """;
     }
@@ -302,7 +321,7 @@ public class CardItemDao extends AbstractDao<CardItems> {
                 """;
     }
 
-    /** The view's {@code table_name} for a kind of document, or null for "all four". */
+    /** The view's {@code table_name} for a kind of movement, or null for "every kind". */
     public static String tableNameOf(ProcessType processType) {
         if (processType == null) return null;
         return switch (processType) {
@@ -310,9 +329,19 @@ public class CardItemDao extends AbstractDao<CardItems> {
             case SALES -> "sales";
             case PURCHASE_RETURN -> "purchase_re";
             case SALES_RETURN -> "sales_re";
+            case TRANSFER_IN -> "transfer_in";
+            case TRANSFER_OUT -> "transfer_out";
+            case STOCK_COUNT -> "stock_count";
         };
     }
 
+    /**
+     * The other direction, and the one that fails quietly: a {@code table_name} the view
+     * emits and this method does not know answers null, so the row is drawn with no kind
+     * at all and {@link com.hamza.account.features.itemcard.ItemCardTotals} - which
+     * buckets by kind - leaves it out of every total while it sits on screen. Add a kind
+     * to the view and add it here.
+     */
     private static ProcessType processTypeOf(String tableName) {
         if (tableName == null) return null;
         return switch (tableName) {
@@ -320,6 +349,9 @@ public class CardItemDao extends AbstractDao<CardItems> {
             case "sales" -> ProcessType.SALES;
             case "purchase_re" -> ProcessType.PURCHASE_RETURN;
             case "sales_re" -> ProcessType.SALES_RETURN;
+            case "transfer_in" -> ProcessType.TRANSFER_IN;
+            case "transfer_out" -> ProcessType.TRANSFER_OUT;
+            case "stock_count" -> ProcessType.STOCK_COUNT;
             default -> null;
         };
     }

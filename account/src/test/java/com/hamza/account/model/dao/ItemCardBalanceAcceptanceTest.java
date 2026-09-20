@@ -134,6 +134,50 @@ class ItemCardBalanceAcceptanceTest {
         }
     }
 
+    /**
+     * The card's three figures against each other and against the view: the opening balance, the
+     * movements it lists, and the closing balance. The screen shows all three on one row - opening,
+     * net movement, closing - so a movement that is not a row makes them contradict each other with
+     * nothing on the screen to say which is wrong.
+     * <p>
+     * The period holds one of each kind that used to be missing: a transfer out and a posted count,
+     * beside an ordinary purchase.
+     */
+    @Test
+    void theRowsBetweenTwoDatesAddUpToTheClosingBalance() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            String marker = "CARDROWS_" + UUID.randomUUID().toString().substring(0, 8);
+            int destination = insertStock(transaction, marker);
+            int itemId = insertItem(transaction, marker);
+            insertItemStock(transaction, itemId, DefaultStock.ID, SOURCE_OPENING);
+            insertItemStock(transaction, itemId, destination, DESTINATION_OPENING);
+
+            LocalDate from = LocalDate.now().minusDays(7);
+            LocalDate to = LocalDate.now();
+            insertPurchase(transaction, itemId, DefaultStock.ID, 6, LocalDate.now().minusDays(5));
+            insertTransfer(transaction, itemId, DefaultStock.ID, destination, MOVED,
+                    LocalDate.now().minusDays(3));
+            insertPostedCount(transaction, itemId, DefaultStock.ID, 12, 11, LocalDate.now().minusDays(1));
+
+            CardItemDao dao = new CardItemDao();
+            double opening = dao.balanceOn(DefaultStock.ID, itemId, from, false);
+            var rows = dao.cardRows(DefaultStock.ID, itemId, from, to, null);
+            double closingFromRows = com.hamza.account.features.itemcard.ItemCardRunningBalance
+                    .apply(rows, opening);
+
+            assertEquals(3, rows.size(), "the card left out a movement of this warehouse");
+            assertEquals(dao.balanceOn(DefaultStock.ID, itemId, to, true), closingFromRows, 0.0001,
+                    "the rows and the closing balance describe different movements");
+            assertEquals(viewBalance(transaction, itemId, DefaultStock.ID), closingFromRows, 0.0001,
+                    "the card and the inventory sheet describe different shelves");
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
     /** The view's own balance: its eight components, written the way every caller writes them. */
     private static double viewBalance(Connection connection, int itemId, int stockId) throws Exception {
         String sql = "SELECT first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment"
@@ -185,6 +229,60 @@ class ItemCardBalanceAcceptanceTest {
             statement.setInt(2, stockId);
             statement.setDouble(3, opening);
             statement.setDouble(4, opening);
+            assertEquals(1, statement.executeUpdate());
+        }
+    }
+
+    private static void insertPurchase(Connection connection, int itemId, int stockId,
+                                       double quantity, LocalDate date) throws Exception {
+        int invoiceId;
+        try (Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery(
+                     "SELECT COALESCE(MAX(invoice_number),0)+7000 FROM total_buy")) {
+            assertTrue(rows.next());
+            invoiceId = rows.getInt(1);
+        }
+        String header = "INSERT INTO total_buy(invoice_number,sup_code,invoice_type,invoice_date,total,"
+                + "discount,paid_up,stock_id,treasury_id,notes,user_id) "
+                + "VALUES (?,1,1,?,10,0,10,?,1,'item-card-balance-acceptance',1)";
+        try (PreparedStatement statement = connection.prepareStatement(header)) {
+            statement.setInt(1, invoiceId);
+            statement.setObject(2, date);
+            statement.setInt(3, stockId);
+            assertEquals(1, statement.executeUpdate());
+        }
+        String line = "INSERT INTO purchase(invoice_number,num,type,quantity,price,discount,type_value,"
+                + "expiration_date) VALUES (?,?,1,?,10,0,1,NULL)";
+        try (PreparedStatement statement = connection.prepareStatement(line)) {
+            statement.setInt(1, invoiceId);
+            statement.setInt(2, itemId);
+            statement.setDouble(3, quantity);
+            assertEquals(1, statement.executeUpdate());
+        }
+    }
+
+    /** A posted count whose line found {@code counted} where the system said {@code system}. */
+    private static void insertPostedCount(Connection connection, int itemId, int stockId,
+                                          double system, double counted, LocalDate date) throws Exception {
+        String header = "INSERT INTO stock_count(stock_id,count_date,status,notes,posted_at,user_id) "
+                + "VALUES (?,?,'POSTED','item-card-balance-acceptance',NOW(),1)";
+        long countId;
+        try (PreparedStatement statement = connection.prepareStatement(header, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, stockId);
+            statement.setObject(2, date);
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                countId = keys.getLong(1);
+            }
+        }
+        String line = "INSERT INTO stock_count_lines(count_id,item_id,unit_id,type_value,system_qty,counted_qty) "
+                + "VALUES (?,?,1,1,?,?)";
+        try (PreparedStatement statement = connection.prepareStatement(line)) {
+            statement.setLong(1, countId);
+            statement.setInt(2, itemId);
+            statement.setDouble(3, system);
+            statement.setDouble(4, counted);
             assertEquals(1, statement.executeUpdate());
         }
     }

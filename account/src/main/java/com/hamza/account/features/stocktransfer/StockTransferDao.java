@@ -1,6 +1,6 @@
 package com.hamza.account.features.stocktransfer;
 
-import com.hamza.account.features.items.ItemStockBalanceSql;
+import com.hamza.account.features.items.WarehouseStockDao;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -14,48 +14,23 @@ import java.util.Map;
 
 final class StockTransferDao extends AbstractDao<Void> {
 
-    /** Locks every line's source row {@code FOR UPDATE}, and names the ones that exist. */
-    Map<Integer, String> lockSource(int stockId, List<Integer> itemIds) throws DaoException {
-        String marks = String.join(",", Collections.nCopies(itemIds.size(), "?"));
-        String sql = "SELECT s.item_id, i.nameItem FROM items_stock s JOIN items i ON i.id = s.item_id "
-                + "WHERE s.stock_id = ? AND s.item_id IN (" + marks + ") ORDER BY s.item_id FOR UPDATE";
-        return withConnection(connection -> {
-            Map<Integer, String> result = new LinkedHashMap<>();
-            try (var statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, stockId);
-                bindIds(statement, 2, itemIds);
-                try (var rows = statement.executeQuery()) {
-                    while (rows.next()) result.put(rows.getInt(1), rows.getString(2));
-                }
-            }
-            return result;
-        });
-    }
+    private final WarehouseStockDao warehouseStock = new WarehouseStockDao();
+
 
     /**
-     * Current base-unit balance of every requested item in {@code stockId}.
+     * The source warehouse's rows, locked, and the names of the items that have one.
      * <p>
-     * Read through {@link ItemStockBalanceSql}, not through {@code quantity_items_table}: each of
-     * that view's seven CTEs is a {@code GROUP BY} over a whole line table, and MySQL builds all
-     * of them before it can answer for one item. The helper computes the view's own columns for
-     * named items with correlated subqueries that reach their lines through the item's index -
-     * the same definition, pinned against the view by {@code ItemStockBalanceSqlTest}.
+     * Delegated to {@link WarehouseStockDao} rather than written here: every writer that takes
+     * stock out of a warehouse has to lock the same rows in the same order, and a rule kept in
+     * two files is a rule that can be ordered two ways.
      */
+    Map<Integer, String> lockSource(int stockId, List<Integer> itemIds) throws DaoException {
+        return warehouseStock.lockItems(stockId, itemIds);
+    }
+
+    /** Current base-unit balance of every requested item in {@code stockId}. */
     Map<Integer, Double> balances(int stockId, List<Integer> itemIds) throws DaoException {
-        String sql = "SELECT item_id, first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment "
-                + "- quantitySales - quantityPurchaseRe - fromStock AS balance FROM ("
-                + ItemStockBalanceSql.forItems(itemIds.size()) + ") balances_for_items";
-        return withConnection(connection -> {
-            Map<Integer, Double> result = new HashMap<>();
-            try (var statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, stockId);
-                bindIds(statement, 2, itemIds);
-                try (var rows = statement.executeQuery()) {
-                    while (rows.next()) result.put(rows.getInt(1), rows.getDouble(2));
-                }
-            }
-            return result;
-        });
+        return warehouseStock.balances(stockId, itemIds);
     }
 
     /**

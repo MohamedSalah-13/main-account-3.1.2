@@ -163,10 +163,20 @@ says for each whether anything reproduced it. Everything still open here is stil
    was handed. An item found by name while counting warehouse 2 would carry the total of all
    warehouses as "what the system says", and the difference posted is wrong by everything held
    elsewhere. Invisible with one warehouse.
-3. **Posting a count takes no lock and trusts a snapshot.** `system_qty` is what the system said
-   when the line was *added*; the adjustment is `counted - system_qty`. A sale between the scan and
-   the post is inside that difference, so the post undoes it. Nothing re-reads the balance at post,
-   nothing locks the `items_stock` rows, and nothing looks at whether the result is below zero.
+3. ~~**Posting a count takes no lock and trusts a snapshot.**~~ **This item was wrong, and it is
+   left here struck through rather than deleted, because a review that quietly removes what it got
+   wrong teaches nothing.** It read that `system_qty` is captured when the line is scanned and
+   never re-read, and called that a defect - a sale between the scan and the post being "undone"
+   by the adjustment. The arithmetic says otherwise, and `StockCountController`'s own javadoc said
+   so all along: **the adjustment is a difference, not a target.** Book 10, shelf 9, a sale of 2,
+   counted 9 - the adjustment is `9 - 10 = -1` and the balance lands on `10 - 2 - 1 = 7`, which is
+   what is on the shelf. Re-reading the snapshot at post time is what would swallow the sale. The
+   snapshot is deliberate and correct.
+   <br>What is real in that paragraph is smaller: **an item with no `items_stock` row in the
+   warehouse being counted posts an adjustment that `quantity_items_table` never reads** - the
+   count reports lines moved and nothing moves - and **nothing checks whether the result is below
+   zero.** The first is fixed (§13); the second is open, and a count is the one writer for which
+   going below zero is a legitimate answer, so it is a warning at most.
 4. **Deleting a transfer checks nothing.** Goods received and since sold leave the destination
    negative without a word; the same situation on a purchase delete warns.
 5. **The opening balance is stored twice and a trigger keeps overwriting one copy.**
@@ -280,15 +290,10 @@ sees and come before anything new.
 
 **A - the quick ones, no migration. Delivered 2026-09-20, see §12.**
 
-**B - one balance on two screens.** The card reads transfers, posted counts and the opening balance
-as rows, from the same expressions `quantity_items_table` uses, pinned the way
-`ItemStockBalanceSqlTest` pins its own. Posting a count locks the warehouse's `items_stock` rows in
-item-id order and re-reads `system_qty` inside the transaction; the screen shows what moved since
-the scan rather than silently posting over it. **Two acceptance classes on a scratch schema, signed
-in as an ordinary user**: a transfer end to end (balance leaves one warehouse and reaches the other,
-the period lock, the reversal, a second connection blocking on the lock) and a count end to end -
-each asserting the card and the inventory sheet answer one number for a warehouse that has seen a
-transfer.
+**B - one balance on two screens. Delivered 2026-09-20, see §13**, except the transfer-end-to-end
+acceptance class, which is still owed: a transfer posted through the real service with the period
+lock, the reversal and a second connection meeting the lock, signed in as an ordinary user rather
+than as the administrator who bypasses every permission.
 
 **C - permissions and evidence** (`V74`). `stock.transfer.show` and `stock.count.create`, granted to
 whoever holds the key that stood in for them, so nobody loses an ability on upgrade; the count's
@@ -382,3 +387,60 @@ screen; the two defects that produce wrong figures - the item card and the count
 post - are phase B and are untouched. The transfer screen still posts and prints on the JavaFX
 thread, its history is still the last 200 with no period, and a posted count still cannot be opened
 again.
+
+## 13. What phase B delivered (2026-09-20)
+
+The two screens that answered a balance differently now answer it once. No migration; the view is
+repeatable, so it applies on the next start-up of every install.
+
+**It was reproduced before it was fixed, and the proof is on the cloud.** The first commit of the
+branch was a failing test and nothing else: the `acceptance` run on it went red with
+
+> `the card does not count a transfer into the warehouse it arrived in ==> expected: <7.0> but was: <3.0>`
+
+against a MySQL built from nothing - the inventory sheet saying seven and the card saying three for
+one shelf - and the run on the next commit was green. That is what `.github/workflows/acceptance.yml`
+made possible: before it, this defect could only have been argued about.
+
+- **`CardItemDao.balanceSql` counts both halves of every transfer.** Its javadoc had said "the same
+  three terms" while naming three of four, which is how the omission survived - the sentence that
+  would have caught it was the one that was wrong. `balanceOn` binds three parameters per branch in
+  one loop, so `CardItemDaoStatementsTest` now pins the count as well as the text: seven branches,
+  twenty-three parameters. A wrong bound there is a balance computed for another item on another
+  day, which reads exactly like a right one.
+- **`firstMovementSql` knows the same seven movements**, so a card opened on an item's whole history
+  starts at the movement that began it rather than after it.
+- **Transfers and posted counts are rows on the card** (`card_item_view`). A transfer is two rows,
+  one per warehouse, because the card reads one warehouse at a time; `name_custom` is the warehouse
+  at the other end, since a transfer has no party and that column answers "who was this with". A
+  posted count is one row whose quantity is the signed difference in base units - which is why its
+  `type_value` is 1 and the unit shown is the item's own: there is no "three cartons" to report,
+  only what the shelf gained or lost. A line counted exactly right moved nothing and is not a row.
+- **The card's three figures are one arithmetic.** `textCountTotals` is labelled "net movement" and
+  sits between the opening and closing balances, so `ItemCardTotals.netQuantity()` has to include
+  the new kinds or those three contradict each other on screen. The adjustment is summed **signed**,
+  because a count's rows go both ways and reading them as magnitudes would report three missing and
+  three extra as the same six. The quantities tab gained three cards; it is a `FlowPane`, so it
+  wraps rather than needing a layout rewritten.
+- **`ProcessType` gained the three kinds and the compiler found the one place that would have gone
+  quiet**: `CardController.dataInterface`'s exhaustive switch. A transfer is not a document, so the
+  row's "open" button is now *disabled* on those rows through `RowAction`'s `enabled` predicate -
+  which existed for exactly this - rather than pressed into a reference code. `processTypeOf`'s
+  `default -> null` is the other direction and fails quietly, so it is commented as the thing to
+  change when a kind is added: a row with no kind is drawn on screen and left out of every total.
+- **`WarehouseStockDao` is now the one place that locks a warehouse's rows.** The transfer's DAO
+  delegates to it. The lock order is the invariant - every writer takes the same rows in item-id
+  order or they deadlock - and an invariant kept in two files can be ordered two ways.
+- **A posted count gives every counted item an `items_stock` row first.** Without one,
+  `quantity_items_table` has nothing to add the adjustment onto: the count posts, the screen reports
+  lines moved, and nothing moves.
+
+**What this phase set out to do and did not.** It was going to make posting a count re-read its
+snapshot under a lock. It does not, because the premise was wrong - see §7.3, left struck through.
+Working through the arithmetic while writing the guard is what showed it, and the guard was deleted
+rather than shipped. A warning about a balance that had "moved" would have been noise on every sheet
+counted during trading hours.
+
+**Still not seen on a screen.** No part of this has been opened. The three new summary cards, the
+disabled button on a transfer row, what a count row reads in the kind column, and all of it in
+English: unseen.

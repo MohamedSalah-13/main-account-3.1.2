@@ -138,14 +138,24 @@ class CardItemDaoStatementsTest {
     @Nested
     class FirstMovement {
 
+        /**
+         * The card opens on the item's whole history, so this has to know every kind of
+         * movement the balance knows - all seven. A history that starts after the movement
+         * that began it opens on a balance nobody can account for.
+         */
         @Test
-        void asksTheDatabaseForTheEarliestDateOfEachDocument() {
+        void asksTheDatabaseForTheEarliestDateOfEveryKindOfMovement() {
             String sql = normalise(CardItemDao.firstMovementSql());
 
             assertTrue(sql.contains("select min(invoice_date) as first_date"));
             assertEquals(4, occurrences(sql, "min(h.invoice_date)"));
+            assertEquals(2, occurrences(sql, "min(h.transfer_date)"));
+            assertEquals(1, occurrences(sql, "min(c.count_date)"));
             assertEquals(4, occurrences(sql, "h.stock_id = ?"));
-            assertEquals(8, sql.chars().filter(character -> character == '?').count());
+            assertEquals(1, occurrences(sql, "h.stock_to = ?"));
+            assertEquals(1, occurrences(sql, "h.stock_from = ?"));
+            assertTrue(sql.contains("c.status = 'posted'"), "a draft count is not a movement");
+            assertEquals(7 * 2, sql.chars().filter(character -> character == '?').count());
         }
     }
 
