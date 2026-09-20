@@ -656,49 +656,98 @@ class TreasuryBalanceViewAcceptanceTest {
         }
     }
 
+    /**
+     * A new movement arrives with <b>no number of its own</b>, and is inserted.
+     * <p>
+     * This used to build the payment the way {@code Add_AccountController} did - {@code txtCode}
+     * held {@code max + 1} and that became the model's id - and then assert a row existed with
+     * that very number. Both halves are now wrong, and the second made this test unpassable:
+     * {@code account_num} is <b>not in the insert</b> ({@code PartyLedgerSpec}), because the
+     * screen's own numbering handed two tills the same number. MySQL assigns it, so no row can
+     * ever carry the number the caller invented, and this class is gated - it had been failing
+     * since that change landed and nothing could say so. The same thing
+     * {@code ItemMergeDatabaseAcceptanceTest} did, which {@code CLAUDE.md} already records: a
+     * gated test is not a passing test.
+     * <p>
+     * What it is for survives intact, and matters: between {@code f2b4baf} and the first run of
+     * this class a new payment never had id 0, {@code isNew} asked whether the id was zero, the
+     * save took the UPDATE branch against a row that did not exist, and <b>every new collection
+     * was silently discarded for eighteen days</b>. Now the id really is zero and the row is
+     * found by a mark of its own rather than by a number nobody may choose.
+     */
     @Test
-    @DisplayName("a new collection is inserted, though the screen supplies its own number")
+    @DisplayName("a new collection is inserted, and arrives with no number of its own")
     void aNewCollectionIsActuallyWritten() throws Exception {
         inTransaction(connection -> {
             int customer = firstId(connection, "custom");
-            // Exactly what Add_AccountController builds: txtCode holds
-            // generateNextAccountCode() = max + 1, and that becomes the model's id. So a
-            // new payment never has id 0, and a service that decides "is this new?" by
-            // asking whether the id is zero writes nothing at all - which is what
-            // happened between f2b4baf and this test.
-            int code = nextId(connection, "customers_accounts", "account_num");
-            CustomerAccount payment = new CustomerAccount(code, LocalDate.now().toString(), 5d,
-                    "insert-path", 0, new Customers(customer), new Treasury(1));
+            String mark = "acceptance-insert-" + System.nanoTime();
+            CustomerAccount payment = new CustomerAccount(0, LocalDate.now().toString(), 5d,
+                    mark, 0, new Customers(customer), new Treasury(1));
 
             int rows = new AccountCustomerService(DaoFactory.INSTANCE).save(payment);
 
             assertEquals(1, rows, "the collection reported no rows written");
             assertEquals(1, countOf(connection,
-                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ?", code),
+                            "SELECT COUNT(*) FROM customers_accounts WHERE notes = ?", mark),
                     "the payment was not written at all - the save took the UPDATE branch "
                             + "against a row that does not exist");
         });
     }
 
+    /**
+     * The second half of {@code AccountCustomerService.isNew}, which its javadoc keeps
+     * deliberately: an id naming no row is a new movement, not an edit of nothing. A zero id
+     * is answered without a query; this is what costs the one read, and what catches a caller
+     * holding a number the ledger has never issued.
+     */
     @Test
-    @DisplayName("editing an existing collection still updates it rather than inserting a second")
+    @DisplayName("an id that names no row is new, not an edit of nothing")
+    void anIdThatNamesNoRowIsTreatedAsNew() throws Exception {
+        inTransaction(connection -> {
+            int customer = firstId(connection, "custom");
+            String mark = "acceptance-orphan-" + System.nanoTime();
+            int namesNoRow = nextId(connection, "customers_accounts", "account_num");
+
+            int rows = new AccountCustomerService(DaoFactory.INSTANCE).save(
+                    new CustomerAccount(namesNoRow, LocalDate.now().toString(), 5d,
+                            mark, 0, new Customers(customer), new Treasury(1)));
+
+            assertEquals(1, rows, "the collection reported no rows written");
+            assertEquals(1, countOf(connection,
+                            "SELECT COUNT(*) FROM customers_accounts WHERE notes = ?", mark),
+                    "an id naming no row was treated as an edit, so nothing was written");
+        });
+    }
+
+    /**
+     * An edit carries the number the <em>database</em> gave the movement, which is the only
+     * number there is. Reading it back is not ceremony: it is the whole of what changed when
+     * the insert stopped carrying {@code account_num}.
+     */
+    @Test
+    @DisplayName("editing an existing collection updates it rather than inserting a second")
     void anExistingCollectionIsUpdated() throws Exception {
         inTransaction(connection -> {
             int customer = firstId(connection, "custom");
-            int code = nextId(connection, "customers_accounts", "account_num");
+            String mark = "acceptance-edit-" + System.nanoTime();
             AccountCustomerService service = new AccountCustomerService(DaoFactory.INSTANCE);
 
-            service.save(new CustomerAccount(code, LocalDate.now().toString(), 5d,
-                    "before", 0, new Customers(customer), new Treasury(1)));
-            service.save(new CustomerAccount(code, LocalDate.now().toString(), 7d,
-                    "after", 0, new Customers(customer), new Treasury(1)));
+            service.save(new CustomerAccount(0, LocalDate.now().toString(), 5d,
+                    mark, 0, new Customers(customer), new Treasury(1)));
+            // countOf reads one integer; here that is the number MySQL assigned.
+            int assigned = countOf(connection,
+                    "SELECT account_num FROM customers_accounts WHERE notes = ?", mark);
+            assertTrue(assigned > 0, "the first save wrote nothing to edit");
+
+            service.save(new CustomerAccount(assigned, LocalDate.now().toString(), 7d,
+                    mark, 0, new Customers(customer), new Treasury(1)));
 
             assertEquals(1, countOf(connection,
-                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ?", code),
+                            "SELECT COUNT(*) FROM customers_accounts WHERE notes = ?", mark),
                     "the edit inserted a second row instead of updating the first");
             assertEquals(1, countOf(connection,
-                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ? AND paid = 7",
-                            code),
+                            "SELECT COUNT(*) FROM customers_accounts WHERE notes = ? AND paid = 7",
+                            mark),
                     "the edit did not take");
         });
     }
