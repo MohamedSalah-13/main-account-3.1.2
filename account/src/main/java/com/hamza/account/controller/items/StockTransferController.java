@@ -156,7 +156,7 @@ public class StockTransferController {
         try {
             Integer keepFrom = comboFromStock.getValue() == null ? null : comboFromStock.getValue().getId();
             Integer keepTo = comboToStock.getValue() == null ? null : comboToStock.getValue().getId();
-            ObservableList<Stock> stocks = FXCollections.observableArrayList(stockService.getStocks());
+            ObservableList<Stock> stocks = FXCollections.observableArrayList(stockService.stocksForPicker());
             comboFromStock.setItems(stocks);
             comboToStock.setItems(FXCollections.observableArrayList(stocks));
 

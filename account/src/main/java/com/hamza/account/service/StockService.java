@@ -24,8 +24,25 @@ import java.util.List;
  */
 public record StockService(DaoFactory daoFactory) {
 
+    /** The warehouses list for the screen that manages them - which is what {@code stock.show} means. */
     public List<Stock> getStocks() throws DaoException {
         AuthorizationGuard.require(AppPermissions.STOCK_SHOW);
+        return daoFactory.stockDao().loadAll();
+    }
+
+    /**
+     * The warehouses a combo offers: the invoice, the inventory, the item card, the stock count,
+     * the transfer and the price check each ask "which warehouse", and none of them is a request
+     * to open the warehouses screen.
+     * <p>
+     * Deliberately unguarded, the way {@code EmployeeService.delegates} is, and the list of tills
+     * the same screens offer. Every one of those screens is guarded by a permission
+     * of its own, and {@code stock.show} was granted by no migration to anybody: when the pickers
+     * read {@link #getStocks()}, a cashier who had sold for years - and the seeded
+     * {@code DEFAULT_SALES_CASHIER} itself - could not open the sales screen after upgrading.
+     * {@code InvoiceScreenPermissionArchitectureTest} keeps the invoice screen off guarded reads.
+     */
+    public List<Stock> stocksForPicker() throws DaoException {
         return daoFactory.stockDao().loadAll();
     }
 

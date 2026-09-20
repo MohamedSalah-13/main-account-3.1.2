@@ -1260,7 +1260,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     @NotNull
     private List<Stock> getStocks() {
         try {
-            return stockService.getStocks();
+            return stockService.stocksForPicker();
         } catch (DaoException e) {
             logError(e);
             return List.of();

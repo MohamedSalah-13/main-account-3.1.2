@@ -143,7 +143,7 @@ public class StockCountController {
     private void reloadStockItems() {
         try {
             int keep = stockId;
-            comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
+            comboStock.setItems(FXCollections.observableArrayList(stockService.stocksForPicker()));
             comboStock.getItems().stream().filter(stock -> stock.getId() == keep).findFirst()
                     .or(() -> comboStock.getItems().stream().filter(stock -> stock.getId() == DefaultStock.ID).findFirst())
                     .ifPresent(comboStock.getSelectionModel()::select);
