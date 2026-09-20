@@ -66,6 +66,7 @@ public final class UserPermissionController implements AppSettingInterface {
     @FXML private Button btnNewRole, btnDeleteRole;
     @FXML private TableView<RolePermissionRow> tablePermissions;
     @FXML private TableView<UserRoleRow> tableParentRoles;
+    @FXML private TitledPane paneRoleDetails, paneInheritedRoles;
     @FXML private TableColumn<UserRoleRow, Boolean> colParentRoleInherited;
     @FXML private TableColumn<UserRoleRow, String> colParentRoleName, colParentRoleCode;
     @FXML private TableColumn<RolePermissionRow, Boolean> colPermissionGranted;
@@ -125,6 +126,14 @@ public final class UserPermissionController implements AppSettingInterface {
         colParentRoleInherited.setCellFactory(CheckBoxTableCell.forTableColumn(colParentRoleInherited));
         colParentRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(roleLabel(cell.getValue().role())));
         colParentRoleCode.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().code()));
+        // The header's count has to follow a tick, or a folded section would report the number it
+        // had when it was last filled rather than the one the user just changed.
+        parentRoleRows.addListener((javafx.collections.ListChangeListener<UserRoleRow>) change -> {
+            while (change.next()) {
+                change.getAddedSubList().forEach(row -> row.selectedProperty()
+                        .addListener((observable, was, is) -> updateInheritedCaption()));
+            }
+        });
         tableParentRoles.setItems(parentRoleRows);
 
         tablePermissions.setEditable(true);
@@ -413,6 +422,13 @@ public final class UserPermissionController implements AppSettingInterface {
                     .map(candidate -> new UserRoleRow(candidate, inherited.contains(candidate.id())))
                     .toList());
             setRoleEditorDisabled(role.systemRole());
+            // Opening a role is opening its permissions, so both sections stay folded - including
+            // one that does inherit. The first draft opened it "when there is something to see",
+            // and on a 1366x768 screen that cost the permissions table all but one of its rows the
+            // moment a role inherited anything. The count on the header is what says there is
+            // something inside; opening it as well is doing the same job twice, with the height.
+            showInheritedCount(false);
+            paneRoleDetails.setExpanded(false);
         } catch (DaoException e) {
             report(e);
         }
@@ -433,7 +449,28 @@ public final class UserPermissionController implements AppSettingInterface {
                 .filter(role -> !role.systemRole() && role.active())
                 .map(role -> new UserRoleRow(role, false)).toList());
         setRoleEditorDisabled(false);
+        // A new role has no name yet, so this is the one time the form is the point.
+        showInheritedCount(false);
+        paneRoleDetails.setExpanded(true);
         textRoleCode.requestFocus();
+    }
+
+    /**
+     * How many roles this one inherits, on the section header whether it is open or not - the
+     * caption {@code ListToolbar.showActiveFilters} puts on the filters toggle, for the same reason:
+     * a folded section must never hide the fact that there is something inside it. Which is also
+     * why nothing here opens the section on the user's behalf.
+     */
+    private void showInheritedCount(boolean expand) {
+        updateInheritedCaption();
+        paneInheritedRoles.setExpanded(expand);
+    }
+
+    private void updateInheritedCaption() {
+        long inherited = parentRoleRows.stream().filter(UserRoleRow::isSelected).count();
+        paneInheritedRoles.setText(inherited > 0
+                ? LanguageManager.getInstance().getString("user.rbac.section.inherit.roles.count", inherited)
+                : LanguageManager.getInstance().getString("user.rbac.section.inherit.roles"));
     }
 
     private void setRoleEditorDisabled(boolean systemRole) {

@@ -207,6 +207,38 @@ It needs **no migration**: `synchronizeCatalog` rewrites `module_key` for every 
 start-up. Watched on a copy of a real database - the 34 old module values (`TOTAL`, `SHOW`, `SEL`, …)
 were replaced by the 13 group names the moment the new build started.
 
+### 2.9 The dialog gave its permission table two rows of 162
+
+At 1366x768 - the screen this ships to - the roles dialog opened **735 points tall on a 768 screen**,
+which the taskbar alone does not leave room for, and inside it the `top` of the tab held about 214
+points of form before a vertical `SplitPane` divided what was left 28/72 between the inheritance
+table and the permissions table. The permissions table came out at **two rows**. It was read the
+first time only by maximising the window to 1920x1040, which is exactly how a layout defect survives
+being looked at.
+
+`CLAUDE.md` § **A row's detail** names this screen as *not* a `RowDetailDrawer` case - the two tables
+do not depend on each other's selection - so the answer is the other idiom this repository already
+has, `ListToolbar`'s filters panel: **what is secondary is folded away, and its header carries the
+count.**
+
+- The role's own fields and the inheritance table are `TitledPane`s, collapsed, styled as quiet form
+  sections rather than sidebar accordions.
+- The inheritance header carries how many roles are inherited - `(1)`, `(2)` - and follows a tick
+  live, because a folded section must never hide that there is something inside it.
+- The `SplitPane` is gone; the permissions table is the `center` and takes what is left.
+- The page subtitle moved into the tab it describes, where it cost one tab about fifty points
+  instead of all four.
+- `prefHeight` 650 → 620, so the window is **705** and fits.
+
+**Two rows became six**, watched at a real 1366x768 rather than maximised.
+
+**And the screen found the mistake in the first draft of this fix.** The inheritance section opened
+*itself* when the role inherited something - "so the user can see it" - and selecting a role that
+inherits then cost the permissions table all but one of its rows. The count on the header is what
+says there is something inside; opening it as well does the same job twice and spends the height to
+do it. Nothing opens a section on the user's behalf now. No test could have seen this: it is a rule
+about how much room is left, on one screen size, after one click.
+
 ---
 
 ## 3. The four keys granted to a role and read by nothing
@@ -253,9 +285,7 @@ per row from `risk_level` - already stored, still shown nowhere - an extra confi
 `CRITICAL`, and a "copy role" button, since building "cashier + returns" today means ticking twenty
 boxes from scratch.
 
-And the layout: the dialog gives its permission table about two rows at 1366x768, under the
-parent-roles table stacked above it (§5). That is the case `CLAUDE.md` § **A row's detail** describes,
-on the screen this actually ships to.
+The layout is no longer part of this - see §2.9.
 
 ### 4.3 The report keys and the profit column
 
@@ -332,13 +362,18 @@ afterwards. What that proved, in the database and then on screen:
   than by prefix - the one decision in §2.8 that a reader could have disagreed with, and it is where
   the rule says it should be.
 
+**The layout, at a real 1366x768** (third run; the window was sized to exactly 1366x768 rather than
+maximised, which is what hid the defect the first time):
+
+- The dialog opens **705** tall and fits; it was 735 on a 768 screen.
+- Both sections open folded, and the permissions table shows **six rows** where it showed two.
+- A role that inherits reads `(1)` on the folded header, and **stays folded** - the first draft of
+  this fix opened it and cost the table five of its six rows.
+- Ticking a second inherited role moved the header to `(2)` while it was open.
+- The subtitle is in the first tab, which gained a row by it.
+
 **Still not verified:**
 
-- **The layout at 1366x768.** The dialog opens at 996x735 and gives the permissions table about
-  180 points - two rows - under the parent-roles table stacked above it. It was read by maximising
-  the window to 1920x1040, which the shop's screen cannot do. This is the case
-  `CLAUDE.md` § **A row's detail** describes, and the screen it ships to is exactly the one that
-  cannot show it. **It is the largest thing still wrong with this screen.**
 - **English was not opened.** `PermissionLabelsTest` resolves all 162 keys in both languages and
   `PermissionCatalogArchitectureTest` holds all three bundles plus the thirteen section labels, so
   the text exists; what has not been seen is how it sits in the column. Switching the language writes

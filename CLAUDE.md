@@ -462,6 +462,17 @@ with `commission.rule.update` and not with selling); a key claimed by name has t
 silently does nothing; every group owns a key; and every group has a label in all three bundles. It
 needs no migration - `synchronizeCatalog` rewrites `module_key` on every start-up.
 
+**The roles dialog folds what is secondary and puts the count on the header.** It opened 735 points
+tall on a 768 screen, and a `SplitPane` split what was left between the inheritance table and the
+permissions table, which came out at **two rows of 162**. It is not a `RowDetailDrawer` case - the two
+tables do not depend on each other's selection, as **A row's detail** says - so it uses the other
+idiom this repository has: the role's fields and the inheritance table are collapsed `TitledPane`s,
+the inheritance header carries how many roles are inherited and follows a tick live, the `SplitPane`
+is gone and the permissions table is the `center`. Two rows became six at a real 1366x768. **Nothing
+opens a section on the user's behalf**: the first draft expanded the inheritance when a role inherited
+something, which cost the table five of its six rows the moment such a role was picked - the count is
+what says there is something inside, and opening it as well spends the height to say it twice.
+
 **"Is this the administrator" is `CurrentUser.isSystemAdministrator()`, asked in one place.** Three
 screens wrote `CurrentUser.get().getId() == 1` themselves — the invoice lines table's column menu, the
 sidebar's role caption, the help button — which is the numbered-administrator test this whole system
