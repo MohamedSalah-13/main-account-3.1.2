@@ -163,10 +163,20 @@ says for each whether anything reproduced it. Everything still open here is stil
    was handed. An item found by name while counting warehouse 2 would carry the total of all
    warehouses as "what the system says", and the difference posted is wrong by everything held
    elsewhere. Invisible with one warehouse.
-3. **Posting a count takes no lock and trusts a snapshot.** `system_qty` is what the system said
-   when the line was *added*; the adjustment is `counted - system_qty`. A sale between the scan and
-   the post is inside that difference, so the post undoes it. Nothing re-reads the balance at post,
-   nothing locks the `items_stock` rows, and nothing looks at whether the result is below zero.
+3. ~~**Posting a count takes no lock and trusts a snapshot.**~~ **This item was wrong, and it is
+   left here struck through rather than deleted, because a review that quietly removes what it got
+   wrong teaches nothing.** It read that `system_qty` is captured when the line is scanned and
+   never re-read, and called that a defect - a sale between the scan and the post being "undone"
+   by the adjustment. The arithmetic says otherwise, and `StockCountController`'s own javadoc said
+   so all along: **the adjustment is a difference, not a target.** Book 10, shelf 9, a sale of 2,
+   counted 9 - the adjustment is `9 - 10 = -1` and the balance lands on `10 - 2 - 1 = 7`, which is
+   what is on the shelf. Re-reading the snapshot at post time is what would swallow the sale. The
+   snapshot is deliberate and correct.
+   <br>What is real in that paragraph is smaller: **an item with no `items_stock` row in the
+   warehouse being counted posts an adjustment that `quantity_items_table` never reads** - the
+   count reports lines moved and nothing moves - and **nothing checks whether the result is below
+   zero.** The first is fixed (§13); the second is open, and a count is the one writer for which
+   going below zero is a legitimate answer, so it is a warning at most.
 4. **Deleting a transfer checks nothing.** Goods received and since sold leave the destination
    negative without a word; the same situation on a purchase delete warns.
 5. **The opening balance is stored twice and a trigger keeps overwriting one copy.**
@@ -280,17 +290,11 @@ sees and come before anything new.
 
 **A - the quick ones, no migration. Delivered 2026-09-20, see §12.**
 
-**B - one balance on two screens.** The card reads transfers, posted counts and the opening balance
-as rows, from the same expressions `quantity_items_table` uses, pinned the way
-`ItemStockBalanceSqlTest` pins its own. Posting a count locks the warehouse's `items_stock` rows in
-item-id order and re-reads `system_qty` inside the transaction; the screen shows what moved since
-the scan rather than silently posting over it. **Two acceptance classes on a scratch schema, signed
-in as an ordinary user**: a transfer end to end (balance leaves one warehouse and reaches the other,
-the period lock, the reversal, a second connection blocking on the lock) and a count end to end -
-each asserting the card and the inventory sheet answer one number for a warehouse that has seen a
-transfer.
+**B - one balance on two screens. Delivered 2026-09-20, see §13.**
 
-**C - permissions and evidence** (`V74`). `stock.transfer.show` and `stock.count.create`, granted to
+**C - permissions and evidence** (`V74`). Deleting `StockTransferDatabaseAcceptanceTest`, now that
+`StockTransferEndToEndAcceptanceTest` says what it only appeared to.
+`stock.transfer.show` and `stock.count.create`, granted to
 whoever holds the key that stood in for them, so nobody loses an ability on upgrade; the count's
 Arabic literals become keys; audit triggers on the five tables, in `R__triggers.sql`;
 `stock_count_lines.item_id` stops cascading and `DeleteRegistry.ITEMS` declares it.
@@ -336,7 +340,8 @@ and they touch almost nothing - §7.9, in a number rather than an argument.
 - The roadmap's reference test with two warehouses (11.5).
 - The five screens on a copy of a real database with a second warehouse in it, in English as well
   as Arabic, at 1366x768 - where every other area of this system found defects no test could.
-- Everything in §12: phase A is unit-tested and has not been opened on a screen.
+- Most of §12: phase A is unit-tested, and only its reversal warning has been watched on a screen.
+- §13 was watched on 2026-09-20 - see the section itself for what that covered and what it did not.
 
 ## 12. What phase A delivered (2026-09-20)
 
@@ -382,3 +387,140 @@ screen; the two defects that produce wrong figures - the item card and the count
 post - are phase B and are untouched. The transfer screen still posts and prints on the JavaFX
 thread, its history is still the last 200 with no period, and a posted count still cannot be opened
 again.
+
+## 13. What phase B delivered (2026-09-20)
+
+The two screens that answered a balance differently now answer it once. No migration; the view is
+repeatable, so it applies on the next start-up of every install.
+
+**It was reproduced before it was fixed, and the proof is on the cloud.** The first commit of the
+branch was a failing test and nothing else: the `acceptance` run on it went red with
+
+> `the card does not count a transfer into the warehouse it arrived in ==> expected: <7.0> but was: <3.0>`
+
+against a MySQL built from nothing - the inventory sheet saying seven and the card saying three for
+one shelf - and the run on the next commit was green. That is what `.github/workflows/acceptance.yml`
+made possible: before it, this defect could only have been argued about.
+
+- **`CardItemDao.balanceSql` counts both halves of every transfer.** Its javadoc had said "the same
+  three terms" while naming three of four, which is how the omission survived - the sentence that
+  would have caught it was the one that was wrong. `balanceOn` binds three parameters per branch in
+  one loop, so `CardItemDaoStatementsTest` now pins the count as well as the text: seven branches,
+  twenty-three parameters. A wrong bound there is a balance computed for another item on another
+  day, which reads exactly like a right one.
+- **`firstMovementSql` knows the same seven movements**, so a card opened on an item's whole history
+  starts at the movement that began it rather than after it.
+- **Transfers and posted counts are rows on the card** (`card_item_view`). A transfer is two rows,
+  one per warehouse, because the card reads one warehouse at a time; `name_custom` is the warehouse
+  at the other end, since a transfer has no party and that column answers "who was this with". A
+  posted count is one row whose quantity is the signed difference in base units - which is why its
+  `type_value` is 1 and the unit shown is the item's own: there is no "three cartons" to report,
+  only what the shelf gained or lost. A line counted exactly right moved nothing and is not a row.
+- **The card's three figures are one arithmetic.** `textCountTotals` is labelled "net movement" and
+  sits between the opening and closing balances, so `ItemCardTotals.netQuantity()` has to include
+  the new kinds or those three contradict each other on screen. The adjustment is summed **signed**,
+  because a count's rows go both ways and reading them as magnitudes would report three missing and
+  three extra as the same six. The quantities tab gained three cards; it is a `FlowPane`, so it
+  wraps rather than needing a layout rewritten.
+- **`ProcessType` gained the three kinds and the compiler found the one place that would have gone
+  quiet**: `CardController.dataInterface`'s exhaustive switch. A transfer is not a document, so the
+  row's "open" button is now *disabled* on those rows through `RowAction`'s `enabled` predicate -
+  which existed for exactly this - rather than pressed into a reference code. `processTypeOf`'s
+  `default -> null` is the other direction and fails quietly, so it is commented as the thing to
+  change when a kind is added: a row with no kind is drawn on screen and left out of every total.
+- **`WarehouseStockDao` is now the one place that locks a warehouse's rows.** The transfer's DAO
+  delegates to it. The lock order is the invariant - every writer takes the same rows in item-id
+  order or they deadlock - and an invariant kept in two files can be ordered two ways.
+- **A posted count gives every counted item an `items_stock` row first.** Without one,
+  `quantity_items_table` has nothing to add the adjustment onto: the count posts, the screen reports
+  lines moved, and nothing moves.
+
+**What this phase set out to do and did not.** It was going to make posting a count re-read its
+snapshot under a lock. It does not, because the premise was wrong - see §7.3, left struck through.
+Working through the arithmetic while writing the guard is what showed it, and the guard was deleted
+rather than shipped. A warning about a balance that had "moved" would have been noise on every sheet
+counted during trading hours.
+
+- **The transfer finally has an acceptance class that means it**
+  (`StockTransferEndToEndAcceptanceTest`): a transfer posted through the real service moves the
+  balance out of one warehouse and into the other, one item in two units is one demand of the
+  source, two lines of fifteen are refused against a balance of twenty, a destination with no
+  `items_stock` row is given one, and a user **who is not user 1** and does not hold
+  `stock.transfer.post` is refused before anything is written. `StockTransferDatabaseAcceptanceTest`
+  stays as it was for now: it has no fixture, asserts one boolean, and CI finishes it in four
+  milliseconds. It is superseded rather than deleted, and deleting it belongs to phase C with the
+  rest of the evidence work: a class that runs and proves nothing is worse than no class, because
+  a green run beside its name reads as coverage.
+
+### The defect the transfer test found on its first run
+
+**A transfer into a warehouse that already held the item failed outright**, with
+"هذه البيانات موجودة بالفعل", before it moved anything. That is the ordinary case: a new
+warehouse backfills an `items_stock` row for every item and a new item one for every warehouse, so
+the destination almost always has the row already.
+
+`StockTransferService` gives the destination a row for each item first - the arriving quantity
+needs something to add itself onto - and writes it as `INSERT IGNORE`, because most items already
+have one. But `before_items_stock_insert` signalled SQLSTATE 45000 for a duplicate (item, stock),
+and **an error a trigger signals is not suppressed by `INSERT IGNORE`**, while the duplicate-key
+error from `items_stock_uk` is. The trigger enforced nothing the unique key did not, and broke the
+one statement written to rely on that key's error being ignorable.
+
+It is dropped, not recreated - the same way `V5` replaced `before_items_units_insert` - and the
+`DROP` stays in `R__triggers.sql` so an install that ran an older copy loses it too.
+
+**And it would have broken the stock count next.** The count's post now gives every counted item a
+row through the same `INSERT IGNORE`, added earlier in this same phase - so with the trigger in
+place, every posted count would have failed the same way, in code that had not shipped yet and had
+no test of its own. `StockCountPostAcceptanceTest` is that test now: a count moves the balance by
+the difference it found, a sale made while the sheet was open survives the post (23, not 28 - the
+case that says the adjustment is a difference and not a target), an item with no row in the
+warehouse is given one, a user without `stock.count.post` is refused, and a posted sheet cannot be
+posted twice.
+
+**Nothing in a green build could see this, and no amount of reading found it**: the review read the
+trigger, wrote down that it "conflicts with `INSERT IGNORE`", and ranked it fifteenth. It took
+running a transfer against a real database, which §11 said had never happened, and it is the answer
+to why the plan insists on that.
+
+### Watched on a screen, 2026-09-20
+
+On a throwaway MySQL started from the developer's own binaries on port 3399 - their server was not
+running and was not started - with a schema migrated from nothing to V73 by the application's own
+migrations, two warehouses, and one movement of every kind. The backup folder was redirected first
+and restored byte for byte after; the scheduled backup did fire into the sink, which is why that
+step is not optional.
+
+**The item card, main warehouse, for an item that had been purchased, sold, transferred twice and
+counted:**
+
+| row | party column | quantity | running balance |
+|---|---|---|---|
+| purchase | مورد عام | 20 | 120 |
+| sale | بيع نقدي | 5 | 115 |
+| transfer out | **مخزن الفرع** | 30 | 85 |
+| transfer out | **مخزن الفرع** | 6 | 79 |
+| posted count | **جرد شهري** (the sheet's note) | **-2** | **77** |
+
+Opening 100, net movement -23, closing **77** - and 100 - 23 = 77, the three figures on one row
+agreeing for the first time. The quantities tab read purchases 20, sales 5, **transfers out 36,
+transfers in 0, count adjustment -2**, which decomposes the net exactly. The inventory sheet beside
+it read **77.000** for the same item and warehouse, and the database read 77: **one number on both
+screens**, which is the whole of what phase B was for.
+
+**The branch warehouse's card** showed the other half: two rows named **الرئيسي**, 30 then 36,
+opening 0, transfers in 36, closing 36. Before this work that card was empty with a balance of zero
+while the goods were on the shelf.
+
+**The "open" button is disabled on the three new kinds** and enabled on the purchase and the sale -
+zoomed in to be sure rather than read off a full-screen capture. A transfer is not a document, and
+the button says so instead of producing a reference code.
+
+**The reversal warning fires with the right arithmetic.** With the branch down to 2 after a sale,
+reversing the transfer that brought 30 in was met with *"هذا الحذف سيجعل رصيد 1 صنف بالسالب: - زيت
+عافية 1 لتر في مخزن الفرع: -28"* - the same two message keys the totals screen uses for a document
+delete, not a new sentence. Cancelling left both transfers and every balance exactly as they were.
+
+**Still unseen:** the transfer screen's own entry (the Arabic-digit quantity and one item in two
+units are unit-tested only), the inventory sheet for a reader without `inventory.show`, and all of
+it in English.

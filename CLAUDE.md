@@ -938,6 +938,38 @@ as a refusal.
 (`TransferQuantityInput`). The transfer screen read ٠-٩ as zero and then told the person their
 quantity was invalid - the omission that had already cost `ReturnQuantityInput` its existence.
 
+**The item card counts what the inventory sheet counts, and until 2026-09-20 it did not.**
+`CardItemDao.balanceSql` added the opening balance, the four document families and posted counts -
+and nothing from `stock_transfer_list` - while its own javadoc said "the same three terms" and named
+three of four. So on any warehouse a transfer had touched, the card and the sheet beside it reported
+two numbers for one shelf. **Reproduced on CI before it was fixed**: the acceptance run on the test's
+own commit went red with `expected: <7.0> but was: <3.0>`, and the next commit's run was green.
+`card_item_view` now carries both halves of every transfer (one row per warehouse, `name_custom`
+being the warehouse at the other end) and the adjustment of every posted count (one row, whose
+quantity is the **signed** difference in base units, so its `type_value` is 1 and its unit is the
+item's own). `ItemCardTotals.netQuantity()` counts them because the screen shows it between the
+opening and closing balances - three figures that have to be one arithmetic - and the adjustment is
+summed signed, since a count's rows go both ways and magnitudes would report three missing and three
+extra as the same six.
+
+Two seams to know when adding a kind of movement: `CardItemDao.processTypeOf` answers `null` for a
+`table_name` it does not know, so the row is drawn with no kind and left out of every total while it
+sits on screen; and `CardController.dataInterface` is an exhaustive switch, so the compiler stops
+you there. A transfer is not a document, so the row's "open" button is **disabled** through
+`RowAction`'s `enabled` predicate rather than pressed into a reference code.
+
+**`WarehouseStockDao` is the one place a warehouse's rows are locked**, in item-id order, and the
+one place a named item's balance in one warehouse is read (through `ItemStockBalanceSql`). The
+transfer's DAO delegates to it. The lock order is the invariant, and an invariant kept in two files
+can be ordered two ways.
+
+**A posted count's `system_qty` is a snapshot taken when the line was scanned, and that is
+deliberate and correct.** The adjustment is a *difference*, not a target: book 10, shelf 9, a sale of
+2, counted 9 gives `9 - 10 = -1` and a balance of 7, which is what is on the shelf. Re-reading it at
+post time is what would swallow the sale. What the post does do now is give every counted item an
+`items_stock` row first - without one, `quantity_items_table` has nothing to add the adjustment onto
+and the count reports lines moved while nothing moves.
+
 `mini_quantity_view`'s company-wide total is deliberately a *different question* from the per-warehouse
 check the sale-time low-stock alert makes, and is documented as such rather than "fixed".
 

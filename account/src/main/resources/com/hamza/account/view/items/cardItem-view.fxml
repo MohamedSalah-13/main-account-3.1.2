@@ -195,6 +195,24 @@
                                                         <Label fx:id="textReSales" styleClass="item-card-detail-value" text="0" />
                                                     </children>
                                                 </VBox>
+                                                <VBox minWidth="155.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%item.card.kind.transfer.in" />
+                                                        <Label fx:id="textTransferIn" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="155.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%item.card.kind.transfer.out" />
+                                                        <Label fx:id="textTransferOut" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="155.0" spacing="2.0" styleClass="item-card-detail-card">
+                                                    <children>
+                                                        <Label styleClass="item-card-detail-caption" text="%item.card.kind.stock.count" />
+                                                        <Label fx:id="textAdjustment" styleClass="item-card-detail-value" text="0" />
+                                                    </children>
+                                                </VBox>
                                             </children>
                                         </FlowPane>
                                     </content>

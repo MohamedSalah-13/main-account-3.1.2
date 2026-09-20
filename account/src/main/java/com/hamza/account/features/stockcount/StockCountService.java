@@ -134,6 +134,7 @@ public record StockCountService(DaoFactory daoFactory) {
 
         int moved = count.linesWithDifference().size();
         return TransactionTemplate.execute(() -> {
+            ensureEveryCountedItemHasARow(count);
             dao().save(count);
             if (dao().post(count.getId()) == 0) {
                 throw new BusinessRuleException("تم ترحيل هذا الجرد بالفعل");
@@ -156,6 +157,33 @@ public record StockCountService(DaoFactory daoFactory) {
             return 0;
         }
         return dao().deleteDraft(count.getId());
+    }
+
+    /**
+     * Gives every counted item a row in the warehouse being counted, if it has none.
+     * <p>
+     * {@code quantity_items_table} is driven by {@code items_stock}, so an adjustment about an
+     * item with no row there is summed into a row the view never reads: the count posts, the
+     * screen says how many lines moved, and nothing moves. Every item and warehouse made since
+     * {@code fbadd53} has its rows and {@code V18} backfilled the rest, so this is the case of a
+     * row seeded outside the application - the same reason
+     * {@code StockTransferDao.ensureDestination} exists on the other side of a transfer.
+     * <p>
+     * <b>It deliberately takes no lock and re-reads no snapshot.</b> A line's {@code system_qty}
+     * is fixed when the item is scanned, and that is correct rather than an oversight: the
+     * adjustment posted is a <em>difference</em> against that moment, not the balance to end at,
+     * so a sale made while the shop is counting is counted by the sale and by nothing else. Book
+     * 10, shelf 9, a sale of 2, counted 9: the adjustment is -1 and the balance lands on 7, which
+     * is what is on the shelf. Re-reading the snapshot at post time is what would swallow the
+     * sale, and {@code StockCountPostAcceptanceTest} holds that case against a real database.
+     */
+    private void ensureEveryCountedItemHasARow(StockCount count) throws DaoException {
+        List<Integer> itemIds = count.getLines().stream()
+                .map(StockCountLine::getItemId).distinct().sorted().toList();
+        if (itemIds.isEmpty()) {
+            return;
+        }
+        daoFactory.warehouseStockDao().ensureRows(count.getStockId(), itemIds);
     }
 
     private void requireEditable(StockCount count) throws DaoException {

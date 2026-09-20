@@ -60,6 +60,10 @@ public enum DaoFactory {
         return new StockMovementDao();
     }
 
+    public com.hamza.account.features.items.WarehouseStockDao warehouseStockDao() {
+        return new com.hamza.account.features.items.WarehouseStockDao();
+    }
+
     public PeriodLockDao periodLockDao() {
         return new PeriodLockDao();
     }

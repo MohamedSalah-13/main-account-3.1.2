@@ -122,7 +122,8 @@ public class CardController extends LoadData implements AppSettingInterface {
     @FXML
     private Label labelItemName, labelBaseUnit, labelStatus;
     @FXML
-    private Label textPurchase, textSales, textRePurchase, textReSales, textCountTotals;
+    private Label textPurchase, textSales, textRePurchase, textReSales, textCountTotals,
+            textTransferIn, textTransferOut, textAdjustment;
     @FXML
     private Label textCostPurchase, textCostSales, textCostSalesRe, textCostPurchaseRe, textCostTotals;
     @FXML
@@ -144,6 +145,13 @@ public class CardController extends LoadData implements AppSettingInterface {
         this.itemsModel = itemsModel;
     }
 
+    /**
+     * The document family a card row belongs to, or null when the row is not a document.
+     * <p>
+     * A transfer and a posted count move the balance without being an invoice, so there is
+     * nothing for {@code ShowInvoiceApplication} to open and the row's button is disabled
+     * rather than pressed into an error - see {@link #hasDocumentToOpen}.
+     */
     public static DataInterface<? extends BasePurchasesAndSales, ?, ?, ?> dataInterface(
             ProcessType processType, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         if (processType == null) return null;
@@ -152,7 +160,15 @@ public class CardController extends LoadData implements AppSettingInterface {
             case PURCHASE_RETURN -> new SuppliersDataReturn(daoFactory, dataPublisher);
             case SALES -> new CustomData(daoFactory, dataPublisher);
             case SALES_RETURN -> new CustomDataReturn(daoFactory, dataPublisher);
+            case TRANSFER_IN, TRANSFER_OUT, STOCK_COUNT -> null;
         };
+    }
+
+    /** Whether the row names a document a screen can open. */
+    private static boolean hasDocumentToOpen(CardItems row) {
+        ProcessType kind = row == null ? null : row.getProcessType();
+        return kind == ProcessType.PURCHASE || kind == ProcessType.PURCHASE_RETURN
+                || kind == ProcessType.SALES || kind == ProcessType.SALES_RETURN;
     }
 
     @FXML
@@ -178,8 +194,8 @@ public class CardController extends LoadData implements AppSettingInterface {
                 Columns.asQuantity(Columns.number(NamesTables.BALANCE, CardItems::getBalance)));
         tableView.getColumns().setAll(
                 named(ACTIONS_COLUMN, RowActionsColumn.of("column.actions", List.of(
-                        RowAction.of("row.action.show", AppIcon.SHOW, "app-neutral-button", null,
-                                this::openInvoice)))),
+                        new RowAction<>("row.action.show", AppIcon.SHOW, "app-neutral-button", null,
+                                CardController::hasDocumentToOpen, this::openInvoice)))),
                 named(ROW_NUMBER_COLUMN, column_number()),
                 named("item-card-invoice", Columns.number(NamesTables.CODE_INVOICE, CardItems::getInvoice_num)),
                 named("item-card-date", Columns.date(NamesTables.DATE, CardItems::getInvoice_date)),
@@ -432,6 +448,9 @@ public class CardController extends LoadData implements AppSettingInterface {
         textSales.setText(quantity(totals.sales()));
         textRePurchase.setText(quantity(totals.purchaseReturn()));
         textReSales.setText(quantity(totals.salesReturn()));
+        textTransferIn.setText(quantity(totals.transferIn()));
+        textTransferOut.setText(quantity(totals.transferOut()));
+        textAdjustment.setText(quantity(totals.adjustment()));
         textCountTotals.setText(quantity(totals.netQuantity()));
 
         textCostPurchase.setText(money(totals.costPurchase()));

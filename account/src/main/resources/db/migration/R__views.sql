@@ -602,7 +602,13 @@ ORDER BY created_at;
 
 -- --------------------------------------card_item_view---------------------------------------------
 --
--- One row per invoice line of an item, over the four documents.
+-- One row per movement of an item: the four documents, both halves of every transfer,
+-- and the adjustment of every posted stock count.
+--
+-- The transfers and the counts were added on 2026-09-20. Without them the card drew a
+-- running balance that skipped movements, and its closing balance came from a query that
+-- skipped them too - so on a warehouse that had sent or received anything, the card and
+-- the inventory sheet reported two numbers for one shelf. See docs/warehouse-plan.md.
 --
 -- type_value is the factor the line stored, and stock_id comes from the header. Both
 -- are here for the same reason quantity_items_table reads them: a quantity is only
@@ -688,14 +694,90 @@ WITH sales_data AS (SELECT s.id,
                                      pre.expiration_date
                               FROM purchase_re pre
                                        JOIN total_buy_re t ON t.id = pre.invoice_number
-                                       JOIN suppliers    s ON t.sup_id = s.id)
+                                       JOIN suppliers    s ON t.sup_id = s.id),
+     -- A transfer is two movements of one row: it leaves stock_from and arrives in
+     -- stock_to, and the card reads one warehouse at a time, so each half is a row of
+     -- its own under that warehouse's stock_id. name_custom is the warehouse at the
+     -- other end - a transfer has no party, and the question that column answers on
+     -- every other row is "who was this with".
+     transfer_out_data AS (SELECT tl.id,
+                                  t.id            AS invoice_number,
+                                  t.transfer_date AS invoice_date,
+                                  tl.item_id      AS item_num,
+                                  tl.type         AS unit_type,
+                                  tl.type_value,
+                                  tl.quantity,
+                                  0               AS price,
+                                  0               AS buy_price,
+                                  0               AS discount,
+                                  dest.stock_name AS name_custom,
+                                  t.date_insert,
+                                  0               AS delegate_id,
+                                  t.stock_from    AS stock_id,
+                                  'transfer_out'           AS table_name,
+                                  NULL            AS expiration_date
+                           FROM stock_transfer_list tl
+                                    JOIN stock_transfer t    ON t.id = tl.stock_transfer_id
+                                    JOIN stocks         dest ON dest.stock_id = t.stock_to),
+     transfer_in_data AS (SELECT tl.id,
+                                 t.id            AS invoice_number,
+                                 t.transfer_date AS invoice_date,
+                                 tl.item_id      AS item_num,
+                                 tl.type         AS unit_type,
+                                 tl.type_value,
+                                 tl.quantity,
+                                 0               AS price,
+                                 0               AS buy_price,
+                                 0               AS discount,
+                                 src.stock_name  AS name_custom,
+                                 t.date_insert,
+                                 0               AS delegate_id,
+                                 t.stock_to      AS stock_id,
+                                 'transfer_in'            AS table_name,
+                                 NULL            AS expiration_date
+                          FROM stock_transfer_list tl
+                                   JOIN stock_transfer t   ON t.id = tl.stock_transfer_id
+                                   JOIN stocks         src ON src.stock_id = t.stock_from),
+     -- A posted count moves the balance, so it is a row here rather than a correction
+     -- that appears from nowhere. Its quantity is already the signed difference in base
+     -- units - what was counted, in the unit it was counted in, less what the system
+     -- said - which is why type_value is 1 and the unit shown is the item's own base
+     -- unit: there is no "three cartons" to report, only what the shelf gained or lost.
+     -- A line counted exactly right moved nothing and is not a row.
+     stock_count_data AS (SELECT l.id,
+                                 c.id                                        AS invoice_number,
+                                 c.count_date                                AS invoice_date,
+                                 l.item_id                                   AS item_num,
+                                 i.unit_id                                   AS unit_type,
+                                 1                                           AS type_value,
+                                 l.counted_qty * l.type_value - l.system_qty AS quantity,
+                                 0                                           AS price,
+                                 0                                           AS buy_price,
+                                 0                                           AS discount,
+                                 COALESCE(c.notes, '')                  AS name_custom,
+                                 c.date_insert,
+                                 0                                           AS delegate_id,
+                                 c.stock_id,
+                                 'stock_count'                                     AS table_name,
+                                 NULL                                        AS expiration_date
+                          FROM stock_count_lines l
+                                   JOIN stock_count c ON c.id = l.count_id
+                                   JOIN items       i ON i.id = l.item_id
+                          WHERE c.status = 'POSTED'
+                            AND l.counted_qty * l.type_value - l.system_qty <> 0)
 SELECT * FROM sales_data
 UNION ALL
 SELECT * FROM sales_return_data
 UNION ALL
 SELECT * FROM purchase_data
 UNION ALL
-SELECT * FROM purchase_return_data;
+SELECT * FROM purchase_return_data
+UNION ALL
+SELECT * FROM transfer_out_data
+UNION ALL
+SELECT * FROM transfer_in_data
+UNION ALL
+SELECT * FROM stock_count_data;
 
 -- --------------------------------------card_item_view_details-------------------------------------
 
@@ -713,10 +795,16 @@ SELECT c.id,
        -- purchase and a sales return put stock in, a sale and a purchase return take
        -- it out. Every balance on the item card is a sum of this column, so the card
        -- and quantity_items_table cannot drift apart.
-       IF(c.table_name IN ('purchase', 'sales_re'), 1, -1) * c.quantity * c.type_value AS base_quantity,
+       -- A posted count's quantity is already signed - it is a difference and it goes
+       -- either way - so its direction is its own rather than its kind's.
+       CASE WHEN c.table_name = 'stock_count' THEN c.quantity * c.type_value
+            ELSE IF(c.table_name IN ('purchase', 'sales_re', 'transfer_in'), 1, -1) * c.quantity * c.type_value
+       END AS base_quantity,
        c.price,
        c.buy_price,
-       IF(c.table_name IN ('purchase','purchase_re'), 0,
+       -- Nothing was sold, so nothing was earned: a transfer and a count carry no price,
+       -- and they are named here rather than left to arithmetic that happens to give zero.
+       IF(c.table_name IN ('purchase','purchase_re','transfer_in','transfer_out','stock_count'), 0,
           (c.price - c.buy_price) * c.quantity) AS profit,
        c.discount,
        c.name_custom,

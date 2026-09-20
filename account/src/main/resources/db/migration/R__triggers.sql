@@ -283,27 +283,25 @@ end;
 DELIMITER ;
 
 -- items_stock
+--
+-- `before_items_stock_insert` is dropped and not recreated, the same way V5 replaced
+-- `before_items_units_insert` below. It signalled SQLSTATE 45000 for a duplicate
+-- (item, stock) - which `items_stock_uk` already refuses, so it enforced nothing the
+-- schema did not - and **an error a trigger signals is not suppressed by INSERT
+-- IGNORE**, which a duplicate-key error is.
+--
+-- That difference broke warehouse transfers outright. Giving the destination a row for
+-- each item is how the arriving quantity gets something to add itself onto
+-- (`StockTransferDao.ensureDestination`), it is written as INSERT IGNORE because most
+-- items already have one, and it runs over every item of every transfer. So a transfer
+-- into a warehouse that already held the item - the ordinary case, since a new warehouse
+-- backfills a row per item and a new item a row per warehouse - failed with "هذه
+-- البيانات موجودة بالفعل" before it moved anything. Found by
+-- `StockTransferEndToEndAcceptanceTest` on the first run of a transfer against a real
+-- database, which is what §11 of docs/warehouse-plan.md said had never happened.
+--
+-- The DROP stays: an install that ran an older copy of this file still carries it.
 DROP TRIGGER IF EXISTS before_items_stock_insert;
-
-DELIMITER |
-create trigger before_items_stock_insert
-    before insert
-    on items_stock
-    for each row
-begin
-    -- Define a constant for the error message
-    DECLARE err_msg VARCHAR(255) DEFAULT 'Cannot insert: Duplicate entry stock and item combination';
-
-    -- Check if a matching stock and item combination already exists
-    IF EXISTS (SELECT 1
-               FROM items_stock
-               WHERE items_stock.stock_id = NEW.stock_id
-                 AND items_stock.item_id = NEW.item_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = err_msg;
-    END IF;
-end;
-|
-DELIMITER ;
 
 -- items_units
 --
