@@ -12,19 +12,23 @@ package com.hamza.account.features.stockcount;
 public enum StockCountStatus {
 
     /** Being entered. Changes freely, moves nothing. */
-    DRAFT("مسودة"),
+    DRAFT("item.stockcount.status.draft"),
 
     /**
      * Posted. Its differences are part of every balance from that moment, and it is
      * read-only: correcting a posted count means posting another one, the way a wrong
      * invoice is answered with a return rather than by editing it.
      */
-    POSTED("مرحّل");
+    POSTED("item.stockcount.status.posted");
 
-    private final String title;
+    /**
+     * A message key, not a word: this enum carried two Arabic literals, so the history, the count's
+     * paper and the screen's status label were Arabic in an English session.
+     */
+    private final String labelKey;
 
-    StockCountStatus(String title) {
-        this.title = title;
+    StockCountStatus(String labelKey) {
+        this.labelKey = labelKey;
     }
 
     public static StockCountStatus of(String name) {
@@ -38,8 +42,9 @@ public enum StockCountStatus {
         return DRAFT;
     }
 
-    public String title() {
-        return title;
+    /** Resolved by the caller; {@code StockCountTest} checks each key against the three bundles. */
+    public String labelKey() {
+        return labelKey;
     }
 
     public boolean isPosted() {

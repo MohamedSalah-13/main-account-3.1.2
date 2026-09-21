@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -78,9 +79,85 @@ public class StockCountDao extends AbstractDao<StockCount> {
         return count;
     }
 
-    /** The most recent sheets, for the history picker. Headers only. */
-    public List<StockCount> recent(int limit) throws DaoException {
-        return queryForObjects(SELECT_HEADER + " ORDER BY id DESC LIMIT " + Math.max(limit, 1), this::map);
+    /** One page of the history and one extra row, newest first - see {@link StockCountHistoryQuery}. */
+    public List<StockCountSummary> page(StockCountHistoryFilter filter) throws DaoException {
+        Object[] where = StockCountHistoryQuery.whereValues(filter);
+        Object[] values = Arrays.copyOf(where, where.length + 2);
+        values[where.length] = filter.queryLimit();
+        values[where.length + 1] = filter.offset();
+        return withConnection(connection -> {
+            List<StockCountSummary> rows = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(StockCountHistoryQuery.PAGE)) {
+                setData(statement, values);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        rows.add(summary(rs));
+                    }
+                }
+            }
+            return rows;
+        });
+    }
+
+    /** Sheets, lines and lines with a difference in the whole filtered set: {@code [sheets, lines, differences]}. */
+    public long[] totals(StockCountHistoryFilter filter) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(StockCountHistoryQuery.TOTALS)) {
+                setData(statement, StockCountHistoryQuery.whereValues(filter));
+                try (ResultSet rs = statement.executeQuery()) {
+                    rs.next();
+                    return new long[]{rs.getLong("sheets"), rs.getLong("line_count"), rs.getLong("difference_count")};
+                }
+            }
+        });
+    }
+
+    /** One sheet's header with who entered it and its two counts, or {@code null} when it is gone. */
+    public StockCountSummary summary(int countId) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(StockCountHistoryQuery.HEADER)) {
+                statement.setInt(1, countId);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? summary(rs) : null;
+                }
+            }
+        });
+    }
+
+    /** What the posted sheets of the filter found, per item, up to {@code limit} items. */
+    public List<StockCountVarianceRow> variance(StockCountHistoryFilter filter, int limit) throws DaoException {
+        Object[] where = StockCountHistoryQuery.whereValues(filter.postedOnly());
+        Object[] values = Arrays.copyOf(where, where.length + 1);
+        values[where.length] = limit;
+        return withConnection(connection -> {
+            List<StockCountVarianceRow> rows = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(StockCountHistoryQuery.VARIANCE)) {
+                setData(statement, values);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        rows.add(new StockCountVarianceRow(rs.getInt("item_id"), rs.getString("barcode"),
+                                rs.getString("nameItem"), rs.getString("unit_name"), rs.getInt("counts"),
+                                rs.getDouble("surplus"), rs.getDouble("shortage"), rs.getDouble("net")));
+                    }
+                }
+            }
+            return rows;
+        });
+    }
+
+    private static StockCountSummary summary(ResultSet rs) throws SQLException {
+        Timestamp posted = rs.getTimestamp("posted_at");
+        return new StockCountSummary(
+                rs.getInt("id"),
+                rs.getObject("count_date", LocalDate.class),
+                rs.getInt("stock_id"),
+                rs.getString("stock_name"),
+                StockCountStatus.of(rs.getString("status")),
+                rs.getString("notes"),
+                posted == null ? null : posted.toLocalDateTime(),
+                rs.getString("user_name"),
+                rs.getInt("line_count"),
+                rs.getInt("difference_count"));
     }
 
     public List<StockCountLine> linesOf(int countId) throws DaoException {

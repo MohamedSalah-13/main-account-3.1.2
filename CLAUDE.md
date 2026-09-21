@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,153 tests** with 209 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-21 after the warehouse transfer history. What is
+**3,178 tests** with 215 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-21 after the warehouse count history. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -996,6 +996,17 @@ a slip (`StockTransferSlipLayout`, through `DocumentPdfPage`) printed with the q
 entered, in their own units**, offered straight after posting in place of the "posted" notice.
 The reversal stays in `StockTransferController`, because that file is what announces two moved
 balances (`MultiDeviceRefreshArchitectureTest`).
+
+**A count sheet names an item on one line, because each line carries the item's whole book**
+(`StockCountLines`, phase D2). `system_qty` is the item's balance when it was scanned, and a post
+moves each line's count less that book - so the screen, which kept a line per item *and* unit as an
+invoice does, turned two cartons and three pieces against a book of 30 into `24 - 30` plus
+`3 - 30`, and booked a shelf of 27 at **-3**. Reproduced on CI before the fix
+(`expected: <27.0> but was: <-3.0>`). A second unit of an item already on the sheet now restates
+its line in the base unit, and the service refuses a sheet naming an item twice. **Posted sheets
+are not rewritten** - `docs/warehouse-plan.md` §16 has the query that finds them. The count's
+history, its paper and a variance report by item are the screen's other two tabs, and a difference
+there is `adjustment_agg`'s own expression, read out of `R__views.sql` by the test.
 
 **`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
 warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see

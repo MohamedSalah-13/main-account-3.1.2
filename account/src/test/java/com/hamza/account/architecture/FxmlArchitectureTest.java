@@ -63,7 +63,7 @@ class FxmlArchitectureTest {
      * FXML files that do not yet declare {@code fx:controller}. Only ever remove
      * entries.
      * <p>
-     * These four are not the same kind of debt as the rest: nothing in
+     * These three are not the same kind of debt as the rest: nothing in
      * {@code src/main/java} loads them under any name - no {@code @FxmlPath}, no
      * {@code getResource} call, nothing. There is no controller to name, so
      * {@code fx:controller} cannot be added without inventing one. Leave them here
@@ -72,7 +72,6 @@ class FxmlArchitectureTest {
      */
     private static final Set<String> FXML_WITHOUT_CONTROLLER = Set.of(
             "com/hamza/account/view/add-treasury-amount.fxml",
-            "com/hamza/account/view/addStock-view.fxml",
             "com/hamza/account/view/excel-view.fxml",
             "com/hamza/account/view/reports/report-print.fxml");
 

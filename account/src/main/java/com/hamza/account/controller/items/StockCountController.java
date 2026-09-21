@@ -36,6 +36,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -113,6 +114,10 @@ public class StockCountController {
     private Text textLineCount, textDiffCount, textSurplus, textShortage;
     @FXML
     private AnchorPane root;
+    @FXML
+    private Tab historyTab, varianceTab;
+
+    private StockCountHistoryView history;
 
     @FXML
     public void initialize() {
@@ -120,6 +125,28 @@ public class StockCountController {
         buildActions();
         loadStocks();
         loadDraft();
+        buildReports();
+    }
+
+    /**
+     * The past sheets and the variance report, read when their tab is opened rather than when the
+     * screen is: most visits count, and neither is needed to.
+     */
+    private void buildReports() {
+        history = new StockCountHistoryView(stockCountService);
+        historyTab.setContent(history.build());
+        historyTab.setOnSelectionChanged(event -> {
+            if (historyTab.isSelected()) {
+                history.load();
+            }
+        });
+        StockCountVarianceView variance = new StockCountVarianceView(stockCountService);
+        varianceTab.setContent(variance.build());
+        varianceTab.setOnSelectionChanged(event -> {
+            if (varianceTab.isSelected()) {
+                variance.load();
+            }
+        });
     }
 
     private void loadStocks() {
@@ -351,7 +378,7 @@ public class StockCountController {
         lines.setAll(loaded.getLines());
         datePicker.setValue(loaded.getCountDate());
         textNotes.setText(loaded.getNotes());
-        labelStatus.setText(loaded.getStatus().title());
+        labelStatus.setText(LanguageManager.getInstance().getString(loaded.getStatus().labelKey()));
 
         boolean editable = loaded.isEditable();
         textScan.setDisable(!editable);
@@ -483,9 +510,14 @@ public class StockCountController {
 
         runSheetTask("stock-count-post", () -> stockCountService.post(sheet()), moved -> {
             eventBus.publish(new StockCountPosted(count.getId(), moved));
-            AllAlerts.alertSaveWithMessage(lm.getString("item.stockcount.msg.post.success", moved));
             // The posted sheet is read-only from here, and the next count starts clean.
             show(count);
+            // One question in place of the "posted" notice it replaces: the record of a correction
+            // is wanted at the moment the correction is made.
+            if (AllAlerts.confirm_all(lm.getString("item.stockcount.confirm.post.title"),
+                    lm.getString("item.stockcount.confirm.print.sheet", moved))) {
+                StockCountHistoryView.printSheet(root, stockCountService, count.getId());
+            }
         });
     }
 

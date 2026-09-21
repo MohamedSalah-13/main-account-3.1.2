@@ -1,5 +1,7 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
@@ -128,6 +130,9 @@ public class StockTransferController {
         Utils.whenEnterPressed(comboUnit, txtQuantity);
         txtQuantity.setOnAction(event -> addLine());
         datePicker.setValue(LocalDate.now());
+        // A hint, not the guard - StockTransferService.transfer asks for the key itself. The screen
+        // opens on stock.transfer.show now, so a reader of the history sees a form he cannot post.
+        btnPost.setDisable(!AuthorizationGuard.isGranted(AppPermissions.STOCK_TRANSFER_POST));
     }
 
     // ------------------------------------------------------------------
