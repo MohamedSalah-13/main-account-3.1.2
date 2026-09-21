@@ -208,11 +208,10 @@ class ItemCardBalanceAcceptanceTest {
 
     private static int insertItem(Connection connection, String marker) throws Exception {
         String sql = "INSERT INTO items(barcode,nameItem,sub_num,buy_price,sel_price1,sel_price2,sel_price3,"
-                + "unit_id,mini_quantity,first_balance,user_id) VALUES (?,?,1,1,10,10,10,1,0,?,1)";
+                + "unit_id,mini_quantity,user_id) VALUES (?,?,1,1,10,10,10,1,0,1)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, marker);
             statement.setString(2, marker);
-            statement.setDouble(3, SOURCE_OPENING);
             assertEquals(1, statement.executeUpdate());
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 assertTrue(keys.next());
@@ -223,12 +222,11 @@ class ItemCardBalanceAcceptanceTest {
 
     private static void insertItemStock(Connection connection, int itemId, int stockId, double opening)
             throws Exception {
-        String sql = "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO items_stock(item_id,stock_id,first_balance) VALUES (?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, itemId);
             statement.setInt(2, stockId);
             statement.setDouble(3, opening);
-            statement.setDouble(4, opening);
             assertEquals(1, statement.executeUpdate());
         }
     }

@@ -28,7 +28,7 @@ import java.util.Map;
  * Both methods join whatever transaction is open on the calling thread, which is how a lock
  * taken here is still held while the caller writes.
  */
-public class WarehouseStockDao extends AbstractDao<Void> {
+public class WarehouseStockDao extends AbstractDao<Void> implements WarehouseOpeningBalance.Reader {
 
     /**
      * Locks each item's row in {@code stockId} and answers the item names, lowest id first.
@@ -97,8 +97,7 @@ public class WarehouseStockDao extends AbstractDao<Void> {
             return;
         }
         withConnection(connection -> {
-            String sql = "INSERT IGNORE INTO items_stock(item_id, stock_id, first_balance, current_quantity) "
-                    + "VALUES (?, ?, 0, 0)";
+            String sql = "INSERT IGNORE INTO items_stock(item_id, stock_id, first_balance) VALUES (?, ?, 0)";
             try (var statement = connection.prepareStatement(sql)) {
                 for (int itemId : itemIds) {
                     statement.setInt(1, itemId);
@@ -108,6 +107,44 @@ public class WarehouseStockDao extends AbstractDao<Void> {
                 statement.executeBatch();
             }
             return null;
+        });
+    }
+
+    /** {@link WarehouseOpeningBalance#MOVEMENT_COUNTS} for one item in one warehouse. */
+    @Override
+    public Map<String, Integer> openingMovementCounts(int itemId, int stockId) throws DaoException {
+        return withConnection(connection -> {
+            Map<String, Integer> counts = new HashMap<>();
+            try (var statement = connection.prepareStatement(WarehouseOpeningBalance.MOVEMENT_COUNTS)) {
+                int parameter = 1;
+                for (int i = 0; i < ItemStockBalanceSql.MOVEMENTS.size(); i++) {
+                    statement.setInt(parameter++, stockId);
+                    statement.setInt(parameter++, itemId);
+                }
+                try (var rows = statement.executeQuery()) {
+                    if (rows.next()) {
+                        for (ItemStockBalanceSql.Movement movement : ItemStockBalanceSql.MOVEMENTS) {
+                            counts.put(movement.column(), rows.getInt(movement.column()));
+                        }
+                    }
+                }
+            }
+            return counts;
+        });
+    }
+
+    /** The one opening balance there is since V78: {@code items_stock.first_balance}. */
+    @Override
+    public double openingBalance(int itemId, int stockId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    "SELECT first_balance FROM items_stock WHERE item_id = ? AND stock_id = ?")) {
+                statement.setInt(1, itemId);
+                statement.setInt(2, stockId);
+                try (var rows = statement.executeQuery()) {
+                    return rows.next() ? rows.getDouble(1) : 0d;
+                }
+            }
         });
     }
 

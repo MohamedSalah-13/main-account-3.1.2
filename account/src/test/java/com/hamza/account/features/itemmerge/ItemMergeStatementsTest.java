@@ -96,7 +96,9 @@ class ItemMergeStatementsTest {
                            u.unit_name,
                            i.item_has_validity,
                            i.sel_price1,
-                           i.first_balance,
+                           (SELECT COALESCE(SUM(s.first_balance), 0)
+                            FROM items_stock s
+                            WHERE s.item_id = i.id) AS first_balance,
                            REPLACE(LOWER(TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(i.nameItem, 'أ', 'ا'), 'إ', 'ا'), 'آ', 'ا'), 'ة', 'ه'), 'ى', 'ي'))), ' ', '') AS group_key,
                            COALESCE(c.line_count, 0) AS line_count,
                            c.last_movement
@@ -160,21 +162,17 @@ class ItemMergeStatementsTest {
     @DisplayName("the item")
     class Item {
 
+        /** The opening across every warehouse: V78 left no copy of it on the item row. */
         @Test
         void selectItem() {
             assertEquals("""
-                    SELECT id, nameItem, barcode, unit_id, item_has_validity, first_balance
-                    FROM items
-                    WHERE id = ?""", ItemMergeStatements.SELECT_ITEM);
+                    SELECT i.id, i.nameItem, i.barcode, i.unit_id, i.item_has_validity,
+                           (SELECT COALESCE(SUM(s.first_balance), 0)
+                            FROM items_stock s
+                            WHERE s.item_id = i.id) AS first_balance
+                    FROM items i
+                    WHERE i.id = ?""", ItemMergeStatements.SELECT_ITEM);
             assertTakes(1, ItemMergeStatements.SELECT_ITEM);
-        }
-
-        /** Added, not replaced - and read in Java first, MySQL refusing a subquery on the table it updates. */
-        @Test
-        void addFirstBalance() {
-            assertEquals("UPDATE items SET first_balance = first_balance + ? WHERE id = ?",
-                    ItemMergeStatements.ADD_FIRST_BALANCE);
-            assertTakes(2, ItemMergeStatements.ADD_FIRST_BALANCE);
         }
     }
 
@@ -278,8 +276,8 @@ class ItemMergeStatementsTest {
         @Test
         void aRowForEveryWarehouseTheTargetLacks() {
             assertEquals("""
-                    INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
-                    SELECT ?, s.stock_id, 0, 0
+                    INSERT INTO items_stock (item_id, stock_id, first_balance)
+                    SELECT ?, s.stock_id, 0
                     FROM items_stock s
                              LEFT JOIN items_stock t ON t.item_id = ? AND t.stock_id = s.stock_id
                     WHERE s.item_id = ? AND t.id IS NULL""", ItemMergeStatements.INSERT_MISSING_ITEMS_STOCK);

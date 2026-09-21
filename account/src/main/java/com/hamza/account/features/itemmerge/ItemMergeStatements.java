@@ -128,7 +128,9 @@ public final class ItemMergeStatements {
                        u.unit_name,
                        i.item_has_validity,
                        i.sel_price1,
-                       i.first_balance,
+                       (SELECT COALESCE(SUM(s.first_balance), 0)
+                        FROM items_stock s
+                        WHERE s.item_id = i.id) AS first_balance,
                        %1$s AS group_key,
                        COALESCE(c.line_count, 0) AS line_count,
                        c.last_movement
@@ -152,17 +154,21 @@ public final class ItemMergeStatements {
     /**
      * {@code (item)}. The few columns a merge has to judge - not the whole model, which
      * carries an image blob and a JavaFX-bearing type this package has no use for.
+     * <p>
+     * The opening balance is the item's across every warehouse, what the preview shows and
+     * the log records. It is not what the merge moves: {@link #ADD_ITEMS_STOCK_BALANCES}
+     * adds each warehouse's to the same warehouse's, and since V78 there is no other copy.
+     * The merge used to add this figure to the target's {@code items.first_balance} as well,
+     * where a trigger copied the result over warehouse 1 - agreeing with the per-warehouse
+     * sum only for as long as the two copies had never drifted.
      */
     public static final String SELECT_ITEM = """
-            SELECT id, nameItem, barcode, unit_id, item_has_validity, first_balance
-            FROM items
-            WHERE id = ?""";
-
-    /**
-     * {@code (balance, target)}. The value is read in Java first: MySQL refuses a
-     * subquery on {@code items} inside an {@code UPDATE} of {@code items}.
-     */
-    public static final String ADD_FIRST_BALANCE = "UPDATE items SET first_balance = first_balance + ? WHERE id = ?";
+            SELECT i.id, i.nameItem, i.barcode, i.unit_id, i.item_has_validity,
+                   (SELECT COALESCE(SUM(s.first_balance), 0)
+                    FROM items_stock s
+                    WHERE s.item_id = i.id) AS first_balance
+            FROM items i
+            WHERE i.id = ?""";
 
     // ---- stock count lines ---------------------------------------------------
 
@@ -192,8 +198,9 @@ public final class ItemMergeStatements {
 
     /**
      * {@code (target, target, source)}. A row for every warehouse the source was in and
-     * the target is not. There is one warehouse today, so this normally moves nothing -
-     * it is here because the unique key says the plain move would fail if there were two.
+     * the target is not. Every item has a row in every warehouse, so this normally adds
+     * nothing - it is here for a row seeded outside the application, which would otherwise
+     * leave the source's opening in that warehouse with nowhere to go.
      * <p>
      * The missing row is seeded at zero because the source opening is added to the
      * matching target row by {@link #ADD_ITEMS_STOCK_BALANCES}. Since V18,
@@ -201,8 +208,8 @@ public final class ItemMergeStatements {
      * {@code items_stock}; copying the source value here would add it twice.
      */
     public static final String INSERT_MISSING_ITEMS_STOCK = """
-            INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
-            SELECT ?, s.stock_id, 0, 0
+            INSERT INTO items_stock (item_id, stock_id, first_balance)
+            SELECT ?, s.stock_id, 0
             FROM items_stock s
                      LEFT JOIN items_stock t ON t.item_id = ? AND t.stock_id = s.stock_id
             WHERE s.item_id = ? AND t.id IS NULL""";

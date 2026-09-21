@@ -200,7 +200,7 @@ class InvoiceStockDatabaseAcceptanceTest {
     private static int insertItem(Connection connection, String marker, double opening)
             throws Exception {
         String sql = "INSERT INTO items(barcode,nameItem,sub_num,buy_price,sel_price1,sel_price2,sel_price3,"
-                + "unit_id,mini_quantity,first_balance,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+                + "unit_id,mini_quantity,user_id) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, marker);
@@ -212,17 +212,15 @@ class InvoiceStockDatabaseAcceptanceTest {
             statement.setDouble(7, 10);
             statement.setInt(8, 1);
             statement.setDouble(9, 0);
-            statement.setDouble(10, opening);
-            statement.setInt(11, 1);
+            statement.setInt(10, 1);
             assertEquals(1, statement.executeUpdate());
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 assertTrue(keys.next());
                 int itemId = keys.getInt(1);
                 try (PreparedStatement stock = connection.prepareStatement(
-                        "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,1,?,?)")) {
+                        "INSERT INTO items_stock(item_id,stock_id,first_balance) VALUES (?,1,?)")) {
                     stock.setInt(1, itemId);
                     stock.setDouble(2, opening);
-                    stock.setDouble(3, opening);
                     stock.executeUpdate();
                 }
                 return itemId;
@@ -244,9 +242,9 @@ class InvoiceStockDatabaseAcceptanceTest {
     private static void ensureStockRow(Connection connection, int itemId, int stockId, double opening)
             throws Exception {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,?,?,?)")) {
+                "INSERT INTO items_stock(item_id,stock_id,first_balance) VALUES (?,?,?)")) {
             statement.setInt(1, itemId); statement.setInt(2, stockId);
-            statement.setDouble(3, opening); statement.setDouble(4, opening);
+            statement.setDouble(3, opening);
             statement.executeUpdate();
         }
     }
@@ -263,7 +261,7 @@ class InvoiceStockDatabaseAcceptanceTest {
     private static void updateOpeningBalance(
             Connection connection, int itemId, double balance) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE items SET first_balance=? WHERE id=?")) {
+                "UPDATE items_stock SET first_balance=? WHERE item_id=? AND stock_id=1")) {
             statement.setDouble(1, balance);
             statement.setInt(2, itemId);
             assertEquals(1, statement.executeUpdate());

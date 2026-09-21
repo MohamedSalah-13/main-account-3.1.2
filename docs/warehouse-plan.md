@@ -192,7 +192,9 @@ says for each whether anything reproduced it. Everything still open here is stil
    `after_items_update` (`R__triggers.sql`) copies `items.first_balance` into the warehouse-1 row of
    `items_stock` on **every** update of an item, whatever was updated. And
    `items_stock.current_quantity` is written at insert in four places, updated by nothing and read
-   by no view: a dead column that looks exactly like a live balance.
+   by no view: a dead column that looks exactly like a live balance. **Fixed in E2 (§18):** one
+   column, no trigger, no `current_quantity` - and the trigger was shown undoing an opening on a V77
+   schema before it went.
 6. **`stock_count_lines.item_id` is `ON DELETE CASCADE`**, so deleting an item removes its lines
    from posted counts - a recorded correction, gone with no trace. `DeleteRegistry.ITEMS` cannot
    refuse what it does not list, and by the catalogue's own rule a cascading key is not listed; the
@@ -278,10 +280,9 @@ Written down so they are taken once, on purpose, rather than by whoever gets the
    the second simpler and is what a single legal entity wants); what a sale below zero is costed at;
    and whether an edit of an old purchase re-costs the sales after it (it should not - the
    `InvoiceWalletFee` rule about a month already reported).
-2. **Which copy of the opening balance survives.** `items_stock.first_balance` is what the view
-   reads since `V18`; `items.first_balance` is what the item screen writes and the trigger copies.
-   The end state is one column and no trigger, but `OpeningBalanceGuard`, the bulk editor, the Excel
-   import and `ItemMergeStatements` all touch it, so it is a phase and not a line.
+2. ~~**Which copy of the opening balance survives.**~~ **Decided and carried out in E2 (`V78`, §18):**
+   `items_stock.first_balance`, one per item per warehouse. `items.first_balance`, the trigger that
+   copied it over warehouse 1 and `items_stock.current_quantity` are gone.
 3. **Whether a transfer moves a batch.** Either a transfer line carries an expiry date and is picked
    from the batches on hand exactly as a sale is (`EXISTING_BATCH`), or expiry stays a
    whole-business question. The first is right and is more than a column.
@@ -318,8 +319,9 @@ largest phase and every part of it is a screen - one pull request each:
 - **E1 - a warehouse switched off, not deleted** (`V77`). **Delivered 2026-09-21, see §17.**
   `stocks.is_active` with a scope argument and **no default**, the way `PartySearchScope` and
   `EmployeeScope` have none.
-- **E2 - the opening balance.** An opening balance per warehouse from the item screen; decision
-  §9.2 carried out - one column, the trigger and `current_quantity` dropped.
+- **E2 - the opening balance** (`V78`). **Delivered 2026-09-21, see §18.** An opening balance per
+  warehouse - entered from the warehouse's row rather than the item screen, for the reason §18 gives;
+  decision §9.2 carried out - one column, the trigger and `current_quantity` dropped.
 
 **F - the ledger becomes the source** (roadmap 8.1, 8.4's sixth producer, 8.6). Transfers and
 openings write `stock_movements`; an edit and a delete become reversals; the append-only triggers;
@@ -879,3 +881,109 @@ employees: stopped, never erased, its history intact and readable.
 
 - **Signed in as an ordinary user** - the switch's permission is proven through the service only.
 - The transfer, count and price-check pickers on screen; they read the same scope the invoice does.
+
+## 18. What phase E2 delivered (2026-09-21)
+
+An item's opening balance is **one figure per warehouse, in one place**, and a warehouse's openings
+can be entered for the items nothing has moved in it. One migration, `V78`. Decision §9.2, carried
+out.
+
+### Why
+
+The opening lived in three places. `items_stock.first_balance` is the one every balance is read
+from (`quantity_items_table` since `V18`). `items.first_balance` is what the item screen wrote.
+And `after_items_update` copied the second over warehouse 1's row on **every** update of an item -
+its name, its price, its picture - so the two agreed only by that trigger firing, and any figure
+that reached the warehouse row another way was undone by the next save of the item for an unrelated
+reason. **Shown, not reasoned:** on a schema migrated to V77, an opening of 6 written to warehouse 1's
+row read 0 after `UPDATE items SET buy_price = 2` on the same item. A per-warehouse opening entered
+anywhere but the item screen would have met exactly that.
+
+The lock had the same fault. `OpeningBalanceRegistry.ITEMS` counted an item's lines in **every**
+warehouse and compared against the item row's copy: an item sold only in a branch could not have
+its main warehouse's opening entered, while nothing guarded a second warehouse's opening at all.
+
+### What changed
+
+- **`V78` drops `items.first_balance`, the trigger, and `items_stock.current_quantity`** (written as
+  zero at every insert and read by nothing - a dead column that looked like a live balance). It moves
+  the one figure that would otherwise be lost first: an item with no row in the default warehouse,
+  whose opening lived on the item alone, gets one. No figure any screen showed moves - the screens
+  read `items_stock`, so where the two copies had drifted, `items_stock`'s is the one kept. The item
+  audit triggers named the dropped column, so V78 drops them too and `R__triggers.sql` recreates them
+  without it; a trigger naming a missing column fails every write to its table.
+- **`WarehouseOpeningBalance` is the rule, per (item, warehouse).** Only that warehouse's own lines
+  close its opening. What counts as a line is `ItemStockBalanceSql.MOVEMENTS` - the balance's own
+  terms, held to the view by `ItemStockBalanceSqlTest` - so a movement added to the view locks the
+  opening with nothing to remember; one deliberate difference, a **draft** count locks it as much as
+  a posted one, because the draft holds the book the counter was shown. `WarehouseStockDao` is its
+  reader, the one place a warehouse's rows are read. The item screen, the bulk editor and the new
+  screen all ask it; `OpeningBalanceRegistry` keeps the parties' rules only.
+- **A warehouse's openings are entered from its row on the warehouses screen**
+  (`WarehouseOpeningView`, "أرصدة أول المدة"), not from the item screen as §10 first said. The case
+  is a warehouse joining a shop that already trades - many items, one warehouse, once - and the item
+  screen's one field per item is the wrong gesture for it. That field stays the default warehouse's
+  opening, and now says so. The screen lists the warehouse's items with their opening in the base
+  unit and whether they have moved there; the ones that have take no figure. Typed figures are held
+  across pages (`WarehouseOpeningDraft`) and saved together by `WarehouseOpeningService` under
+  `items.update`, locked in item-id order through `WarehouseStockDao` and refused **whole** for a
+  switched-off warehouse, an item gone from it, a figure changed since the screen read it, or an item
+  that has moved there since.
+- **An opening changed is audited where it now lives**: `audit_items_stock_opening`, an UPDATE trigger
+  on `items_stock` that writes only when `first_balance` moves - a row is inserted per item per
+  warehouse whenever either is created, and an INSERT trigger would log one row per item for every
+  warehouse made.
+- **The merge adds each warehouse's opening to the same warehouse of the target**, as it already did,
+  and no longer also adds the total to the item row's copy. `Items_StockDao` lost the model it mapped
+  into and the finder and inserts nothing called.
+
+### How it was checked
+
+- **Unit tests:** `WarehouseOpeningBalanceTest` (the verdicts, an unsaved item never queried, both
+  halves of a transfer counted as one kind of line, every term of the balance with words in all three
+  bundles, drafts counted), `WarehouseOpeningDraftTest`, `WarehouseOpeningQueryTest`,
+  `WarehouseOpeningServiceTest` (the permissions before any read, impossible figures refused before a
+  transaction), `OneOpeningBalanceMigrationTest` (V78 and the triggers file as text, and no statement
+  in the application writing either dropped column). 3,230 tests, 226 skipped.
+- **Against MySQL:** `WarehouseOpeningDatabaseAcceptanceTest`, seven cases through the services the
+  screens call, signed in as an ordinary user, green twice: V78 left one column and no mirror; an
+  opening entered for a branch reaches the branch's balance and not the main warehouse's, and the log;
+  a sale, a transfer and a draft count each close the warehouse they moved in and not another; a batch
+  holding one item that moved after it was typed is refused whole; a figure changed underneath is not
+  written over; a switched-off warehouse is refused; and **an edit of the item leaves warehouse 1's
+  opening alone** - the defect the trigger was - while the bulk editor's opening goes to warehouse 1 and
+  is refused under a draft count. Its first run failed on its own fixture, not the code: a loaded item
+  takes the signed-in user as its author and the test's operator is not a row of `users`.
+- **All 246 acceptance tests green** on a schema migrated from nothing to `V78` (82 migrations).
+- **The upgrade path, on data:** a schema migrated to V77 from the previous migration files, seeded
+  with openings that had drifted apart - warehouse 1 holding 3 where the item row said 7 - an item
+  with no warehouse row at all, and the trigger's defect reproduced (above); then migrated to V78.
+  Every figure the screens read survived (3, not 7), the orphan's 9 landed on warehouse 1, both
+  columns and the trigger were gone, and the same price edit then left an opening of 6 at 6, with the
+  change in the audit log.
+- **Watched on a screen at 1366x768**, on a schema with a branch that had just joined: oil opened at
+  30 and sold from the main warehouse, sugar never moved, rice bought into the branch. The branch's
+  window listed rice as "عليه حركة هنا" and the other two open. A code scanned into the search found
+  sugar alone and opened its cell; 20 and Enter held it and put the caret back in the search. MySQL
+  and the audit log held what was typed after Save, and the items list read oil 40 (30 - 2 + 12).
+  Rice's item screen had its field open - it moved only in the branch - and oil's closed at 30, the
+  main warehouse's own figure rather than 42 across both.
+
+### What only the screen found
+
+- **The second scan of a session saved 120 where 12 was typed.** The search replaces the table's rows
+  and opens the quantity cell on the next pulse; when the table then gave that cell its new row, JavaFX
+  rewrote the editor's text and dropped its selection, so the digits went in front of the "0". Seen on
+  screen and confirmed in MySQL (`first_balance = 120.000`). The table is laid out before the editor
+  opens, and a cell refilled while editing keeps its text selected; the same two scans then saved 12.
+- **A scan that found nothing to type into left its code unselected**, so the next scan was appended to
+  it and found nothing. The code is selected now whenever no editor opens.
+- **The item screen's locked opening had never shown why it was locked.** JavaFX shows no tooltip on a
+  disabled control, and the explanation was on the field alone. It is on the field's label too now.
+
+### Not seen
+
+- **Signed in as an ordinary user** - the permissions are proven through the services only, and a
+  reader with `stock.show` and without `items.update` should see the list with no Save button.
+- **English**, and a warehouse with more items than one page.
+- **A second machine** refreshing its items list and inventory from the announcement.

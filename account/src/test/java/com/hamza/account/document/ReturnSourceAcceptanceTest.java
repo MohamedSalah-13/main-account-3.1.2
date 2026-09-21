@@ -90,7 +90,7 @@ class ReturnSourceAcceptanceTest {
     private static int insertItem(Connection connection) throws Exception {
         String marker = "RETURN_SOURCE_ACCEPTANCE_" + java.util.UUID.randomUUID();
         String sql = "INSERT INTO items(barcode,nameItem,sub_num,buy_price,sel_price1,sel_price2,"
-                + "sel_price3,unit_id,mini_quantity,first_balance,user_id) VALUES (?,?,1,1,10,10,10,1,0,50,1)";
+                + "sel_price3,unit_id,mini_quantity,user_id) VALUES (?,?,1,1,10,10,10,1,0,1)";
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, marker);

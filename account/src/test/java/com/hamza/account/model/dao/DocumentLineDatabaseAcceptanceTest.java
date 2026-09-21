@@ -233,7 +233,7 @@ class DocumentLineDatabaseAcceptanceTest {
 
     private static int insertItem(Connection connection) throws Exception {
         String sql = "INSERT INTO items(barcode,nameItem,sub_num,buy_price,sel_price1,sel_price2,sel_price3,"
-                + "unit_id,mini_quantity,first_balance,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+                + "unit_id,mini_quantity,user_id) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, MARKER);
             statement.setString(2, MARKER);
@@ -244,14 +244,13 @@ class DocumentLineDatabaseAcceptanceTest {
             statement.setDouble(7, 10);
             statement.setInt(8, 1);
             statement.setDouble(9, 0);
-            statement.setDouble(10, 0);
-            statement.setInt(11, 1);
+            statement.setInt(10, 1);
             assertEquals(1, statement.executeUpdate());
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 assertTrue(keys.next());
                 int itemId = keys.getInt(1);
                 try (PreparedStatement stock = connection.prepareStatement(
-                        "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,1,0,0)")) {
+                        "INSERT INTO items_stock(item_id,stock_id,first_balance) VALUES (?,1,0)")) {
                     stock.setInt(1, itemId);
                     stock.executeUpdate();
                 }

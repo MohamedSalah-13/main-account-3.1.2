@@ -38,19 +38,8 @@ final class StockTransferDao extends AbstractDao<Void> {
      * nothing to add itself onto in {@code quantity_items_table}.
      */
     void ensureDestination(int stockId, List<Integer> itemIds) throws DaoException {
-        withConnection(connection -> {
-            String sql = "INSERT IGNORE INTO items_stock(item_id, stock_id, first_balance, current_quantity) "
-                    + "VALUES (?, ?, 0, 0)";
-            try (var statement = connection.prepareStatement(sql)) {
-                for (int itemId : itemIds) {
-                    statement.setInt(1, itemId);
-                    statement.setInt(2, stockId);
-                    statement.addBatch();
-                }
-                statement.executeBatch();
-            }
-            return null;
-        });
+        // The same statement as a count's, kept once: V78 dropped a column both copies wrote.
+        warehouseStock.ensureRows(stockId, itemIds);
     }
 
     /**

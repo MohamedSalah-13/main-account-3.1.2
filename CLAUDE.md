@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,191 tests** with 219 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-21 after warehouses could be switched off. What is
+**3,230 tests** with 226 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-21 after an item's opening balance became one per warehouse. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -1016,6 +1016,20 @@ Hiding it is not the guard: `InvoiceStockGuard` (a new document only - an edit o
 goes through), `StockTransferService` and `StockCountService` each refuse a switched-off warehouse
 through `WarehouseStockDao.nameIfInactive`. Switching off is refused for the default warehouse, one
 with a draft count open, and one still holding a balance. `Stock` is a plain object now.
+
+**An item's opening balance is one per warehouse, and lives in `items_stock` alone** (V78, phase E2).
+There were three places: `items_stock.first_balance`, which every balance is read from;
+`items.first_balance`, which the item screen wrote; and `after_items_update`, which copied the second
+over warehouse 1 on **every** update of an item - its name, its price - so an opening that reached
+the warehouse row any other way was undone by the next price edit. That was shown on a V77 schema
+before V78 dropped all of it. Whether an opening may still change is `WarehouseOpeningBalance`: the
+lock is **per warehouse** - only that warehouse's own lines close it - and its list of what moves an
+item is `ItemStockBalanceSql.MOVEMENTS`, the balance's own terms, less the `POSTED` condition, since a
+draft count holds the book the counter was shown. It replaced `OpeningBalanceRegistry.ITEMS`, which
+counted lines in every warehouse against the copy. The item screen's field is the default warehouse's
+opening and says so; the others are entered from the warehouse's row (`WarehouseOpeningView`, under
+`items.update`), one warehouse and many items at a time, refused whole for a warehouse switched off,
+a figure changed since it was read, or an item that has moved there.
 
 **`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
 warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see
@@ -2477,8 +2491,11 @@ cannot be deleted with the row. `docs/item-merge-plan.md` is the agreed plan and
 
 **It writes no figure.** A document line carries its own price, buy price, profit and unit factor, and
 the stock balance is a sum over those same lines (`quantity_items_table`), so moving a line changes
-nothing but which item it is filed under. The single value written is the source's `items.first_balance`,
-added to the target's — it is the only number never derived from a line, and its row is about to go.
+nothing but which item it is filed under. The single value written is the source's opening balance,
+added **per warehouse** to the target's `items_stock` row for the same warehouse — it is the only
+number never derived from a line, and its row is about to go. (It was also added to the target's
+`items.first_balance` until V78, where a trigger copied the result over warehouse 1: the same figure
+only for as long as the two copies had never drifted.)
 
 **`ItemReferenceRegistry` is the whole correctness of it.** Twelve places name an item, and the schema
 calls the column `num` on `sales` and `purchase`, `item_id` on their returns, `items_id` on
@@ -2773,9 +2790,12 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V77`, which lets a
-  warehouse be switched off instead of deleted (`stocks.is_active`, every existing warehouse left
-  on - see **Warehouses**). Before it `V76` gives
+  new database executes it and continues with `V2`, `V3`, … The current head is `V78`, which leaves
+  an item one opening balance per warehouse (`items_stock.first_balance`) and drops the other two
+  places one lived - `items.first_balance` and the trigger that copied it over warehouse 1 on every
+  update of the item - with the dead `items_stock.current_quantity` (see **Warehouses**). Before it
+  `V77` lets a warehouse be switched off instead of deleted (`stocks.is_active`, every existing
+  warehouse left on). Before it `V76` gives
   a stock transfer a note (`stock_transfer.notes`, NULL when nothing was written) - why or for whom
   the goods moved, printed on the slip that now travels with them. Before it
   `V75` stops

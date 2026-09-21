@@ -181,14 +181,6 @@ public class ItemMergeDao extends AbstractDao<MergeItem> {
         return moved;
     }
 
-    /** Adds the source's opening balance to the target's. */
-    public int addFirstBalance(BigDecimal balance, int targetId) throws DaoException {
-        if (balance == null || balance.signum() == 0) {
-            return 0;
-        }
-        return executeUpdate(ItemMergeStatements.ADD_FIRST_BALANCE, balance, targetId);
-    }
-
     // ---- the log -------------------------------------------------------------
 
     /** Writes the merge and its per-table counts, and answers the log row's id. */

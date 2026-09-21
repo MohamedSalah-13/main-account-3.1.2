@@ -63,8 +63,8 @@ class OpeningBalanceGuardTest {
         void unmovedRowIsOpen() throws DaoException {
             OpeningBalanceGuard guard = guardOver(100);
 
-            assertFalse(guard.isLocked(OpeningBalanceRegistry.ITEMS, 5));
-            assertTrue(guard.mayWrite(OpeningBalanceRegistry.ITEMS, 5, 999));
+            assertFalse(guard.isLocked(OpeningBalanceRegistry.CUSTOMERS, 5));
+            assertTrue(guard.mayWrite(OpeningBalanceRegistry.CUSTOMERS, 5, 999));
         }
 
         /** What a bulk edit asks of every row before it writes any of them. */
@@ -72,11 +72,11 @@ class OpeningBalanceGuardTest {
         @DisplayName("the verdict answers what mayWrite answers, without throwing")
         void theVerdictAgreesWithMayWrite() throws DaoException {
             assertEquals(OpeningBalanceGuard.Verdict.OPEN,
-                    guardOver(100).verdict(OpeningBalanceRegistry.ITEMS, 5, 999));
+                    guardOver(100).verdict(OpeningBalanceRegistry.CUSTOMERS, 5, 999));
             assertEquals(OpeningBalanceGuard.Verdict.UNCHANGED,
-                    guardOver(250, new Reference("فاتورة بيع", 1)).verdict(OpeningBalanceRegistry.ITEMS, 5, 250.0001));
+                    guardOver(250, new Reference("فاتورة بيع", 1)).verdict(OpeningBalanceRegistry.CUSTOMERS, 5, 250.0001));
             assertEquals(OpeningBalanceGuard.Verdict.REFUSED,
-                    guardOver(250, new Reference("فاتورة بيع", 1)).verdict(OpeningBalanceRegistry.ITEMS, 5, 249.99));
+                    guardOver(250, new Reference("فاتورة بيع", 1)).verdict(OpeningBalanceRegistry.CUSTOMERS, 5, 249.99));
         }
 
         @Test
@@ -165,8 +165,8 @@ class OpeningBalanceGuardTest {
         @Test
         @DisplayName("every rule declares what moves it and how to correct it")
         void everyRuleIsComplete() {
-            for (OpeningBalanceRule rule : List.of(OpeningBalanceRegistry.ITEMS,
-                    OpeningBalanceRegistry.CUSTOMERS, OpeningBalanceRegistry.SUPPLIERS)) {
+            for (OpeningBalanceRule rule : List.of(OpeningBalanceRegistry.CUSTOMERS,
+                    OpeningBalanceRegistry.SUPPLIERS)) {
                 assertFalse(rule.entity().isBlank(), "a rule has no entity name");
                 assertFalse(rule.table().isBlank(), () -> rule.entity() + " has no table");
                 assertFalse(rule.movements().isEmpty(), () -> rule.entity() + " declares no movements");
@@ -179,24 +179,14 @@ class OpeningBalanceGuardTest {
         @Test
         @DisplayName("no rule names the same movement table twice")
         void movementsAreDistinct() {
-            for (OpeningBalanceRule rule : List.of(OpeningBalanceRegistry.ITEMS,
-                    OpeningBalanceRegistry.CUSTOMERS, OpeningBalanceRegistry.SUPPLIERS)) {
+            for (OpeningBalanceRule rule : List.of(OpeningBalanceRegistry.CUSTOMERS,
+                    OpeningBalanceRegistry.SUPPLIERS)) {
                 Set<String> seen = new HashSet<>();
                 for (ReferenceCheck check : rule.movements()) {
                     assertTrue(seen.add(check.table() + "." + check.column()),
                             () -> rule.entity() + " counts " + check.table() + " twice");
                 }
             }
-        }
-
-        @Test
-        @DisplayName("the item rule covers both invoice sides, both returns, transfers and counts")
-        void theItemRuleCoversEveryMovement() {
-            List<String> tables = OpeningBalanceRegistry.ITEMS.movements().stream()
-                    .map(ReferenceCheck::table).toList();
-
-            assertTrue(tables.containsAll(List.of("purchase", "sales", "purchase_re", "sales_re",
-                    "stock_transfer_list", "stock_count_lines")), tables.toString());
         }
 
         @Test

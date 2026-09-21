@@ -59,6 +59,9 @@ import java.util.function.Consumer;
  * refused by the service for the default warehouse, one still holding stock, and one with a draft
  * count open. A switched-off warehouse is marked here, never hidden - this is the one screen it is
  * switched back on from, the {@code PartySearchScope} lesson.
+ * <p>
+ * A warehouse's opening balances open from its row too ({@link WarehouseOpeningView}, V78): what a
+ * new warehouse already holds is entered there, item by item, for the items nothing has moved in it.
  */
 @FxmlPath(pathFile = "items/stocks-view.fxml")
 public class StocksController {
@@ -144,6 +147,11 @@ public class StocksController {
                 RowAction.permitted(List.of(
                         RowAction.of("stocks.edit", AppIcon.EDIT, "app-neutral-button",
                                 AppPermissions.STOCK_UPDATE, this::edit),
+                        // A switched-off warehouse holds nothing (the service refused to switch it
+                        // off otherwise) and takes no new movement, an opening included.
+                        new RowAction<>("stocks.opening", AppIcon.ITEM, "app-neutral-button",
+                                AppPermissions.STOCK_SHOW, Stock::isActive,
+                                stock -> WarehouseOpeningView.open(table.getScene().getWindow(), stock)),
                         // Two buttons, each disabled where it does not apply, rather than one whose
                         // meaning changes: the column keeps its shape as the eye runs down it.
                         new RowAction<>("stocks.deactivate", AppIcon.HIDE, "app-neutral-button",

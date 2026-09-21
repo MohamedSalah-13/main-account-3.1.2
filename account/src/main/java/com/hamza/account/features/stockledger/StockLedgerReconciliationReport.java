@@ -14,8 +14,8 @@ import java.util.List;
  * item in every warehouse, not just a scripted scenario?
  * <p>
  * One query, not a Java-side comparison of two loaded lists: {@code quantity_items_table}
- * already carries {@code first_balance} (read once from {@code items}, per its own long
- * comment on why), so the ledger side only has to add the sum of its own movements to
+ * already carries {@code first_balance} (each warehouse's own, from {@code items_stock}), so
+ * the ledger side only has to add the sum of its own movements to
  * that same number rather than re-deriving the opening balance a second way.
  * <p>
  * A tolerance of {@value #TOLERANCE} rather than exact equality: both sides are decimal

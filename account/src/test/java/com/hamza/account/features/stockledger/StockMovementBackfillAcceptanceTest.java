@@ -147,15 +147,16 @@ class StockMovementBackfillAcceptanceTest {
 
     private static double ledgerBalance(Connection connection, int itemId) throws Exception {
         String sql = """
-                SELECT (SELECT first_balance FROM items WHERE id = ?)
+                SELECT (SELECT first_balance FROM items_stock WHERE item_id = ? AND stock_id = ?)
                        + COALESCE(SUM(quantity_in), 0) - COALESCE(SUM(quantity_out), 0) AS balance
                 FROM stock_movements
                 WHERE item_id = ? AND stock_id = ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, itemId);
-            statement.setInt(2, itemId);
-            statement.setInt(3, STOCK_ID);
+            statement.setInt(2, STOCK_ID);
+            statement.setInt(3, itemId);
+            statement.setInt(4, STOCK_ID);
             try (ResultSet rows = statement.executeQuery()) {
                 assertTrue(rows.next());
                 return rows.getDouble("balance");
@@ -166,7 +167,7 @@ class StockMovementBackfillAcceptanceTest {
     private static int insertItem(Connection connection, String marker, double opening)
             throws Exception {
         String sql = "INSERT INTO items(barcode,nameItem,sub_num,buy_price,sel_price1,sel_price2,sel_price3,"
-                + "unit_id,mini_quantity,first_balance,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+                + "unit_id,mini_quantity,user_id) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, marker);
@@ -178,17 +179,15 @@ class StockMovementBackfillAcceptanceTest {
             statement.setDouble(7, 10);
             statement.setInt(8, UNIT_ID);
             statement.setDouble(9, 0);
-            statement.setDouble(10, opening);
-            statement.setInt(11, 1);
+            statement.setInt(10, 1);
             assertEquals(1, statement.executeUpdate());
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 assertTrue(keys.next());
                 int itemId = keys.getInt(1);
                 try (PreparedStatement stock = connection.prepareStatement(
-                        "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,1,?,?)")) {
+                        "INSERT INTO items_stock(item_id,stock_id,first_balance) VALUES (?,1,?)")) {
                     stock.setInt(1, itemId);
                     stock.setDouble(2, opening);
-                    stock.setDouble(3, opening);
                     stock.executeUpdate();
                 }
                 return itemId;

@@ -420,8 +420,8 @@ class ItemGroupMoveDatabaseAcceptanceTest {
     private int insertItem(Connection connection, String name, String barcode, int subGroup) throws Exception {
         return insertReturningKey(connection, """
                 INSERT INTO items (barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2,
-                                   sel_price3, unit_id, mini_quantity, first_balance, user_id)
-                VALUES (?, ?, ?, 10, 15, 15, 15, ?, 0, 0, ?)""",
+                                   sel_price3, unit_id, mini_quantity, user_id)
+                VALUES (?, ?, ?, 10, 15, 15, 15, ?, 0, ?)""",
                 barcode, name, subGroup, UNIT, USER);
     }
 

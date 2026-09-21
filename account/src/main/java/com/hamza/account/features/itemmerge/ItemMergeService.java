@@ -147,7 +147,6 @@ public record ItemMergeService(DaoFactory daoFactory, ProductFeatureAccess produ
         dao().moveUnits(targetId, sourceId, target.unitId());
         dao().keepBarcodes(targetId, sourceId);
         dao().mergePackages(targetId, sourceId);
-        dao().addFirstBalance(source.firstBalance(), targetId);
 
         int mergeId = dao().log(preview, userId, userName);
 

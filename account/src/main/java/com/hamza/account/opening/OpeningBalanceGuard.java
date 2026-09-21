@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
 public final class OpeningBalanceGuard {
 
     /**
-     * {@code DECIMAL(14,2)} for the parties and {@code DECIMAL(14,3)} for the items, so
-     * half a thousandth is below anything either column can hold. Comparing doubles
-     * more finely than the column stores would refuse a save nobody asked for.
+     * {@code DECIMAL(14,2)} for the parties, so half a thousandth is below anything the
+     * column can hold. Comparing doubles more finely than the column stores would refuse a
+     * save nobody asked for.
      */
     private static final double TOLERANCE = 0.0005;
 
