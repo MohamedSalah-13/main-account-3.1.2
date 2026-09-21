@@ -145,6 +145,23 @@ public class StockCountDao extends AbstractDao<StockCount> {
         });
     }
 
+    /** A warehouse's items in use, in shelf order, for the paper a count starts from. */
+    public List<StockCountBlankSheet.Row> blankSheetRows(int stockId) throws DaoException {
+        return withConnection(connection -> {
+            List<StockCountBlankSheet.Row> rows = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(StockCountBlankSheet.SQL)) {
+                statement.setInt(1, stockId);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        rows.add(new StockCountBlankSheet.Row(rs.getString("barcode"), rs.getString("nameItem"),
+                                rs.getString("group_name"), rs.getString("unit_name")));
+                    }
+                }
+            }
+            return rows;
+        });
+    }
+
     private static StockCountSummary summary(ResultSet rs) throws SQLException {
         Timestamp posted = rs.getTimestamp("posted_at");
         return new StockCountSummary(

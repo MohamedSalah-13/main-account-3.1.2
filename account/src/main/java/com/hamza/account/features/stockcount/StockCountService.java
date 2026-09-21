@@ -1,6 +1,7 @@
 package com.hamza.account.features.stockcount;
 
 import com.hamza.account.config.DefaultStock;
+import com.hamza.account.features.documentdelete.DocumentDeleteStockCheck;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.StockBalancesChanged;
@@ -22,6 +23,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -185,6 +187,29 @@ public record StockCountService(DaoFactory daoFactory) {
             ChangeAnnouncer.jdbc().announce(new StockBalancesChanged());
             return moved;
         });
+    }
+
+    /** The paper a count of {@code stockId} starts from - {@link StockCountBlankSheet}. A read. */
+    public StockCountBlankSheet blankSheet(int stockId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
+        var stock = daoFactory.stockDao().getDataById(stockId);
+        return new StockCountBlankSheet(stock == null ? "" : stock.getName(), dao().blankSheetRows(stockId));
+    }
+
+    /**
+     * The items posting this sheet would leave below zero in its warehouse - {@link StockCountPostCheck}.
+     * Read before the post is asked for and not inside it, the way {@code StockTransferService.deleteShortfalls}
+     * is, so nothing is held while a person reads a dialog. A warning, never a refusal.
+     */
+    public List<DocumentDeleteStockCheck.Shortfall> postShortfalls(StockCount count) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_POST);
+        if (count.getLines().isEmpty()) {
+            return List.of();
+        }
+        List<Integer> ids = count.getLines().stream().map(StockCountLine::getItemId).distinct().sorted().toList();
+        Map<Integer, Double> balances = daoFactory.warehouseStockDao().balances(count.getStockId(), ids);
+        var stock = daoFactory.stockDao().getDataById(count.getStockId());
+        return StockCountPostCheck.shortfalls(count.getLines(), balances, stock == null ? "" : stock.getName());
     }
 
     /**

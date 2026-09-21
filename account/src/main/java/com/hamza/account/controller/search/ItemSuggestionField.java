@@ -126,6 +126,15 @@ public final class ItemSuggestionField extends TextField {
         this.onCreateRequested = handler;
     }
 
+    /**
+     * Picks {@code item} as though it had been chosen from the list - for a screen that resolved what
+     * was typed itself, a scanned code most often, which ends its read with an Enter before any
+     * suggestion has had time to appear.
+     */
+    public void select(ItemsModel item) {
+        choose(item);
+    }
+
     /** Drops the current choice and empties the field without firing a search. */
     public void clearChoice() {
         hideSuggestions();

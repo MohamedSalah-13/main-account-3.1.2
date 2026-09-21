@@ -50,6 +50,7 @@
                                                 <Label fx:id="labelStatus" styleClass="summary-light-label" text="%item.stockcount.status.draft" />
                                                 <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
 
+                                                <Button fx:id="btnBlankSheet" mnemonicParsing="false" styleClass="neutral-button" text="%item.stockcount.btn.blank.sheet" />
                                                 <MenuButton fx:id="viewMenu" mnemonicParsing="false" />
                                                 <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.stockcount.btn.delete.draft" />
                                                 <Button fx:id="btnSave" mnemonicParsing="false" styleClass="neutral-button" text="%common.save" />

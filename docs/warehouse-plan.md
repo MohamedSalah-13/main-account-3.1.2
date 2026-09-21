@@ -184,8 +184,8 @@ says for each whether anything reproduced it. Everything still open here is stil
    <br>What is real in that paragraph is smaller: **an item with no `items_stock` row in the
    warehouse being counted posts an adjustment that `quantity_items_table` never reads** - the
    count reports lines moved and nothing moves - and **nothing checks whether the result is below
-   zero.** The first is fixed (§13); the second is open, and a count is the one writer for which
-   going below zero is a legitimate answer, so it is a warning at most.
+   zero.** The first is fixed (§13); the second is a warning since 4.8.1 (§20), and a count is the
+   one writer for which going below zero is a legitimate answer, so it is a warning at most.
 4. **Deleting a transfer checks nothing.** Goods received and since sold leave the destination
    negative without a word; the same situation on a purchase delete warns.
 5. **The opening balance is stored twice and a trigger keeps overwriting one copy.**
@@ -677,7 +677,7 @@ Three defects, fixed before the pull request, none of them visible to a test:
 - **A scanned code cannot reach this screen.** The item field beside the search button is
   read-only; an item is chosen only through the search dialog, so a barcode scanner - which every
   shop counting stock owns - types into nothing. The invoice's `ItemSuggestionField` is the answer
-  and it is a change of its own.
+  and it is a change of its own. **Fixed in 4.8.1 (§20).**
 - **Nothing was seen signed in as an ordinary user.** The permission split is proven through the
   service, not by a user who holds `stock.transfer.show` and not `.post` watching which buttons the
   row offers.
@@ -797,11 +797,12 @@ same omission as `TransferQuantityInput` and `ReturnQuantityInput`, the third ti
 - **The count table carries this machine's saved column widths**, from a wider screen: at 1366 the
   counted column - the one anybody types into - opened off the edge behind the horizontal scroll.
   `TableSetting` restores what a user left, which is the trap CLAUDE.md describes; a fresh install
-  has no such widths. Not reproduced on a clean profile.
+  has no such widths. Not reproduced on a clean profile. **Fixed in 4.8.1 (§20)** with a new id.
 - **The shared delete dialog drew "مستخدم في" as one word** in the refusal - the template has the
-  space. A rendering matter of that dialog, everywhere it is used.
+  space. A rendering matter of that dialog, everywhere it is used. **It was the Cairo font, on every
+  screen - fixed in 4.8.1 (§20).**
 - **A blank sheet to count on paper** - a warehouse's items with an empty column - is still not
-  printable; the record is the sheet as entered.
+  printable; the record is the sheet as entered. **Fixed in 4.8.1 (§20).**
 - **Nothing was seen signed in as an ordinary user.** The permission of each read is proven through
   the service.
 
@@ -1021,7 +1022,8 @@ opened and its post button was disabled. The count's past sheets and variance re
   shows, in quotation marks; `AuthorizationGuardTest` pins it.
 - **The transfer screen's item button has no icon** - a blank shape beside the read-only item field.
   The administrator's capture from D1 shows the same, so it is not a permission matter; it belongs
-  with the field's other defect (§15: a scanner types into nothing) and is not fixed here.
+  with the field's other defect (§15: a scanner types into nothing) and is not fixed here. Both went
+  in 4.8.1 (§20).
 
 ### Still not seen
 
@@ -1030,3 +1032,82 @@ opened and its post button was disabled. The count's past sheets and variance re
 - The first sign-in of this run came 24 seconds before the overrides were written and read the
   role's keys alone: **a session's permissions are read once, at sign-in** (`docs/permissions-plan.md`
   §4, refreshing a running session). Anybody granting a key to a signed-in user meets the same.
+
+## 20. The 4.8.1 fixes (2026-09-21)
+
+Four defects the earlier phases found and wrote down under "found and not fixed", and a fifth that
+turned out not to be the warehouses' at all. No migration.
+
+### What changed
+
+- **The count table opens with its counted column on screen** (§16). Its id is `stockCountLines`
+  now: under `stockCountTable` this machine held widths stored while the table filled a wider
+  screen - item 587, unit 212, book 258 - which put the counted column, the one anybody types into,
+  past the edge at 1366. `TableSetting` no longer stores such widths but still restores old ones,
+  and a new id is the remedy CLAUDE.md gives for a table moved into a narrower place.
+- **The transfer screen takes a scanner** (§15). The read-only item field and its button - which had
+  no icon (§19) - are gone; the item is an `ItemSuggestionField`, the invoice's name search, and
+  Enter with no list showing resolves what was typed: a code first - the item's own, an extra one or
+  a unit's, looked up in the warehouse the goods leave, with the scanned unit selected - then a name
+  only one item answers to. Several items by that name are left to the list; none is refused with
+  the text in the sentence. Enter in the quantity adds the line and returns to the item field: scan,
+  quantity, Enter, scan.
+- **A blank count sheet prints** (§16). "ورقة جرد فارغة" on the count screen writes the chosen
+  warehouse's items in use, by group and then name, with each item's code and base unit, an empty
+  column to write the count into, a line for who counted and the number of items
+  (`StockCountBlankSheet`, `StockCountBlankSheetLayout`, under `stock.count.show`). **The book
+  quantity is not on it**: a counter who can read what the system expects writes that down, and the
+  differences a count exists to find are gone before it is typed in.
+- **Posting a count warns before it leaves an item below zero** (§7, item 3). The adjustment is a
+  difference against the book when the line was scanned, so goods that left after the scan - a sale,
+  a transfer out - take the posted balance below zero. `StockCountPostCheck` works out what the post
+  would leave from the balance as it is now, through the transfer reversal's
+  `DocumentDeleteStockCheck`, and the screen asks after its own confirmation. **A warning, never a
+  refusal**: a count is the one writer for which below zero is a legitimate answer - the goods did
+  leave. A failure to read it is logged and passed over, as on the reversal.
+- **The missing space was the font** (§16, "مستخدمفي"). JavaFX draws Cairo - the default family -
+  without the space before «في», wherever the word falls: "التقريرفي" in the export notice,
+  "بيراميدزفي" in the warning above. El Messiri, Tahoma and Segoe keep the space; Cairo's variable
+  file and a zero-width joiner did not help. **El Messiri is the default now**, in
+  `FontManager.DEFAULT_FAMILY` and first in `app-theme.css`, and `FontDefaultTest` holds the two to
+  one answer - a dialog is not stamped with the chosen family and reads the stylesheet's, so two
+  answers would put the same sentence in two fonts. A family somebody picked in the settings is
+  theirs and is kept.
+
+### How it was checked
+
+- **Unit tests:** `StockCountPostCheckTest` (goods that left after the scan, nothing moved since, a
+  balance already below zero, a warehouse holding no row), `StockCountBlankSheetTest` (numbered rows
+  with an empty count, no book quantity, the query's filter and order), `FontDefaultTest`.
+  `mvn clean test`: 3,250 run, 228 skipped, none failing.
+- **Against MySQL**, two cases in `StockCountPostAcceptanceTest`: counted 2 against a book of 30 and
+  30 sold before the post names the item at -28, and nothing is named before the sale; the blank
+  sheet lists an item in use and leaves it off once it is stopped. They run on CI.
+- **On screen**, as the administrator on the test database at 1366x768: the count table's five
+  columns all on screen. The blank sheet for the main warehouse, drawn to images: 46 pages and 1,840
+  items, the header on every page, the count column empty and no book anywhere. Item 266 scanned
+  into the count at a book of 2 and counted 1; the same code typed into the transfer screen's item
+  field with Enter - what a scanner sends - found the item and put the caret in the quantity with its
+  text selected; 2 and Enter added the line and returned to the item field; the transfer posted. The
+  count's post then asked «هلال فضية - فرشة بيراميدز في الرئيسى: -1», and declining left the sheet a
+  draft. The transfer is still in that database.
+- **After the fixes, a second run:** the same scan filled the unit box with «قطعة»; an unknown code
+  was refused with the code in the sentence; and the notice after saving the sheet read «تم حفظ
+  التقرير في:», which the first run had drawn «التقريرفي». That was a dialog, which reads the
+  stylesheet's family; the screens on that machine carry a family chosen in its settings, which is
+  kept, so El Messiri on a screen is seen only where nobody has chosen one.
+
+### What only the screen found
+
+- **The unit box stayed empty after a scan** - in this work's own new code, before it shipped -
+  though it held the unit and the line was added in it.
+  `UnitsModel` has no `equals`, so selecting the copy `ItemUnits.unitByBarcode` builds sets a value
+  the combo holds and does not show. It selects its own copy by id now.
+- **The shadda in «عدّ» split the word on the paper** - the PDF font draws it apart, the trap the
+  treasury vouchers met. The sheet, its title and its button say «جرد».
+
+### Not seen
+
+- Signed in as an ordinary user; English; a physical scanner rather than the keystrokes one sends.
+- The transfer's lines table cuts an item's name short beside a wide empty space - this machine has
+  "fill the width" off, and the table does not size its columns to what they hold. Not fixed here.

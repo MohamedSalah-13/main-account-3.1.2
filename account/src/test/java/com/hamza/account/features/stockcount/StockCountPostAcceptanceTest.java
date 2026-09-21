@@ -129,6 +129,53 @@ class StockCountPostAcceptanceTest {
     }
 
     /**
+     * Counted 2 against a book of 30, then 30 sold before the post: the post takes the shelf to
+     * {@code 0 + (2 - 30) = -28}. A real answer - the goods left - so it is a warning the screen shows
+     * before posting, read from the balance as it is now rather than the snapshot the sheet carries.
+     */
+    @Test
+    @DisplayName("before posting, an item goods left after its scan is named with where it would end")
+    void theWarningBeforeAPostThatEndsBelowZero() throws Exception {
+        inTransaction(connection -> {
+            int itemId = seed(connection);
+            StockCount sheet = newSheet(itemId, OPENING, 2);
+            assertTrue(service.postShortfalls(sheet).isEmpty(), "nothing had moved, and yet a warning");
+
+            insertSale(connection, itemId, DefaultStock.ID, OPENING);
+            var shortfalls = service.postShortfalls(sheet);
+
+            assertEquals(1, shortfalls.size());
+            assertEquals(-28, shortfalls.getFirst().remainingBase(), 0.0001);
+        });
+    }
+
+    /** The paper a count starts from: every item in use in the warehouse, and none that is stopped. */
+    @Test
+    @DisplayName("the blank sheet lists the warehouse's items in use and leaves a stopped one off")
+    void theBlankSheet() throws Exception {
+        inTransaction(connection -> {
+            int itemId = seed(connection);
+            String code;
+            try (PreparedStatement statement = connection.prepareStatement("SELECT barcode FROM items WHERE id = ?")) {
+                statement.setInt(1, itemId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    assertTrue(rows.next());
+                    code = rows.getString(1);
+                }
+            }
+            assertTrue(service.blankSheet(DefaultStock.ID).rows().stream().anyMatch(row -> code.equals(row.code())),
+                    "an item in use is missing from the blank sheet");
+
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET item_active = 0 WHERE id = ?")) {
+                statement.setInt(1, itemId);
+                statement.executeUpdate();
+            }
+            assertTrue(service.blankSheet(DefaultStock.ID).rows().stream().noneMatch(row -> code.equals(row.code())),
+                    "a stopped item is on the blank sheet");
+        });
+    }
+
+    /**
      * An item whose warehouse has no {@code items_stock} row for it. The adjustment would be summed
      * into a row {@code quantity_items_table} never reads: the count posts, the screen reports the
      * lines that moved, and nothing moves.

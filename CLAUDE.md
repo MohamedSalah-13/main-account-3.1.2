@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,237 tests** with 226 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-21 after an item's opening balance became one per warehouse. What is
+**3,250 tests** with 228 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-21 with the 4.8.1 warehouse fixes. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -1032,6 +1032,17 @@ counted lines in every warehouse against the copy. The item screen's field is th
 opening and says so; the others are entered from the warehouse's row (`WarehouseOpeningView`, under
 `items.update`), one warehouse and many items at a time, refused whole for a warehouse switched off,
 a figure changed since it was read, or an item that has moved there.
+
+**A count warns before its post leaves an item below zero, and never refuses it**
+(`StockCountPostCheck`, 4.8.1). The adjustment is a difference against the book when the line was
+scanned, so goods that left after the scan take the posted balance below zero - and a count is the
+one writer for which that is a legitimate answer. The warning reads the balance as it is now,
+through `DocumentDeleteStockCheck`, the transfer reversal's check. The count screen also prints a
+**blank sheet** to count on (`StockCountBlankSheet`), and it carries **no book quantity on purpose**:
+a counter who can read what the system expects writes that down. The transfer screen's item is an
+`ItemSuggestionField` that resolves a scanned code on Enter. Its unit combo selects **its own copy**
+of the scanned unit by id: `UnitsModel` has no `equals`, and selecting another copy left the box
+empty on screen while the value was set. `docs/warehouse-plan.md` §20.
 
 **`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
 warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see
@@ -3019,3 +3030,12 @@ there because the match is qualified by `Columns.` and all of those take `titleK
 accepts only a whole literal, since `NamesTables.SEL_PRICE + "2"` is a key nothing static can
 resolve. That rule immediately found twelve **raw Arabic strings** passed as column titles in
 `ReportTotalByYearController`, which rendered correctly by accident and could never be translated.
+
+**The default font is El Messiri, because Cairo drops a space.** JavaFX draws Cairo without the space
+before «في», wherever the word falls and in every screen and dialog, so "مستخدم في" read
+"مستخدمفي". El Messiri, Tahoma and Segoe keep it; Cairo's variable file and a zero-width joiner did
+not help. The default is said twice - `FontManager.DEFAULT_FAMILY`, which the screens are stamped
+with, and the first family in `app-theme.css`, which a dialog reads because nothing stamps it - and
+`FontDefaultTest` holds the two to one answer. A family somebody chose in the settings is kept. **To
+reproduce a text defect like this outside the app, call `FontManager.initialize()` first**: without
+the bundled fonts registered, JavaFX draws the system's font and the defect is not there.
