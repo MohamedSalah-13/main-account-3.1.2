@@ -20,15 +20,30 @@ import java.util.Map;
  * against a balance of fifteen. The demand is summed per item here, which is the same
  * thing {@code InvoiceStockGuard} does for a document - it judges the whole document's
  * effect on an item, not a line at a time.
+ *
+ * @param notes why or for whom the goods moved ({@code V76}); blank is {@code null}, so "nothing
+ *              written" has one spelling in the table. Its length is the service's to refuse,
+ *              with a sentence, rather than this record's to throw about.
  */
 public record StockTransferCommand(int fromStockId, int toStockId, LocalDate transferDate,
-                                   List<StockTransferLine> lines, Integer userId) {
+                                   List<StockTransferLine> lines, Integer userId, String notes) {
+
+    /** {@code stock_transfer.notes} is {@code VARCHAR(255)}. */
+    public static final int NOTES_MAX_LENGTH = 255;
+
     public StockTransferCommand {
         if (fromStockId <= 0 || toStockId <= 0 || fromStockId == toStockId)
             throw new IllegalArgumentException("Source and destination stocks must differ");
         transferDate = transferDate == null ? LocalDate.now() : transferDate;
         lines = lines == null ? List.of() : List.copyOf(lines);
         if (lines.isEmpty()) throw new IllegalArgumentException("Transfer needs at least one line");
+        notes = notes == null || notes.isBlank() ? null : notes.strip();
+    }
+
+    /** A transfer with nothing written on it. */
+    public StockTransferCommand(int fromStockId, int toStockId, LocalDate transferDate,
+                                List<StockTransferLine> lines, Integer userId) {
+        this(fromStockId, toStockId, transferDate, lines, userId, null);
     }
 
     /**

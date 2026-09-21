@@ -102,7 +102,7 @@ it, and the review sorted them: nine are a combo's initial selection or the prot
 (`CardItemDao`, `JdbcInvoiceStockRepository`, `InvoiceSaveCommand`, `StockCountService`,
 `StockService`, `DataInterface`); and **one is a real gap** - `ItemsDao` (insert, update, bulk edit)
 and `AddItemController` write an item's opening balance to the default warehouse only. No screen can
-enter an opening balance for a second warehouse; §10 phase D.
+enter an opening balance for a second warehouse; §10 phase E.
 
 ## 5. The ledger: `stock_movements`
 
@@ -303,13 +303,17 @@ sees and come before anything new.
 
 **C - permissions and evidence. Delivered 2026-09-20, see §14.**
 
-**D - what a transfer and a count are owed.** The transfer history by period
-(`TreasuryHistoryFilter`'s shape: one `WHERE` for the page and its totals), a slip for one transfer
-through `DocumentPdfPage`, a note on the header. A list of past counts with a `RowDetailDrawer` of
-their lines, a variance report, a printed count sheet. The stocks screen rebuilt in code with row
-actions and a `Task`.
+**D - what a transfer and a count are owed.** Split in two when it was started, because it is the
+largest phase and every part of it is a screen - one pull request each:
 
-**E - the warehouse as a record** (`V75`). `stocks.is_active` with a scope argument and **no
+- **D1 - the transfer** (`V76`). **Delivered 2026-09-21, see §15.** The history by period, a slip
+  for one transfer, a note on the header.
+- **D2 - the count and the stocks screen.** A list of past counts with a `RowDetailDrawer` of
+  their lines, a variance report, a printed count sheet. The stocks screen rebuilt in code with
+  row actions and a `Task`.
+
+**E - the warehouse as a record** (`V77` at the earliest - this line said `V75`, which phase C
+took). `stocks.is_active` with a scope argument and **no
 default**, the way `PartySearchScope` and `EmployeeScope` have none; an opening balance per
 warehouse from the item screen; decision §9.2 carried out - one column, the trigger and
 `current_quantity` dropped.
@@ -573,4 +577,104 @@ then exercised rather than inspected.
 
 **Not seen on a screen.** The two permissions were proven on a scratch database, not by signing in
 as a user who holds one and not the other; and the refusal `V75` now produces has been seen as
-MySQL's error, not as the sentence `DeletionService` turns it into.
+MySQL's error, not as the sentence `DeletionService` turns it into. Phase D1 proved the first of
+those through the service instead - see §15.
+
+## 15. What phase D1 delivered (2026-09-21)
+
+What a transfer was owed: a history that reaches back further than two hundred rows, a paper to go
+with the goods, and a line saying why they moved. One migration, `V76`.
+
+### What changed
+
+- **The history is a period, a warehouse and a text** (`StockTransferHistoryFilter`), opening on the
+  month so far. It was "the last two hundred" - `recent(200)` - so a transfer from March could not
+  be found in September, and could not be reversed either, since the reversal is a button on a row
+  of that list. The warehouse matches **either end** of a transfer: "what moved through my
+  warehouse" means in and out alike. The text matches the note, an item's name by part, or one of
+  the item's three codes (`items.barcode`, `item_barcodes`, a unit's barcode) **exactly** - a partial
+  code matches half a catalogue - and its `%` and `_` are escaped, so a percent sign typed into the
+  box is a percent sign.
+- **One `WHERE` for the page, its totals and the printed log** (`StockTransferHistoryQuery`, pinned
+  with its binder by `StockTransferHistoryQueryTest`). The totals are **counts** - transfers and
+  lines - and never a sum of quantities: a transfer's lines are in different items and different
+  units, and cartons of juice plus pieces of soap is not a quantity of anything. The page's line
+  count is a subquery, so a transfer is one row whatever it carries; the totals join the lines, so
+  the transfers are counted `DISTINCT` and the join is `LEFT`, or a transfer with no line would be
+  on the page and missing from the total.
+- **The history is the screen's second tab** (`StockTransferHistoryView`). It was a 640-point drawer
+  over the entry form - too narrow for a period, a warehouse, a search and a pager - and before that
+  the lower half of the screen. The two are two jobs, the transfer being written and every transfer
+  already posted. **A transfer's lines open in a `RowDetailDrawer`** from the row, which is a master
+  and its detail - the case the drawer exists for. What a transfer had moved used to be on no
+  screen at all.
+- **A slip for every transfer** (`StockTransferSlipLayout`, through `DocumentPdfPage`, upright): the
+  letterhead, the number and date, from and to, who entered it, the lines numbered with their codes,
+  how many lines, the note, and the receiver's signature. **The quantities are the ones entered, in
+  their own units, and nothing adds them up** - the receiver counts two cartons and three pieces
+  against the paper, and "27" is a number nobody on the van can check. It is offered **straight
+  after posting**, as one question in place of the "posted" notice it replaces - the moment goods
+  are posted is the moment their paper is wanted - and from the row's own button afterwards.
+- **The printed log and its spreadsheet are one definition** (`StockTransferLog`): every line of the
+  transfers the list shows, with each transfer's note beside its lines. It used to print a date
+  range chosen in two pickers of its own, apart from the list above it. A transfer matched by one
+  of its items is printed whole - the log describes the transfers on screen, not a second selection
+  of lines - and more than 10,000 lines is refused rather than cut short, since a log cut without
+  saying so looks complete.
+- **`V76`: `stock_transfer.notes`**, `VARCHAR(255)`, NULL when nothing was written - a blank note is
+  NULL too, so "nothing" has one spelling. The field stops at 255 and the service refuses a longer
+  one with a sentence, for a caller that is not that screen. **The audit triggers do not carry the
+  note, on purpose**: `DelegateActivityDatabaseAcceptanceTest` runs `R__triggers.sql` over a V70
+  schema up to the commission section, and MySQL refuses a trigger naming a column that does not
+  exist yet. A transfer is never edited, so its note never changes.
+- **Enter in the quantity adds the line** (`Utils.whenEnterPressed(comboUnit, txtQuantity)` and the
+  field's own action), and the lines table writes a quantity as one - it showed `7.0`.
+
+### How it was checked
+
+- **Unit tests, no database:** the filter and the page (`StockTransferHistoryTest`), the statements
+  and their binder (`StockTransferHistoryQueryTest`), the slip with its labels left as keys
+  (`StockTransferSlipLayoutTest`), the log and its spreadsheet (`StockTransferLogTest`), and the
+  note on the command.
+- **Against MySQL:** six new cases in `StockTransferEndToEndAcceptanceTest` - the note kept and the
+  slip read back as the stored row with a carton printed as one carton; a note too long refused with
+  nothing moved; the history by period and by a warehouse at either end, totalled over the whole set
+  across a page of one; the text by note, by part of a name and by an exact code, with a partial
+  code and a `%` finding nothing; the log holding the footer's lines; and `stock.transfer.show`
+  reading the history while posting nothing, and nothing readable without it. **Twelve of twelve
+  green on a schema migrated from nothing to `V76`** (80 migrations) on a private MySQL 8.0.31, with
+  the card and the count classes beside them.
+- **Watched on a screen** - the app on that scratch schema, seeded with 57 transfers this month
+  over two warehouses, one in two units, one back from the branch and one two months old. The footer
+  read 57 transfers and 59 lines, page two held the remaining seven, the old transfer joined when the
+  period was widened (58 and 60), `owala-5250` found its transfer and `owala` found none, a transfer
+  was posted with an Arabic note through the keyboard and offered its slip, and reversing it took it
+  off the list and closed its lines panel. At **1366x768** the bar wraps onto a second line rather
+  than running off the window. The slip and the log were **drawn to images** from that database -
+  the product code printed the right way round, the note under the table, the log sideways over
+  five pages.
+
+### What only the screen found
+
+Three defects, fixed before the pull request, none of them visible to a test:
+
+- **The captions sat above the fields they named.** `ListToolbar` places controls and leaves the
+  row's alignment to the row, and the first draft built the row as an `HBox` left at its default -
+  top. It is a `FlowPane` now, centred, which is also what lets it wrap at 1366.
+- **The lines panel's date read `21-09-2026`.** After an Arabic word, a date's digits are "Arabic
+  numbers" to the bidi algorithm and a hyphen does not join those - the defect `PdfExportService`
+  already handles for paper. A left-to-right mark before the date is the fix on screen.
+- **"عدد الأصناف" counted lines.** Transfer 80 - one item in two units - read "2 items" under a
+  heading that meant lines, beside a footer and a slip that said lines. The heading says lines now.
+
+### Found and not fixed
+
+- **A scanned code cannot reach this screen.** The item field beside the search button is
+  read-only; an item is chosen only through the search dialog, so a barcode scanner - which every
+  shop counting stock owns - types into nothing. The invoice's `ItemSuggestionField` is the answer
+  and it is a change of its own.
+- **Nothing was seen signed in as an ordinary user.** The permission split is proven through the
+  service, not by a user who holds `stock.transfer.show` and not `.post` watching which buttons the
+  row offers.
+- **The Excel file was not opened** - it is the log's own rows, which the log test and the rendered
+  log both cover, and the native save dialog was deliberately not driven.

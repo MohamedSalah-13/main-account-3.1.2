@@ -1,106 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
+<!-- Two tabs because they are two jobs: the transfer being written, and every transfer already
+     posted. The history used to be a 640-point drawer over the first - too narrow for a period, a
+     warehouse, a search and a pager - and before that the lower half of the screen, which left each
+     list too short to use on a 768px screen. The history tab is built in code by
+     StockTransferHistoryView. -->
 <AnchorPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.StockTransferController">
     <children>
-        <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <BorderPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <top>
-                <VBox spacing="8.0" BorderPane.alignment="CENTER">
-                    <children>
-                        <Label styleClass="page-title" text="%setting.store.transfers" />
-
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
-                            <children>
-                                <Label styleClass="form-label" text="%stocks.transfer.from" />
-                                <ComboBox fx:id="comboFromStock" minWidth="160.0" />
-                                <Label styleClass="form-label" text="%stocks.transfer.to" />
-                                <ComboBox fx:id="comboToStock" minWidth="160.0" />
-                                <Label styleClass="form-label" text="%stocks.transfer.date" />
-                                <DatePicker fx:id="datePicker" minWidth="140.0" />
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Button fx:id="btnShowHistory" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.history.title" />
-                                <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%stocks.transfer.post.button" />
-                            </children>
-                            <padding>
-                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
-                            </padding>
-                        </HBox>
-
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
-                            <children>
-                                <Label styleClass="form-label" text="%stocks.transfer.item" />
-                                <HBox fx:id="itemSearchBox" alignment="CENTER_LEFT" minWidth="260.0" />
-                                <Label styleClass="form-label" text="%item.column.unit" />
-                                <ComboBox fx:id="comboUnit" minWidth="120.0" />
-                                <Label styleClass="form-label" text="%quantity" />
-                                <TextField fx:id="txtQuantity" minWidth="100.0" />
-                                <Button fx:id="btnAddLine" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.add.line" />
-                                <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.remove.line" />
-                            </children>
-                            <padding>
-                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
-                            </padding>
-                        </HBox>
-                    </children>
-                    <padding>
-                        <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
-                    </padding>
-                </VBox>
+                <Label styleClass="page-title" text="%setting.store.transfers" BorderPane.alignment="CENTER_LEFT">
+                    <BorderPane.margin>
+                        <Insets left="6.0" right="6.0" top="6.0" />
+                    </BorderPane.margin>
+                </Label>
             </top>
             <center>
-                <!-- The transfer being written is the screen's job, so its lines take the
-                     whole height. The history used to share it, which on a 768px screen left
-                     the lines grid 180 points and the history the rest; it opens in a
-                     RowDetailDrawer from "Transfer history" instead. -->
-                <VBox spacing="8.0" BorderPane.alignment="CENTER">
-                    <children>
-                        <TableView fx:id="tableLines" styleClass="modern-table" VBox.vgrow="ALWAYS" />
-                    </children>
-                    <padding>
-                        <Insets bottom="6.0" left="6.0" right="6.0" />
-                    </padding>
-                </VBox>
+                <TabPane fx:id="tabs" tabClosingPolicy="UNAVAILABLE">
+                    <tabs>
+                        <Tab fx:id="newTransferTab" text="%stocks.transfer.tab.new">
+                            <content>
+                                <BorderPane styleClass="app-container">
+                                    <top>
+                                        <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                                            <children>
+                                                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                                                    <children>
+                                                        <Label styleClass="form-label" text="%stocks.transfer.from" />
+                                                        <ComboBox fx:id="comboFromStock" minWidth="160.0" />
+                                                        <Label styleClass="form-label" text="%stocks.transfer.to" />
+                                                        <ComboBox fx:id="comboToStock" minWidth="160.0" />
+                                                        <Label styleClass="form-label" text="%stocks.transfer.date" />
+                                                        <DatePicker fx:id="datePicker" minWidth="140.0" />
+                                                        <Label styleClass="form-label" text="%stocks.transfer.notes" />
+                                                        <TextField fx:id="txtNotes" promptText="%stocks.transfer.notes.prompt" HBox.hgrow="ALWAYS" />
+                                                        <Button fx:id="btnPost" minWidth="-Infinity" mnemonicParsing="false" styleClass="primary-button" text="%stocks.transfer.post.button" />
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                                                    </padding>
+                                                </HBox>
+
+                                                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                                                    <children>
+                                                        <Label styleClass="form-label" text="%stocks.transfer.item" />
+                                                        <HBox fx:id="itemSearchBox" alignment="CENTER_LEFT" minWidth="260.0" />
+                                                        <Label styleClass="form-label" text="%item.column.unit" />
+                                                        <ComboBox fx:id="comboUnit" minWidth="120.0" />
+                                                        <Label styleClass="form-label" text="%quantity" />
+                                                        <TextField fx:id="txtQuantity" minWidth="100.0" />
+                                                        <Button fx:id="btnAddLine" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.add.line" />
+                                                        <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.remove.line" />
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                                                    </padding>
+                                                </HBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
+                                            </padding>
+                                        </VBox>
+                                    </top>
+                                    <center>
+                                        <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                                            <children>
+                                                <TableView fx:id="tableLines" styleClass="modern-table" VBox.vgrow="ALWAYS" />
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="6.0" left="6.0" right="6.0" />
+                                            </padding>
+                                        </VBox>
+                                    </center>
+                                </BorderPane>
+                            </content>
+                        </Tab>
+                        <Tab fx:id="historyTab" text="%stocks.transfer.history.title" />
+                    </tabs>
+                </TabPane>
             </center>
         </BorderPane>
     </children>
-
-    <!-- Built here, shown in the drawer: fx:define creates and injects these nodes without
-         placing them in the screen, so the drawer takes them without re-parenting anything. -->
-    <fx:define>
-        <VBox fx:id="historyPane" spacing="8.0">
-            <children>
-                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                    <children>
-                        <Button fx:id="btnRefreshHistory" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
-                    </children>
-                </HBox>
-                <TableView fx:id="tableHistory" styleClass="modern-table" VBox.vgrow="ALWAYS" />
-                <!-- Printing covers a date range rather than the rows above, so it sits
-                     under the list as its own row instead of competing with it for width. -->
-                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                    <children>
-                        <Label styleClass="form-label" text="%stocks.transfer.date" />
-                        <DatePicker fx:id="datePrintFrom" prefWidth="130.0" />
-                        <Label styleClass="form-label" text="%to" />
-                        <DatePicker fx:id="datePrintTo" prefWidth="130.0" />
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="btnPrintHistory" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.print.history" />
-                    </children>
-                </HBox>
-            </children>
-        </VBox>
-    </fx:define>
 </AnchorPane>

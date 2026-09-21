@@ -1,7 +1,5 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
@@ -12,7 +10,6 @@ import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.stocktransfer.StockTransferCommand;
 import com.hamza.account.features.stocktransfer.TransferQuantityInput;
 import com.hamza.account.features.stocktransfer.StockTransferLine;
-import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.features.stocktransfer.StockTransferService;
 import com.hamza.account.features.stocktransfer.StockTransferSummary;
 import com.hamza.account.model.domain.ItemsModel;
@@ -22,12 +19,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
-import com.hamza.account.table.RowAction;
-import com.hamza.account.table.RowActionsColumn;
-import com.hamza.account.table.RowDetailDrawer;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.table.TablePdfLayout;
-import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -43,15 +35,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -67,12 +58,13 @@ import java.util.List;
  * quantity the source cannot cover, and is refused entirely inside a closed
  * accounting period - see {@code StockTransferService}.
  * <p>
- * The history a posted transfer can be found and reversed from opens in a
- * {@link RowDetailDrawer} over the screen. It used to be the lower half of it, and the
- * two lists are not a master and its detail - one is the transfer being written, the other
- * every transfer already posted - so sharing one column of height between them only left
- * each too short to use on a 768px screen. Reversing deletes the transfer outright, which
- * is the only undo there is, and it is a button on the row it reverses.
+ * The history is the second tab, built by {@link StockTransferHistoryView}: a period, a
+ * warehouse and a text rather than "the last two hundred", with each transfer's lines, its
+ * slip and its reversal as buttons in its own row. The two tabs are two jobs - the transfer
+ * being written and every transfer already posted - and neither was usable while they shared
+ * one screen, first as its lower half and then as a 640-point drawer over it. Reversing
+ * deletes the transfer outright, which is the only undo there is, and it lives here because
+ * this is what announces that two balances moved.
  */
 @Log4j2
 @FxmlPath(pathFile = "items/stock-transfer-view.fxml")
@@ -85,15 +77,9 @@ public class StockTransferController {
     private final Subscriptions subscriptions = new Subscriptions();
 
     private final ObservableList<PendingLine> lines = FXCollections.observableArrayList();
-    private final ObservableList<StockTransferSummary> history = FXCollections.observableArrayList();
-
-    /**
-     * The history's six columns and its print row - two date pickers and a button - need about
-     * this much; a share of a 1366-point window would cut the print row in half.
-     */
-    private static final double HISTORY_WIDTH = 640;
 
     private TextSearchApplication<ItemsModel> itemSearch;
+    private StockTransferHistoryView history;
 
     @FXML
     private AnchorPane root;
@@ -107,32 +93,41 @@ public class StockTransferController {
     private ComboBox<UnitsModel> comboUnit;
     @FXML
     private TextField txtQuantity;
+    /** Why or for whom the goods moved - printed on the slip ({@code V76}). */
     @FXML
-    private Button btnAddLine, btnRemoveLine, btnPost, btnShowHistory, btnRefreshHistory, btnPrintHistory;
+    private TextField txtNotes;
     @FXML
-    private DatePicker datePrintFrom, datePrintTo;
+    private Button btnAddLine, btnRemoveLine, btnPost;
     @FXML
     private TableView<PendingLine> tableLines;
     @FXML
-    private TableView<StockTransferSummary> tableHistory;
-    /** Declared in the FXML's fx:define, so it belongs to no layout until the drawer takes it. */
-    @FXML
-    private VBox historyPane;
-
-    private RowDetailDrawer historyDrawer;
+    private Tab historyTab;
 
     @FXML
     public void initialize() {
+        history = new StockTransferHistoryView(transferService, this::reverse);
+        historyTab.setContent(history.build());
+        // Read when the tab is opened rather than when the screen is: most visits post one.
+        historyTab.setOnSelectionChanged(event -> {
+            if (historyTab.isSelected()) {
+                history.load();
+            }
+        });
         buildStockCombos();
         buildItemSearch();
         buildLinesTable();
-        buildHistoryTable();
-        buildHistoryDrawer();
         buildActions();
         Utils.setTextFormatter(txtQuantity);
+        // The column is VARCHAR(255): the field stops there, so the service's refusal of a longer
+        // note is reached only by a caller that is not this screen.
+        txtNotes.setTextFormatter(new TextFormatter<String>(change ->
+                change.getControlNewText().length() <= StockTransferCommand.NOTES_MAX_LENGTH ? change : null));
+        // Enter moves from the unit to the quantity, and Enter in the quantity adds the line. The
+        // item itself is chosen through the search dialog - the field beside it is read-only, so a
+        // scanned code cannot reach this screen yet (docs/warehouse-plan.md §15).
+        Utils.whenEnterPressed(comboUnit, txtQuantity);
+        txtQuantity.setOnAction(event -> addLine());
         datePicker.setValue(LocalDate.now());
-        datePrintFrom.setValue(LocalDate.now().minusDays(30));
-        datePrintTo.setValue(LocalDate.now());
     }
 
     // ------------------------------------------------------------------
@@ -208,50 +203,15 @@ public class StockTransferController {
         tableLines.setItems(lines);
         tableLines.getColumns().add(Columns.text("item.stockcount.column.item", PendingLine::itemName));
         tableLines.getColumns().add(Columns.text("item.column.unit", PendingLine::unitName));
-        tableLines.getColumns().add(Columns.number("quantity", PendingLine::quantity));
+        // As a quantity, not a number: 7 pieces read "7.0" - the double showing through.
+        tableLines.getColumns().add(Columns.asQuantity(Columns.number("quantity", PendingLine::quantity)));
         TableSetting.tableMenuSetting(getClass(), tableLines);
-    }
-
-    private void buildHistoryTable() {
-        tableHistory.setId("stockTransferHistory");
-        tableHistory.setPlaceholder(new Label(message("stocks.transfer.placeholder.history")));
-        tableHistory.setItems(history);
-        // First, where a column of buttons belongs; and a button in the row, so reversing
-        // cannot be pressed without naming the transfer it reverses. The permission is a
-        // hint - DeleteRegistry.STOCK_TRANSFERS is what enforces it.
-        tableHistory.getColumns().add(RowActionsColumn.of("stocks.transfer.column.actions",
-                RowAction.permitted(List.of(RowAction.of("stocks.transfer.reverse", AppIcon.DELETE,
-                        "app-neutral-button", AppPermissions.STOCK_TRANSFER_DELETE, this::reverse)))));
-        // Widths of their own: with "fill the available width" off a column opens at JavaFX's
-        // default 80 points, which cut the date to "2026-09-..." and a warehouse name to its
-        // last letters. Together these fit HISTORY_WIDTH with the actions column.
-        tableHistory.getColumns().add(width(Columns.number("stocks.transfer.history.column.id", StockTransferSummary::id), 60));
-        tableHistory.getColumns().add(width(Columns.date("stocks.transfer.history.column.date", StockTransferSummary::transferDate), 100));
-        tableHistory.getColumns().add(width(Columns.text("stocks.transfer.history.column.from", StockTransferSummary::fromStockName), 150));
-        tableHistory.getColumns().add(width(Columns.text("stocks.transfer.history.column.to", StockTransferSummary::toStockName), 150));
-        tableHistory.getColumns().add(width(Columns.number("stocks.transfer.history.column.lines", StockTransferSummary::lineCount), 80));
-        TableSetting.tableMenuSetting(getClass(), tableHistory);
-    }
-
-    private void buildHistoryDrawer() {
-        historyDrawer = RowDetailDrawer.installIn(root);
-        historyDrawer.setContent(historyPane);
-        historyDrawer.setPreferredWidth(HISTORY_WIDTH);
-    }
-
-    /** Reads the history when it is opened rather than when the screen is: most visits post one. */
-    private void showHistory() {
-        loadHistory();
-        historyDrawer.show(message("stocks.transfer.history.title"), null);
     }
 
     private void buildActions() {
         btnAddLine.setOnAction(event -> addLine());
         btnRemoveLine.setOnAction(event -> removeSelectedLine());
         btnPost.setOnAction(event -> post());
-        btnShowHistory.setOnAction(event -> showHistory());
-        btnRefreshHistory.setOnAction(event -> loadHistory());
-        btnPrintHistory.setOnAction(event -> printHistory());
     }
 
     // ------------------------------------------------------------------
@@ -309,16 +269,24 @@ public class StockTransferController {
             AllAlerts.alertError(message("stocks.transfer.error.no.lines"));
             return;
         }
+        long transferId;
         try {
             List<StockTransferLine> commandLines = lines.stream().map(PendingLine::toLine).toList();
-            transferService.transfer(new StockTransferCommand(
-                    from.getId(), to.getId(), datePicker.getValue(), commandLines, currentUserId()));
-            AllAlerts.alertSaveWithMessage(message("stocks.transfer.msg.posted"));
+            transferId = transferService.transfer(new StockTransferCommand(
+                    from.getId(), to.getId(), datePicker.getValue(), commandLines, currentUserId(),
+                    txtNotes.getText()));
             lines.clear();
-            loadHistory();
+            txtNotes.clear();
             eventBus.publish(new StockBalancesChanged());
         } catch (Exception e) {
             reportFailure(e);
+            return;
+        }
+        // One question in place of the "posted" notice it replaces: the slip is what travels with
+        // the goods, so the moment they are posted is the moment it is wanted.
+        if (AllAlerts.confirm_all(message("stocks.transfer.msg.posted"),
+                message("stocks.transfer.confirm.print.slip", transferId))) {
+            StockTransferHistoryView.printSlip(root, transferService, (int) transferId);
         }
     }
 
@@ -330,46 +298,6 @@ public class StockTransferController {
     // ------------------------------------------------------------------
     // History and reversal
     // ------------------------------------------------------------------
-
-    private void loadHistory() {
-        try {
-            history.setAll(transferService.recent(200));
-        } catch (Exception e) {
-            reportFailure(e);
-        }
-    }
-
-    private void printHistory() {
-        LocalDate from = datePrintFrom.getValue();
-        LocalDate to = datePrintTo.getValue();
-        if (from == null || to == null) {
-            AllAlerts.alertError(message("stocks.transfer.error.select.dates"));
-            return;
-        }
-        try {
-            List<StockTransferReportRow> rows = transferService.reportRows(from, to);
-            String title = message("stocks.transfer.history.title");
-            File target = TablePdfReport.chooseTarget(root.getScene().getWindow(), title);
-            if (target == null) {
-                return;
-            }
-            TablePdfLayout layout = new TablePdfLayout(
-                    new String[]{
-                            message("stocks.transfer.history.column.id"), message("stocks.transfer.history.column.date"),
-                            message("stocks.transfer.history.column.from"), message("stocks.transfer.history.column.to"),
-                            message("stocks.transfer.item"), message("item.column.unit"), message("quantity")},
-                    new float[]{60, 90, 150, 150, 200, 80, 72},
-                    rows.stream().map(row -> new String[]{
-                            String.valueOf(row.transferId()), row.transferDate().toString(), row.fromStockName(),
-                            row.toStockName(), row.itemName(), row.unitName(),
-                            Columns.quantity(BigDecimal.valueOf(row.quantity()))}).toList(),
-                    null);
-            TablePdfReport.write(target, title,
-                    message("stocks.transfer.report.period", from, to), layout, () -> { });
-        } catch (Exception e) {
-            reportFailure(e);
-        }
-    }
 
     private void reverse(StockTransferSummary transfer) {
         if (!AllAlerts.confirm_all(message("stocks.transfer.confirm.reverse.title"),
@@ -385,7 +313,7 @@ public class StockTransferController {
         try {
             transferService.delete(transfer.id());
             AllAlerts.alertDeleteWithMessage(message("stocks.transfer.msg.reversed"));
-            loadHistory();
+            history.load();
             eventBus.publish(new StockBalancesChanged());
         } catch (Exception e) {
             reportFailure(e);
@@ -421,11 +349,6 @@ public class StockTransferController {
     // ------------------------------------------------------------------
     // Plumbing
     // ------------------------------------------------------------------
-
-    private static <S, T> TableColumn<S, T> width(TableColumn<S, T> column, double width) {
-        column.setPrefWidth(width);
-        return column;
-    }
 
     private String message(String key, Object... arguments) {
         return LanguageManager.getInstance().getString(key, arguments);

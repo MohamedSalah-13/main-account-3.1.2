@@ -6,9 +6,7 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -87,14 +85,17 @@ final class StockTransferDao extends AbstractDao<Void> {
     }
 
     long insert(StockTransferCommand command) throws DaoException {
-        String sql = "INSERT INTO stock_transfer(transfer_date, stock_from, stock_to, user_id) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO stock_transfer(transfer_date, stock_from, stock_to, notes, user_id) "
+                + "VALUES (?, ?, ?, ?, ?)";
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setObject(1, command.transferDate());
                 statement.setInt(2, command.fromStockId());
                 statement.setInt(3, command.toStockId());
-                if (command.userId() == null) statement.setNull(4, java.sql.Types.INTEGER);
-                else statement.setInt(4, command.userId());
+                if (command.notes() == null) statement.setNull(4, java.sql.Types.VARCHAR);
+                else statement.setString(4, command.notes());
+                if (command.userId() == null) statement.setNull(5, java.sql.Types.INTEGER);
+                else statement.setInt(5, command.userId());
                 statement.executeUpdate();
                 try (var keys = statement.getGeneratedKeys()) {
                     if (keys.next()) return keys.getLong(1);
@@ -129,31 +130,19 @@ final class StockTransferDao extends AbstractDao<Void> {
         return executeUpdate("DELETE FROM stock_transfer WHERE id = ?", id);
     }
 
-    /** Most recent transfers first, one row per header - for the reversal screen. */
-    List<StockTransferSummary> recent(int limit) throws DaoException {
-        String sql = """
-                SELECT st.id, st.transfer_date, stf.stock_name AS name_from, stt.stock_name AS name_to,
-                       COUNT(stl.id) AS line_count
-                FROM stock_transfer st
-                         JOIN stocks stf ON stf.stock_id = st.stock_from
-                         JOIN stocks stt ON stt.stock_id = st.stock_to
-                         JOIN stock_transfer_list stl ON stl.stock_transfer_id = st.id
-                GROUP BY st.id, st.transfer_date, stf.stock_name, stt.stock_name
-                ORDER BY st.id DESC
-                LIMIT ?
-                """;
+    /** One page of the history and one extra row, newest first - see {@link StockTransferHistoryQuery}. */
+    List<StockTransferSummary> page(StockTransferHistoryFilter filter) throws DaoException {
+        Object[] where = StockTransferHistoryQuery.whereValues(filter);
+        Object[] values = Arrays.copyOf(where, where.length + 2);
+        values[where.length] = filter.queryLimit();
+        values[where.length + 1] = filter.offset();
         return withConnection(connection -> {
-            List<StockTransferSummary> result = new java.util.ArrayList<>();
-            try (var statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, limit);
+            List<StockTransferSummary> result = new ArrayList<>();
+            try (var statement = connection.prepareStatement(StockTransferHistoryQuery.PAGE)) {
+                setData(statement, values);
                 try (var rows = statement.executeQuery()) {
                     while (rows.next()) {
-                        result.add(new StockTransferSummary(
-                                rows.getInt("id"),
-                                rows.getDate("transfer_date").toLocalDate(),
-                                rows.getString("name_from"),
-                                rows.getString("name_to"),
-                                rows.getInt("line_count")));
+                        result.add(summary(rows));
                     }
                 }
             }
@@ -161,20 +150,28 @@ final class StockTransferDao extends AbstractDao<Void> {
         });
     }
 
-    /** One row per line, for the printed transfer log - see {@link StockTransferReportRow}. */
-    List<StockTransferReportRow> reportRows(java.time.LocalDate from, java.time.LocalDate to) throws DaoException {
-        String sql = """
-                SELECT v.id, v.transfer_date, v.name_from, v.name_to, v.nameItem, v.quantity, u.unit_name
-                FROM stock_transfer_view v
-                         LEFT JOIN units u ON u.unit_id = v.type
-                WHERE v.transfer_date BETWEEN ? AND ?
-                ORDER BY v.transfer_date, v.id
-                """;
+    /** How many transfers and lines the whole filtered set holds: {@code [transfers, lines]}. */
+    long[] totals(StockTransferHistoryFilter filter) throws DaoException {
         return withConnection(connection -> {
-            List<StockTransferReportRow> result = new java.util.ArrayList<>();
-            try (var statement = connection.prepareStatement(sql)) {
-                statement.setObject(1, from);
-                statement.setObject(2, to);
+            try (var statement = connection.prepareStatement(StockTransferHistoryQuery.TOTALS)) {
+                setData(statement, StockTransferHistoryQuery.whereValues(filter));
+                try (var rows = statement.executeQuery()) {
+                    rows.next();
+                    return new long[]{rows.getLong("transfers"), rows.getLong("line_count")};
+                }
+            }
+        });
+    }
+
+    /** Every line of the filtered transfers, oldest first, up to {@code limit} rows. */
+    List<StockTransferReportRow> log(StockTransferHistoryFilter filter, int limit) throws DaoException {
+        Object[] where = StockTransferHistoryQuery.whereValues(filter);
+        Object[] values = Arrays.copyOf(where, where.length + 1);
+        values[where.length] = limit;
+        return withConnection(connection -> {
+            List<StockTransferReportRow> result = new ArrayList<>();
+            try (var statement = connection.prepareStatement(StockTransferHistoryQuery.LOG)) {
+                setData(statement, values);
                 try (var rows = statement.executeQuery()) {
                     while (rows.next()) {
                         result.add(new StockTransferReportRow(
@@ -182,9 +179,11 @@ final class StockTransferDao extends AbstractDao<Void> {
                                 rows.getDate("transfer_date").toLocalDate(),
                                 rows.getString("name_from"),
                                 rows.getString("name_to"),
+                                rows.getString("barcode"),
                                 rows.getString("nameItem"),
                                 rows.getString("unit_name"),
-                                rows.getDouble("quantity")));
+                                rows.getDouble("quantity"),
+                                rows.getString("notes")));
                     }
                 }
             }
@@ -192,10 +191,45 @@ final class StockTransferDao extends AbstractDao<Void> {
         });
     }
 
-    private static void bindIds(java.sql.PreparedStatement statement, int startAt, List<Integer> itemIds)
-            throws java.sql.SQLException {
-        for (int i = 0; i < itemIds.size(); i++) {
-            statement.setInt(startAt + i, itemIds.get(i));
-        }
+    /** One transfer's header and who entered it, or {@code null} when it is gone. */
+    StockTransferSummary header(int transferId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(StockTransferHistoryQuery.HEADER)) {
+                statement.setInt(1, transferId);
+                try (var rows = statement.executeQuery()) {
+                    return rows.next() ? summary(rows) : null;
+                }
+            }
+        });
+    }
+
+    /** One transfer's lines in the order they were entered. */
+    List<StockTransferLineRow> lines(int transferId) throws DaoException {
+        return withConnection(connection -> {
+            List<StockTransferLineRow> result = new ArrayList<>();
+            try (var statement = connection.prepareStatement(StockTransferHistoryQuery.LINES)) {
+                statement.setInt(1, transferId);
+                try (var rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        result.add(new StockTransferLineRow(rows.getInt("item_id"), rows.getString("barcode"),
+                                rows.getString("nameItem"), rows.getString("unit_name"), rows.getDouble("quantity")));
+                    }
+                }
+            }
+            return result;
+        });
+    }
+
+    private static StockTransferSummary summary(java.sql.ResultSet rows) throws java.sql.SQLException {
+        return new StockTransferSummary(
+                rows.getInt("id"),
+                rows.getDate("transfer_date").toLocalDate(),
+                rows.getInt("stock_from"),
+                rows.getString("name_from"),
+                rows.getInt("stock_to"),
+                rows.getString("name_to"),
+                rows.getInt("line_count"),
+                rows.getString("notes"),
+                rows.getString("user_name"));
     }
 }
