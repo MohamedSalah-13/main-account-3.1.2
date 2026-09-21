@@ -50,6 +50,14 @@ class StockTransferCommandTest {
         assertEquals(Map.of(4, 1.0, 9, 3.0), command.baseQuantityByItem());
     }
 
+    /** "Nothing written" has one spelling in the table: a cleared box and no box are both NULL. */
+    @Test void aBlankNoteIsNoNote() {
+        List<StockTransferLine> lines = List.of(new StockTransferLine(7, 1));
+        assertNull(new StockTransferCommand(1, 2, LocalDate.now(), lines, null, "   ").notes());
+        assertNull(new StockTransferCommand(1, 2, LocalDate.now(), lines, null).notes());
+        assertEquals("winter fair", new StockTransferCommand(1, 2, LocalDate.now(), lines, null, " winter fair ").notes());
+    }
+
     /** The demand is read in the order the items are locked in, so a refusal names the same item twice running. */
     @Test void demandIteratesInLockOrder() {
         StockTransferCommand command = new StockTransferCommand(1, 2, LocalDate.now(),

@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,124 tests** with 203 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-20 after the warehouse work. What is
+**3,153 tests** with 209 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-21 after the warehouse transfer history. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -982,6 +982,20 @@ becomes a correction to every balance on it. **The two line tables are deliberat
 the decision `items_units` already carries: `StockCountDao.save` deletes and re-inserts every line
 on each save, so a trigger there writes a row per line per save of a sheet that may run to hundreds
 of items.
+
+**The transfer history is a period, a warehouse and a text, not "the last two hundred"** (phase D1,
+`docs/warehouse-plan.md` §15). A transfer older than those two hundred could be neither found nor
+reversed, what a transfer had moved was on no screen at all, and the only paper was a log of a
+date range chosen apart from the list. `StockTransferHistoryQuery` is the page, its totals and the
+printed log around **one `WHERE`**, pinned with its binder; a warehouse matches **either end**, and
+the text matches the note, an item's name by part, or one of the item's three codes **exactly**.
+The totals are counts of transfers and lines, never a sum of quantities - cartons of juice and
+pieces of soap add up to nothing. The history is the screen's second tab
+(`StockTransferHistoryView`), a transfer's lines open in a `RowDetailDrawer`, and each transfer has
+a slip (`StockTransferSlipLayout`, through `DocumentPdfPage`) printed with the quantities **as
+entered, in their own units**, offered straight after posting in place of the "posted" notice.
+The reversal stays in `StockTransferController`, because that file is what announces two moved
+balances (`MultiDeviceRefreshArchitectureTest`).
 
 **`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
 warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see
@@ -2739,7 +2753,10 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V75`, which stops
+  new database executes it and continues with `V2`, `V3`, … The current head is `V76`, which gives
+  a stock transfer a note (`stock_transfer.notes`, NULL when nothing was written) - why or for whom
+  the goods moved, printed on the slip that now travels with them (see **Warehouses**). Before it
+  `V75` stops
   `stock_count_lines.item_id` cascading - a posted count sheet is a correction that was actually
   made, and deleting the item took its lines out of one with no refusal and no trace, which
   `DeleteRegistry` could not refuse precisely *because* the key cascaded. Before it `V74` gives the
