@@ -26,8 +26,10 @@ public final class AuthorizationGuard {
             throw new DaoException(LanguageManager.getInstance().getString("auth.error.permission.undefined"));
         }
         if (!isGranted(permission)) {
+            // The permission's name, as the roles screen shows it - not its key. The key put
+            // "stock.count.create" in the middle of an Arabic sentence (seen on screen, 2026-09-21).
             throw new BusinessRuleException(LanguageManager.getInstance()
-                    .getString("auth.error.permission.denied", permission.value()));
+                    .getString("auth.error.permission.denied", PermissionLabels.describe(permission)));
         }
     }
 }

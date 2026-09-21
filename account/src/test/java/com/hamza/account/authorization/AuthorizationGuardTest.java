@@ -49,6 +49,24 @@ class AuthorizationGuardTest {
                 assertTrue(AuthorizationGuard.isGranted(definition.key()), definition.key().value()));
     }
 
+    /**
+     * A refusal is read by the person refused, so it names the permission as the roles screen does.
+     * It used to pass the key, and "stock.count.create" sat in the middle of an Arabic sentence -
+     * seen on screen, signed in as an ordinary user, 2026-09-21.
+     */
+    @Test
+    void aRefusalNamesThePermissionNotItsKey() {
+        session.signIn(7, "soha", Set.of(AppPermissions.STOCK_COUNT_SHOW));
+
+        DaoException refusal = assertThrows(DaoException.class,
+                () -> AuthorizationGuard.require(AppPermissions.STOCK_COUNT_CREATE));
+
+        String name = PermissionLabels.describe(AppPermissions.STOCK_COUNT_CREATE);
+        assertNotEquals(AppPermissions.STOCK_COUNT_CREATE.value(), name, "the bundle has no name for the key");
+        assertTrue(refusal.getMessage().contains(name), refusal.getMessage());
+        assertFalse(refusal.getMessage().contains(AppPermissions.STOCK_COUNT_CREATE.value()), refusal.getMessage());
+    }
+
     @Test
     void denyMarkerAlwaysWinsEvenForAdministrator() {
         session.signIn(1, "admin", Set.of());

@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,230 tests** with 226 skipped (below) — the figure `mvn clean test`
+**3,237 tests** with 226 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-21 after an item's opening balance became one per warehouse. What is
 genuinely covered:
 
@@ -495,7 +495,9 @@ could not see the `CurrentUser` spelling at all. Whether those three should be p
 using the wrong one is the mistake to avoid:
 
 - `isGranted(key)` returns a boolean and is for **UI hints** — hiding a button, disabling a menu.
-- `require(key)` throws `BusinessRuleException` and is for **enforcement**. It belongs in the service
+- `require(key)` throws `BusinessRuleException` and is for **enforcement**. Its sentence names the
+  permission through `PermissionLabels.describe` - it passed the key, and "stock.count.create" sat in
+  an Arabic refusal until an ordinary user met it on screen. It belongs in the service
   layer, and there are ~57 calls to it in `service/` today.
 
 **Hiding a button is not enforcement.** The old system only hid buttons, so anything that reached a
