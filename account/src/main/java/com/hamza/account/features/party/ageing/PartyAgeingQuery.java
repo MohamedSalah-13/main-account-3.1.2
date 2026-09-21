@@ -3,6 +3,7 @@ package com.hamza.account.features.party.ageing;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 import com.hamza.account.party.PartyLedgerSpec;
 import com.hamza.account.party.PartyTableSpec;
 
@@ -67,7 +68,7 @@ public final class PartyAgeingQuery {
      * <p>
      * Parameters in order: {@code asOf} for the balance; then the aged sub-select's own -
      * {@code asOf} for its allocations, {@code asOf} for its invoices, and {@code asOf} for
-     * each of the five bands; then the row filters - area, text ×3 - then the {@code HAVING}
+     * each of the five bands; then the row filters - area, the delegate, text ×3 - then the {@code HAVING}
      * conditions, and finally the limit and the offset.
      */
     public static String pageSql(PartyAgeingFilter filter) {
@@ -229,6 +230,7 @@ public final class PartyAgeingQuery {
         if (filter.areaId() != null) {
             where.append("\n  AND p.area_id = ?");
         }
+        where.append(CustomerDelegateCondition.sql(filter.delegateId()));
         if (filter.hasText()) {
             where.append("\n  AND (p.").append(PartyTableSpec.NAME)
                     .append(" LIKE ? ESCAPE '!' OR p.tel LIKE ? ESCAPE '!' OR p.")

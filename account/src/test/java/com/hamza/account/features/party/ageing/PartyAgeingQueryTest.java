@@ -1,6 +1,7 @@
 package com.hamza.account.features.party.ageing;
 
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 import com.hamza.account.features.party.balances.PartyBalanceFilter;
 import com.hamza.account.features.party.balances.PartyBalanceQuery;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -200,6 +202,43 @@ class PartyAgeingQueryTest {
             assertTrue(PartyAgeingQuery.pageSql(floor).contains("balance >= ?"));
         }
 
+        /**
+         * The customers a delegate follows: a condition on the party row, beside the area's. It
+         * chooses which parties are listed and touches no invoice, so every row still reconciles to
+         * its balance - the one property this report cannot give up.
+         */
+        @Test
+        @DisplayName("a delegate binds once and narrows the parties, not the aged invoices")
+        void theDelegateFilterBindsOnce() {
+            PartyAgeingFilter byDelegate = new PartyAgeingFilter(PartyKind.CUSTOMER,
+                    LocalDate.of(2026, 9, 10), null, 7, false, true, null, "", 0, 50);
+            String sql = PartyAgeingQuery.pageSql(byDelegate);
+
+            assertEquals(8, placeholders(sql));
+            String where = sql.substring(sql.indexOf("WHERE 1 = 1"), sql.indexOf("GROUP BY p."));
+            assertTrue(where.contains("AND p.default_delegate_id = ?"), where);
+            assertEquals(1, sql.split("default_delegate_id", -1).length - 1,
+                    "the delegate must appear once, on the party - never inside the aged invoices");
+        }
+
+        /** "Nobody follows" is no delegate behind the default, as the customer's screen shows it. */
+        @Test
+        void noDelegateBindsNothing() {
+            PartyAgeingFilter nobody = new PartyAgeingFilter(PartyKind.CUSTOMER, LocalDate.of(2026, 9, 10),
+                    null, CustomerDelegateCondition.NO_DELEGATE, false, true, null, "", 0, 50);
+
+            assertEquals(7, placeholders(PartyAgeingQuery.pageSql(nobody)));
+            assertTrue(PartyAgeingQuery.pageSql(nobody)
+                    .contains("NOT EXISTS (SELECT 1 FROM employees e JOIN jobs j ON j.id = e.job WHERE e.id = p.default_delegate_id AND j.is_delegate = 1)"));
+        }
+
+        @Test
+        void aSupplierHasNoDelegate() {
+            assertThrows(IllegalArgumentException.class, () -> new PartyAgeingFilter(PartyKind.SUPPLIER,
+                    LocalDate.of(2026, 9, 10), null, 7, false, true, null, "", 0, 50));
+            assertFalse(PartyAgeingQuery.pageSql(plain(PartyKind.SUPPLIER)).contains("default_delegate_id"));
+        }
+
         /** Settled parties are left out by default: a debt report of zeros is unreadable. */
         @Test
         void settledPartiesAreHiddenUnlessAskedFor() {
@@ -221,13 +260,14 @@ class PartyAgeingQueryTest {
         @Test
         void allThreeCarryTheSameFilters() {
             PartyAgeingFilter filter = new PartyAgeingFilter(PartyKind.CUSTOMER,
-                    LocalDate.of(2026, 9, 10), 6, true, false, new BigDecimal("100"), "احمد", 0, 50);
+                    LocalDate.of(2026, 9, 10), 6, 7, true, false, new BigDecimal("100"), "احمد", 0, 50);
 
             String page = PartyAgeingQuery.pageSql(filter);
             String count = PartyAgeingQuery.countSql(filter);
             String summary = PartyAgeingQuery.summarySql(filter);
 
-            for (String condition : new String[]{"p.area_id = ?", "ESCAPE '!'", "balance >= ?"}) {
+            for (String condition : new String[]{"p.area_id = ?", "p.default_delegate_id = ?", "ESCAPE '!'",
+                    "balance >= ?"}) {
                 assertTrue(page.contains(condition), "page: " + condition);
                 assertTrue(count.contains(condition), "count: " + condition);
                 assertTrue(summary.contains(condition), "summary: " + condition);

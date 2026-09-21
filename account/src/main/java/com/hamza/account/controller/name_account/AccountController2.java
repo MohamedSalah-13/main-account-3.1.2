@@ -64,6 +64,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -134,6 +135,8 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final TableView<PartyBalanceRow> table = new TableView<>();
     private final ComboBox<BalanceState> comboState = new ComboBox<>();
     private final ComboBox<PartyAreaOption> comboArea = new ComboBox<>();
+    /** Customers only: a supplier has no delegate who follows him. */
+    private final DelegateFilterCombo delegate = new DelegateFilterCombo("balance-delegate");
     private final DatePicker asOf = new DatePicker(LocalDate.now());
     private final TextField balanceFrom = new TextField();
     private final TextField balanceTo = new TextField();
@@ -346,6 +349,8 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         comboState.setOnAction(event -> search(0));
         comboArea.setOnAction(event -> search(0));
+        delegate.node().setOnAction(event -> search(0));
+        delegate.node().setTooltip(new Tooltip(text("party.filter.delegate.tip")));
         asOf.setOnAction(event -> search(0));
         overLimitOnly.setOnAction(event -> search(0));
 
@@ -353,8 +358,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         whenEnterPressed(balanceFrom, balanceTo, idleDays, search, apply);
 
         FlowPane first = new FlowPane(8, 8, caption("party.balances.filter.state"), comboState,
-                caption("party.balances.filter.area"), comboArea,
-                caption("party.balances.filter.as.of"), asOf, overLimitOnly);
+                caption("party.balances.filter.area"), comboArea);
+        if (isCustomer()) {
+            // The caption and its combo in one box, so the pane never wraps between them.
+            HBox delegateChoice = new HBox(8, caption("party.delegate.default"), delegate.node());
+            // Centred like the captions beside it: an HBox lays its children along the top.
+            delegateChoice.setAlignment(Pos.CENTER_LEFT);
+            first.getChildren().add(delegateChoice);
+        }
+        first.getChildren().addAll(caption("party.balances.filter.as.of"), asOf, overLimitOnly);
         first.setAlignment(Pos.CENTER_LEFT);
         FlowPane second = new FlowPane(8, 8, balanceFrom, balanceTo, idleDays);
         second.setAlignment(Pos.CENTER_LEFT);
@@ -477,6 +489,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
             areas.addAll(balanceService.areas(partyKind()));
             comboArea.setItems(FXCollections.observableArrayList(areas));
             comboArea.getSelectionModel().selectFirst();
+            if (isCustomer()) {
+                delegate.load();
+            }
         } catch (Exception e) {
             report(e);
         }
@@ -492,6 +507,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             comboState.getSelectionModel().select(BalanceState.ALL);
             comboArea.getSelectionModel().selectFirst();
+            delegate.reset();
             asOf.setValue(LocalDate.now());
             balanceFrom.clear();
             balanceTo.clear();
@@ -544,6 +560,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 comboArea.getValue() == null || comboArea.getValue().id() == 0
                         ? null : comboArea.getValue().id(),
                 null,
+                isCustomer() ? delegate.value() : null,
                 overLimitOnly.isSelected(),
                 days(idleDays),
                 search.getText(),
@@ -733,6 +750,10 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     // ---- plumbing --------------------------------------------------------------------
+
+    private boolean isCustomer() {
+        return partyKind() == PartyKind.CUSTOMER;
+    }
 
     private PartyKind partyKind() {
         return nameAndAccountInterface.partyKind();

@@ -1,5 +1,6 @@
 package com.hamza.account.features.party.ageing;
 
+import com.hamza.account.features.party.CustomerDelegateCondition;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -82,6 +83,7 @@ public final class JdbcPartyAgeingRepository extends AbstractDao<PartyAgeingRow>
         if (filter.areaId() != null) {
             values.add(filter.areaId());
         }
+        values.addAll(CustomerDelegateCondition.values(filter.delegateId()));
         if (filter.hasText()) {
             values.add(filter.pattern());
             values.add(filter.pattern());

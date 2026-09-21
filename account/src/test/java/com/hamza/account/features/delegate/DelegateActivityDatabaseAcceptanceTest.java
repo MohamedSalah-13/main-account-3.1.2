@@ -3,6 +3,11 @@ package com.hamza.account.features.delegate;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.delegate.trend.DelegateTrend;
+import com.hamza.account.features.delegate.trend.DelegateTrendFilter;
+import com.hamza.account.features.delegate.trend.DelegateTrendPoint;
+import com.hamza.account.features.delegate.trend.DelegateTrendService;
+import com.hamza.account.features.party.trend.TrendGranularity;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
@@ -307,6 +312,39 @@ class DelegateActivityDatabaseAcceptanceTest {
         DelegatePerformanceMonth september = new DelegatePerformanceService().month(YearMonth.of(2026, 9));
         assertMoney("700.00", activityOf(september, firstDelegate).sales());
         assertTrue(rowOf(september, firstDelegate).rule().isEmpty());
+    }
+
+    /**
+     * A delegate's trend is the performance report by the month - read, not typed a second time -
+     * over three months holding a September invoice, its return dated October, a return dated
+     * November, collections written to a delegate at entry and a credit note that is nobody's.
+     */
+    @Test
+    @Order(9)
+    @DisplayName("each month of a delegate's trend is that month's row of the performance report")
+    void theTrendIsThePerformanceReportByMonth() throws Exception {
+        signIn(AppPermissions.COMMISSION_REPORTS);
+        DelegateTrendService trends = new DelegateTrendService();
+        DelegatePerformanceService performance = new DelegatePerformanceService();
+
+        for (int delegate : new int[]{firstDelegate, secondDelegate, 1}) {
+            DelegateTrend trend = trends.trend(new DelegateTrendFilter(delegate, TrendGranularity.MONTH,
+                    LocalDate.of(2026, 9, 1), LocalDate.of(2026, 11, 30), false));
+            assertEquals(3, trend.points().size(), "September, October and November, a quiet one included");
+            for (DelegateTrendPoint point : trend.points()) {
+                DelegatePerformanceMonth month = performance.month(YearMonth.from(point.start()));
+                DelegatePerformanceRow row = month.rows().stream()
+                        .filter(candidate -> candidate.activity().employeeId() == delegate).findFirst().orElse(null);
+                assertMoney(row == null ? "0" : row.activity().netSales().toPlainString(), point.netSales());
+                assertMoney(row == null ? "0" : row.activity().collected().toPlainString(), point.collected());
+            }
+        }
+
+        // The November return of the second delegate's customer: 90 back, 90 handed over in cash.
+        DelegateTrend november = trends.trend(new DelegateTrendFilter(secondDelegate, TrendGranularity.MONTH,
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30), false));
+        assertMoney("-90.00", november.points().getFirst().netSales());
+        assertMoney("-90.00", november.points().getFirst().collected());
     }
 
     // ---- fixtures ------------------------------------------------------------------------------

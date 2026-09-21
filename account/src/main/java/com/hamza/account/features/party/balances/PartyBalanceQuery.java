@@ -1,6 +1,7 @@
 package com.hamza.account.features.party.balances;
 
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 import com.hamza.account.party.PartyLedgerSpec;
 import com.hamza.account.party.PartyTableSpec;
 
@@ -39,7 +40,8 @@ public final class PartyBalanceQuery {
      * <p>
      * Parameters in order: {@code asOf} for the balance, the period's two bounds for each of the two
      * movement totals, {@code asOf} again to exclude the future from the last-movement date, then the
-     * row filters - area, price tier, text ×3 - then the credit-limit condition, the balance range,
+     * row filters - area, price tier, text ×3, the delegate when one is chosen - then the credit-limit
+     * condition, the balance range,
      * the idle-days cut-off, and finally the limit and the offset.
      * <p>
      * The balance-range and balance-state conditions are in the {@code HAVING}, which is where they
@@ -112,11 +114,11 @@ public final class PartyBalanceQuery {
                          LEFT JOIN table_area ta ON ta.id = p.area_id
                 WHERE (? IS NULL OR p.area_id = ?)
                   AND (? IS NULL OR %6$s = ?)
-                  AND (? IS NULL OR p.%8$s LIKE ? ESCAPE '!' OR p.tel LIKE ? ESCAPE '!')
+                  AND (? IS NULL OR p.%8$s LIKE ? ESCAPE '!' OR p.tel LIKE ? ESCAPE '!')%10$s
                 GROUP BY m.%7$s, p.%8$s, p.tel, ta.id, ta.area_name%9$s"""
                 .formatted(BALANCE, ledger.view(), party.table(), PartyTableSpec.KEY,
                         limitColumn, tierColumn, PartyLedgerSpec.PARTY, PartyTableSpec.NAME,
-                        groupedPartyColumns);
+                        groupedPartyColumns, CustomerDelegateCondition.sql(filter.delegateId()));
     }
 
     /**
