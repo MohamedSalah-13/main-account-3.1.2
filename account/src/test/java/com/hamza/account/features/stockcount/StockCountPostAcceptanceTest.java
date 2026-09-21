@@ -6,9 +6,14 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.service.ItemUnits;
+import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
 import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -172,9 +178,210 @@ class StockCountPostAcceptanceTest {
         });
     }
 
+    /**
+     * One item counted in two units - two cartons of twelve and three loose pieces, 27 on the shelf
+     * against a book of 30. The screen used to keep a line per item <em>and</em> unit, and
+     * {@code lineFor} snapshots the item's whole book onto each line, so the post took 30 off twice
+     * and booked the shelf at -3. Reproduced here on CI before the fix ({@code expected: <27.0> but
+     * was: <-3.0>}); the sheet is now built the way the screen builds it, through
+     * {@link StockCountLines#scan}, one scan at a time.
+     */
+    @Test
+    @DisplayName("one item counted in two units lands on what was counted, not the book taken twice")
+    void oneItemCountedInTwoUnits() throws Exception {
+        inTransaction(connection -> {
+            int itemId = seed(connection);
+            String carton = insertCarton(connection, itemId, 12);
+            ItemsModel item = new ItemsService(DaoFactory.INSTANCE).getItemByItemIdAndStockId(itemId, DefaultStock.ID);
+            UnitsModel base = ItemUnits.baseUnit(item);
+
+            List<StockCountLine> lines = new ArrayList<>();
+            for (int scan = 0; scan < 2; scan++) {
+                StockCountLines.scan(lines, service.lineFor(item, carton), base.getUnit_id(), base.getUnit_name());
+            }
+            for (int scan = 0; scan < 3; scan++) {
+                StockCountLines.scan(lines, service.lineFor(item, null), base.getUnit_id(), base.getUnit_name());
+            }
+            StockCount sheet = newSheet(itemId, OPENING, 0);
+            sheet.setLines(lines);
+            post(sheet);
+
+            assertEquals(1, lines.size(), "one item, one line");
+            assertEquals(27, balance(connection, itemId, DefaultStock.ID), 0.0001,
+                    "two cartons and three pieces are 27 on the shelf");
+        });
+    }
+
+    /** The sheet the screen used to build, from any caller: refused with a sentence, and nothing moves. */
+    @Test
+    @DisplayName("a sheet naming one item on two lines is refused, and moves nothing")
+    void aSheetNamingAnItemTwiceIsRefused() throws Exception {
+        inTransaction(connection -> {
+            int itemId = seed(connection);
+            String carton = insertCarton(connection, itemId, 12);
+            ItemsModel item = new ItemsService(DaoFactory.INSTANCE).getItemByItemIdAndStockId(itemId, DefaultStock.ID);
+            StockCountLine cartons = service.lineFor(item, carton);
+            cartons.setCountedQuantity(2);
+            StockCountLine pieces = service.lineFor(item, null);
+            pieces.setCountedQuantity(3);
+            StockCount sheet = newSheet(itemId, OPENING, 0);
+            sheet.setLines(List.of(cartons, pieces));
+
+            assertThrows(UserValidationException.class, () -> post(sheet));
+            assertEquals(OPENING, balance(connection, itemId, DefaultStock.ID), 0.0001);
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Phase D2: past sheets, the variance, a sheet's record (docs/warehouse-plan.md §16)
+    // ------------------------------------------------------------------
+
+    /**
+     * A posted count could not be seen again: nothing called {@code recent} or {@code findById}. The
+     * history lists a warehouse's sheets by status, and its totals are the whole filtered set's.
+     */
+    @Test
+    @DisplayName("the history lists a warehouse's sheets by status, totalled over the whole set")
+    void theHistoryOfAWarehouse() throws Exception {
+        inTransaction(connection -> {
+            String stamp = "CNT-" + UUID.randomUUID().toString().substring(0, 8);
+            int itemId = insertItem(connection, stamp);
+            int warehouse = insertStock(connection, stamp);
+            insertItemStock(connection, itemId, warehouse, OPENING);
+            signIn(AppPermissions.STOCK_COUNT_SHOW, AppPermissions.STOCK_COUNT_POST, AppPermissions.STOCK_COUNT_CREATE);
+            try {
+                post(sheetIn(warehouse, itemId, OPENING, 28));
+                post(sheetIn(warehouse, itemId, 28, 28));
+                service.save(sheetIn(warehouse, itemId, 28, 25));
+                LocalDate today = LocalDate.now();
+
+                StockCountHistoryPage all = service.history(new StockCountHistoryFilter(today, today, warehouse,
+                        null, 0, 50));
+                assertEquals(3, all.sheets());
+                assertEquals(3, all.lines());
+                assertEquals(2, all.differences(), "the sheet counted right moved nothing and found nothing");
+
+                StockCountHistoryPage posted = service.history(new StockCountHistoryFilter(today, today, warehouse,
+                        StockCountStatus.POSTED, 0, 1));
+                assertEquals(2, posted.sheets(), "the totals are the filter's, not the page's");
+                assertEquals(1, posted.rows().size());
+                assertTrue(posted.hasNext());
+
+                StockCountHistoryPage drafts = service.history(new StockCountHistoryFilter(today, today, warehouse,
+                        StockCountStatus.DRAFT, 0, 50));
+                assertEquals(1, drafts.sheets());
+                assertEquals(StockCountStatus.DRAFT, drafts.rows().getFirst().status());
+                assertEquals(1, drafts.rows().getFirst().differenceCount());
+            } finally {
+                signIn(AppPermissions.STOCK_COUNT_SHOW, AppPermissions.STOCK_COUNT_POST);
+            }
+        });
+    }
+
+    /**
+     * The variance is what the posted sheets did to each item's book - so its net for an item is
+     * exactly how far the counts moved that item's balance, and a draft, which moved nothing, is
+     * not in it. Held against the balance itself rather than against a number typed twice.
+     */
+    @Test
+    @DisplayName("the variance is what the posted sheets moved each item by; a draft is not in it")
+    void theVarianceIsWhatThePostsMoved() throws Exception {
+        inTransaction(connection -> {
+            String stamp = "CNT-" + UUID.randomUUID().toString().substring(0, 8);
+            int juice = insertItem(connection, stamp + "-j");
+            int soap = insertItem(connection, stamp + "-s");
+            int warehouse = insertStock(connection, stamp);
+            insertItemStock(connection, juice, warehouse, OPENING);
+            insertItemStock(connection, soap, warehouse, 10);
+            signIn(AppPermissions.STOCK_COUNT_SHOW, AppPermissions.STOCK_COUNT_POST, AppPermissions.STOCK_COUNT_CREATE);
+            try {
+                post(sheetIn(warehouse, juice, OPENING, 28));
+                StockCount second = sheetIn(warehouse, juice, 28, 29);
+                second.setLines(List.of(second.getLines().getFirst(),
+                        new StockCountLine(0, soap, "soap", "CNT", 1, "unit", 1, 10, 10)));
+                post(second);
+                service.save(sheetIn(warehouse, juice, 29, 0));
+                LocalDate today = LocalDate.now();
+
+                List<StockCountVarianceRow> rows = service.variance(
+                        new StockCountHistoryFilter(today, today, warehouse, null, 0, 50)).orElseThrow();
+
+                assertEquals(1, rows.size(), "the soap was counted right, and the draft moved nothing");
+                StockCountVarianceRow row = rows.getFirst();
+                assertEquals(juice, row.itemId());
+                assertEquals(2, row.counts());
+                assertEquals(1, row.surplus(), 0.0001);
+                assertEquals(2, row.shortage(), 0.0001);
+                assertEquals(balance(connection, juice, warehouse) - OPENING, row.net(), 0.0001,
+                        "the report's net is not what the counts did to the balance");
+            } finally {
+                signIn(AppPermissions.STOCK_COUNT_SHOW, AppPermissions.STOCK_COUNT_POST);
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("a sheet's record is the stored sheet: its status, when it was posted, who entered it")
+    void aSheetsRecordIsTheStoredSheet() throws Exception {
+        inTransaction(connection -> {
+            int itemId = seed(connection);
+            StockCount sheet = newSheet(itemId, OPENING, 28);
+            post(sheet);
+
+            StockCountDocument document = service.document(sheet.getId());
+
+            assertEquals(StockCountStatus.POSTED, document.header().status());
+            assertNotNull(document.header().postedAt());
+            assertEquals(userName(connection, USER), document.header().enteredBy());
+            assertEquals(1, document.lines().size());
+            assertEquals(-2, document.lines().getFirst().difference(), 0.0001);
+        });
+    }
+
+    @Test
+    @DisplayName("without stock.count.show the history, the variance and a record are refused")
+    void readingNeedsTheShowKey() throws Exception {
+        inTransaction(connection -> {
+            StockCountHistoryFilter filter = StockCountHistoryFilter.thisYear(LocalDate.now());
+            signIn(AppPermissions.STOCK_COUNT_POST);
+            try {
+                assertThrows(BusinessRuleException.class, () -> service.history(filter));
+                assertThrows(BusinessRuleException.class, () -> service.variance(filter));
+                assertThrows(BusinessRuleException.class, () -> service.document(1));
+            } finally {
+                signIn(AppPermissions.STOCK_COUNT_SHOW, AppPermissions.STOCK_COUNT_POST);
+            }
+        });
+    }
+
+    private static String userName(Connection connection, int userId) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT user_name FROM users WHERE id = ?")) {
+            statement.setInt(1, userId);
+            try (ResultSet rows = statement.executeQuery()) {
+                assertTrue(rows.next());
+                return rows.getString(1);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------
     // The fixture
     // ------------------------------------------------------------------
+
+    /** A carton of {@code factor} for the item - the seeded unit 2 - and answers the unit's name. */
+    private static String insertCarton(Connection connection, int itemId, double factor) throws Exception {
+        String sql = "INSERT INTO items_units(items_id, unit, quantity, buy_price, sel_price) VALUES (?, 2, ?, 0, 0)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, itemId);
+            statement.setDouble(2, factor);
+            assertEquals(1, statement.executeUpdate());
+        }
+        try (PreparedStatement statement = connection.prepareStatement("SELECT unit_name FROM units WHERE unit_id = 2");
+             ResultSet rows = statement.executeQuery()) {
+            assertTrue(rows.next());
+            return rows.getString(1);
+        }
+    }
 
     private static void post(StockCount sheet) throws Exception {
         service.post(sheet);

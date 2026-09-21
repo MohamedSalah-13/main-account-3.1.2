@@ -22,6 +22,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The rules of a stock count, in one place.
@@ -69,9 +70,39 @@ public record StockCountService(DaoFactory daoFactory) {
         return dao().findById(id);
     }
 
-    public List<StockCount> recent(int limit) throws DaoException {
+    /**
+     * One page of past sheets - drafts and posted ones, by period, warehouse and status - with the
+     * totals of everything the filter matches. A posted count could not be seen again before this:
+     * {@code recent} and {@code findById} existed and nothing called them.
+     */
+    public StockCountHistoryPage history(StockCountHistoryFilter filter) throws DaoException {
         AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
-        return dao().recent(limit);
+        long[] totals = dao().totals(filter);
+        return StockCountHistoryPage.of(dao().page(filter), totals[0], totals[1], totals[2], filter);
+    }
+
+    /**
+     * What the posted sheets of the filter's period and warehouse found, per item - which items keep
+     * going missing. Drafts are never read: they have moved nothing.
+     *
+     * @return the rows, or an empty optional above {@link StockCountHistoryFilter#PRINT_LIMIT} items,
+     *         since a report cut short without saying so looks complete
+     */
+    public Optional<List<StockCountVarianceRow>> variance(StockCountHistoryFilter filter) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
+        List<StockCountVarianceRow> rows = dao().variance(filter, StockCountHistoryFilter.PRINT_LIMIT + 1);
+        return rows.size() > StockCountHistoryFilter.PRINT_LIMIT ? Optional.empty() : Optional.of(rows);
+    }
+
+    /** One sheet read again by its id, header and lines, for its paper and for the history's detail. */
+    public StockCountDocument document(int countId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
+        StockCountSummary header = dao().summary(countId);
+        if (header == null) {
+            // A draft discarded on another machine since the list was read.
+            throw new BusinessRuleException(message("item.stockcount.error.not.found"));
+        }
+        return new StockCountDocument(header, dao().linesOf(countId));
     }
 
     /**
@@ -108,6 +139,7 @@ public record StockCountService(DaoFactory daoFactory) {
     public int save(StockCount count) throws DaoException {
         AuthorizationGuard.require(AppPermissions.STOCK_COUNT_CREATE);
         requireEditable(count);
+        requireOneLinePerItem(count);
         return dao().save(count);
     }
 
@@ -137,6 +169,7 @@ public record StockCountService(DaoFactory daoFactory) {
         if (count.getLines().isEmpty()) {
             throw new UserValidationException(message("item.stockcount.error.no.lines"));
         }
+        requireOneLinePerItem(count);
 
         int moved = count.linesWithDifference().size();
         return TransactionTemplate.execute(() -> {
@@ -204,6 +237,19 @@ public record StockCountService(DaoFactory daoFactory) {
      */
     private static String message(String key) {
         return LanguageManager.getInstance().getString(key);
+    }
+
+    /**
+     * Refuses a sheet naming one item on two lines. Each line carries the item's whole book, so
+     * posting two subtracts it twice - see {@link StockCountLines}. The screen never builds such a
+     * sheet any more; a draft saved before it stopped, or another caller, is told which item.
+     */
+    private static void requireOneLinePerItem(StockCount count) throws UserValidationException {
+        var repeated = StockCountLines.repeatedItem(count.getLines());
+        if (repeated.isPresent()) {
+            throw new UserValidationException(LanguageManager.getInstance()
+                    .getString("item.stockcount.error.item.twice", repeated.get().getItemName()));
+        }
     }
 
     private void requireEditable(StockCount count) throws DaoException {

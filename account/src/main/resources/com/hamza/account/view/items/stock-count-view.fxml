@@ -8,120 +8,137 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
 <AnchorPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.StockCountController">
     <children>
-        <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-            <top>
-                <VBox spacing="8.0" BorderPane.alignment="CENTER">
-                    <children>
-
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
-                            <children>
-                                <Label styleClass="form-label" text="%invoice.stock" />
-                                <ComboBox fx:id="comboStock" minWidth="160.0" />
-                                <Label styleClass="form-label" text="%item.stockcount.label.count.date" />
-                                <DatePicker fx:id="datePicker" minWidth="140.0" />
-
-                                <Label styleClass="form-label" text="%invoice.notes" />
-                                <TextField fx:id="textNotes" minWidth="200.0" promptText="%item.stockcount.prompt.optional" />
-
-                                <Label fx:id="labelStatus" styleClass="summary-light-label" text="%item.stockcount.status.draft" />
-                                <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
-
-                                <Region HBox.hgrow="ALWAYS" />
-
-                                <MenuButton fx:id="viewMenu" mnemonicParsing="false" />
-                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.stockcount.btn.delete.draft" />
-                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="neutral-button" text="%common.save" />
-                                <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%item.stockcount.btn.post" />
-                            </children>
-                            <padding>
-                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
-                            </padding>
-                        </HBox>
-
-                        <!-- Scanning is the primary way in: the field keeps focus, and every
-                             scan either adds a line or moves to the one already there. -->
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
-                            <children>
-                                <Label styleClass="form-label" text="%item.stockcount.label.scan.hint" />
-                                <TextField fx:id="textScan" minWidth="320.0" promptText="%item.stockcount.prompt.scan" />
-                                <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="%item.stockcount.btn.remove.line" />
-                                <Label fx:id="labelScanHint" styleClass="kpi-hint" text="" />
-                            </children>
-                            <padding>
-                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
-                            </padding>
-                        </HBox>
-
-                        <HBox fx:id="kpiStrip" alignment="CENTER_LEFT" spacing="10.0">
-                            <children>
-                                <VBox styleClass="kpi-tile" HBox.hgrow="ALWAYS">
+        <!-- Three tabs, three jobs: the sheet being counted, every sheet already entered, and what
+             the posted ones found. The two later tabs are built in code by StockCountHistoryView
+             and StockCountVarianceView. A posted count used to be unreachable from any screen. -->
+        <TabPane fx:id="tabs" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <tabs>
+                <Tab fx:id="currentTab" text="%item.stockcount.tab.current">
+                    <content>
+                        <BorderPane styleClass="app-container">
+                            <top>
+                                <VBox spacing="8.0" BorderPane.alignment="CENTER">
                                     <children>
-                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.line.count" />
-                                        <Text fx:id="textLineCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
-                                    </children>
-                                </VBox>
 
-                                <VBox HBox.hgrow="ALWAYS">
-                                    <styleClass>
-                                        <String fx:value="kpi-tile" />
-                                        <String fx:value="kpi-low" />
-                                    </styleClass>
-                                    <children>
-                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.diff.count" />
-                                        <Text fx:id="textDiffCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
-                                    </children>
-                                </VBox>
+                                        <!-- A FlowPane, not an HBox: at 1366 points the warehouse, the date, the notes,
+                                             the status and four buttons do not fit on one line, and an HBox squeezed
+                                             every caption and button to "الم..." and "ترحيل ا...". A row that wraps
+                                             keeps each control whole. -->
+                                        <FlowPane alignment="CENTER_LEFT" hgap="8.0" vgap="6.0" styleClass="app-card">
+                                            <children>
+                                                <Label styleClass="form-label" text="%invoice.stock" />
+                                                <ComboBox fx:id="comboStock" minWidth="160.0" />
+                                                <Label styleClass="form-label" text="%item.stockcount.label.count.date" />
+                                                <DatePicker fx:id="datePicker" minWidth="140.0" />
 
-                                <VBox HBox.hgrow="ALWAYS">
-                                    <styleClass>
-                                        <String fx:value="kpi-tile" />
-                                        <String fx:value="kpi-sale" />
-                                    </styleClass>
-                                    <children>
-                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.surplus" />
-                                        <Text fx:id="textSurplus" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.000" />
-                                    </children>
-                                </VBox>
+                                                <Label styleClass="form-label" text="%invoice.notes" />
+                                                <TextField fx:id="textNotes" minWidth="200.0" promptText="%item.stockcount.prompt.optional" />
 
-                                <VBox HBox.hgrow="ALWAYS">
-                                    <styleClass>
-                                        <String fx:value="kpi-tile" />
-                                        <String fx:value="kpi-cost" />
-                                    </styleClass>
-                                    <children>
-                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.shortage" />
-                                        <Text fx:id="textShortage" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.000" />
+                                                <Label fx:id="labelStatus" styleClass="summary-light-label" text="%item.stockcount.status.draft" />
+                                                <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
+
+                                                <MenuButton fx:id="viewMenu" mnemonicParsing="false" />
+                                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.stockcount.btn.delete.draft" />
+                                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="neutral-button" text="%common.save" />
+                                                <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%item.stockcount.btn.post" />
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                                            </padding>
+                                        </FlowPane>
+
+                                        <!-- Scanning is the primary way in: the field keeps focus, and every
+                                             scan either adds a line or moves to the one already there. -->
+                                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                                            <children>
+                                                <Label styleClass="form-label" text="%item.stockcount.label.scan.hint" />
+                                                <TextField fx:id="textScan" minWidth="320.0" promptText="%item.stockcount.prompt.scan" />
+                                                <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="%item.stockcount.btn.remove.line" />
+                                                <Label fx:id="labelScanHint" styleClass="kpi-hint" text="" />
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                                            </padding>
+                                        </HBox>
+
+                                        <HBox fx:id="kpiStrip" alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <VBox styleClass="kpi-tile" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.line.count" />
+                                                        <Text fx:id="textLineCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
+                                                    </children>
+                                                </VBox>
+
+                                                <VBox HBox.hgrow="ALWAYS">
+                                                    <styleClass>
+                                                        <String fx:value="kpi-tile" />
+                                                        <String fx:value="kpi-low" />
+                                                    </styleClass>
+                                                    <children>
+                                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.diff.count" />
+                                                        <Text fx:id="textDiffCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
+                                                    </children>
+                                                </VBox>
+
+                                                <VBox HBox.hgrow="ALWAYS">
+                                                    <styleClass>
+                                                        <String fx:value="kpi-tile" />
+                                                        <String fx:value="kpi-sale" />
+                                                    </styleClass>
+                                                    <children>
+                                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.surplus" />
+                                                        <Text fx:id="textSurplus" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.000" />
+                                                    </children>
+                                                </VBox>
+
+                                                <VBox HBox.hgrow="ALWAYS">
+                                                    <styleClass>
+                                                        <String fx:value="kpi-tile" />
+                                                        <String fx:value="kpi-cost" />
+                                                    </styleClass>
+                                                    <children>
+                                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.shortage" />
+                                                        <Text fx:id="textShortage" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.000" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
                                     </children>
+                                    <padding>
+                                        <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
+                                    </padding>
                                 </VBox>
-                            </children>
-                        </HBox>
-                    </children>
-                    <padding>
-                        <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
-                    </padding>
-                </VBox>
-            </top>
-            <center>
-                <VBox BorderPane.alignment="CENTER">
-                    <children>
-                        <TableView fx:id="tableView" styleClass="modern-table" VBox.vgrow="ALWAYS" />
-                    </children>
-                    <padding>
-                        <Insets bottom="6.0" left="6.0" right="6.0" />
-                    </padding>
-                </VBox>
-            </center>
-        </BorderPane>
+                            </top>
+                            <center>
+                                <VBox BorderPane.alignment="CENTER">
+                                    <children>
+                                        <TableView fx:id="tableView" styleClass="modern-table" VBox.vgrow="ALWAYS" />
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="6.0" left="6.0" right="6.0" />
+                                    </padding>
+                                </VBox>
+                            </center>
+                        </BorderPane>
+                    </content>
+                </Tab>
+                <Tab fx:id="historyTab" text="%item.stockcount.tab.history" />
+                <Tab fx:id="varianceTab" text="%item.stockcount.tab.variance" />
+            </tabs>
+        </TabPane>
     </children>
 </AnchorPane>

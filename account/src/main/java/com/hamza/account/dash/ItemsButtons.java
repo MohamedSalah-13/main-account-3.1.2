@@ -185,7 +185,10 @@ public class ItemsButtons {
     public ButtonWithPerm stockTransfers() throws Exception {
         return new ButtonWithPerm() {
             final StockTransferController controller = new StockTransferController();
-            @Override public PermissionKey getPermissionType() { return AppPermissions.STOCK_TRANSFER_POST; }
+            // The screen is the history as much as the form, and V74 split the two: a reader of
+            // transfers who may not post one could not open it at all. Posting is still refused by
+            // the service, and the post button is disabled for whoever may not.
+            @Override public PermissionKey getPermissionType() { return AppPermissions.STOCK_TRANSFER_SHOW; }
             @Override public void action() { }
             @NotNull @Override public String textName() { return LanguageManager.getInstance().getString("setting.store.transfers"); }
             @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addItemTab(tabPane, new OpenFxmlApplication(controller).getPane(), textName()); }

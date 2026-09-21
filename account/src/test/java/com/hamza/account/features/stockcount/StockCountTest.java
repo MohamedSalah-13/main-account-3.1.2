@@ -209,11 +209,24 @@ class StockCountTest {
             assertTrue(StockCountStatus.POSTED.isPosted());
         }
 
+        /**
+         * The status is resolved through a field, so {@code MessageKeyArchitectureTest} cannot see
+         * its keys - the {@code ProcessType} arrangement, checked the same way.
+         */
         @Test
-        @DisplayName("every status is named for the screen")
-        void everyStatusIsNamed() {
-            for (StockCountStatus status : StockCountStatus.values()) {
-                assertFalse(status.title().isBlank(), () -> status + " has no title");
+        @DisplayName("every status is named in all three bundles")
+        void everyStatusIsNamed() throws java.io.IOException {
+            java.nio.file.Path bundles = java.nio.file.Path.of("..", "controlsfx", "src", "main", "resources", "i18n");
+            for (String bundle : new String[]{"messages.properties", "messages_ar.properties", "messages_en.properties"}) {
+                java.util.Properties properties = new java.util.Properties();
+                try (java.io.Reader reader = java.nio.file.Files.newBufferedReader(bundles.resolve(bundle),
+                        java.nio.charset.StandardCharsets.UTF_8)) {
+                    properties.load(reader);
+                }
+                for (StockCountStatus status : StockCountStatus.values()) {
+                    assertFalse(properties.getProperty(status.labelKey(), "").isBlank(),
+                            () -> bundle + " has no " + status.labelKey());
+                }
             }
         }
     }

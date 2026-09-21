@@ -308,9 +308,10 @@ largest phase and every part of it is a screen - one pull request each:
 
 - **D1 - the transfer** (`V76`). **Delivered 2026-09-21, see §15.** The history by period, a slip
   for one transfer, a note on the header.
-- **D2 - the count and the stocks screen.** A list of past counts with a `RowDetailDrawer` of
-  their lines, a variance report, a printed count sheet. The stocks screen rebuilt in code with
-  row actions and a `Task`.
+- **D2 - the count and the stocks screen.** **Delivered 2026-09-21, see §16** - and it began
+  with a defect that produced wrong figures, found by reading and reproduced on CI before it was
+  fixed. A list of past counts with a `RowDetailDrawer` of their lines, a variance report, a
+  printed count record. The stocks screen rebuilt in code with row actions and a `Task`.
 
 **E - the warehouse as a record** (`V77` at the earliest - this line said `V75`, which phase C
 took). `stocks.is_active` with a scope argument and **no
@@ -678,3 +679,124 @@ Three defects, fixed before the pull request, none of them visible to a test:
   row offers.
 - **The Excel file was not opened** - it is the log's own rows, which the log test and the rendered
   log both cover, and the native save dialog was deliberately not driven.
+
+## 16. What phase D2 delivered (2026-09-21)
+
+The count and the warehouses screen. No migration. It opened on a defect that booked shelves at
+the wrong figure, and everything else in it came after that was fixed.
+
+### The defect: one item counted in two units took its book twice
+
+**Each line of a count sheet carries the item's whole book balance** as it stood when the item
+was scanned (`system_qty`, base units), and a post moves every line's counted quantity less that
+book. The screen kept **a line per item and unit** - the invoice's rule, where each line is a thing
+sold - so an item counted in cartons and in loose pieces was two lines, and the post subtracted its
+book twice. Two cartons of twelve and three pieces against a book of 30 were posted as
+`24 - 30` and `3 - 30`: the shelf holding 27 was booked at **-3**.
+
+Found by reading, while designing the variance report. **Reproduced on CI before it was fixed**:
+the acceptance run on the reproducing commit went red with `expected: <27.0> but was: <-3.0>`
+(`41a60038`), and the fix's run was green (`d4327314`), 231 cases.
+
+**The fix is one line per item** (`StockCountLines`). Scanning a second unit of an item already on
+the sheet restates its line in the base unit and adds the scan there - two cartons and a piece read
+25 pieces - keeping the book snapshot of the first scan, for the reason §7.3's struck-through entry
+and `StockCountService` both give: the adjustment is a difference against the moment the item was
+first counted. The service refuses to save or post a sheet naming one item on two lines, with a
+sentence naming it - for a draft saved before the fix, or any caller that is not the screen.
+
+**What it does not do: correct what was posted before.** A posted sheet is a correction that was
+made, and rewriting it would move balances already reported. A shop that counted an item in two
+units has booked that item short by its book, once per extra line. This finds them:
+
+```sql
+SELECT c.id, c.count_date, c.stock_id, l.item_id, COUNT(*) AS lines, MAX(l.system_qty) AS book
+FROM stock_count c
+         JOIN stock_count_lines l ON l.count_id = c.id
+WHERE c.status = 'POSTED'
+GROUP BY c.id, c.count_date, c.stock_id, l.item_id
+HAVING COUNT(*) > 1;
+```
+
+Each row is corrected by counting that item again and posting it - the only correction a count
+has, and the one that leaves a record.
+
+### The counted cell read nothing an Arabic keyboard typed
+
+It used `DoubleStringConverter`, which is `Double.valueOf` and does not know ٠-٩, so a count typed
+the ordinary way on the machines this ships to was refused as nonsense and the cell went back to
+what it held - **silently**, since the handler ignores what it cannot read. It uses
+`NumberTextConverter` now, and refuses NaN and a negative count the way it refused a blank. The
+same omission as `TransferQuantityInput` and `ReturnQuantityInput`, the third time.
+
+### What changed
+
+- **Past counts** (`StockCountHistoryFilter`, `StockCountHistoryQuery`, `StockCountHistoryView`): the
+  count screen's second tab, by period (the year so far - a shop counts a few times a year), warehouse
+  and status, paged, with the totals of the whole set - sheets, lines, lines with a difference.
+  Counts, never quantities. A sheet's lines open in a `RowDetailDrawer`; its record prints from its
+  row. **A posted count could not be seen again before this**: `recent` and `findById` had no caller.
+- **The variance report** (`StockCountVarianceView`, `StockCountVarianceReport`): the third tab. Per
+  item, over the posted sheets of a period and a warehouse: how many counts found it different, the
+  surplus, the shortage, the net, largest shortage first - which items keep going missing. It reads
+  the history's own `WHERE` with the status forced to posted, and **a difference is
+  `adjustment_agg`'s own expression**, read out of `R__views.sql` by `StockCountHistoryTest`. It sums
+  a sheet's lines of one item before splitting surplus from shortage, so an old sheet with an item
+  on two lines contributes what it really moved - the wrong figure it really posted.
+- **A count's record** (`StockCountSheetLayout`, through `DocumentPdfPage`): the warehouse, the
+  status - so a draft cannot be filed as a correction that was made - when it was posted and by whom,
+  every line with its book, its count and its difference, and the counter's signature. Offered
+  straight after posting, in place of the "posted" notice, and from its row afterwards.
+- **`StockCountStatus` carries message keys**, not two Arabic words, and left
+  `LocalizationArchitectureTest`'s allow-list.
+- **The warehouses screen is built in code** (`StocksController`, §7.14): read and written on a
+  `Task`, a table with an id, edit and delete as buttons in the row, and **a delete that asks** -
+  it was one press. Enter moves from the name to the address and saves there, so the file left
+  `KeyboardNavigationArchitectureTest`'s list. `addStock-view.fxml`, loaded by nothing, is gone.
+- **The transfers screen opens on `stock.transfer.show`.** It opened on `.post`, so after `V74` a
+  reader of the history who may not post could not open the screen at all. The post button is
+  disabled for whoever may not post; the service refuses anyway.
+- **`CompanyLetterhead`** writes both warehouse papers - the transfer slip and the count record - the
+  one way, rather than a copy of the letterhead code in each screen.
+
+### How it was checked
+
+- **Unit tests:** `StockCountLinesTest` (the scan rule, the fold, the repeated item),
+  `StockCountHistoryTest` (the filter, the page, the statements and their binder, the view's own
+  difference), `StockCountPapersTest` (the record and the variance report), and the status keys
+  against the three bundles.
+- **Against MySQL:** six new cases in `StockCountPostAcceptanceTest` - the item in two units lands on
+  27; a sheet naming an item twice is refused with nothing moved; the history of a warehouse by
+  status with its totals across a page of one; the variance of two posted sheets, a correct line
+  and a draft, **held against the balance itself** rather than a figure typed twice; a sheet's record
+  as stored; and nothing readable without `stock.count.show`. **Eleven of eleven green** on a schema
+  migrated from nothing to `V76`, with the transfer's twelve and the card's three.
+- **Watched on a screen at 1366x768**, on that schema seeded with posted counts across three months,
+  a draft, and an old sheet carrying an item on two lines. The carton's own code scanned onto oil
+  already on the sheet in pieces folded to one line of 102; `٥٥` typed into a counted cell read 55;
+  the draft posted and offered its record. The history listed four sheets with 9 lines and 8
+  differences; the old sheet's lines showed the defect as it was posted, `-2` and `-48` against one
+  book of 50. The variance read oil 4 counts, 7 over, 55 short, **net -48 - exactly what the counts
+  moved its balance by across both warehouses**, `(102 - 100) + (0 - 50)`. The warehouses screen
+  renamed a warehouse through Enter, asked before a delete and refused it with a sentence naming 4
+  balance rows and a count, and the count screen's filter showed the new name without being
+  reopened. The record and the variance report were **drawn to images** from that database.
+
+### What only the screen found
+
+- **The count screen's top row was squeezed at 1366** into "الم..." and "ترحيل ا...": the
+  warehouse, the date, the notes, the status and four buttons do not fit one line, and an `HBox`
+  squeezes. It is a `FlowPane` now and wraps.
+
+### Found and not fixed
+
+- **The count table carries this machine's saved column widths**, from a wider screen: at 1366 the
+  counted column - the one anybody types into - opened off the edge behind the horizontal scroll.
+  `TableSetting` restores what a user left, which is the trap CLAUDE.md describes; a fresh install
+  has no such widths. Not reproduced on a clean profile.
+- **The shared delete dialog drew "مستخدم في" as one word** in the refusal - the template has the
+  space. A rendering matter of that dialog, everywhere it is used.
+- **A blank sheet to count on paper** - a warehouse's items with an empty column - is still not
+  printable; the record is the sheet as entered.
+- **Nothing was seen signed in as an ordinary user.** The permission of each read is proven through
+  the service.

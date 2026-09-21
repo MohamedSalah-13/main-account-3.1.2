@@ -3,11 +3,7 @@ package com.hamza.account.controller.items;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.StocksChanged;
-import com.hamza.account.features.export.DocumentPdfPage;
-import com.hamza.account.features.export.PdfExportService;
-import com.hamza.account.features.invoice.InvoicePrintDocument;
 import com.hamza.account.features.stocktransfer.StockTransferHistoryFilter;
 import com.hamza.account.features.stocktransfer.StockTransferHistoryPage;
 import com.hamza.account.features.stocktransfer.StockTransferLineRow;
@@ -16,8 +12,6 @@ import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.features.stocktransfer.StockTransferService;
 import com.hamza.account.features.stocktransfer.StockTransferSlipLayout;
 import com.hamza.account.features.stocktransfer.StockTransferSummary;
-import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Company;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.ContentSizedColumns;
@@ -55,7 +49,6 @@ import javafx.geometry.Pos;
 
 import java.io.File;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -231,18 +224,9 @@ final class StockTransferHistoryView {
 
     /** Writes one transfer's slip - the row's button, and the question asked straight after posting. */
     static void printSlip(Node owner, StockTransferService service, int transferId) {
-        try {
-            DocumentPdfPage slip = StockTransferSlipLayout.of(service.forSlip(transferId), letterhead(),
-                    LanguageManager.getInstance()::getString, Columns.DATE_TIME.format(LocalDateTime.now()));
-            File target = TablePdfReport.chooseTarget(owner.getScene().getWindow(), slip.title() + " " + transferId);
-            if (target == null) {
-                return;
-            }
-            TablePdfReport.write(target, file -> new PdfExportService().exportDocument(
-                    file.getAbsolutePath(), slip, TablePdfReport.uprightPageSize()));
-        } catch (Exception e) {
-            AllAlerts.handleError(text("stocks.transfer.slip.print"), e);
-        }
+        CompanyLetterhead.print(owner, transferId, "stocks.transfer.slip.print", (letterhead, printedAt) ->
+                StockTransferSlipLayout.of(service.forSlip(transferId), letterhead,
+                        LanguageManager.getInstance()::getString, printedAt));
     }
 
     // ------------------------------------------------------------------
@@ -412,12 +396,6 @@ final class StockTransferHistoryView {
     // ------------------------------------------------------------------
     // Plumbing
     // ------------------------------------------------------------------
-
-    private static InvoicePrintDocument.Letterhead letterhead() throws Exception {
-        Company company = new CompanyService(DaoFactory.INSTANCE).load();
-        return new InvoicePrintDocument.Letterhead(company.getName(), company.getAddress(), company.getTel(),
-                company.getCommercial(), company.getTax(), company.getImage());
-    }
 
     private static ListCell<Stock> warehouseCell() {
         return new ListCell<>() {

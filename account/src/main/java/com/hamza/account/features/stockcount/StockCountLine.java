@@ -59,6 +59,16 @@ public class StockCountLine {
     }
 
     /**
+     * This line restated in the item's base unit - the same count and the same book snapshot,
+     * with a factor of one. What {@link StockCountLines#scan} turns a line into when a second
+     * unit of its item is scanned.
+     */
+    public StockCountLine inBaseUnit(int baseUnitId, String baseUnitName) {
+        return new StockCountLine(id, itemId, itemName, barcode, baseUnitId, baseUnitName, 1,
+                systemQuantity, countedInBaseUnits());
+    }
+
+    /**
      * How far the shelf is from the books, in base units. Positive means more was
      * found than the system knew about; negative means stock is missing. This is the
      * number posting adds to the balance.
