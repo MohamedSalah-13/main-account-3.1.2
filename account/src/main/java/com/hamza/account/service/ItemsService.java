@@ -6,8 +6,8 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.features.items.BulkOpeningBalance;
 import com.hamza.account.features.items.ItemCatalogFilter;
-import com.hamza.account.opening.OpeningBalanceGuard;
-import com.hamza.account.opening.OpeningBalanceRegistry;
+import com.hamza.account.config.DefaultStock;
+import com.hamza.account.features.items.WarehouseOpeningBalance;
 import com.hamza.account.features.items.ItemImageContent;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.ItemsChanged;
@@ -159,15 +159,16 @@ public record ItemsService(DaoFactory daoFactory) {
         });
     }
 
-    private static Set<Integer> openingBalanceTargets(List<ItemsModel> items) throws DaoException {
-        OpeningBalanceGuard guard = OpeningBalanceGuard.shared();
+    /** The default warehouse's opening - the one the bulk editor and the item screen write. */
+    private Set<Integer> openingBalanceTargets(List<ItemsModel> items) throws DaoException {
+        WarehouseOpeningBalance rule = new WarehouseOpeningBalance(daoFactory.warehouseStockDao());
         return BulkOpeningBalance.writableIds(
                 items.stream()
                         .map(item -> new BulkOpeningBalance.Item(item.getId(), item.getNameItem(),
                                 item.getFirstBalanceForStock()))
                         .toList(),
-                (id, incoming) -> guard.verdict(OpeningBalanceRegistry.ITEMS, id, incoming),
-                OpeningBalanceRegistry.ITEMS.correction());
+                (id, incoming) -> rule.verdict(id, DefaultStock.ID, incoming),
+                LanguageManager.getInstance().getString("opening.correction.items"));
     }
 
     /**

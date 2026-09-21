@@ -43,6 +43,7 @@ import com.hamza.account.features.productprofile.ProductProfileService;
 import com.hamza.account.features.profitloss.ProfitLossService;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.features.stocktransfer.StockTransferService;
+import com.hamza.account.features.stockopening.WarehouseOpeningService;
 import com.hamza.account.features.shift.JdbcShiftPolicyRepository;
 import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.features.shift.ShiftCloseRequestDao;
@@ -262,6 +263,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(InventoryService.class, new InventoryService(daoFactory));
         ServiceRegistry.register(StockCountService.class, new StockCountService(daoFactory));
         ServiceRegistry.register(StockTransferService.class, new StockTransferService(daoFactory));
+        ServiceRegistry.register(WarehouseOpeningService.class, new WarehouseOpeningService(daoFactory));
         ServiceRegistry.register(ItemMergeService.class, new ItemMergeService(daoFactory, productFeatures));
         ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService());

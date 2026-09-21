@@ -4,11 +4,9 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.items.ItemCatalogSql;
 import com.hamza.account.features.items.ItemStockBalanceSql;
+import com.hamza.account.features.items.WarehouseOpeningBalance;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
-import com.hamza.account.model.domain.Items_Stock_Model;
-import com.hamza.account.opening.OpeningBalanceGuard;
-import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -63,9 +61,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * pre-aggregate by {@code item_id} so there is exactly one row per item regardless
      * of how many stocks it has moved through. Since V18, {@code first_balance} in
      * {@code quantity_items_table} comes from the distinct (item, stock) row in
-     * {@code items_stock}, so it must be summed alongside the movements. The legacy
-     * {@code items.first_balance} is only a compatibility mirror of warehouse 1 and is
-     * not the catalogue-wide opening balance.
+     * {@code items_stock}, so it must be summed alongside the movements. It is the only
+     * opening there is since V78, which dropped the item row's copy of warehouse 1.
      * <p>
      * {@code ANY_VALUE(stock_id)} keeps {@link #STOCK_ID} resolvable for {@link #map}
      * without pinning the aggregate to one stock: with a single warehouse it is that
@@ -197,7 +194,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String UNIT_ID = "unit_id";
     private final String MINI_QUANTITY = "mini_quantity";
     private final String ITEM_IMAGE = "item_image";
-    private final String FIRST_BALANCE = "first_balance";
     private final String TABLE_NAME = "items";
     private final String QUANTITY_PURCHASE = "quantityPurchase";
     private final String QUANTITY_SALES = "quantitySales";
@@ -207,9 +203,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String TO_STOCK = "toStock";
     private final String ADJUSTMENT = "adjustment";
     private static final String STOCK_FIRST_BALANCE = "stock_first_balance";
-
-    /** Where the opening balance sits in the array {@link #getData} builds. */
-    private static final int OPENING_BALANCE_INDEX = 13;
     private final String STOCK_ID = "stock_id";
     private final String selPrice1 = "sel_price1";
     private final String selPrice2 = "sel_price2";
@@ -319,40 +312,33 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     /**
-     * The columns an update writes, and the values to write, built together.
-     * <p>
-     * They have to be built together because the opening balance drops out of both once
-     * the item has moved - see {@link #update}. Two lists kept in step by hand is how a
-     * value ends up written into the wrong column.
-     */
-    private record UpdateStatement(String sql, Object[] values, boolean writesOpening) {
-    }
-
-    /**
      * Saves the item.
      * <p>
-     * <b>The opening balance is written only while the item has never moved.</b> It is
-     * the one figure in the row that has no date on it: the balance is
-     * {@code first_balance + purchases + ... - sales}, so changing it changes what the
-     * item's stock was at every moment of its history, and a stock sheet printed and
-     * signed last month prints differently today. Once anything has been bought, sold,
-     * returned, transferred or counted, the opening balance is a closed entry and the
-     * way to correct the stock is a dated movement - which is what the stock-count
-     * screen is for.
+     * <b>The opening balance is the default warehouse's, and is written only while nothing has
+     * moved the item there.</b> It is the one figure with no date on it: that warehouse's balance is
+     * {@code first_balance + purchases + ... - sales}, so changing it changes what the shelf held at
+     * every moment of its history, and a stock sheet printed and signed last month prints
+     * differently today. Once anything has been bought, sold, returned, transferred or counted in
+     * that warehouse the opening is a closed entry, and the way to correct the stock is a dated
+     * count - {@link WarehouseOpeningBalance}.
      * <p>
-     * A changed value is refused rather than quietly dropped: the user typed a number
-     * and is entitled to know it was not saved.
+     * It lives in {@code items_stock} alone since V78. The item row carried a copy that a trigger
+     * pushed into warehouse 1 on <em>every</em> update of the item, so the two could only agree by
+     * that trigger firing; the row no longer names it, and this writes the one place it is read.
+     * <p>
+     * A changed value is refused rather than quietly dropped: the user typed a number and is
+     * entitled to know it was not saved.
      */
     @Override
     public int update(ItemsModel itemsModel) throws DaoException {
-        UpdateStatement statement = updateStatementFor(itemsModel);
-        Object[] versionedValues = optimisticValues(
-                statement.values(), itemsModel.getUpdated_at());
+        boolean writesOpening = openingRule()
+                .mayWrite(itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock());
+        Object[] versionedValues = optimisticValues(getData(itemsModel), itemsModel.getUpdated_at());
 
         return insertMultiData(() -> {
             requireOptimisticUpdate(executeUpdateWithException(
-                    optimisticUpdateSql(statement.sql()), versionedValues));
-            if (statement.writesOpening()) {
+                    optimisticUpdateSql(UPDATE_ITEM), versionedValues));
+            if (writesOpening) {
                 daoFactory.getItemsStockDao().updateOpeningBalance(
                         itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock());
             }
@@ -368,40 +354,22 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         });
     }
 
-    private UpdateStatement updateStatementFor(ItemsModel itemsModel) throws DaoException {
-        boolean mayWriteOpening = OpeningBalanceGuard.shared()
-                .mayWrite(OpeningBalanceRegistry.ITEMS, itemsModel.getId(), itemsModel.getFirstBalanceForStock());
-
-        if (mayWriteOpening) {
-            return new UpdateStatement(
-                    SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
-                            , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays
-                            , alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID),
-                    getData(itemsModel), true);
-        }
-
-        return new UpdateStatement(
-                SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
-                        , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays
-                        , alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID),
-                dataWithoutOpeningBalance(itemsModel), false);
-    }
+    /** The item's own columns, in the order {@link #getData} binds them, the id last. */
+    private final String UPDATE_ITEM = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM,
+            BUY_PRICE, selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays,
+            alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID);
 
     /**
-     * {@link #getData} without the opening balance, for the locked case. The column is
-     * left out of the statement rather than written with its current value, so a value
-     * that reached here some other way cannot overwrite it either.
-     */
-    private Object[] dataWithoutOpeningBalance(ItemsModel itemsModel) {
-        return OpeningBalanceGuard.without(getData(itemsModel), OPENING_BALANCE_INDEX);
-    }
-
-    /**
-     * Whether the item's opening balance is closed to editing. The item screen asks so
-     * it can grey the field; the rule itself is applied in {@link #update}.
+     * Whether the item's opening balance - the default warehouse's, the one the item screen shows -
+     * is closed to editing. The item screen asks so it can grey the field; the rule itself is
+     * applied in {@link #update}.
      */
     public boolean isOpeningBalanceLocked(int itemId) throws DaoException {
-        return OpeningBalanceGuard.shared().isLocked(OpeningBalanceRegistry.ITEMS, itemId);
+        return openingRule().isLocked(itemId, DefaultStock.ID);
+    }
+
+    private WarehouseOpeningBalance openingRule() {
+        return new WarehouseOpeningBalance(daoFactory.warehouseStockDao());
     }
 
     /**
@@ -454,7 +422,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , itemsModel.getAlertDaysBeforeExpiry()
                 , itemsModel.getUnitsType().getUnit_id()
                 , itemsModel.getMini_quantity()
-                , itemsModel.getFirstBalanceForStock()
                 , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
                 , itemsModel.getUsers().getId()
                 , itemsModel.getId()};
@@ -523,10 +490,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * <p>
      * <b>The opening balance is written only for the ids in {@code writesOpeningFor}</b>, and this
      * method does not decide which those are: the service does, for the whole batch and before
-     * anything is written, through {@code OpeningBalanceGuard} ({@code BulkOpeningBalance}) - the
-     * rule {@link #update} applies to one item. For those ids it goes where {@link #update} puts it:
-     * {@code items.first_balance} and the default warehouse's {@code items_stock} row. It used to be
-     * left out altogether while the screen reported the save as done.
+     * anything is written, through {@link WarehouseOpeningBalance} ({@code BulkOpeningBalance}) - the
+     * rule {@link #update} applies to one item. For those ids it goes where {@link #update} puts it,
+     * the default warehouse's {@code items_stock} row. It used to be left out altogether while the
+     * screen reported the save as done.
      */
     public int updateBulk(List<ItemsModel> list, boolean writesImage, java.util.Set<Integer> writesOpeningFor)
             throws DaoException {
@@ -539,8 +506,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         insertMultiData(() -> {
             for (ItemsModel model : list) {
                 boolean writesOpening = writesOpeningFor.contains(model.getId());
-                String sql = bulkUpdateSql(writesImage, writesOpening);
-                Object[] values = optimisticValues(bulkUpdateValues(model, writesImage, writesOpening), model.getUpdated_at());
+                String sql = bulkUpdateSql(writesImage);
+                Object[] values = optimisticValues(bulkUpdateValues(model, writesImage), model.getUpdated_at());
                 requireOptimisticUpdate(executeUpdateWithException(sql, values));
                 if (writesOpening) {
                     daoFactory.getItemsStockDao().updateOpeningBalance(
@@ -553,20 +520,16 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     /** The statement {@link #updateBulk} runs, with its columns in the order {@link #bulkUpdateValues} binds them. */
-    String bulkUpdateSql(boolean writesImage, boolean writesOpening) {
+    String bulkUpdateSql(boolean writesImage) {
         List<String> columns = new ArrayList<>(List.of(SUB_NUM, BUY_PRICE, selPrice1, itemActive, MINI_QUANTITY));
-        if (writesOpening) columns.add(FIRST_BALANCE);
         if (writesImage) columns.add(ITEM_IMAGE);
         columns.add(USER_ID);
         return optimisticUpdateSql(SqlStatements.updateStatement(TABLE_NAME, ID, columns.toArray(String[]::new)));
     }
 
-    Object[] bulkUpdateValues(ItemsModel model, boolean writesImage, boolean writesOpening) {
+    Object[] bulkUpdateValues(ItemsModel model, boolean writesImage) {
         List<Object> values = new ArrayList<>(List.of(model.getSubGroups().getId(), model.getBuyPrice(),
                 model.getSelPrice1(), model.isActiveItem(), model.getMini_quantity()));
-        if (writesOpening) {
-            values.add(model.getFirstBalanceForStock());
-        }
         if (writesImage) {
             values.add(model.getItem_image() != null ? model.getItem_image() : new byte[0]);
         }
@@ -583,12 +546,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , itemsModel.getAlertDaysBeforeExpiry()
                 , itemsModel.getUnitsType().getUnit_id()
                 , itemsModel.getMini_quantity()
-                , itemsModel.getFirstBalanceForStock()
                 , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
                 , itemsModel.getUsers().getId()};
         String INSERT_ITEM = SqlStatements.insertStatement(TABLE_NAME, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID);
+                , UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID);
 
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(INSERT_ITEM, Statement.RETURN_GENERATED_KEYS)) {

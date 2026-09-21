@@ -41,7 +41,7 @@ public enum DaoFactory {
     }
 
     public Items_StockDao getItemsStockDao() {
-        return new Items_StockDao(this);
+        return new Items_StockDao();
     }
 
     public InventoryDao inventoryDao() {
@@ -62,6 +62,10 @@ public enum DaoFactory {
 
     public com.hamza.account.features.items.WarehouseStockDao warehouseStockDao() {
         return new com.hamza.account.features.items.WarehouseStockDao();
+    }
+
+    public com.hamza.account.features.stockopening.WarehouseOpeningDao warehouseOpeningDao() {
+        return new com.hamza.account.features.stockopening.WarehouseOpeningDao();
     }
 
     public PeriodLockDao periodLockDao() {

@@ -151,6 +151,9 @@ public class AddItemController implements AppSettingInterface {
     // overwritten with the same key the FXML now carries itself, so they are gone - their
     // fx:id stays in the file, where it names the row for whoever reads it next.
     private Label labelSelPrice, labelSelPrice2, labelSelPrice3;
+    /** Carries the opening field's explanation: a disabled field shows no tooltip of its own. */
+    @FXML
+    private Label labelFirstBalance;
     @FXML
     private TabPane tabPane;
     @FXML
@@ -699,9 +702,15 @@ public class AddItemController implements AppSettingInterface {
      */
     private void applyOpeningBalanceLock(boolean locked) {
         txtBalance.setDisable(locked);
-        txtBalance.setTooltip(locked
-                ? new Tooltip(LanguageManager.getInstance().getString("item.tooltip.opening.balance.locked"))
-                : null);
+        // The field is one warehouse's opening since V78, and says which, and where the others are.
+        // On the label too: JavaFX shows no tooltip on a disabled control, so the locked field's
+        // explanation - the one that matters - was never on screen. Seen there, 2026-09-21.
+        Tooltip explanation = new Tooltip(LanguageManager.getInstance().getString(locked
+                ? "item.tooltip.opening.balance.locked" : "item.tooltip.opening.balance.default"));
+        txtBalance.setTooltip(explanation);
+        if (labelFirstBalance != null) {
+            labelFirstBalance.setTooltip(explanation);
+        }
     }
 
     private BooleanBinding checkEnableButton() {

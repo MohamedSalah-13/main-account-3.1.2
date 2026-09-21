@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Proves the catalogue's all-warehouse meaning against the real MySQL views. The
- * legacy {@code items.first_balance} carries warehouse 1 only, while the two
- * {@code items_stock} rows below carry the complete opening. A purchase in the second
+ * Proves the catalogue's all-warehouse meaning against the real MySQL views. The two
+ * {@code items_stock} rows below carry the complete opening - the only one there is since
+ * V78 dropped the item row's copy of warehouse 1. A purchase in the second
  * warehouse makes it impossible for the expected current balance to come from either
  * warehouse row by accident.
  * <p>
@@ -100,7 +100,7 @@ class ItemsCatalogBalanceAcceptanceTest {
 
     private static int insertItem(Connection connection, String marker) throws Exception {
         String sql = "INSERT INTO items(barcode,nameItem,sub_num,buy_price,sel_price1,sel_price2,sel_price3,"
-                + "unit_id,mini_quantity,first_balance,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+                + "unit_id,mini_quantity,user_id) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, marker);
             statement.setString(2, marker);
@@ -111,8 +111,7 @@ class ItemsCatalogBalanceAcceptanceTest {
             statement.setDouble(7, 10);
             statement.setInt(8, 1);
             statement.setDouble(9, 0);
-            statement.setDouble(10, DEFAULT_OPENING);
-            statement.setInt(11, 1);
+            statement.setInt(10, 1);
             assertEquals(1, statement.executeUpdate());
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 assertTrue(keys.next());
@@ -123,12 +122,11 @@ class ItemsCatalogBalanceAcceptanceTest {
 
     private static void insertItemStock(Connection connection, int itemId, int stockId, double opening)
             throws Exception {
-        String sql = "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO items_stock(item_id,stock_id,first_balance) VALUES (?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, itemId);
             statement.setInt(2, stockId);
             statement.setDouble(3, opening);
-            statement.setDouble(4, opening);
             assertEquals(1, statement.executeUpdate());
         }
     }

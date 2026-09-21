@@ -221,16 +221,15 @@ class ItemMergeDatabaseAcceptanceTest {
                            int unitId, double firstBalance, boolean validity) throws Exception {
         String sql = """
                 INSERT INTO items (barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2, sel_price3,
-                                   unit_id, mini_quantity, first_balance, item_has_validity, user_id)
-                VALUES (?, ?, ?, 10, 15, 15, 15, ?, 0, ?, ?, 1)""";
+                                   unit_id, mini_quantity, item_has_validity, user_id)
+                VALUES (?, ?, ?, 10, 15, 15, 15, ?, 0, ?, 1)""";
         int id;
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, barcode);
             statement.setString(2, name);
             statement.setInt(3, SUB_GROUP);
             statement.setInt(4, unitId);
-            statement.setDouble(5, firstBalance);
-            statement.setBoolean(6, validity);
+            statement.setBoolean(5, validity);
             assertEquals(1, statement.executeUpdate());
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 assertTrue(keys.next());
@@ -240,17 +239,18 @@ class ItemMergeDatabaseAcceptanceTest {
         // quantity_items_table is driven by items_stock, so an item with no row there has
         // no balance to read at all - which would make every assertion here pass vacuously.
         //
-        // The opening balance goes in here as well as on the item, and the two have to
-        // agree. This row used to be written with a hard-coded 0, which was correct when
+        // The opening balance goes in here and nowhere else. This row used to be written
+        // with a hard-coded 0 beside an opening on the item, which was correct when
         // the test was written on 2026-08-20: the view read `items.first_balance` then, so
         // the item's own column was the opening. fbadd53 (2026-08-28, multi-warehouse)
         // moved the view onto `items_stock.first_balance` per warehouse and left
         // `items.first_balance` as a compatibility mirror of warehouse 1 - and from that
         // day this fixture claimed an opening of 5 while the view read 0. Nobody saw it,
         // because the class is gated and was last run on 2026-08-25, three days before.
+        // V78 dropped the item's copy, so there is no second place left to disagree with.
         execute(connection, """
-                INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
-                VALUES (?, ?, ?, 0)""", id, STOCK, firstBalance);
+                INSERT INTO items_stock (item_id, stock_id, first_balance)
+                VALUES (?, ?, ?)""", id, STOCK, firstBalance);
         return id;
     }
 

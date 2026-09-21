@@ -52,6 +52,11 @@ class DefaultStockUsageArchitectureTest {
             "com/hamza/account/interfaces/api/DataInterface.java",
             "com/hamza/account/model/dao/CardItemDao.java",
             "com/hamza/account/model/dao/ItemsDao.java",
+            // The bulk editor's opening balance, which is the item screen's field applied to many
+            // items and writes the same warehouse ItemsDao.updateBulk does. It asked the item-wide
+            // rule, which named no warehouse, until V78 dropped the column that rule read; any
+            // other warehouse's opening is entered from the warehouses screen, per warehouse.
+            "com/hamza/account/service/ItemsService.java",
             "com/hamza/account/service/StockService.java");
 
     private static Set<String> filesReferencingDefaultStock() {

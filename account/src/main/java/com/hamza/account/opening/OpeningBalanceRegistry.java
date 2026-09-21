@@ -12,28 +12,17 @@ package com.hamza.account.opening;
  * <p>
  * Declared here rather than written into each DAO for the reason
  * {@code DeleteRegistry} exists: the same rule was going to be repeated three times,
- * and the third copy is where the tables get missed.
+ * and the third copy is where the tables get missed. The parties' openings live on their
+ * own rows; an item's lives on each of its warehouse rows, and is
+ * {@code WarehouseOpeningBalance}'s.
  */
 public final class OpeningBalanceRegistry {
 
-    /**
-     * An item has moved once it is on an invoice line, a return, an old warehouse
-     * transfer, or a stock count.
-     * <p>
-     * Stock-count lines count although the key cascades - it is not a delete being
-     * decided here - and drafts count as much as posted sheets: a draft holds the book
-     * balance the counter was shown, and moving it under them makes the sheet post a
-     * difference nobody measured.
+    /*
+     * The item's rule was here until V78, and it counted an item's lines in every warehouse against
+     * items.first_balance - a copy of warehouse 1 that V78 drops. An item's opening is per warehouse,
+     * and so is the question of whether it has moved: features/items/WarehouseOpeningBalance.
      */
-    public static final OpeningBalanceRule ITEMS = OpeningBalanceRule.forEntity("delete.entity.item", "items")
-            .movedBy("purchase", "num", "delete.ref.purchase_line")
-            .movedBy("sales", "num", "delete.ref.sales_line")
-            .movedBy("purchase_re", "item_id", "delete.ref.purchase_return_line")
-            .movedBy("sales_re", "item_id", "delete.ref.sales_return_line")
-            .movedBy("stock_transfer_list", "item_id", "delete.ref.stock_transfer_line")
-            .movedBy("stock_count_lines", "item_id", "opening.ref.stock_count_line")
-            .correctedBy("opening.correction.items")
-            .build();
 
     /** A customer has moved once they have an invoice, a return, or a payment. */
     public static final OpeningBalanceRule CUSTOMERS = OpeningBalanceRule.forEntity("delete.entity.customer", "custom")

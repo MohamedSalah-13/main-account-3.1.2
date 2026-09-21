@@ -14,7 +14,9 @@ import java.math.BigDecimal;
  * @param barcode       likewise - and it is what the target inherits
  * @param unitId        the base unit; the merge is refused when the two differ
  * @param hasValidity   whether the item tracks expiry batches
- * @param firstBalance  the opening balance, which is added to the target's
+ * @param firstBalance  the opening balance summed over every warehouse - what the preview
+ *                      shows and the log records. Each warehouse's is added to the same
+ *                      warehouse of the target, never this total to one of them
  */
 public record MergeItem(int id, String name, String barcode, int unitId,
                         boolean hasValidity, BigDecimal firstBalance) {

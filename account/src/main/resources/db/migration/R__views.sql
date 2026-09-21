@@ -188,9 +188,9 @@ WITH purchase_agg AS (SELECT stock_id, num AS item_id,
                                  JOIN stock_count sc ON sc.id = scl.count_id
                         WHERE sc.status = 'POSTED'
                         GROUP BY sc.stock_id, scl.item_id)
--- V18 makes items_stock the per-warehouse source of the opening balance. The legacy
--- items.first_balance column remains a compatibility mirror of warehouse 1; reading it
--- here would repeat that one warehouse's opening on every warehouse row.
+-- V18 makes items_stock the per-warehouse source of the opening balance, and V78 the only
+-- one: it dropped items.first_balance, a copy of warehouse 1 that a trigger kept, which read
+-- here would have repeated that one warehouse's opening on every warehouse row.
 SELECT ist.item_id,
        ist.stock_id,
        ist.first_balance,

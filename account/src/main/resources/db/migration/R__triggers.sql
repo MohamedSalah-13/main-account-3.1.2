@@ -187,8 +187,7 @@ BEGIN
                     'id', NEW.id,
                     'barcode', NEW.barcode,
                     'nameItem', NEW.nameItem,
-                    'buy_price', NEW.buy_price,
-                    'first_balance', NEW.first_balance
+                    'buy_price', NEW.buy_price
             ),
             NULL
          );
@@ -214,8 +213,7 @@ BEGIN
                     'buy_price', OLD.buy_price,
                     'sel_price1', OLD.sel_price1,
                     'sel_price2', OLD.sel_price2,
-                    'sel_price3', OLD.sel_price3,
-                    'first_balance', OLD.first_balance
+                    'sel_price3', OLD.sel_price3
             ),
             JSON_OBJECT(
                     'id', NEW.id,
@@ -225,8 +223,7 @@ BEGIN
                     'buy_price', NEW.buy_price,
                     'sel_price1', NEW.sel_price1,
                     'sel_price2', NEW.sel_price2,
-                    'sel_price3', NEW.sel_price3,
-                    'first_balance', NEW.first_balance
+                    'sel_price3', NEW.sel_price3
             ),
             NULL
          );
@@ -248,8 +245,7 @@ BEGIN
                     'id', OLD.id,
                     'barcode', OLD.barcode,
                     'nameItem', OLD.nameItem,
-                    'buy_price', OLD.buy_price,
-                    'first_balance', OLD.first_balance
+                    'buy_price', OLD.buy_price
             ),
             NULL,
             NULL
@@ -265,22 +261,12 @@ DROP TRIGGER IF EXISTS after_users_insert;
 DROP TRIGGER IF EXISTS after_permission_insert;
 
 
+-- `after_items_update` copied items.first_balance over warehouse 1's items_stock row on every
+-- update of an item - its name, its price, its picture - so the two copies agreed only by it
+-- firing, and a write that reached items_stock directly was undone by the next save of the item.
+-- V78 dropped the column and the trigger. The DROP is kept so that this file, which is where a
+-- trigger is looked for, still says it must not exist.
 DROP TRIGGER IF EXISTS after_items_update;
-
-/*----------------------------------------------- update -----------------------------------------------*/
-DELIMITER |
-create trigger after_items_update
-    after update
-    on items
-    for each row
-begin
-    update items_stock
-    set first_balance = NEW.first_balance
-    where items_stock.item_id = NEW.id
-      and items_stock.stock_id = 1;
-end;
-|
-DELIMITER ;
 
 -- items_stock
 --
@@ -812,5 +798,32 @@ BEGIN
                     'stock_address', OLD.stock_address, 'is_active', OLD.is_active,
                     'user_id', OLD.user_id), NULL,
         'Warehouse deleted');
+END|
+DELIMITER ;
+
+
+-- ---------------------------------------------------------------------------------------------
+-- a warehouse's opening balance (V78)
+--
+-- The item audit triggers above recorded items.first_balance, which was a copy; V78 dropped it
+-- and the opening lives on the item's row in each warehouse alone. So that is where a change to
+-- it is recorded: who entered what a shelf held before anything moved, and who changed it while
+-- nothing had. Only an UPDATE, and only when the figure moves. A row is inserted per item per
+-- warehouse whenever either is created, and an INSERT trigger would log one row per item for
+-- every warehouse made - the decision items_units already carries.
+
+DROP TRIGGER IF EXISTS audit_items_stock_opening;
+
+DELIMITER |
+CREATE TRIGGER audit_items_stock_opening AFTER UPDATE ON items_stock FOR EACH ROW
+BEGIN
+    IF NOT (OLD.first_balance <=> NEW.first_balance) THEN
+        CALL write_audit_log('items_stock', NEW.id, 'UPDATE', @app_user_id,
+            JSON_OBJECT('item_id', OLD.item_id, 'stock_id', OLD.stock_id,
+                        'first_balance', OLD.first_balance),
+            JSON_OBJECT('item_id', NEW.item_id, 'stock_id', NEW.stock_id,
+                        'first_balance', NEW.first_balance),
+            'Opening balance changed');
+    END IF;
 END|
 DELIMITER ;
