@@ -22,6 +22,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
+import com.hamza.account.config.TableAppearance;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -71,6 +72,9 @@ import java.util.List;
 @Log4j2
 @FxmlPath(pathFile = "items/stock-transfer-view.fxml")
 public class StockTransferController {
+
+    /** The unit and the quantity; the item's name takes the rest of the table. */
+    private static final double SHORT_COLUMN_WIDTH = 110;
 
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
@@ -210,11 +214,23 @@ public class StockTransferController {
         tableLines.setId("stockTransferLines");
         tableLines.setPlaceholder(new Label(message("stocks.transfer.placeholder.lines")));
         tableLines.setItems(lines);
-        tableLines.getColumns().add(Columns.text("item.stockcount.column.item", PendingLine::itemName));
-        tableLines.getColumns().add(Columns.text("item.column.unit", PendingLine::unitName));
+        var unit = Columns.text("item.column.unit", PendingLine::unitName);
         // As a quantity, not a number: 7 pieces read "7.0" - the double showing through.
-        tableLines.getColumns().add(Columns.asQuantity(Columns.number("quantity", PendingLine::quantity)));
+        var quantity = Columns.asQuantity(Columns.number("quantity", PendingLine::quantity));
+        tableLines.getColumns().add(Columns.text("item.stockcount.column.item", PendingLine::itemName));
+        tableLines.getColumns().add(unit);
+        tableLines.getColumns().add(quantity);
         TableSetting.tableMenuSetting(getClass(), tableLines);
+        // The item's name takes the width, whatever this machine chose for "fill the width": with it
+        // off, three columns at the platform's default width cut the name short beside a table left
+        // mostly empty. The unit and the quantity are short and keep a fixed width.
+        for (var shortColumn : List.of(unit, quantity)) {
+            shortColumn.setMinWidth(SHORT_COLUMN_WIDTH);
+            shortColumn.setPrefWidth(SHORT_COLUMN_WIDTH);
+            shortColumn.setMaxWidth(SHORT_COLUMN_WIDTH);
+        }
+        TableAppearance.setFillAvailableWidthOverride(tableLines, true);
+        TableAppearance.apply(tableLines);
     }
 
     private void buildActions() {

@@ -1110,4 +1110,7 @@ turned out not to be the warehouses' at all. No migration.
 
 - Signed in as an ordinary user; English; a physical scanner rather than the keystrokes one sends.
 - The transfer's lines table cuts an item's name short beside a wide empty space - this machine has
-  "fill the width" off, and the table does not size its columns to what they hold. Not fixed here.
+  "fill the width" off, and the table does not size its columns to what they hold. Not fixed here;
+  **fixed in 4.8.2**: the unit and the quantity keep a fixed width and the name takes the rest,
+  whatever the machine chose for "fill the width". Sizing to content was tried first and was wrong
+  here - it caps a column at 260 points, which is right for a list and still cut a 44-letter name.
