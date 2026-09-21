@@ -3,6 +3,7 @@ package com.hamza.account.service;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.StockDao;
@@ -29,7 +30,9 @@ class StockServicePermissionTest {
 
     private static final int ORDINARY_USER = 2;
 
-    private final List<Stock> warehouses = List.of(mock(Stock.class), mock(Stock.class));
+    private final Stock inUse = new Stock(1, "main", null, true);
+    private final Stock switchedOff = new Stock(2, "old branch", null, false);
+    private final List<Stock> warehouses = List.of(inUse, switchedOff);
     private StockService service;
     private UserSessionContext session;
 
@@ -49,7 +52,16 @@ class StockServicePermissionTest {
         signInWith(AppPermissions.SALES_SHOW, AppPermissions.SALES_CREATE,
                 AppPermissions.SALES_UPDATE, AppPermissions.SALES_DELETE);
 
-        assertEquals(warehouses, service.stocksForPicker());
+        assertEquals(warehouses, service.stocksForPicker(StockScope.EVERYONE));
+    }
+
+    /** A document being written is offered the warehouses in use; history is offered every one (V77). */
+    @Test
+    void aDocumentIsOfferedOnlyTheWarehousesInUse() throws Exception {
+        signInWith(AppPermissions.SALES_SHOW, AppPermissions.SALES_CREATE);
+
+        assertEquals(List.of(inUse), service.stocksForPicker(StockScope.ACTIVE_ONLY));
+        assertEquals(warehouses, service.stocksForPicker(StockScope.EVERYONE));
     }
 
     @Test

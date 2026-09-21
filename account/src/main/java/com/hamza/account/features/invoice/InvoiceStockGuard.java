@@ -33,6 +33,15 @@ public final class InvoiceStockGuard {
     public void validate(InvoiceSaveCommand command)
             throws DaoException {
         Objects.requireNonNull(command, "command");
+        // A switched-off warehouse (V77) takes no new document. An edit of one already saved there
+        // is let through: the screen reopens a document on its own warehouse, and refusing would stop
+        // a note being corrected on a sale made before the warehouse closed.
+        if (!command.updating()) {
+            var inactive = repository.inactiveStockName(command.stockId());
+            if (inactive.isPresent()) {
+                throw new BusinessRuleException(message("stocks.error.inactive", inactive.get()));
+            }
+        }
         List<InvoiceStockRepository.StoredLine> original = command.updating()
                 ? repository.originalLinesForUpdate(
                         documentType, command.existingInvoiceId())

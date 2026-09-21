@@ -33,6 +33,15 @@ public interface InvoiceStockRepository {
         return currentExpiryBalances(itemIds);
     }
 
+    /**
+     * The warehouse's name when it is switched off (V77), empty when it is in use. Defaults to "in
+     * use" so a repository that predates the column - the guard's test doubles - answers as every
+     * warehouse did before it.
+     */
+    default java.util.Optional<String> inactiveStockName(int stockId) throws DaoException {
+        return java.util.Optional.empty();
+    }
+
     record StoredLine(int itemId, double baseQuantity, LocalDate expirationDate) {
     }
 

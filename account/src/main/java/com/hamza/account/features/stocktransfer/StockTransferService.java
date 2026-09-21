@@ -7,6 +7,7 @@ import com.hamza.account.delete.DeletionService;
 import com.hamza.account.features.documentdelete.DocumentDeleteStockCheck;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.StockBalancesChanged;
+import com.hamza.account.features.items.WarehouseStockDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
@@ -26,6 +27,7 @@ public final class StockTransferService {
     private static final double EPSILON = 0.000_001;
 
     private final StockTransferDao dao = new StockTransferDao();
+    private final WarehouseStockDao warehouseStock = new WarehouseStockDao();
 
     /**
      * The DAO is this package's own and is deliberately not in {@code DaoFactory}; the parameter
@@ -45,6 +47,13 @@ public final class StockTransferService {
         // one dated into a closed month would rewrite a valuation already reported.
         PeriodLock.require(command.transferDate(), PeriodLockRegistry.STOCK_TRANSFER.label());
         return TransactionTemplate.execute(() -> {
+            // Neither end may be a switched-off warehouse (V77): it takes no new movement, and goods
+            // sent into one would sit on the books where no picker can reach them.
+            for (int stockId : List.of(command.fromStockId(), command.toStockId())) {
+                var inactive = warehouseStock.nameIfInactive(stockId);
+                if (inactive.isPresent())
+                    throw new BusinessRuleException(message("stocks.error.inactive", inactive.get()));
+            }
             List<Integer> ids = command.itemIds();
             Map<Integer, String> names = dao.lockSource(command.fromStockId(), ids);
             if (names.size() != ids.size())

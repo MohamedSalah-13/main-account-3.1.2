@@ -140,6 +140,7 @@ public record StockCountService(DaoFactory daoFactory) {
         AuthorizationGuard.require(AppPermissions.STOCK_COUNT_CREATE);
         requireEditable(count);
         requireOneLinePerItem(count);
+        requireActiveWarehouse(count);
         return dao().save(count);
     }
 
@@ -170,6 +171,7 @@ public record StockCountService(DaoFactory daoFactory) {
             throw new UserValidationException(message("item.stockcount.error.no.lines"));
         }
         requireOneLinePerItem(count);
+        requireActiveWarehouse(count);
 
         int moved = count.linesWithDifference().size();
         return TransactionTemplate.execute(() -> {
@@ -249,6 +251,19 @@ public record StockCountService(DaoFactory daoFactory) {
         if (repeated.isPresent()) {
             throw new UserValidationException(LanguageManager.getInstance()
                     .getString("item.stockcount.error.item.twice", repeated.get().getItemName()));
+        }
+    }
+
+    /**
+     * A switched-off warehouse (V77) is counted no more: a count is a correction to its balances, and
+     * it has none left to correct - switching one off is refused while it holds anything, and while a
+     * draft is open in it.
+     */
+    private void requireActiveWarehouse(StockCount count) throws DaoException {
+        var inactive = daoFactory.warehouseStockDao().nameIfInactive(count.getStockId());
+        if (inactive.isPresent()) {
+            throw new BusinessRuleException(LanguageManager.getInstance()
+                    .getString("stocks.error.inactive", inactive.get()));
         }
     }
 

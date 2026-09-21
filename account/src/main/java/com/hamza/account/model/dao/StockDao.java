@@ -17,6 +17,7 @@ public class StockDao extends AbstractDao<Stock> {
     private final String STOCK_ID = "stock_id";
     private final String STOCK_ADDRESS = "stock_address";
     private final String USER_ID = "user_id";
+    private static final String IS_ACTIVE = "is_active";
 
     StockDao() {
         super();
@@ -86,16 +87,26 @@ public class StockDao extends AbstractDao<Stock> {
         return queryForObject(SqlStatements.selectStatementByColumnWhere(TABLE_NAME, STOCK_NAME), this::map, stockName);
     }
 
+    /**
+     * Switches a warehouse on or off (V77) - the one column {@link #update} does not write, so an
+     * edit of the name cannot carry a stale flag back over a switch made on another machine.
+     */
+    public int updateActive(int stockId, boolean active) throws DaoException {
+        return executeUpdate("UPDATE stocks SET is_active = ? WHERE stock_id = ?", active ? 1 : 0, stockId);
+    }
+
     @Override
     public Object[] getData(Stock stock) {
-        return new Object[]{stock.getName(), stock.getAddress(), stock.getUsers().getId()};
+        return new Object[]{stock.getName(), stock.getAddress(), stock.getUserId()};
     }
 
     @Override
     public Stock map(ResultSet rs) throws DaoException {
         Stock model;
         try {
-            model = new Stock(rs.getInt(STOCK_ID), rs.getString(STOCK_NAME), rs.getString(STOCK_ADDRESS));
+            model = new Stock(rs.getInt(STOCK_ID), rs.getString(STOCK_NAME), rs.getString(STOCK_ADDRESS),
+                    rs.getBoolean(IS_ACTIVE));
+            model.setUserId(rs.getInt(USER_ID));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

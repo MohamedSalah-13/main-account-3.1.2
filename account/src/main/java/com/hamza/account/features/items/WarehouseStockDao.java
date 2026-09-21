@@ -123,4 +123,46 @@ public class WarehouseStockDao extends AbstractDao<Void> {
     public Void map(java.sql.ResultSet rs) {
         throw new UnsupportedOperationException("This DAO answers maps, not rows");
     }
+
+    /**
+     * The warehouse's name when it is switched off (V77), empty when it is in use - what a writer of a
+     * new movement asks before it writes. Read here, where every other question about a warehouse's
+     * rows is read, so the invoice, the transfer and the count cannot each decide it their own way.
+     */
+    public java.util.Optional<String> nameIfInactive(int stockId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    "SELECT stock_name FROM stocks WHERE stock_id = ? AND is_active = 0")) {
+                statement.setInt(1, stockId);
+                try (var rows = statement.executeQuery()) {
+                    return rows.next() ? java.util.Optional.of(rows.getString(1)) : java.util.Optional.<String>empty();
+                }
+            }
+        });
+    }
+
+    /**
+     * How many items the warehouse still holds a balance of - what stops it being switched off.
+     * <p>
+     * Read from {@code quantity_items_table} for the one warehouse: a question about every item it
+     * holds, asked on a rare administrative act, is the catalogue-wide read the view is for (see
+     * {@code ItemStockBalanceSql} for when it is not). A millionth of a unit is nothing, the same
+     * epsilon the transfer judges a balance with.
+     */
+    public int itemsHolding(int stockId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement("""
+                    SELECT COUNT(*)
+                    FROM quantity_items_table
+                    WHERE stock_id = ?
+                      AND ABS(first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment
+                              - quantitySales - quantityPurchaseRe - fromStock) > 0.000001""")) {
+                statement.setInt(1, stockId);
+                try (var rows = statement.executeQuery()) {
+                    rows.next();
+                    return rows.getInt(1);
+                }
+            }
+        });
+    }
 }

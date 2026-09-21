@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.NamesTables;
@@ -319,7 +320,7 @@ public class CardController extends LoadData implements AppSettingInterface {
     private void reloadStockItems() {
         try {
             int keep = stockId;
-            comboStock.setItems(FXCollections.observableArrayList(stockService.stocksForPicker()));
+            comboStock.setItems(FXCollections.observableArrayList(stockService.stocksForPicker(StockScope.EVERYONE)));
             comboStock.getItems().stream().filter(stock -> stock.getId() == keep).findFirst()
                     .or(() -> comboStock.getItems().stream()
                             .filter(stock -> stock.getId() == DefaultStock.ID).findFirst())

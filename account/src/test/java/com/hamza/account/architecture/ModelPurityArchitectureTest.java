@@ -43,7 +43,6 @@ class ModelPurityArchitectureTest {
             "com/hamza/account/model/domain/ItemsUnitsModel.java",
             "com/hamza/account/model/domain/Sales.java",
             "com/hamza/account/model/domain/SelPriceTypeModel.java",
-            "com/hamza/account/model/domain/Stock.java",
             "com/hamza/account/model/domain/Total_Sales.java",
             "com/hamza/account/model/domain/Total_buy.java",
             "com/hamza/account/model/domain/UnitsModel.java",

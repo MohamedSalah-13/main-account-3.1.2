@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StockCountPosted;
@@ -170,7 +171,7 @@ public class StockCountController {
     private void reloadStockItems() {
         try {
             int keep = stockId;
-            comboStock.setItems(FXCollections.observableArrayList(stockService.stocksForPicker()));
+            comboStock.setItems(FXCollections.observableArrayList(stockService.stocksForPicker(StockScope.ACTIVE_ONLY)));
             comboStock.getItems().stream().filter(stock -> stock.getId() == keep).findFirst()
                     .or(() -> comboStock.getItems().stream().filter(stock -> stock.getId() == DefaultStock.ID).findFirst())
                     .ifPresent(comboStock.getSelectionModel()::select);

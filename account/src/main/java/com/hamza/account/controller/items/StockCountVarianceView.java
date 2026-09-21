@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StocksChanged;
@@ -212,7 +213,7 @@ final class StockCountVarianceView {
             Integer chosen = warehouse.getValue() == null ? null : warehouse.getValue().getId();
             List<Stock> choices = new ArrayList<>();
             choices.add(EVERY_WAREHOUSE);
-            choices.addAll(stockService.stocksForPicker());
+            choices.addAll(stockService.stocksForPicker(StockScope.EVERYONE));
             warehouse.setItems(FXCollections.observableArrayList(choices));
             warehouse.getSelectionModel().select(choices.stream()
                     .filter(stock -> stock != null && chosen != null && stock.getId() == chosen)
