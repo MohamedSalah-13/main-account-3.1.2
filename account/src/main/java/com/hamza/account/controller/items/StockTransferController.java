@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.DefaultStock;
@@ -160,7 +161,7 @@ public class StockTransferController {
         try {
             Integer keepFrom = comboFromStock.getValue() == null ? null : comboFromStock.getValue().getId();
             Integer keepTo = comboToStock.getValue() == null ? null : comboToStock.getValue().getId();
-            ObservableList<Stock> stocks = FXCollections.observableArrayList(stockService.stocksForPicker());
+            ObservableList<Stock> stocks = FXCollections.observableArrayList(stockService.stocksForPicker(StockScope.ACTIVE_ONLY));
             comboFromStock.setItems(stocks);
             comboToStock.setItems(FXCollections.observableArrayList(stocks));
 

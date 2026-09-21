@@ -313,11 +313,13 @@ largest phase and every part of it is a screen - one pull request each:
   fixed. A list of past counts with a `RowDetailDrawer` of their lines, a variance report, a
   printed count record. The stocks screen rebuilt in code with row actions and a `Task`.
 
-**E - the warehouse as a record** (`V77` at the earliest - this line said `V75`, which phase C
-took). `stocks.is_active` with a scope argument and **no
-default**, the way `PartySearchScope` and `EmployeeScope` have none; an opening balance per
-warehouse from the item screen; decision §9.2 carried out - one column, the trigger and
-`current_quantity` dropped.
+**E - the warehouse as a record.** Split in two like D, one pull request each:
+
+- **E1 - a warehouse switched off, not deleted** (`V77`). **Delivered 2026-09-21, see §17.**
+  `stocks.is_active` with a scope argument and **no default**, the way `PartySearchScope` and
+  `EmployeeScope` have none.
+- **E2 - the opening balance.** An opening balance per warehouse from the item screen; decision
+  §9.2 carried out - one column, the trigger and `current_quantity` dropped.
 
 **F - the ledger becomes the source** (roadmap 8.1, 8.4's sixth producer, 8.6). Transfers and
 openings write `stock_movements`; an edit and a delete become reversals; the append-only triggers;
@@ -800,3 +802,80 @@ same omission as `TransferQuantityInput` and `ReturnQuantityInput`, the third ti
   printable; the record is the sheet as entered.
 - **Nothing was seen signed in as an ordinary user.** The permission of each read is proven through
   the service.
+
+## 17. What phase E1 delivered (2026-09-21)
+
+A warehouse can be **switched off** instead of deleted. One migration, `V77`.
+
+### Why
+
+A warehouse could never be deleted, and rightly: every warehouse holds an `items_stock` row per item
+from the moment it is made, and `DeleteRegistry.STOCKS` declares that reference - the refusal names
+the rows. So a branch that closed stayed in every picker for ever: the invoice, the transfer, the
+count, the price check. `stocks.is_active` is the answer `V56` gave the parties and `V57` the
+employees: stopped, never erased, its history intact and readable.
+
+### What changed
+
+- **`V77`: `stocks.is_active`**, `TINYINT(1) NOT NULL DEFAULT 1` - every existing warehouse stays in
+  use, so an upgrade hides nothing from anybody.
+- **`StockScope` is an argument with no default** (`StockService.stocksForPicker(scope)`). A screen
+  that writes a new movement - the invoice, the transfer, the count, the price check - offers
+  `ACTIVE_ONLY`; a screen that reads what happened - the item card, the inventory sheet, the transfer
+  and count histories, the variance report - offers `EVERYONE`, because a warehouse closed in June
+  still holds everything that moved through it before June. Eleven call sites, each choosing.
+- **Switching off is refused**, in `StockService.setActive` under `stock.update`, for three cases
+  where it would strand something: the **default warehouse**, which every screen offers first and
+  every opening balance is written to; a warehouse with a **draft count open**, which could then be
+  neither posted nor discarded from the screen that no longer offers it; and a warehouse **still
+  holding a balance** of anything - it would stay on the books and out of every picker, so the shop
+  moves it out with a transfer first. Switching back on is never refused.
+- **A switched-off warehouse takes no new movement - the services refuse it**, not only the pickers:
+  hiding a choice is not enforcement. `InvoiceStockGuard` refuses a **new** document in one (before
+  anything is locked or a number allocated), `StockTransferService` a transfer from or to one, and
+  `StockCountService` a count saved or posted in one - all three asking `WarehouseStockDao.nameIfInactive`,
+  the one place a warehouse's state is read. **An edit of a document already saved there is let
+  through**: refusing would stop a note being corrected on a sale made before the branch closed.
+- **A reopened invoice is shown on its own warehouse**, switched off or not (`selectStoredStock`):
+  the combo offers warehouses in use, and a selection by id among them found nothing - the
+  `selectStoredTreasury` defect of the treasury review, which the warehouse would have repeated.
+- **The warehouses screen** marks each warehouse in use or switched off, and switches it with a
+  button in its row after asking - two buttons, each disabled where it does not apply, so the column
+  keeps its shape. A switched-off warehouse is marked there and never hidden: it is the one screen
+  it is switched back on from.
+- **The audit records the switch.** The three `stocks` triggers name `is_active` now and moved to a
+  new last section of `R__triggers.sql` - the cut `DelegateActivityDatabaseAcceptanceTest` makes runs
+  everything before the commission section over a V70 schema, which has no such column. The UPDATE's
+  note says `Warehouse switched off` or `switched on`, with the flag before and after.
+- **`Stock` is a plain object** and left `ModelPurityArchitectureTest`'s debt list. It held its id and
+  name in JavaFX properties nothing bound to, and its base class captured whoever was signed in when
+  the object was *constructed* - which `StockDao` wrote as the warehouse's creator. The service
+  stamps the creator now, at the moment it saves.
+
+### How it was checked
+
+- **Unit tests:** `StockServiceActivityTest` (the three refusals, switching on, the permission before
+  any read), `StockServicePermissionTest` (both scopes), and two `InvoiceStockGuardTest` cases (a new
+  document refused before anything is locked, an edit let through).
+- **Against MySQL:** `WarehouseActivityAcceptanceTest`, four cases through the services the screens
+  call, signed in as an ordinary user: a branch holding ten is refused, emptied by a transfer it is
+  switched off, and then a transfer into it, a count in it and the invoice's guard all refuse it,
+  while the document pickers drop it and the history pickers keep it; the audit row says
+  `Warehouse switched off` with `is_active` 1 then 0; switched back on it takes a transfer again; a
+  draft count and the default warehouse both refuse the switch.
+- **All 239 acceptance classes green** on a schema migrated from nothing to `V77` (81 migrations),
+  run locally the way CI runs them - `DelegateActivityDatabaseAcceptanceTest`'s V70 cut included,
+  since the triggers moved.
+- **Watched on a screen at 1366x768**, on that schema with a branch holding 12 of an item, an empty
+  old branch, and a purchase saved into the old branch. Switching off the branch holding stock asked,
+  then was refused with the sentence naming one item and the road - a transfer; the empty branch
+  switched off and read "موقوف", its switch-on button enabled and its switch-off disabled. A new
+  purchase's warehouse list offered the main warehouse and the branch in use and not the old one.
+  The old purchase, reopened for editing, showed "فرع قديم" in its warehouse field and re-saved; in
+  MySQL it was still filed under that warehouse, and the audit log held one row, `Warehouse switched
+  off`, 1 then 0 - the refused attempt wrote nothing.
+
+### Not seen
+
+- **Signed in as an ordinary user** - the switch's permission is proven through the service only.
+- The transfer, count and price-check pickers on screen; they read the same scope the invoice does.

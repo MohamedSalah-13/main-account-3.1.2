@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,178 tests** with 215 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-21 after the warehouse count history. What is
+**3,191 tests** with 219 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-21 after warehouses could be switched off. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -1007,6 +1007,15 @@ its line in the base unit, and the service refuses a sheet naming an item twice.
 are not rewritten** - `docs/warehouse-plan.md` §16 has the query that finds them. The count's
 history, its paper and a variance report by item are the screen's other two tabs, and a difference
 there is `adjustment_agg`'s own expression, read out of `R__views.sql` by the test.
+
+**A warehouse is switched off, never deleted** (`stocks.is_active`, V77, phase E1). Deleting one
+is refused for any warehouse that has ever held an item, since `items_stock` carries a row per item.
+`StockService.stocksForPicker` takes a `StockScope` and has **no default**: `ACTIVE_ONLY` for a
+screen writing a new movement, `EVERYONE` for history - the `PartySearchScope` rule a third time.
+Hiding it is not the guard: `InvoiceStockGuard` (a new document only - an edit of one saved there
+goes through), `StockTransferService` and `StockCountService` each refuse a switched-off warehouse
+through `WarehouseStockDao.nameIfInactive`. Switching off is refused for the default warehouse, one
+with a draft count open, and one still holding a balance. `Stock` is a plain object now.
 
 **`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
 warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see
@@ -2764,9 +2773,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V76`, which gives
+  new database executes it and continues with `V2`, `V3`, … The current head is `V77`, which lets a
+  warehouse be switched off instead of deleted (`stocks.is_active`, every existing warehouse left
+  on - see **Warehouses**). Before it `V76` gives
   a stock transfer a note (`stock_transfer.notes`, NULL when nothing was written) - why or for whom
-  the goods moved, printed on the slip that now travels with them (see **Warehouses**). Before it
+  the goods moved, printed on the slip that now travels with them. Before it
   `V75` stops
   `stock_count_lines.item_id` cascading - a posted count sheet is a correction that was actually
   made, and deleting the item took its lines out of one with no refusal and no trace, which

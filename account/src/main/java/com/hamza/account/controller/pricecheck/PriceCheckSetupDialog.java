@@ -1,5 +1,6 @@
 package com.hamza.account.controller.pricecheck;
 
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -54,7 +55,7 @@ public class PriceCheckSetupDialog {
         var stockService = ServiceRegistry.get(StockService.class);
         var priceNames = ServiceRegistry.get(SelPriceItemService.class);
 
-        List<Stock> stocks = stockService.stocksForPicker();
+        List<Stock> stocks = stockService.stocksForPicker(StockScope.ACTIVE_ONLY);
         if (stocks.isEmpty()) {
             return Optional.empty();
         }
@@ -156,7 +157,7 @@ public class PriceCheckSetupDialog {
     private void reloadStocks(ComboBox<Stock> comboStock, StockService stockService) {
         try {
             Stock picked = comboStock.getSelectionModel().getSelectedItem();
-            List<Stock> stocks = stockService.stocksForPicker();
+            List<Stock> stocks = stockService.stocksForPicker(StockScope.ACTIVE_ONLY);
             comboStock.setItems(FXCollections.observableArrayList(stocks));
             stocks.stream()
                     .filter(stock -> picked != null && stock.getId() == picked.getId())

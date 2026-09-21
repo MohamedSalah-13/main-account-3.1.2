@@ -48,6 +48,12 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
         });
     }
 
+    /** Asked of {@code WarehouseStockDao}, the one place a warehouse's rows and state are read. */
+    @Override
+    public java.util.Optional<String> inactiveStockName(int stockId) throws DaoException {
+        return new com.hamza.account.features.items.WarehouseStockDao().nameIfInactive(stockId);
+    }
+
     @Override
     public Map<Integer, String> lockItems(int stockId, List<Integer> itemIds) throws DaoException {
         if (itemIds.isEmpty()) {

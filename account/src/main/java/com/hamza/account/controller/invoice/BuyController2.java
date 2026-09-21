@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.features.items.StockScope;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -910,8 +911,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             InvoiceHeaderView header = dataInterface.loadInvoiceHeader(num_invoice_update);
             invoiceStockId = header.stockId();
-            if (comboStock != null) comboStock.getSelectionModel().select(
-                    comboStock.getItems().stream().filter(stock -> stock.getId() == invoiceStockId).findFirst().orElse(null));
+            selectStoredStock();
             BaseTotals dataById = header.totals();
             loadedUpdatedAt = dataById.getUpdated_at();
             int id = dataById.getId();
@@ -1260,7 +1260,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     @NotNull
     private List<Stock> getStocks() {
         try {
-            return stockService.stocksForPicker();
+            return stockService.stocksForPicker(StockScope.ACTIVE_ONLY);
         } catch (DaoException e) {
             logError(e);
             return List.of();
@@ -1276,8 +1276,33 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
      */
     private void reloadStockItems() {
         comboStock.setItems(FXCollections.observableArrayList(getStocks()));
-        comboStock.getItems().stream().filter(stock -> stock.getId() == invoiceStockId).findFirst()
-                .ifPresent(comboStock.getSelectionModel()::select);
+        selectStoredStock();
+    }
+
+    /**
+     * Selects the warehouse a reopened document was saved in - adding it to the combo when it has
+     * been switched off since (V77), exactly as {@link #selectStoredTreasury} does for a closed
+     * treasury. The combo offers warehouses in use only, and a selection by id among them found
+     * nothing: the document would have been re-saved into whatever the combo fell back to.
+     */
+    private void selectStoredStock() {
+        if (comboStock == null || invoiceStockId <= 0) {
+            return;
+        }
+        Stock stored = comboStock.getItems().stream()
+                .filter(stock -> stock.getId() == invoiceStockId).findFirst().orElse(null);
+        if (stored == null) {
+            try {
+                stored = stockService.stock(invoiceStockId);
+            } catch (DaoException e) {
+                logError(e);
+            }
+            if (stored == null) {
+                return;
+            }
+            comboStock.getItems().add(stored);
+        }
+        comboStock.getSelectionModel().select(stored);
     }
 
     private void reloadTreasuryItems() {

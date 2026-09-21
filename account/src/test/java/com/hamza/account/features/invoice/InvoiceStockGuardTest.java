@@ -110,6 +110,32 @@ class InvoiceStockGuardTest {
         assertThrows(BusinessRuleException.class, () -> guard.validate(command(0, false, 3, line(12, 1, null))));
     }
 
+    /** A warehouse switched off (V77) takes no new document - refused before any item is locked. */
+    @Test
+    void aNewDocumentInASwitchedOffWarehouseIsRefused() {
+        FakeRepository repository = new FakeRepository();
+        repository.switchedOff.put(4, "old branch");
+        InvoiceStockGuard guard = new InvoiceStockGuard(DocumentType.PURCHASE, repository);
+
+        assertThrows(BusinessRuleException.class, () -> guard.validate(command(0, false, 4, line(12, 1, null))));
+
+        assertEquals(List.of(), repository.calls, "nothing was locked for a refused document");
+    }
+
+    /**
+     * An edit of a document already saved there is let through: the screen reopens a document on its
+     * own warehouse, and refusing would stop a note being corrected on a sale made before it closed.
+     */
+    @Test
+    void anEditOfADocumentAlreadyInASwitchedOffWarehouseIsLetThrough() {
+        FakeRepository repository = new FakeRepository();
+        repository.switchedOff.put(4, "old branch");
+        repository.stockBalances.put(4, new LinkedHashMap<>(Map.of(12, 5.0)));
+        InvoiceStockGuard guard = new InvoiceStockGuard(DocumentType.SALES, repository);
+
+        assertDoesNotThrow(() -> guard.validate(command(91, false, 4, line(12, 1, null))));
+    }
+
     private static InvoiceSaveCommand command(
             int existingId, boolean allowInsufficient, Sales... lines) {
         return command(existingId, allowInsufficient, 1, lines);
@@ -144,6 +170,12 @@ class InvoiceStockGuardTest {
         private final Map<Integer, Map<Integer, Double>> stockBalances = new LinkedHashMap<>();
         private final Map<BatchKey, Double> expiryBalances = new LinkedHashMap<>();
         private final List<String> calls = new ArrayList<>();
+        private final Map<Integer, String> switchedOff = new LinkedHashMap<>();
+
+        @Override
+        public java.util.Optional<String> inactiveStockName(int stockId) {
+            return java.util.Optional.ofNullable(switchedOff.get(stockId));
+        }
 
         @Override
         public List<StoredLine> originalLinesForUpdate(

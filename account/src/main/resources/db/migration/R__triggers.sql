@@ -331,32 +331,6 @@ DROP TRIGGER IF EXISTS audit_stock_count_update;
 DROP TRIGGER IF EXISTS audit_stock_count_delete;
 
 DELIMITER |
-CREATE TRIGGER audit_stocks_insert AFTER INSERT ON stocks FOR EACH ROW
-BEGIN
-    CALL write_audit_log('stocks', NEW.stock_id, 'INSERT', @app_user_id, NULL,
-        JSON_OBJECT('stock_id', NEW.stock_id, 'stock_name', NEW.stock_name,
-                    'stock_address', NEW.stock_address, 'user_id', NEW.user_id),
-        'Warehouse created');
-END|
-
-CREATE TRIGGER audit_stocks_update AFTER UPDATE ON stocks FOR EACH ROW
-BEGIN
-    CALL write_audit_log('stocks', NEW.stock_id, 'UPDATE', @app_user_id,
-        JSON_OBJECT('stock_id', OLD.stock_id, 'stock_name', OLD.stock_name,
-                    'stock_address', OLD.stock_address, 'user_id', OLD.user_id),
-        JSON_OBJECT('stock_id', NEW.stock_id, 'stock_name', NEW.stock_name,
-                    'stock_address', NEW.stock_address, 'user_id', NEW.user_id),
-        'Warehouse updated');
-END|
-
-CREATE TRIGGER audit_stocks_delete AFTER DELETE ON stocks FOR EACH ROW
-BEGIN
-    CALL write_audit_log('stocks', OLD.stock_id, 'DELETE', @app_user_id,
-        JSON_OBJECT('stock_id', OLD.stock_id, 'stock_name', OLD.stock_name,
-                    'stock_address', OLD.stock_address, 'user_id', OLD.user_id), NULL,
-        'Warehouse deleted');
-END|
-
 CREATE TRIGGER audit_stock_transfer_insert AFTER INSERT ON stock_transfer FOR EACH ROW
 BEGIN
     CALL write_audit_log('stock_transfer', NEW.id, 'INSERT', @app_user_id, NULL,
@@ -719,9 +693,10 @@ DELIMITER ;
 
 -- commission run (V72)
 --
--- KEEP THIS SECTION LAST. `DelegateActivityDatabaseAcceptanceTest` builds a V70 schema to upgrade, and
--- cuts this file at the line above: a trigger cannot be created on a table that does not exist yet, so
--- everything below it must belong to V72 or later.
+-- KEEP THIS SECTION BELOW EVERYTHING OLDER THAN V72. `DelegateActivityDatabaseAcceptanceTest` builds a
+-- V70 schema to upgrade, and cuts this file at the line above: a trigger cannot be created on a table,
+-- nor name a column, that does not exist yet, so everything below it must belong to V72 or later - the
+-- warehouse section after this one is V77's.
 --
 -- A commission line and a posting are facts from the moment they are written - the run is born
 -- approved, there is no draft - so neither is ever updated, and neither is deleted outside a wipe.
@@ -793,5 +768,49 @@ BEGIN
     IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A commission run is immutable';
     END IF;
+END|
+DELIMITER ;
+
+-- --------------------------------------------------------------------------------------------
+-- warehouses switched off (V77)
+--
+-- The three `stocks` triggers moved here from the warehouse section above when V77 gave the table
+-- `is_active`: they name the column, and the cut above runs everything before the commission
+-- section over a V70 schema, which has no such column. Their DROPs stay where they were.
+--
+-- Switching a warehouse off is the one change to it that matters, and it is the UPDATE's
+-- `is_active` pair: who took it out of every picker, and when.
+
+DELIMITER |
+CREATE TRIGGER audit_stocks_insert AFTER INSERT ON stocks FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stocks', NEW.stock_id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('stock_id', NEW.stock_id, 'stock_name', NEW.stock_name,
+                    'stock_address', NEW.stock_address, 'is_active', NEW.is_active,
+                    'user_id', NEW.user_id),
+        'Warehouse created');
+END|
+
+CREATE TRIGGER audit_stocks_update AFTER UPDATE ON stocks FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stocks', NEW.stock_id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('stock_id', OLD.stock_id, 'stock_name', OLD.stock_name,
+                    'stock_address', OLD.stock_address, 'is_active', OLD.is_active,
+                    'user_id', OLD.user_id),
+        JSON_OBJECT('stock_id', NEW.stock_id, 'stock_name', NEW.stock_name,
+                    'stock_address', NEW.stock_address, 'is_active', NEW.is_active,
+                    'user_id', NEW.user_id),
+        IF(OLD.is_active <> NEW.is_active,
+           IF(NEW.is_active = 1, 'Warehouse switched on', 'Warehouse switched off'),
+           'Warehouse updated'));
+END|
+
+CREATE TRIGGER audit_stocks_delete AFTER DELETE ON stocks FOR EACH ROW
+BEGIN
+    CALL write_audit_log('stocks', OLD.stock_id, 'DELETE', @app_user_id,
+        JSON_OBJECT('stock_id', OLD.stock_id, 'stock_name', OLD.stock_name,
+                    'stock_address', OLD.stock_address, 'is_active', OLD.is_active,
+                    'user_id', OLD.user_id), NULL,
+        'Warehouse deleted');
 END|
 DELIMITER ;

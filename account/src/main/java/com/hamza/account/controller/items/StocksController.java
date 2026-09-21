@@ -55,8 +55,10 @@ import java.util.function.Consumer;
  * <p>
  * A delete is usually refused, and correctly: every warehouse carries an {@code items_stock} row per
  * item from the moment it is made, and {@code DeleteRegistry.STOCKS} declares that reference. A
- * warehouse is switched off rather than deleted - which is {@code stocks.is_active}, phase E of the
- * plan, and not here.
+ * warehouse is <b>switched off</b> instead ({@code stocks.is_active}, V77): a button in its row,
+ * refused by the service for the default warehouse, one still holding stock, and one with a draft
+ * count open. A switched-off warehouse is marked here, never hidden - this is the one screen it is
+ * switched back on from, the {@code PartySearchScope} lesson.
  */
 @FxmlPath(pathFile = "items/stocks-view.fxml")
 public class StocksController {
@@ -142,6 +144,12 @@ public class StocksController {
                 RowAction.permitted(List.of(
                         RowAction.of("stocks.edit", AppIcon.EDIT, "app-neutral-button",
                                 AppPermissions.STOCK_UPDATE, this::edit),
+                        // Two buttons, each disabled where it does not apply, rather than one whose
+                        // meaning changes: the column keeps its shape as the eye runs down it.
+                        new RowAction<>("stocks.deactivate", AppIcon.HIDE, "app-neutral-button",
+                                AppPermissions.STOCK_UPDATE, Stock::isActive, stock -> setActive(stock, false)),
+                        new RowAction<>("stocks.activate", AppIcon.SHOW, "app-neutral-button",
+                                AppPermissions.STOCK_UPDATE, stock -> !stock.isActive(), stock -> setActive(stock, true)),
                         RowAction.of("stocks.delete", AppIcon.DELETE, "app-neutral-button",
                                 AppPermissions.STOCK_DELETE, this::delete))));
         actions.setId(ACTIONS_COLUMN);
@@ -151,7 +159,10 @@ public class StocksController {
         stockName.setId("stockName");
         TableColumn<Stock, String> stockAddress = Columns.text("stocks.address", Stock::getAddress);
         stockAddress.setId("stockAddress");
-        table.getColumns().setAll(List.of(actions, number, stockName, stockAddress));
+        TableColumn<Stock, String> status = Columns.text("stocks.status",
+                stock -> text(stock.isActive() ? "stocks.status.active" : "stocks.status.inactive"));
+        status.setId("stockStatus");
+        table.getColumns().setAll(List.of(actions, number, stockName, stockAddress, status));
         widths.install(table);
     }
 
@@ -201,6 +212,24 @@ public class StocksController {
             if (editing != null && editing.getId() == stock.getId()) {
                 startNew();
             }
+            refresh();
+        });
+    }
+
+    /**
+     * Switches a warehouse off or on after asking. Switching off takes it out of every document's
+     * picker; the service refuses the cases where that would strand something, with a sentence.
+     */
+    private void setActive(Stock stock, boolean active) {
+        if (!AllAlerts.confirm_all(text(active ? "stocks.activate" : "stocks.deactivate"),
+                text(active ? "stocks.confirm.activate" : "stocks.confirm.deactivate", stock.getName()))) {
+            return;
+        }
+        run(() -> {
+            service.setActive(stock.getId(), active);
+            return active;
+        }, done -> {
+            eventBus.publish(new StocksChanged());
             refresh();
         });
     }
