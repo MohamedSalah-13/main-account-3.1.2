@@ -7,6 +7,7 @@ import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.inventory.ColumnKind;
 import com.hamza.account.features.stockcount.StockCount;
 import com.hamza.account.features.stockcount.StockCountLine;
+import com.hamza.account.features.stockcount.StockCountLines;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Stock;
@@ -22,6 +23,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
+import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
@@ -42,13 +44,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.AnchorPane;
-import javafx.util.converter.DoubleStringConverter;
 import javafx.scene.text.Text;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.Set;
@@ -282,14 +282,18 @@ public class StockCountController {
         column.setPrefWidth(120);
         column.setEditable(true);
         column.setCellValueFactory(f -> f.getValue().countedQuantityProperty().asObject());
-        column.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+        // NumberTextConverter, not DoubleStringConverter: the latter is Double.valueOf, which
+        // does not know the ٠-٩ an Arabic keyboard types, so a count typed the ordinary way
+        // on the machines this ships to was refused as nonsense and the cell went back to
+        // what it held - silently, since this handler ignores what it cannot read.
+        column.setCellFactory(TextFieldTableCell.forTableColumn(NumberTextConverter.quantity()));
         column.setOnEditCommit(event -> {
             StockCountLine line = event.getRowValue();
             Double value = event.getNewValue();
-            // A cell left blank or typed as nonsense arrives null; treating it as zero
-            // would record "counted none of it", which is a real and very different
-            // statement from "typed something wrong".
-            if (value == null) {
+            // A cell left blank arrives null and nonsense arrives NaN; treating either as
+            // zero would record "counted none of it", which is a real and very different
+            // statement from "typed something wrong". Nor is a negative count a count.
+            if (value == null || !Double.isFinite(value) || value < 0) {
                 tableView.refresh();
                 return;
             }
@@ -415,27 +419,20 @@ public class StockCountController {
     }
 
     /**
-     * A second scan of the same item and unit adds one to its count instead of a second
-     * line - which is what counting with a scanner in hand actually looks like.
+     * A second scan of the same item adds to its count instead of a second line - which is
+     * what counting with a scanner in hand actually looks like. A second <em>unit</em> of it
+     * restates the line in the base unit: the book belongs to the item, and two lines of one
+     * item subtracted it twice ({@link StockCountLines}).
      */
     private void addOrIncrement(ItemsModel item, String scannedCode) {
         UnitsModel scannedUnit = ItemUnits.unitByBarcode(item, scannedCode);
         String unitName = scannedUnit == null ? null : scannedUnit.getUnit_name();
         StockCountLine line = stockCountService.lineFor(item, unitName);
+        UnitsModel base = ItemUnits.baseUnit(item);
 
-        Optional<StockCountLine> existing = lines.stream()
-                .filter(candidate -> candidate.getItemId() == line.getItemId()
-                                     && candidate.getUnitId() == line.getUnitId())
-                .findFirst();
-
-        StockCountLine target = existing.orElse(null);
-        if (target == null) {
-            line.setCountedQuantity(1);
-            lines.addFirst(line);
-            target = line;
-        } else {
-            target.setCountedQuantity(target.getCountedQuantity() + 1);
-        }
+        StockCountLine target = StockCountLines.scan(lines, line,
+                base == null ? line.getUnitId() : base.getUnit_id(),
+                base == null ? line.getUnitName() : base.getUnit_name());
 
         tableView.getSelectionModel().select(target);
         tableView.scrollTo(target);

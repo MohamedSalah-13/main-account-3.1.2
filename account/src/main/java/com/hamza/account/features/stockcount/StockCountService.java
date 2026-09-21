@@ -108,6 +108,7 @@ public record StockCountService(DaoFactory daoFactory) {
     public int save(StockCount count) throws DaoException {
         AuthorizationGuard.require(AppPermissions.STOCK_COUNT_CREATE);
         requireEditable(count);
+        requireOneLinePerItem(count);
         return dao().save(count);
     }
 
@@ -137,6 +138,7 @@ public record StockCountService(DaoFactory daoFactory) {
         if (count.getLines().isEmpty()) {
             throw new UserValidationException(message("item.stockcount.error.no.lines"));
         }
+        requireOneLinePerItem(count);
 
         int moved = count.linesWithDifference().size();
         return TransactionTemplate.execute(() -> {
@@ -204,6 +206,19 @@ public record StockCountService(DaoFactory daoFactory) {
      */
     private static String message(String key) {
         return LanguageManager.getInstance().getString(key);
+    }
+
+    /**
+     * Refuses a sheet naming one item on two lines. Each line carries the item's whole book, so
+     * posting two subtracts it twice - see {@link StockCountLines}. The screen never builds such a
+     * sheet any more; a draft saved before it stopped, or another caller, is told which item.
+     */
+    private static void requireOneLinePerItem(StockCount count) throws UserValidationException {
+        var repeated = StockCountLines.repeatedItem(count.getLines());
+        if (repeated.isPresent()) {
+            throw new UserValidationException(LanguageManager.getInstance()
+                    .getString("item.stockcount.error.item.twice", repeated.get().getItemName()));
+        }
     }
 
     private void requireEditable(StockCount count) throws DaoException {
