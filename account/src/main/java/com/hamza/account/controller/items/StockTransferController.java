@@ -5,7 +5,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.controller.search.ItemsSearch;
+import com.hamza.account.controller.search.ItemSuggestionField;
 import com.hamza.account.features.documentdelete.DocumentDeleteStockCheck;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.events.StockBalancesChanged;
@@ -23,7 +23,6 @@ import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
@@ -44,9 +43,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.util.StringConverter;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -81,7 +80,13 @@ public class StockTransferController {
 
     private final ObservableList<PendingLine> lines = FXCollections.observableArrayList();
 
-    private TextSearchApplication<ItemsModel> itemSearch;
+    /**
+     * The item, typed or scanned - {@code ItemSuggestionField}, the invoice's name search. It was a
+     * read-only field whose button opened a search dialog, so a scanner - which every shop moving
+     * stock owns - typed into nothing, and the button beside it had no icon (§15, §19 of
+     * {@code docs/warehouse-plan.md}).
+     */
+    private ItemSuggestionField itemField;
     private StockTransferHistoryView history;
 
     @FXML
@@ -125,9 +130,8 @@ public class StockTransferController {
         // note is reached only by a caller that is not this screen.
         txtNotes.setTextFormatter(new TextFormatter<String>(change ->
                 change.getControlNewText().length() <= StockTransferCommand.NOTES_MAX_LENGTH ? change : null));
-        // Enter moves from the unit to the quantity, and Enter in the quantity adds the line. The
-        // item itself is chosen through the search dialog - the field beside it is read-only, so a
-        // scanned code cannot reach this screen yet (docs/warehouse-plan.md §15).
+        // A scanned or typed item takes Enter to the quantity (resolveTyped); Enter moves from the unit
+        // to the quantity, and Enter in the quantity adds the line and returns to the item.
         Utils.whenEnterPressed(comboUnit, txtQuantity);
         txtQuantity.setOnAction(event -> addLine());
         datePicker.setValue(LocalDate.now());
@@ -179,14 +183,13 @@ public class StockTransferController {
     }
 
     private void buildItemSearch() {
-        try {
-            itemSearch = new TextSearchApplication<>(new ItemsSearch(itemsService));
-            itemSearchBox.getChildren().add(itemSearch.getPane());
-            itemSearch.getTextSearchController().itemSearchPropertyProperty()
-                    .addListener((observable, oldItem, newItem) -> populateUnits(newItem));
-        } catch (IOException e) {
-            reportFailure(e);
-        }
+        itemField = new ItemSuggestionField(itemsService::getFilterItems);
+        itemField.setPrefWidth(280);
+        HBox.setHgrow(itemField, Priority.ALWAYS);
+        itemSearchBox.getChildren().setAll(itemField);
+        itemField.chosenItemProperty().addListener((observable, oldItem, newItem) -> populateUnits(newItem));
+        // Enter with no list showing: a code a scanner has just finished typing, resolved here.
+        itemField.setOnAction(event -> resolveTyped());
         comboUnit.setConverter(new StringConverter<>() {
             @Override public String toString(UnitsModel unit) { return unit == null ? "" : unit.getUnit_name(); }
             @Override public UnitsModel fromString(String value) { return null; }
@@ -225,7 +228,7 @@ public class StockTransferController {
     // ------------------------------------------------------------------
 
     private void addLine() {
-        ItemsModel item = itemSearch.getTextSearchController().itemSearchPropertyProperty().get();
+        ItemsModel item = itemField.chosenItemProperty().get();
         if (item == null) {
             AllAlerts.alertError(message("stocks.transfer.error.select.item"));
             return;
@@ -245,6 +248,61 @@ public class StockTransferController {
                                   && pending.unit().getUnit_id() == resolvedUnit.getUnit_id());
         lines.add(new PendingLine(item, resolvedUnit, quantity));
         txtQuantity.clear();
+        // Back to the item for the next scan: scan, quantity, Enter, scan.
+        itemField.clearChoice();
+        itemField.requestFocus();
+    }
+
+    /**
+     * What was typed when Enter came before any suggestion: a code first - the item's own, an extra
+     * one or a unit's, looked up in the warehouse the goods leave - then a name that only one item
+     * answers to. Several items by that name is left to the list, which is on its way.
+     */
+    private void resolveTyped() {
+        if (itemField.chosenItemProperty().get() != null) {
+            txtQuantity.requestFocus();
+            return;
+        }
+        String typed = itemField.getText() == null ? "" : itemField.getText().trim();
+        if (typed.isEmpty()) {
+            return;
+        }
+        Stock from = comboFromStock.getValue();
+        int source = from == null ? DefaultStock.ID : from.getId();
+        try {
+            ItemsModel item = itemsService.getItemByBarcodeAndStockId(typed, source);
+            UnitsModel scannedUnit = null;
+            if (item != null) {
+                scannedUnit = ItemUnits.unitByBarcode(item, typed);
+            } else {
+                List<ItemsModel> matches = itemsService.getFilterItems(typed);
+                if (matches.size() > 1) {
+                    return;
+                }
+                if (matches.isEmpty()) {
+                    AllAlerts.alertError(message("stocks.transfer.error.item.not.found", typed));
+                    itemField.selectAll();
+                    return;
+                }
+                item = itemsService.getItemByItemIdAndStockId(matches.getFirst().getId(), source);
+                if (item == null) {
+                    AllAlerts.alertError(message("stocks.transfer.error.item.not.found", typed));
+                    itemField.selectAll();
+                    return;
+                }
+            }
+            itemField.select(item);
+            if (scannedUnit != null) {
+                // The combo's own copy, found by id: UnitsModel has no equals, so selecting the copy
+                // unitByBarcode built sets a value the combo holds and does not display - an empty box.
+                int unitId = scannedUnit.getUnit_id();
+                comboUnit.getItems().stream().filter(unit -> unit.getUnit_id() == unitId).findFirst()
+                        .ifPresent(comboUnit.getSelectionModel()::select);
+            }
+            txtQuantity.requestFocus();
+        } catch (Exception e) {
+            reportFailure(e);
+        }
     }
 
     private void removeSelectedLine() {

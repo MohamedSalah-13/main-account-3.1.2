@@ -15,7 +15,7 @@
 .main-root,
 .backup-root,
 .shift-root {
-    -fx-font-family: "Cairo", "Tahoma", "Arial", sans-serif;
+    -fx-font-family: "El Messiri", "Tahoma", "Arial", sans-serif;
     -fx-background-color: -app-bg;
     -fx-font-size: 11px;
 }

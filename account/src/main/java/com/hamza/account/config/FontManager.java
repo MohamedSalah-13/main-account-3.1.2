@@ -23,7 +23,14 @@ public final class FontManager {
     private static final String ENTRY_SEPARATOR = ";";
     private static final String FIELD_SEPARATOR = "|";
     private static final Preferences PREFS = Preferences.userRoot().node(PREF_NODE);
-    public static final String DEFAULT_FAMILY = "Cairo";
+    /**
+     * The family of an install nobody has chosen one for, and the first family app-theme.css names -
+     * {@code FontDefaultTest} holds the two to one answer. It was Cairo, which JavaFX draws without
+     * the space before the word «في» wherever it falls - "مستخدمفي", "التقريرفي" - in every dialog and
+     * on every screen; El Messiri, Tahoma and Segoe draw it, and a zero-width joiner did not help Cairo.
+     * A family somebody picked in the settings is theirs and is not replaced.
+     */
+    public static final String DEFAULT_FAMILY = "El Messiri";
     private static final Map<String, String> BUILT_IN = new LinkedHashMap<>();
 
     static {

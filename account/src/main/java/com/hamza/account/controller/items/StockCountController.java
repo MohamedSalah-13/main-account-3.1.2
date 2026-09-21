@@ -7,10 +7,14 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StockCountPosted;
 import com.hamza.account.features.events.StocksChanged;
+import com.hamza.account.features.documentdelete.DocumentDeleteStockCheck;
 import com.hamza.account.features.inventory.ColumnKind;
 import com.hamza.account.features.stockcount.StockCount;
+import com.hamza.account.features.stockcount.StockCountBlankSheet;
+import com.hamza.account.features.stockcount.StockCountBlankSheetLayout;
 import com.hamza.account.features.stockcount.StockCountLine;
 import com.hamza.account.features.stockcount.StockCountLines;
+import com.hamza.account.features.stockcount.StockCountPostCheck;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Stock;
@@ -26,6 +30,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -51,6 +56,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.text.Text;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -108,7 +114,7 @@ public class StockCountController {
     @FXML
     private Label labelStatus, labelScanHint;
     @FXML
-    private Button btnSave, btnPost, btnDelete, btnRemoveLine;
+    private Button btnSave, btnPost, btnDelete, btnRemoveLine, btnBlankSheet;
     @FXML
     private MenuButton viewMenu;
     @FXML
@@ -187,7 +193,12 @@ public class StockCountController {
 
     private void buildTable() {
         var lm = LanguageManager.getInstance();
-        tableView.setId("stockCountTable");
+        // A new id, and deliberately so: under "stockCountTable" a machine could hold widths stored
+        // while the table was filling a wider screen - item 587, unit 212, book 258 on the development
+        // machine - which put the counted column, the one anybody types into, past the edge at 1366.
+        // TableSetting no longer stores such widths but restores the old ones; a new id starts clean,
+        // the remedy CLAUDE.md gives for a table moved into a narrower place (§19).
+        tableView.setId("stockCountLines");
         tableView.setEditable(true);
         tableView.setItems(lines);
         tableView.setPlaceholder(new Label(lm.getString("item.stockcount.placeholder.scan.to.start")));
@@ -341,6 +352,7 @@ public class StockCountController {
     private void buildActions() {
         textScan.setOnAction(event -> scan(textScan.getText()));
         btnSave.setOnAction(event -> saveDraft());
+        btnBlankSheet.setOnAction(event -> printBlankSheet());
         btnPost.setOnAction(event -> postSheet());
         btnDelete.setOnAction(event -> deleteDraft());
         btnRemoveLine.setOnAction(event -> removeSelectedLine());
@@ -505,6 +517,9 @@ public class StockCountController {
         if (!AllAlerts.confirm_all(lm.getString("item.stockcount.confirm.post.title"), question)) {
             return;
         }
+        if (!confirmBelowZero()) {
+            return;
+        }
 
         runSheetTask("stock-count-post", () -> stockCountService.post(sheet()), moved -> {
             eventBus.publish(new StockCountPosted(count.getId(), moved));
@@ -517,6 +532,43 @@ public class StockCountController {
                 StockCountHistoryView.printSheet(root, stockCountService, count.getId());
             }
         });
+    }
+
+    /**
+     * Asks before a post that would leave an item below zero - goods that left after the item was
+     * scanned ({@link StockCountPostCheck}). A failure to read it must not stop the post: the check
+     * is a courtesy, and what refuses is the service's business - the transfer reversal's rule.
+     */
+    private boolean confirmBelowZero() {
+        List<DocumentDeleteStockCheck.Shortfall> shortfalls;
+        try {
+            shortfalls = stockCountService.postShortfalls(sheet());
+        } catch (Exception cannotRead) {
+            log.error("Could not check what posting count {} would do to the stock: {}",
+                    count.getId(), cannotRead.getMessage(), cannotRead);
+            return true;
+        }
+        if (shortfalls.isEmpty()) {
+            return true;
+        }
+        var lm = LanguageManager.getInstance();
+        StringBuilder body = new StringBuilder(lm.getString("item.stockcount.post.negative.header", shortfalls.size()));
+        shortfalls.stream().limit(10).forEach(row -> body.append(System.lineSeparator())
+                .append(lm.getString("delete.stock.negative.line", row.itemName(), row.stockName(),
+                        Columns.quantity(BigDecimal.valueOf(row.remainingBase())))));
+        body.append(System.lineSeparator()).append(lm.getString("item.stockcount.post.negative.question"));
+        return AllAlerts.confirm_all(lm.getString("item.stockcount.confirm.post.title"), body.toString());
+    }
+
+    /**
+     * The warehouse's items on paper with an empty column to count into - the sheet a count starts
+     * from before anybody scans ({@link StockCountBlankSheet}). The warehouse is the one chosen above.
+     */
+    private void printBlankSheet() {
+        int printing = stockId;
+        CompanyLetterhead.print(root, printing, "item.stockcount.btn.blank.sheet", (letterhead, printedAt) ->
+                StockCountBlankSheetLayout.of(stockCountService.blankSheet(printing), letterhead,
+                        LanguageManager.getInstance()::getString, printedAt));
     }
 
     private void deleteDraft() {
