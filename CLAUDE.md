@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**2,985 tests** with 190 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-20. What is
+**3,124 tests** with 203 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-20 after the warehouse work. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -972,6 +972,16 @@ and the count reports lines moved while nothing moves.
 
 `mini_quantity_view`'s company-wide total is deliberately a *different question* from the per-warehouse
 check the sale-time low-stock alert makes, and is documented as such rather than "fixed".
+
+**Who moved what on a shelf is audited since phase C.** Eight triggers in `R__triggers.sql` on
+`stocks`, `stock_transfer` and `stock_count` - the audit triggers reached items, parties, documents
+and treasuries and stopped at the shelf, so who created a warehouse, who moved stock between two of
+them and who turned a count sheet into a posted correction were recorded nowhere. The `UPDATE` on
+`stock_count` is the one that matters: `status` moving DRAFT → POSTED is the moment the sheet
+becomes a correction to every balance on it. **The two line tables are deliberately not audited**,
+the decision `items_units` already carries: `StockCountDao.save` deletes and re-inserts every line
+on each save, so a trigger there writes a row per line per save of a sheet that may run to hundreds
+of items.
 
 **`InventoryService` asks for `inventory.show`, and the stock count resolves a scanned name in the
 warehouse being counted.** The first was a menu hint alone, so a reader without the key could not see
@@ -2729,8 +2739,15 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V73`, a delegate's
-  discount ceiling; before it `V72` is the frozen monthly commission run, `V71` is the delegate of a collection and `V70` the dated
+  new database executes it and continues with `V2`, `V3`, … The current head is `V75`, which stops
+  `stock_count_lines.item_id` cascading - a posted count sheet is a correction that was actually
+  made, and deleting the item took its lines out of one with no refusal and no trace, which
+  `DeleteRegistry` could not refuse precisely *because* the key cascaded. Before it `V74` gives the
+  warehouses two keys they had been borrowing: `stock.transfer.show`, because reading the transfer
+  history asked for the right to post a transfer, and `stock.count.create`, because saving a count
+  sheet asked only for the right to see one while discarding a draft asked for the right to post it
+  (see **Warehouses** and `docs/warehouse-plan.md` §14). Before them `V73` is a delegate's
+  discount ceiling, `V72` the frozen monthly commission run, `V71` is the delegate of a collection and `V70` the dated
   commission rule (see **Delegates and commission** for all three). Before them `V69` gives a
   treasury its wallet or account number and a minimum balance; before it `V68` lets a
   transfer between treasuries carry a fee, and `V67` ties a wallet fee to the movement it was
@@ -2824,6 +2841,14 @@ it - and the test written for that very migration passed, because it checked the
 call rather than whether the call could work. **So: a versioned migration defines the helpers it
 calls, and the only thing that says a migration applies at all is migrating a schema from
 nothing.** It costs five minutes.
+
+**A migration that *replaces* a foreign key is invisible to the test that reads them.**
+`SchemaForeignKeys` parses `CREATE TABLE` bodies and `add_constraint_if_missing(...)` calls from a
+named list of migrations, and skips the cascading ones - so when `V75` dropped
+`stock_count_lines.item_id` and put it back as `RESTRICT`, both delete catalogs went on seeing
+`V8`'s cascading key and `DeleteRegistryTest` failed the new declaration as "not in the schema".
+A migration that changes a key belongs in that list as much as one that adds a key, and the
+replacement has to be written in the `add_constraint_if_missing` form the reader understands.
 
 **`add_column_if_missing` is the same trap and is worse**, because no baseline creates it at all -
 `V20`, `V21`, `V22` and `V23` each define a local copy and drop it again. The first draft of `V56`

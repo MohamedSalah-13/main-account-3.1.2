@@ -18,6 +18,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -98,9 +99,14 @@ public record StockCountService(DaoFactory daoFactory) {
                 0);
     }
 
-    /** Saves the sheet as a draft. Refuses to touch one that has been posted. */
+    /**
+     * Saves the sheet as a draft. Refuses to touch one that has been posted.
+     * <p>
+     * Asks {@code stock.count.create} since V74, where it asked only for the right to
+     * <em>see</em> a count - so every reader of the screen was a writer of it.
+     */
     public int save(StockCount count) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_CREATE);
         requireEditable(count);
         return dao().save(count);
     }
@@ -129,7 +135,7 @@ public record StockCountService(DaoFactory daoFactory) {
         // dated into a closed month would rewrite a stock valuation already reported.
         PeriodLock.require(count.getCountDate(), PeriodLockRegistry.STOCK_COUNT.label());
         if (count.getLines().isEmpty()) {
-            throw new UserValidationException("لا يمكن ترحيل جرد بدون أصناف");
+            throw new UserValidationException(message("item.stockcount.error.no.lines"));
         }
 
         int moved = count.linesWithDifference().size();
@@ -137,7 +143,7 @@ public record StockCountService(DaoFactory daoFactory) {
             ensureEveryCountedItemHasARow(count);
             dao().save(count);
             if (dao().post(count.getId()) == 0) {
-                throw new BusinessRuleException("تم ترحيل هذا الجرد بالفعل");
+                throw new BusinessRuleException(message("item.stockcount.error.already.posted"));
             }
             count.setStatus(StockCountStatus.POSTED);
             daoFactory.stockMovementDao().insertBatch(StockMovementAssembler.forStockCount(count));
@@ -149,9 +155,13 @@ public record StockCountService(DaoFactory daoFactory) {
     /**
      * Removes a draft. A posted count is a record of a correction that was made, so it
      * stays: undoing one means counting again and posting that.
+     * <p>
+     * Asks {@code stock.count.create} since V74, where it asked for the right to post: throwing
+     * away a sheet that has moved nothing needed the right to move balances with one. Whoever
+     * enters a draft is whoever discards it.
      */
     public int deleteDraft(StockCount count) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_POST);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_CREATE);
         requireEditable(count);
         if (count.isNew()) {
             return 0;
@@ -186,9 +196,19 @@ public record StockCountService(DaoFactory daoFactory) {
         daoFactory.warehouseStockDao().ensureRows(count.getStockId(), itemIds);
     }
 
+    /**
+     * A message the user reads, resolved from the bundles rather than written here.
+     * <p>
+     * This service threw three Arabic sentences, which is the one thing a service may not do -
+     * an English bundle ships with this application and those three reached it untranslated.
+     */
+    private static String message(String key) {
+        return LanguageManager.getInstance().getString(key);
+    }
+
     private void requireEditable(StockCount count) throws DaoException {
         if (count.isPosted()) {
-            throw new BusinessRuleException("الجرد المرحّل لا يمكن تعديله");
+            throw new BusinessRuleException(message("item.stockcount.error.posted.readonly"));
         }
     }
 }
