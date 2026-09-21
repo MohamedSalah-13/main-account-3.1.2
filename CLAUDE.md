@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,250 tests** with 228 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-21 with the 4.8.1 warehouse fixes. What is
+**3,266 tests** with 228 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-21 with the 4.8.2 fixes. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -1836,10 +1836,11 @@ discounted 20 it saved as the very next number. The detail report's by-item view
 real header discount: lines 10,213.50 less 10.00 is the performance report's 10,203.50. **What only
 the paper showed:** the PDF's totals line read "net 10,213.50" and the true net was nowhere on the
 page - a screen says it on a card and a page has no cards - so the subtitle now carries it, written
-from the held summary rather than read back out of a label. Found on the way and **not fixed here**: a
-user whose grants were imported from the legacy system sells but holds no `stock.show`, so the sales
-screen raises a refusal and opens with an empty warehouse combo; and a hyphenated product code is
-reversed in every PDF (`owala-5250` prints `5250-owala`).
+from the held summary rather than read back out of a label. Found on the way, and both fixed
+since: a user whose grants were imported from the legacy system sold but held no `stock.show`, so the
+sales screen raised a refusal and opened with an empty warehouse combo (`596e23f8`, the pickers read
+`StockService.stocksForPicker`); and a hyphenated product code was reversed in every PDF
+(`owala-5250` printed `5250-owala`) - 4.8.2, see **Printed reports**.
 
 Permissions are `commission.run.create` / `.update` / `.post` for the run (V72, granted to whoever holds
 `commission.rule.update`; `POST` derives `CRITICAL`), `commission.reports` (V71), and
@@ -2136,7 +2137,15 @@ word become "Arabic numbers" that a hyphen or a percent sign does not join: ever
 dates in its subtitle backwards (`01-10-2025`), its rates as `%113.44`, and every negative amount
 as `11,995.00-`. Numbers are now isolated left-to-right before the pass - **but not digits touching a Latin
 letter**: isolated alone, the digits of a product code are a run of their own, and "نوته NC7013"
-printed on every invoice as "7013NC" (45 of 1,836 items on a real database). And the bundled bold Naskh
+printed on every invoice as "7013NC" (45 of 1,836 items on a real database). **Nor a number a Latin
+word reaches**: a Latin letter begins a left-to-right run that takes everything up to the next Arabic
+letter, which is what the screen does, so "owala-5250" and "Pepsi 330" print as the screen shows them
+- they printed "5250-owala" and "330 Pepsi", the digits isolated on their own and set apart. Digits
+*before* a Latin word stay the Arabic line's, again as on screen, so a code typed "74-AY" prints
+"AY-74" the way every screen draws it. `ArabicTextHelperTest` holds the paper to plain Unicode bidi
+over real names; on a database of 1,840 items the change moved 76 names, each to what the screen shows,
+and moved none away from it. The paragraph's direction is still read from the original text - asked
+of the isolated one it would skip the run, and "Total: 5" would come out "5 :Total". And the bundled bold Naskh
 has **no glyph for the minus sign**, so a negative total - the one bold row - printed as a
 positive number beside an empty box; `boldFontFor` falls back to the regular face. And the totals
 line ran left to right under a right-to-left table - the headers and rows were reversed on their

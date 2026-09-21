@@ -40,6 +40,22 @@ public final class ArabicTextHelper {
     private static final Pattern NUMBER =
             Pattern.compile("(?<![A-Za-z\\d])[-+]?\\d(?:[\\d,.:/\\-]*\\d)?%?(?![A-Za-z\\d])");
 
+    /**
+     * Where a left-to-right run begins: a Latin letter. From there the run takes everything up to the
+     * next Arabic letter ({@link #endOfLatinRun}), which is what the screen does: after a Latin letter
+     * the Unicode bidi rules make the digits that follow left-to-right too, so "Pepsi 330" and
+     * "owala-5250" are each one piece. Isolating the number alone made it a neutral of its own that
+     * the right-to-left paragraph set apart from its word - every PDF printed "5250-owala" and
+     * "330 Pepsi" where the screen showed "owala-5250" and "Pepsi 330".
+     * <p>
+     * Digits <em>before</em> a Latin letter in an Arabic line stay the Arabic line's, and the paper
+     * follows the screen there too, deliberately: "6*1 21 CL" keeps its order, and a code typed
+     * "74-AY" prints "AY-74" because that is how every screen in the application draws it. A run
+     * beginning at such a digit printed it as typed instead, and so differently from the screen -
+     * four codes on a real database of 1,840 items.
+     */
+    private static final Pattern LATIN_RUN_START = Pattern.compile("(?<![A-Za-z\\d])[A-Za-z]");
+
     /** Written as escapes: both are invisible, and a literal one is lost to the next edit. */
     static final String LEFT_TO_RIGHT_ISOLATE = "\u2066";
     static final String POP_DIRECTIONAL_ISOLATE = "\u2069";
@@ -62,17 +78,71 @@ public final class ArabicTextHelper {
             String shaped = SHAPER.shape(isolateNumbers(text));
 
             // 2) تطبيق Unicode BIDI لإرجاع النص بالترتيب البصري، ثم حذف علامات العزل
+            // The paragraph's direction is the original text's first strong letter, as it always was.
+            // Asked of the isolated text it would skip what the isolates hold, and a line that is all
+            // English - one Latin run - would be set right to left: "Total: 5" as "5 :Total".
             Bidi bidi = new Bidi(shaped.length(), Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT);
-            bidi.setPara(shaped, Bidi.LEVEL_DEFAULT_RTL, null);
+            bidi.setPara(shaped, paragraphLevel(text), null);
             return bidi.writeReordered(Bidi.DO_MIRRORING | Bidi.REMOVE_BIDI_CONTROLS);
         } catch (ArabicShapingException e) {
             return text;
         }
     }
 
-    /** Wraps every number in a left-to-right isolate, so the bidi pass moves it as one piece. */
+    /** Left to right when the first strong letter is, otherwise right to left - an empty line included. */
+    private static byte paragraphLevel(String text) {
+        return Bidi.getBaseDirection(text) == Bidi.LTR ? (byte) 0 : (byte) 1;
+    }
+
+    /**
+     * Wraps every Latin run and every number outside one in a left-to-right isolate, so the bidi pass
+     * moves each as one piece.
+     */
     static String isolateNumbers(String text) {
-        return NUMBER.matcher(text).replaceAll(match -> Matcher.quoteReplacement(
-                LEFT_TO_RIGHT_ISOLATE + match.group() + POP_DIRECTIONAL_ISOLATE));
+        StringBuilder out = new StringBuilder(text.length() + 8);
+        Matcher start = LATIN_RUN_START.matcher(text);
+        int from = 0;
+        while (from < text.length() && start.find(from)) {
+            int end = endOfLatinRun(text, start.start());
+            isolateEachNumber(text, from, start.start(), out);
+            out.append(LEFT_TO_RIGHT_ISOLATE).append(text, start.start(), end).append(POP_DIRECTIONAL_ISOLATE);
+            from = end;
+        }
+        isolateEachNumber(text, from, text.length(), out);
+        return out.toString();
+    }
+
+    /**
+     * Where a run that begins at {@code start} ends: its last letter, digit or percent sign before the
+     * next right-to-left character. The spaces and punctuation after that belong to the Arabic line.
+     */
+    private static int endOfLatinRun(String text, int start) {
+        int end = start + 1;
+        for (int i = start; i < text.length(); i++) {
+            char c = text.charAt(i);
+            byte direction = Character.getDirectionality(c);
+            if (direction == Character.DIRECTIONALITY_RIGHT_TO_LEFT
+                    || direction == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
+                    || direction == Character.DIRECTIONALITY_ARABIC_NUMBER) {
+                break;
+            }
+            if (direction == Character.DIRECTIONALITY_LEFT_TO_RIGHT
+                    || direction == Character.DIRECTIONALITY_EUROPEAN_NUMBER || c == '%') {
+                end = i + 1;
+            }
+        }
+        return end;
+    }
+
+    /** The numbers between two Latin runs, each isolated; the bounds are transparent to the guards. */
+    private static void isolateEachNumber(String text, int start, int end, StringBuilder out) {
+        Matcher number = NUMBER.matcher(text).region(start, end).useTransparentBounds(true);
+        int last = start;
+        while (number.find()) {
+            out.append(text, last, number.start())
+                    .append(LEFT_TO_RIGHT_ISOLATE).append(number.group()).append(POP_DIRECTIONAL_ISOLATE);
+            last = number.end();
+        }
+        out.append(text, last, end);
     }
 }
