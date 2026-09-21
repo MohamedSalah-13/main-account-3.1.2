@@ -987,3 +987,46 @@ its main warehouse's opening entered, while nothing guarded a second warehouse's
   reader with `stock.show` and without `items.update` should see the list with no Save button.
 - **English**, and a warehouse with more items than one page.
 - **A second machine** refreshing its items list and inventory from the announcement.
+
+## 19. Seen as an ordinary user (2026-09-21)
+
+Every phase from A to E2 closed with "not seen signed in as an ordinary user": user 1 bypasses every
+permission, so a screen watched as the administrator says nothing about who may do what on it. This
+is that check, once for all of them, before 4.8.0.
+
+**How.** On the developer's test database (`account_system_db`, which the app migrated from V65 to
+V78 on start-up over 1,841 items, dump first), signed in as soha - user 2, role `LEGACY_USER_2`,
+which grants `items.update` and no warehouse key. Four overrides were added for the run and removed
+after it: allow `stock.show`, `stock.transfer.show` and `stock.count.show`, deny `items.update` - a
+reader of every warehouse screen who may change nothing on them. A second warehouse was added so a
+transfer had somewhere to go; it is still there.
+
+**What held.** The menu offered the three warehouse entries and greyed the inventory sheet, the merge
+and the price check. The warehouses screen showed its list with the form disabled and one button per
+row, the opening balances - edit, switch off, switch on and delete were gone. The opening balances
+listed all 1,841 items, paged, with no Save and no cell that opens. The transfer screen's history
+opened and its post button was disabled. The count's past sheets and variance report opened.
+
+### What only this found
+
+- **The count screen offered Save and Post to a reader who may do neither.** It decided its buttons
+  from the sheet's state alone. Soha scanned a line onto a sheet and was refused only on Save; the
+  service held (`stock_count` stayed empty), but the screen had invited the work. `StockCountControls`
+  decides the sheet's state and the reader's keys together - scanning, Save and discard need
+  `stock.count.create`, Post `stock.count.post` - and on the fix soha's count screen offers nothing
+  that writes.
+- **The refusal named the permission by its key.** "ليس لديك صلاحية stock.count.create لتنفيذ هذه
+  العملية" - Latin in an Arabic sentence, on every refusal in the application.
+  `AuthorizationGuard.require` passes `PermissionLabels.describe` now, the name the roles screen
+  shows, in quotation marks; `AuthorizationGuardTest` pins it.
+- **The transfer screen's item button has no icon** - a blank shape beside the read-only item field.
+  The administrator's capture from D1 shows the same, so it is not a permission matter; it belongs
+  with the field's other defect (§15: a scanner types into nothing) and is not fixed here.
+
+### Still not seen
+
+- A reader holding `stock.transfer.post` or `stock.count.post` and not the matching show key - the
+  odd role V74 grants for, on screen.
+- The first sign-in of this run came 24 seconds before the overrides were written and read the
+  role's keys alone: **a session's permissions are read once, at sign-in** (`docs/permissions-plan.md`
+  §4, refreshing a running session). Anybody granting a key to a signed-in user meets the same.

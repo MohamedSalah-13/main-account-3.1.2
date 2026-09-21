@@ -1,5 +1,7 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.stockcount.StockCountControls;
 import com.hamza.account.features.items.StockScope;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -381,16 +383,11 @@ public class StockCountController {
         textNotes.setText(loaded.getNotes());
         labelStatus.setText(LanguageManager.getInstance().getString(loaded.getStatus().labelKey()));
 
-        boolean editable = loaded.isEditable();
-        textScan.setDisable(!editable);
-        btnSave.setDisable(!editable);
-        btnPost.setDisable(!editable);
-        btnDelete.setDisable(!editable || loaded.isNew());
-        btnRemoveLine.setDisable(!editable);
-        tableView.setEditable(editable);
+        StockCountControls controls = applyControls(false, !loaded.isNew());
+        tableView.setEditable(controls.scan());
 
         showTotals();
-        if (editable) {
+        if (controls.scan()) {
             Platform.runLater(textScan::requestFocus);
         }
     }
@@ -490,7 +487,7 @@ public class StockCountController {
             stockCountService.save(sheet());
             return 0;
         }, moved -> {
-            btnDelete.setDisable(false);
+            applyControls(false, true);
             AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("item.stockcount.msg.save.draft"));
         });
     }
@@ -578,9 +575,23 @@ public class StockCountController {
 
     private void setBusy(boolean busy) {
         progress.setVisible(busy);
-        btnSave.setDisable(busy || !count.isEditable());
-        btnPost.setDisable(busy || !count.isEditable());
-        btnDelete.setDisable(busy || !count.isEditable() || count.isNew());
+        applyControls(busy, !count.isNew());
+    }
+
+    /**
+     * The sheet's state and the reader's keys, decided together in {@link StockCountControls}: a
+     * reader holding only {@code stock.count.show} used to be offered Save and Post and refused only
+     * on pressing them.
+     */
+    private StockCountControls applyControls(boolean busy, boolean saved) {
+        StockCountControls controls = StockCountControls.of(count.isEditable(), saved, busy,
+                AuthorizationGuard::isGranted);
+        textScan.setDisable(!controls.scan());
+        btnRemoveLine.setDisable(!controls.scan());
+        btnSave.setDisable(!controls.save());
+        btnPost.setDisable(!controls.post());
+        btnDelete.setDisable(!controls.discard());
+        return controls;
     }
 
     private void run(Task<?> task, String name) {
