@@ -6,6 +6,8 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -172,9 +174,52 @@ class StockCountPostAcceptanceTest {
         });
     }
 
+    /**
+     * One item counted in two units - two cartons of twelve and three loose pieces, 27 on the shelf
+     * against a book of 30. The screen builds exactly this: it keeps a line per item <em>and</em>
+     * unit, and {@code lineFor} snapshots the item's whole book balance onto each line. So each
+     * line subtracts the whole book, and the post takes 30 off twice: 24 - 30 plus 3 - 30.
+     * Found by reading on 2026-09-21; this case is what says whether it is real.
+     */
+    @Test
+    @DisplayName("one item counted in two units lands on what was counted, not the book taken twice")
+    void oneItemCountedInTwoUnits() throws Exception {
+        inTransaction(connection -> {
+            int itemId = seed(connection);
+            String carton = insertCarton(connection, itemId, 12);
+            ItemsModel item = new ItemsService(DaoFactory.INSTANCE).getItemByItemIdAndStockId(itemId, DefaultStock.ID);
+
+            StockCountLine cartons = service.lineFor(item, carton);
+            cartons.setCountedQuantity(2);
+            StockCountLine pieces = service.lineFor(item, null);
+            pieces.setCountedQuantity(3);
+            StockCount sheet = newSheet(itemId, OPENING, 0);
+            sheet.setLines(List.of(cartons, pieces));
+            post(sheet);
+
+            assertEquals(27, balance(connection, itemId, DefaultStock.ID), 0.0001,
+                    "two cartons and three pieces are 27 on the shelf");
+        });
+    }
+
     // ------------------------------------------------------------------
     // The fixture
     // ------------------------------------------------------------------
+
+    /** A carton of {@code factor} for the item - the seeded unit 2 - and answers the unit's name. */
+    private static String insertCarton(Connection connection, int itemId, double factor) throws Exception {
+        String sql = "INSERT INTO items_units(items_id, unit, quantity, buy_price, sel_price) VALUES (?, 2, ?, 0, 0)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, itemId);
+            statement.setDouble(2, factor);
+            assertEquals(1, statement.executeUpdate());
+        }
+        try (PreparedStatement statement = connection.prepareStatement("SELECT unit_name FROM units WHERE unit_id = 2");
+             ResultSet rows = statement.executeQuery()) {
+            assertTrue(rows.next());
+            return rows.getString(1);
+        }
+    }
 
     private static void post(StockCount sheet) throws Exception {
         service.post(sheet);
