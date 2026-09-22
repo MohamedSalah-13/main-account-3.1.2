@@ -48,7 +48,7 @@ class MultiDeviceRefreshArchitectureTest {
         assertTrue(itemEditor.contains("itemsModel.setUpdated_at(loadedUpdatedAt)"));
 
         String invoiceEditor = SourceTree.withoutComments(SourceTree.readJava(
-                "com/hamza/account/controller/invoice/BuyController2.java"));
+                "com/hamza/account/controller/invoice/InvoiceScreenController.java"));
         assertTrue(invoiceEditor.contains("loadedUpdatedAt = dataById.getUpdated_at()"));
         assertTrue(invoiceEditor.contains("invoiceStockId, correctionReason, loadedUpdatedAt"));
     }
@@ -112,7 +112,7 @@ class MultiDeviceRefreshArchitectureTest {
     @Test
     void openInvoicesWarnWithoutOverwritingEnteredLineValues() {
         String invoiceEditor = SourceTree.withoutComments(SourceTree.readJava(
-                "com/hamza/account/controller/invoice/BuyController2.java"));
+                "com/hamza/account/controller/invoice/InvoiceScreenController.java"));
         assertTrue(invoiceEditor.contains("subscribe(ItemsChanged.class"));
         assertTrue(invoiceEditor.contains("subscribe(ItemSaved.class"));
         assertTrue(invoiceEditor.contains("invoice.catalog.changed.confirm"));

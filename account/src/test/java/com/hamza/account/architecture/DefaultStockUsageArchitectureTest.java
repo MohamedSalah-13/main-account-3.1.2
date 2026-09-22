@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DefaultStockUsageArchitectureTest {
 
     private static final Set<String> FILES_USING_DEFAULT_STOCK = Set.of(
-            "com/hamza/account/controller/invoice/BuyController2.java",
+            "com/hamza/account/controller/invoice/InvoiceScreenController.java",
             // The item screen's opening-balance field, which has no warehouse picker and
             // never had one: ItemsDao.insert and .update both write that figure to
             // DefaultStock.ID, so the screen has to read the same warehouse back. The

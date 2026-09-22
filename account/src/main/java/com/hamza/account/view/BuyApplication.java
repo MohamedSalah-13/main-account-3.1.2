@@ -2,6 +2,8 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.invoice.BuyController2;
+import com.hamza.account.controller.invoice.InvoiceScreenController;
+import com.hamza.account.controller.invoice.QuickInvoiceController;
 import com.hamza.account.controller.invoice.InvoiceScreenMode;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -32,7 +34,7 @@ public class BuyApplication extends Application {
     private static final Map<OpenInvoice, Stage> openInvoices = new HashMap<>();
 
     private final Pane pane;
-    private final BuyController2<?, ?> controller;
+    private final InvoiceScreenController<?, ?> controller;
     private final int numInvoiceUpdate;
     private final InvoiceScreenMode screenMode;
     private final DocumentType documentType;
@@ -43,24 +45,32 @@ public class BuyApplication extends Application {
     }
 
     /**
-     * A <b>new</b> invoice opens in the screen last chosen with F6; an edit always
-     * opens in the standard one, which is the only screen that can load an existing
-     * document - {@code BuyController2.switchScreenMode} refuses to switch there.
+     * A <b>new</b> invoice opens in the screen last chosen with F6 for its kind of document,
+     * where this user may have it; an edit always opens in the standard one, which is the only
+     * screen that loads an existing document.
      */
     public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate) throws Exception {
-        this(dataInterface, numInvoiceUpdate,
-                numInvoiceUpdate == 0 ? InvoiceScreenMode.remembered() : InvoiceScreenMode.STANDARD);
+        this(dataInterface, numInvoiceUpdate, numInvoiceUpdate == 0
+                ? InvoiceScreenMode.rememberedFor(dataInterface.designInterface().documentType())
+                : InvoiceScreenMode.STANDARD);
     }
 
     public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate,
                           InvoiceScreenMode screenMode) throws Exception {
-        controller = new BuyController2<>(dataInterface, numInvoiceUpdate, screenMode);
+        // The quick screen is for a new document; asked for an existing one, the standard
+        // screen answers, as it always did. QuickInvoiceController asks its own key.
+        if (screenMode == InvoiceScreenMode.QUICK && numInvoiceUpdate == 0) {
+            controller = new QuickInvoiceController<>(dataInterface);
+        } else {
+            controller = new BuyController2<>(dataInterface, numInvoiceUpdate);
+        }
         pane = controller.pane();
         this.numInvoiceUpdate = numInvoiceUpdate;
-        this.screenMode = screenMode;
+        this.screenMode = controller instanceof QuickInvoiceController<?, ?>
+                ? InvoiceScreenMode.QUICK : InvoiceScreenMode.STANDARD;
         this.documentType = dataInterface.designInterface().documentType();
         title = dataInterface.designInterface().nameTextOfInvoice();
-        if (screenMode == InvoiceScreenMode.QUICK) {
+        if (this.screenMode == InvoiceScreenMode.QUICK) {
             title += " - " + LanguageManager.getInstance().getString("invoice.quick.title");
         }
     }

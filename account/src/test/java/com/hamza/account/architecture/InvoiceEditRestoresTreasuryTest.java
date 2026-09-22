@@ -23,14 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class InvoiceEditRestoresTreasuryTest {
 
     private static final Path SCREEN = Path.of("src", "main", "java", "com", "hamza", "account",
-            "controller", "invoice", "BuyController2.java");
+            "controller", "invoice", "InvoiceScreenController.java");
 
     @Test
     @DisplayName("selectData restores the stored treasury, and adds one that has since been closed")
     void theStoredTreasuryIsRestored() throws IOException {
         String source = Files.readString(SCREEN, StandardCharsets.UTF_8);
         int start = source.indexOf("private void selectData()");
-        assertTrue(start >= 0, "BuyController2.selectData was renamed - point this test at its successor");
+        assertTrue(start >= 0, "InvoiceScreenController.selectData was renamed - point this test at its successor");
         String body = source.substring(start, source.indexOf("\n    }\n", start) < 0
                 ? source.length() : source.indexOf("    private ", start + 10));
 

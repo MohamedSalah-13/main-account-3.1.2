@@ -95,6 +95,10 @@ public final class QuickInvoiceTable {
         void handleError(Exception error, boolean scaleBarcode);
 
         void totalsChanged();
+
+        /** A line reached the invoice - the moment a refusal shown about the last scan is stale. */
+        default void lineAdded() {
+        }
     }
 
     /**
@@ -339,6 +343,9 @@ public final class QuickInvoiceTable {
         }
         restoreEntryRow(entryRow);
         host.totalsChanged();
+        if (added != null) {
+            host.lineAdded();
+        }
         int row = QuickEntryRules.rowToEditAfterAdd(table.getItems(), added);
         if (row == QuickEntryRules.ENTRY_ROW) {
             focusEntryRow();
