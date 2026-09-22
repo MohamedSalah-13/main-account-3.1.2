@@ -248,11 +248,11 @@ FROM items_stock ist
 -- rewriting it would restate invoices nobody touched. Nothing reads it for an answer
 -- any more, which is the part that matters. ProfitDefinitionTest holds that.
 --
--- Not included, on purpose: per-item profit. `card_item_view_details` and
--- `view_item_sales_rank` ask which *item* earns most, and an invoice-level discount
--- has no owner among the lines - splitting it needs an allocation rule nobody has
--- agreed. They stay gross of the invoice discount and are commented as the different
--- question they are, the way mini_quantity_view is.
+-- Not included, on purpose: per-item profit. `card_item_view_details` and the item
+-- reports (read in Java through JdbcItemSalesRepository) ask which *item* earns most, and
+-- an invoice-level discount has no owner among the lines - splitting it needs an
+-- allocation rule nobody has agreed. They stay gross of the invoice discount, and the
+-- Pareto reports show that discount as a line of its own so the two still reconcile.
 
 DROP VIEW IF EXISTS document_profit;
 CREATE VIEW document_profit AS
@@ -1580,26 +1580,14 @@ ORDER BY
     t.action_month ASC;
 
 
+-- view_item_sales_rank is gone, and the DROP stays for every install that ran an older copy.
+-- It fed the item movement report and summed `quantity` across units - a carton of twelve
+-- and a piece counted as two of one thing - never subtracted a return, and took a line's
+-- amount before its own discount. The report now reads the Pareto reports' per-item figures
+-- (ItemSalesRankDao through JdbcItemSalesRepository, the ItemNetLines rule), which
+-- ParetoDatabaseAcceptanceTest works out by hand. Do not bring the view back: it would be a
+-- second definition of what an item sold. ProfitDefinitionTest holds that.
 DROP VIEW IF EXISTS view_item_sales_rank;
-CREATE VIEW view_item_sales_rank AS
-SELECT
-    num AS item_id,
-    nameItem AS item_name,
-    YEAR(invoice_date) AS sales_year,
-    MONTH(invoice_date) AS sales_month,
-    SUM(quantity) AS total_qty,
-    ROUND(SUM(total_sales), 2) AS total_amount,
-    -- حساب صافي الربح من الصنف (المبيعات - التكلفة)
-    -- سؤال مختلف عن document_profit عن قصد: ربح الصنف، قبل خصم الفاتورة.
-    -- Deliberately a different question from document_profit, not a disagreement with
-    -- it: this ranks *items*, and an invoice-level discount belongs to no single line
-    -- - splitting it across them needs an allocation rule nobody has agreed on. So
-    -- this is gross of the invoice discount and the totals here will not add up to the
-    -- profit and loss screen. Documented rather than "fixed", the way
-    -- mini_quantity_view's company-wide total is.
-    ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
-FROM sales_names_table
-GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);
 
 
 -- تقرير مديونية العملاء.

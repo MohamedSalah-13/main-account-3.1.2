@@ -5,6 +5,8 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.model.dao.ItemSalesRankDao;
+import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
@@ -155,6 +157,28 @@ class ParetoDatabaseAcceptanceTest {
         assertEquals(UnusedItemsReport.format(936), byNet.totals().getLast().value());
     }
 
+    /**
+     * The item movement report reads these same figures. Its old view put rice first with ten - the two
+     * cartons of juice counted as two, the returned rice not at all, and every amount before the line's
+     * own discount.
+     */
+    @Test
+    @DisplayName("the item movement report: base units net of returns, by the month and by the year")
+    void theItemMovementReportReadsTheSameFigures() throws Exception {
+        List<ItemSalesRank> october =
+                new ItemSalesRankDao().getBestSellersByMonth(2026, 10);
+        assertEquals(List.of(juice, rice, oil),
+                october.stream().map(ItemSalesRank::getItemId).toList());
+        assertRank(october.get(0), 24, 220, 120);
+        assertRank(october.get(1), 9, 540, 135);
+        assertRank(october.get(2), 5, 200, 50);
+
+        List<ItemSalesRank> year =
+                new ItemSalesRankDao().getBestSellersByYear(2026);
+        assertEquals(juice, year.getFirst().getItemId());
+        assertRank(year.getFirst(), 25, 230, 125);
+    }
+
     @Test
     @DisplayName("narrowed to a group, the group's items alone and no invoice discount")
     void aGroupNarrowsTheItems() throws Exception {
@@ -249,6 +273,13 @@ class ParetoDatabaseAcceptanceTest {
         assertEquals(quantity, fact.quantity(), 0.001, fact.name() + " units");
         assertEquals(net, fact.net(), 0.001, fact.name() + " net");
         assertEquals(cost, fact.cost(), 0.001, fact.name() + " cost");
+    }
+
+    private static void assertRank(ItemSalesRank row, double quantity, double amount,
+                                   double profit) {
+        assertEquals(quantity, row.getTotalQty(), 0.001, row.getItemName() + " units");
+        assertEquals(amount, row.getTotalAmount(), 0.001, row.getItemName() + " amount");
+        assertEquals(profit, row.getTotalProfit(), 0.001, row.getItemName() + " profit");
     }
 
     private static void signIn(PermissionKey... permissions) {
