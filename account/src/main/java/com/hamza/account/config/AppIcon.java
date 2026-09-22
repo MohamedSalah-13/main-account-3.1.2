@@ -67,6 +67,8 @@ public enum AppIcon {
     REPORT(Feather.BAR_CHART_2),
     /** Figures over time - the trend chart - as opposed to {@link #REPORT}, one set of figures. */
     TREND(Feather.TRENDING_UP),
+    /** One party's profile: what it takes, when, and in what share. */
+    PROFILE(Feather.PIE_CHART),
     /** A group tree, and the panel that shows one. */
     TREE(Feather.LIST),
     /** A code to be scanned. */

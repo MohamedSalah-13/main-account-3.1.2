@@ -102,10 +102,6 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
         return SPEC.totalsBetweenDatesSql();
     }
 
-    String betweenDatesSql() {
-        return SPEC.betweenDatesSql();
-    }
-
     /**
      * Writes the movement and puts the number MySQL assigned onto the model.
      * <p>
@@ -282,15 +278,4 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
         return queryForObjects(selectAccountAndTotalsById, map, dateFrom, dateTo);
     }
 
-    public List<CustomerAccount> getAccountBetweenDate(String dateFrom, String dateTo) throws DaoException {
-        String query = "SELECT * FROM customers_accounts ca \n" +
-                "join custom c on c.id = ca.account_code\n" +
-                "where ca.account_date between ? and ? order by ca.account_date ";
-        GenericMapper<CustomerAccount> mapMain = resultSet -> {
-            CustomerAccount map = mapMain(resultSet);
-            map.setCustomers(new Customers(resultSet.getInt(ACCOUNT_CODE), resultSet.getString(NAME)));
-            return map;
-        };
-        return queryForObjects(query, mapMain, dateFrom, dateTo);
-    }
 }

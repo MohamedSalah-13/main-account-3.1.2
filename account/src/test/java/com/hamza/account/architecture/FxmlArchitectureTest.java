@@ -72,8 +72,7 @@ class FxmlArchitectureTest {
      */
     private static final Set<String> FXML_WITHOUT_CONTROLLER = Set.of(
             "com/hamza/account/view/add-treasury-amount.fxml",
-            "com/hamza/account/view/excel-view.fxml",
-            "com/hamza/account/view/reports/report-print.fxml");
+            "com/hamza/account/view/excel-view.fxml");
 
     private static Properties bundle(String name) {
         Path path = BUNDLE_DIR.resolve(name);

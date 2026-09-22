@@ -773,6 +773,129 @@
     -fx-text-fill: #1f2937;
 }
 
+/* A party's profile: its periods and weekdays as bars - one colour for what the party took, another
+   for a period its returns outweighed, which is the bar a reader has to notice. */
+.party-profile-chart .chart-bar {
+    -fx-bar-fill: -app-primary;
+}
+
+.party-profile-chart .chart-bar.profile-negative {
+    -fx-bar-fill: -app-danger;
+}
+
+.party-profile-chart .axis {
+    -fx-tick-label-fill: -app-text;
+}
+
+/* As the trend chart's print class: dark on white for the length of the snapshot. */
+.party-profile-chart.profile-print,
+.party-profile-chart.profile-print .chart-plot-background {
+    -fx-background-color: white;
+}
+
+.party-profile-chart.profile-print .axis {
+    -fx-tick-label-fill: #1f2937;
+}
+
+.party-profile-chart.profile-print .axis-tick-mark,
+.party-profile-chart.profile-print .axis-minor-tick-mark {
+    -fx-stroke: #9ca3af;
+}
+
+.party-profile-chart.profile-print .chart-horizontal-grid-lines,
+.party-profile-chart.profile-print .chart-vertical-grid-lines {
+    -fx-stroke: #e5e7eb;
+}
+
+.party-profile-chart.profile-print .chart-legend {
+    -fx-background-color: transparent;
+}
+
+.party-profile-chart.profile-print .chart-legend-item {
+    -fx-text-fill: #1f2937;
+}
+
+/* The owner's equity: the statement's totals stand out, its explanatory lines recede. */
+.table-row-cell:equity-total .table-cell {
+    -fx-font-weight: bold;
+}
+
+.table-row-cell:equity-detail .table-cell {
+    -fx-text-fill: -app-text-muted;
+}
+
+.capital-chart .axis,
+.capital-chart .chart-title,
+.capital-chart .chart-legend-item {
+    -fx-tick-label-fill: -app-text;
+    -fx-text-fill: -app-text;
+}
+
+/* Paid in, drawn, profit - in the order the series are added - each in the colour of what it
+   does to equity. The default palette painted capital paid in red. The legend symbols carry the
+   same classes, so they follow. */
+.capital-bars .default-color0.chart-bar {
+    -fx-bar-fill: -app-success;
+}
+
+.capital-bars .default-color1.chart-bar {
+    -fx-bar-fill: -app-danger;
+}
+
+.capital-bars .default-color2.chart-bar {
+    -fx-bar-fill: -app-primary;
+}
+
+.capital-marker {
+    -fx-min-width: 1.2em;
+    -fx-pref-width: 1.2em;
+    -fx-min-height: 0.8em;
+    -fx-max-height: 0.8em;
+    -fx-background-radius: 0.2em;
+}
+
+.capital-marker.capital-paid {
+    -fx-background-color: -app-success;
+}
+
+.capital-marker.capital-drawn {
+    -fx-background-color: -app-danger;
+}
+
+.capital-marker.capital-profit {
+    -fx-background-color: -app-primary;
+}
+
+.capital-line .default-color0.chart-series-line {
+    -fx-stroke: -app-primary;
+}
+
+.capital-line .default-color0.chart-line-symbol {
+    -fx-background-color: -app-primary, -app-surface;
+}
+
+/* As the trend chart's print class: dark on white for the length of the snapshot. */
+.capital-chart.capital-print,
+.capital-chart.capital-print .chart-plot-background {
+    -fx-background-color: white;
+}
+
+.capital-chart.capital-print .axis,
+.capital-chart.capital-print .chart-title,
+.capital-chart.capital-print .chart-legend-item {
+    -fx-tick-label-fill: #1f2937;
+    -fx-text-fill: #1f2937;
+}
+
+.capital-chart.capital-print .chart-horizontal-grid-lines,
+.capital-chart.capital-print .chart-vertical-grid-lines {
+    -fx-stroke: #e5e7eb;
+}
+
+.capital-chart.capital-print .chart-legend {
+    -fx-background-color: transparent;
+}
+
 /* ---------- Tables ---------- */
 
 .table-view,

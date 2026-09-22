@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,294 tests** with 229 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-22 with the delegates item closed. What is
+**3,398 tests** with 248 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-22 with reports phases 0 to C built. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -90,6 +90,11 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
+**That list is itself out of date** - forty `*AcceptanceTest` files exist, and the later areas' own
+sections name theirs. The reports work added three, each building a scratch schema of its own from
+nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
+`PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest` and
+`CustomerRfmDatabaseAcceptanceTest` (`docs/reports-plan.md` §12).
 **They read `account/config.xml` for the credentials alone**, and `ExpenseDatabaseAcceptanceTest` also
 takes `ACCOUNT_DB_ACCEPTANCE_CONFIG` to name that file outright - which is how it runs from a worktree,
 where there is deliberately no database configuration to copy a secret into.
@@ -300,6 +305,21 @@ Two documents govern work here and are kept current — read them before large c
   run, and why a collection's delegate is written at entry rather than derived. **Read the first before
   starting any large item, and the matching one before touching `TrialManager` or anything under
   `features/delegate`.**
+- **[`docs/reports-plan.md`](docs/reports-plan.md)** - the reports contract, written 2026-09-22 and
+  **not yet built**: every "opening" figure is equity brought forward and never a period movement,
+  the profit on the equity statement is `ProfitLossDao`'s and nothing recomputes it, a report
+  explains a figure a screen already shows and is held to it on MySQL, and the hub (phase C) opens
+  existing screens rather than hosting copies. §2 is what the review found in the existing reports -
+  two of its ten findings were wrong and say so there, which is what checking before fixing is for;
+  §4 is phase 0, **built**: the dead day-details button and three unreachable screens gone, the
+  payments report printing, and the dashboard's best sellers in base units net of returns through
+  `document.ItemNetLines`, which the party profile shares. Phases A (the party profile), B (the
+  owner's equity) and C (the reports hub, the shared trend chart and the customers' recency, frequency
+  and value) are **built, green on MySQL and seen on a copy of the development data** - see
+  **A party's profile**, **The owner's equity** and **The reports hub** below; §12 is what differed
+  from the plan and what only the screen and the rendered paper found. §8 is what still needs a decision.
+  **Read it before adding a report or a chart anywhere, and before touching `controller/reports`,
+  `features/party/profile`, `features/capital` or `TreasuryCapitalController`.**
 - **[`docs/permissions-plan.md`](docs/permissions-plan.md)** - the authorization contract: why a
   permission is a string key with no database id, why a declared key must be read by something (eight
   were not), why a permission's name comes from the bundles and not from
@@ -431,9 +451,12 @@ three written for something that had shipped:
 - **A declared key must be read by something.** Eight were not — four settings tabs, both price-tier
   keys, a treasury balance and the read half of the month rule — so they were tick boxes in the roles
   screen that changed nothing a user could do, and a role built out of them granted nothing. They are
-  gone. Four more (`items.add.excel` and three `reports.show.*`) are *granted by `V13`* and read by
-  nothing, which is worse because `DefaultRoleAcceptanceTest` pins those grants: they sit in
-  `DECLARED_BUT_UNREAD` with a reason each, and that list fails in both directions.
+  gone. Four more were *granted by `V13`* and read by nothing, which is worse because
+  `DefaultRoleAcceptanceTest` pins those grants. Three of them - `reports.show.customers.account.area`,
+  `.day.details` and `.delegate` - were removed with the reports work (`docs/reports-plan.md` §4), and
+  that test now resolves a grant the catalogue no longer declares to nothing, as `synchronizeCatalog`
+  does, and lists those keys so a removal is as visible in review as a grant. `items.add.excel` is the
+  one left in `DECLARED_BUT_UNREAD`, and that list fails in both directions.
 - **A permission's name comes from the bundles, never from the database.** `V1` seeds the permission
   rows with names and no descriptions, and `synchronizeCatalog` writes `description = permission_key`
   for a row it inserts and never returns to it — so `COALESCE(description, permission_key)` put
@@ -2116,6 +2139,88 @@ It opens from the accounts screen, next to the ageing report, and asks the same 
 The ageing report has had the same treatment as the accounts screen it opens from: identity
 header, list actions after the filters, the view menu, content-sized columns, and a PDF and a
 spreadsheet of the columns on screen. Both old fixed-column Excel writers are gone.
+
+### A party's profile
+
+`features/party/profile` and `PartyProfileController`, the row's "show" in the parties list and a row
+action in the balances screen. It replaced the "items purchased" window, which listed raw invoice lines
+with no period, no units and no returns. `docs/reports-plan.md` §5 and §12.2.
+
+- **Quantities are base units, net of returns, and each side is grouped before the union**
+  (`account.document.ItemNetLines`, shared with the dashboard's best sellers and pinned by
+  `ItemNetLinesTest`). A carton of twelve and three pieces, less a returned piece, is fourteen - the
+  window it replaced said three of something.
+- **The items and the days are two readings of one set of documents and are held to each other**:
+  the lines less the documents' own discounts are the headers' net, which is what the ledger view
+  says for the same documents. A discount on a whole invoice is shown, never shared among items.
+  `PartyProfileSummary.unexplained()` is whatever does not add up, and the screen says it rather than
+  hides it - on the development data all 1,207 sales reconcile to the piastre and 7 of 150 purchases
+  differ from their lines by 38 piastres between them.
+- **Viewing asks what opening the party asks** (`customer.show`/`suppliers.show`), because the window
+  it replaced was reached that way; **a file asks `reports.show.customers`/`.suppliers` on top**
+  (`forExport`), the ageing report's rule. The balance card is the statement's figure, for a reader
+  who may see accounts, and absent - not zero - for anybody else.
+- The periods are `TrendGranularity`'s and the week starts on Saturday; "stopped buying" compares the
+  same length of time straight before. `PartyProfileDatabaseAcceptanceTest` (gated, seven cases,
+  scratch schema) holds all of it to `account_customer_table` and `account_suppliers_table`.
+
+### The owner's equity
+
+`features/capital` and the capital screen's two new tabs (`TreasuryCapitalController`).
+`docs/reports-plan.md` §3 and §6 are the contract, §12.3 what the screen and the paper found.
+
+- **Every "opening" figure is equity brought forward, never a period movement**: the treasuries'
+  opening balances, the customers' less the suppliers', and the opening stock at today's buy price
+  (a valuation, and the screen says so). A treasury's opening balance may be capital or years of
+  earlier profit in a drawer, and nothing recorded says which - so it is never "capital paid in".
+- **The profit is the profit and loss's own rows**, read through `ProfitLossService`, which requires
+  `reports.show.profit` itself: the statement needs that key on top of `treasury.capital`, and the
+  movements tab needs only the capital. Nothing in `features/capital` recomputes a profit, and
+  `ProfitLossExcludesCapitalTest` still guards `ProfitLossDao`.
+- **The side a movement is on is its direction column, never its category's name**
+  (`CapitalStatements`, `category <> 'NORMAL'`), so a category added later is not dropped from both
+  sides at once. The totals are summed in SQL by day and treasury - the row per treasury
+  `docs/treasury-plan.md` §4.3 specified.
+- It is **not a balance sheet**: without a ledger nothing proves the assets equal this figure, and the
+  screen says that in a sentence. `CapitalDatabaseAcceptanceTest` (gated, five cases) works a quarter
+  out by hand and checks the profit and loss for it is exactly the trading profit.
+
+### The reports hub
+
+`features/report` and `ReportsHubController`, the first button of the sidebar's reports section.
+`docs/reports-plan.md` §7 and §12.4.
+
+- **It hosts nothing.** A card runs the report's existing entry point - the sidebar's own button, or
+  the constructor the button on its own screen calls - after asking for the product feature the way
+  `MenuButtonSetting` does. So a report cannot say one thing in the hub and another where it has always
+  been. `ReportsHubWiringTest` fails the build when a `ReportEntry` has no opener in `ReportsButtons`.
+- **An entry names every key its existing road asks, and adds none.** A report behind a button on
+  another screen asks that screen's key as well - the expense reports need `expenses.show` and
+  `expenses.reports` - so the hub never becomes a road to a report the sidebar and the screens would
+  not have shown. `ReportCatalog.visible` takes the permission and feature checks as arguments and has
+  no session, so it is tested without a toolkit.
+- **It has no product feature of its own, on purpose.** A key new to the catalogue is absent from every
+  profile already signed, and would have taken the hub from every shop that has one; each card asks
+  its report's feature instead.
+- **A label that does not name its colour is white** under the theme: the first draft's descriptions
+  used `stat-subtitle`, which only `dashboard.css` colours, and were invisible on a white card.
+
+**`account.table.TrendChart` is the one line chart of an amount over periods** - the collections, the
+delegate and the expenses trends draw through it, and a fourth trend takes it rather than a copy. It
+carries the four decisions the three copies shared: time runs left to right in either language, the
+axis is whole amounts in Latin digits, a line is coloured by its classes (the checkboxes wearing the
+same markers are the legend), and every point says its figure on hover. The move was checked by
+photographing the three screens before and after on one copy: not one pixel differed.
+
+**The customers' recency, frequency and value** (`features/party/rfm`, `CustomerRfmController`, from the
+customer balances screen and the hub) are the party profile's figures for every customer at once, and
+`CustomerRfmDatabaseAcceptanceTest` holds each row to that customer's profile on MySQL. A score is the
+fifth of the listed customers a figure falls in (`RANK()`, ties share one), worked out **before** the
+text condition, so a search never moves a score. **The cash-sales customer is left out only when the
+settings name one** (`PropertiesName.getChosenDefaultCustomer`): the setting's own getter falls back to
+`1`, and on a real database customer 1 was a person while the bucket was number 48 - excluded on that
+guess, a real customer vanished from the table while the bucket headed it. The screen and the paper
+say who was left out, or that nobody was.
 
 ### Printed reports
 

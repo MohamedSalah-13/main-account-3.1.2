@@ -36,6 +36,14 @@ class RbacMigrationCompatibilityTest {
         }
     }
 
+    /**
+     * Keys {@code V13} grants that the catalogue has since removed. A shipped migration is never
+     * edited, and {@code synchronizeCatalog} disables an undeclared key, so the grant resolves to
+     * nothing; {@code DefaultRoleAcceptanceTest} holds this same list in both directions.
+     */
+    private static final java.util.Set<String> REMOVED_SINCE = java.util.Set.of(
+            "reports.show.customers.account.area", "reports.show.day.details", "reports.show.delegate");
+
     @Test
     void starterRolesAreLeastPrivilegeAndNeverAutoAssigned() throws IOException {
         try (var stream = getClass().getResourceAsStream("/db/migration/V13__default_rbac_roles.sql")) {
@@ -53,6 +61,9 @@ class RbacMigrationCompatibilityTest {
             var matcher = Pattern.compile("'([a-z][a-z0-9.]+)'").matcher(sql.toLowerCase());
             while (matcher.find()) {
                 String permission = matcher.group(1);
+                if (REMOVED_SINCE.contains(permission)) {
+                    continue;
+                }
                 assertNotNull(AppPermissions.fromValue(permission), "unknown starter-role permission " + permission);
             }
         }

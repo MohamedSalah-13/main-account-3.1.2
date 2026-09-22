@@ -9,7 +9,7 @@ import com.hamza.account.features.delegate.trend.DelegateTrendService;
 import com.hamza.account.features.delegate.trend.DelegateTrendSummary;
 import com.hamza.account.features.party.trend.PartyTrendFilter;
 import com.hamza.account.features.party.trend.TrendGranularity;
-import com.hamza.account.table.ChartSnapshot;
+import com.hamza.account.table.TrendChart;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -22,13 +22,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -38,7 +32,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -51,13 +44,8 @@ import javafx.util.StringConverter;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -79,9 +67,6 @@ public class DelegateTrendController implements AppSettingInterface {
 
     private static final String NET = "trend-debit";
     private static final String COLLECTED = "trend-credit";
-    private static final String PREVIOUS = "trend-previous";
-    /** Dark on white whatever the theme, for the moment the chart is photographed for a page. */
-    private static final String PRINTING = "trend-print";
     /** The table's amount columns, which the printed totals line sums. */
     private static final Set<String> TOTALLED_COLUMNS = Set.of("delegate-trend-sales", "delegate-trend-returns",
             "delegate-trend-net", "delegate-trend-collected", "delegate-trend-previous-net",
@@ -98,9 +83,7 @@ public class DelegateTrendController implements AppSettingInterface {
     private final CheckBox showNet = new CheckBox(text("delegate.trend.net"));
     private final CheckBox showCollected = new CheckBox(text("delegate.performance.column.collected"));
 
-    private final CategoryAxis periodAxis = new CategoryAxis();
-    private final NumberAxis amountAxis = new NumberAxis();
-    private final LineChart<String, Number> chart = new LineChart<>(periodAxis, amountAxis);
+    private final TrendChart trendChart = new TrendChart("delegate-trend-chart", 180);
     private final Label chartEmpty = new Label(text("party.trend.empty"));
     private final ProgressIndicator progress = new ProgressIndicator();
 
@@ -115,8 +98,6 @@ public class DelegateTrendController implements AppSettingInterface {
     private final Label statNetPrevious = statSubtitle();
     private final Label statCollectedPrevious = statSubtitle();
 
-    /** The classes each drawn line wears, by its name - so the printed legend can wear them too. */
-    private final Map<String, List<String>> seriesStyles = new HashMap<>();
 
     private DelegateTrend shown;
     private int generation;
@@ -129,7 +110,7 @@ public class DelegateTrendController implements AppSettingInterface {
 
     @Override
     public Pane pane() {
-        buildChart();
+        trendChart.chart().setPrefHeight(220);
         buildTable();
 
         StackPane chartArea = new StackPane(chartCard(), progress);
@@ -186,7 +167,7 @@ public class DelegateTrendController implements AppSettingInterface {
         from.setOnAction(event -> load());
         to.setOnAction(event -> load());
 
-        comparePrevious.setGraphic(marker(PREVIOUS));
+        comparePrevious.setGraphic(TrendChart.marker(TrendChart.PREVIOUS));
         comparePrevious.setOnAction(event -> load());
 
         Button refresh = new Button(text("refresh"), AppIcon.REFRESH.graphic());
@@ -248,8 +229,8 @@ public class DelegateTrendController implements AppSettingInterface {
 
     /** The checkboxes that choose the lines are the legend: each wears its line's marker. */
     private VBox chartCard() {
-        showNet.setGraphic(marker(NET));
-        showCollected.setGraphic(marker(COLLECTED));
+        showNet.setGraphic(TrendChart.marker(NET));
+        showCollected.setGraphic(TrendChart.marker(COLLECTED));
         showNet.setSelected(true);
         showCollected.setSelected(true);
         showNet.setOnAction(event -> drawChart());
@@ -260,40 +241,12 @@ public class DelegateTrendController implements AppSettingInterface {
 
         chartEmpty.getStyleClass().add("form-label");
         chartEmpty.setVisible(false);
-        StackPane plot = new StackPane(chart, chartEmpty);
+        StackPane plot = new StackPane(trendChart.chart(), chartEmpty);
         VBox.setVgrow(plot, Priority.ALWAYS);
 
         VBox card = new VBox(8, legend, plot);
         card.getStyleClass().add("app-card");
         return card;
-    }
-
-    private void buildChart() {
-        chart.getStyleClass().add("party-trend-chart");
-        chart.setId("delegate-trend-chart");
-        chart.setAnimated(false);
-        chart.setCreateSymbols(true);
-        chart.setLegendVisible(false);
-        chart.setMinHeight(180);
-        chart.setPrefHeight(220);
-        // Time runs left to right on a chart in either language.
-        chart.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        periodAxis.setAnimated(false);
-        amountAxis.setAnimated(false);
-        amountAxis.setForceZeroInRange(true);
-        // Whole amounts with separators, and Latin digits whatever the locale.
-        DecimalFormat whole = new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(Locale.US));
-        amountAxis.setTickLabelFormatter(new StringConverter<>() {
-            @Override
-            public String toString(Number value) {
-                return value == null ? "" : whole.format(value);
-            }
-
-            @Override
-            public Number fromString(String text) {
-                return null;
-            }
-        });
     }
 
     private void buildTable() {
@@ -338,14 +291,13 @@ public class DelegateTrendController implements AppSettingInterface {
             return;
         }
         String title = title() + " - " + delegateName;
-        File target = TablePdfReport.chooseTarget(chart.getScene().getWindow(), title);
+        File target = TablePdfReport.chooseTarget(trendChart.chart().getScene().getWindow(), title);
         if (target == null) {
             return;
         }
         byte[] picture;
         try {
-            picture = ChartSnapshot.png(chart, PRINTING, seriesStyles,
-                    () -> chart.setLegendVisible(true), () -> chart.setLegendVisible(false));
+            picture = trendChart.png();
         } catch (IOException e) {
             report(e);
             return;
@@ -457,10 +409,15 @@ public class DelegateTrendController implements AppSettingInterface {
                 .orElseGet(() -> language.getString("party.trend.stat.previous", Columns.money(previous))));
     }
 
+    /** One line of the chart, which colours it by these classes and says each figure on hover. */
+    private void addSeries(String name, List<DelegateTrendPoint> points,
+                           Function<DelegateTrendPoint, BigDecimal> value, String line, boolean previous) {
+        trendChart.addSeries(name, points, DelegateTrendPoint::label, value, TrendChart.classes(line, previous));
+    }
+
     /** Redraws from what is loaded: ticking a line on or off asks the database nothing. */
     private void drawChart() {
-        chart.getData().clear();
-        seriesStyles.clear();
+        trendChart.clear();
         if (shown == null) {
             return;
         }
@@ -483,38 +440,6 @@ public class DelegateTrendController implements AppSettingInterface {
         }
     }
 
-    /** One line; its classes are added once its nodes exist, and every point says its figure on hover. */
-    private void addSeries(String name, List<DelegateTrendPoint> points,
-                           Function<DelegateTrendPoint, BigDecimal> value, String line, boolean previous) {
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName(name);
-        for (DelegateTrendPoint point : points) {
-            series.getData().add(new XYChart.Data<>(point.label(), value.apply(point)));
-        }
-        chart.getData().add(series);
-        seriesStyles.put(name, previous ? List.of(line, PREVIOUS) : List.of(line));
-        style(series.getNode(), line, previous);
-        for (int index = 0; index < points.size(); index++) {
-            Node symbol = series.getData().get(index).getNode();
-            style(symbol, line, previous);
-            if (symbol != null) {
-                DelegateTrendPoint point = points.get(index);
-                Tooltip.install(symbol, new Tooltip(name + "\n" + point.label() + ": "
-                        + Columns.money(value.apply(point))));
-            }
-        }
-    }
-
-    private static void style(Node node, String line, boolean previous) {
-        if (node == null) {
-            return;
-        }
-        node.getStyleClass().add(line);
-        if (previous) {
-            node.getStyleClass().add(PREVIOUS);
-        }
-    }
-
     // ---- plumbing --------------------------------------------------------------------
 
     @Override
@@ -534,12 +459,6 @@ public class DelegateTrendController implements AppSettingInterface {
 
     private void report(Throwable error) {
         AllAlerts.handleError(title(), error instanceof Exception exception ? exception : new Exception(error));
-    }
-
-    private static Region marker(String line) {
-        Region marker = new Region();
-        marker.getStyleClass().addAll("trend-marker", line);
-        return marker;
     }
 
     private static Label caption(String key) {

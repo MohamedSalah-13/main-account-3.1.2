@@ -132,6 +132,22 @@ public class PropertiesName extends PreferencesSetting {
         return getString(SETTING_SAVE_NAME_CUSTOMER, "1");
     }
 
+    /**
+     * The customer cash sales land on, only when somebody chose one in the settings - never the
+     * {@code "1"} {@link #getSettingSaveNameCustomer} falls back to, which on a database where customer 1
+     * is a person names that person. Found on a copy of a real database: nothing was saved there,
+     * customer 1 was a named customer with two invoices, and the cash-sales bucket was number 48.
+     */
+    public static java.util.OptionalInt getChosenDefaultCustomer() {
+        String value = getString(SETTING_SAVE_NAME_CUSTOMER, null);
+        try {
+            return value == null || value.isBlank()
+                    ? java.util.OptionalInt.empty() : java.util.OptionalInt.of(Integer.parseInt(value.trim()));
+        } catch (NumberFormatException notAnId) {
+            return java.util.OptionalInt.empty();
+        }
+    }
+
     public static void setSettingSaveNameCustomer(String value) {
         putString(SETTING_SAVE_NAME_CUSTOMER, value);
     }

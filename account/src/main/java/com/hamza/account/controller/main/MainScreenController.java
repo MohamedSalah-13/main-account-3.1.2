@@ -2,11 +2,9 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
-import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.features.company.CompanyLogo;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.CompanyChanged;
@@ -22,10 +20,8 @@ import com.hamza.account.features.shift.ShiftMode;
 import com.hamza.account.features.shift.ShiftPolicyChanged;
 import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.model.domain.Users;
-import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -41,8 +37,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
-import javafx.stage.Stage;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
 import java.net.URI;
@@ -98,8 +92,8 @@ public class MainScreenController extends MainItems implements Initializable {
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
             btnTreasuries, btnTreasuryCash, btnTreasuryTransfer, btnTreasuryCapital, btnTreasuryDetails, btnProcess, btnExpenses,
-            btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear,
-            btnReportCustomPaid, btnReportSuppliersPaid, btnReportDetails, btnReportYearly, btnReportProfitLoss,
+            btnReportHub, btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear,
+            btnReportCustomPaid, btnReportSuppliersPaid, btnReportYearly, btnReportProfitLoss,
             btnReportReturnReasons,
             btnHome, btnSetting, btnMyShift, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
     @FXML
@@ -202,35 +196,6 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void configureAllButtons() throws Exception {
-        var monthlyPurchaseInterface = new MonthlySalesInterface() {
-            @Override
-            public String reportName() {
-                return "Annual_Purchase_Report";
-            }
-
-            @Override
-            public String reportTitle() {
-                return LanguageManager.getInstance().getString("report.monthly.purchase.title");
-            }
-
-            @Override
-            public MonthlySalesViewDao getMonthlySalesViewDao(DaoFactory daoFactory) {
-                return daoFactory.monthlyPurchaseViewDao();
-            }
-
-            @Override
-            public String chartTitle() {
-                return LanguageManager.getInstance().getString("report.monthly.purchase.chart.title");
-            }
-
-            @Override
-            public boolean isPurchase() {
-                return true;
-            }
-        };
-        var monthlySalesInterface = new MonthlySalesInterface() {
-        };
-
         /*----------------------------------------------- Sales -----------------------------------------------*/
         menuButtonSetting.configureButton(btnSales, getTotalSales().addInvoice(), ProductFeatures.SALES_CREATE);
         menuButtonSetting.configureButton(btnSalesReturn, getTotalSalesReturn().addInvoice(), ProductFeatures.SALES_RETURN_CREATE);
@@ -279,14 +244,17 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnProcess, getTreasuryButtons().openProcess(), ProductFeatures.TREASURY_AUDIT);
         menuButtonSetting.configureButton(btnExpenses, getTreasuryButtons().openExpenses(), ProductFeatures.TREASURY_EXPENSES);
         /*----------------------------------------------- Reports -----------------------------------------------*/
+        // No product feature of its own, on purpose: the hub opens nothing itself and every card asks
+        // for its report's feature before opening it. A key new to the catalogue would be missing
+        // from every profile already signed, and would take the hub away from each of those shops.
+        menuButtonSetting.configureButton(btnReportHub, getReportsButtons().reportsHub());
         menuButtonSetting.configureButton(btnReportSummary, getReportsButtons().summaryReport(), ProductFeatures.REPORT_SUMMARY);
         menuButtonSetting.configureButton(btnReportItems, getReportsButtons().itemsReport(), ProductFeatures.REPORT_ITEMS);
         menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily(), ProductFeatures.REPORT_ITEMS_DAILY);
-        menuButtonSetting.configureButton(btnReportSalesByYear, getAction(monthlySalesInterface.reportTitle(), monthlySalesInterface), ProductFeatures.REPORT_SALES_YEAR);
-        menuButtonSetting.configureButton(btnReportPurchaseByYear, getAction(monthlyPurchaseInterface.reportTitle(), monthlyPurchaseInterface), ProductFeatures.REPORT_PURCHASES_YEAR);
+        menuButtonSetting.configureButton(btnReportSalesByYear, getReportsButtons().salesByYear(), ProductFeatures.REPORT_SALES_YEAR);
+        menuButtonSetting.configureButton(btnReportPurchaseByYear, getReportsButtons().purchasesByYear(), ProductFeatures.REPORT_PURCHASES_YEAR);
         menuButtonSetting.configureButton(btnReportCustomPaid, getReportsButtons().reportCustomPaid(), ProductFeatures.REPORT_CUSTOMER_PAYMENTS);
         menuButtonSetting.configureButton(btnReportSuppliersPaid, getReportsButtons().reportSupplierPaid(), ProductFeatures.REPORT_SUPPLIER_PAYMENTS);
-        menuButtonSetting.configureButton(btnReportDetails, getReportsButtons().detailsReport(), ProductFeatures.REPORT_DETAILS);
         menuButtonSetting.configureButton(btnReportYearly, getReportsButtons().reportYearly(), ProductFeatures.REPORT_YEARLY);
         menuButtonSetting.configureButton(btnReportProfitLoss, getReportsButtons().profitLossReport(), ProductFeatures.REPORT_PROFIT_LOSS);
         menuButtonSetting.configureButton(btnReportReturnReasons, getReportsButtons().returnReasonsReport(), ProductFeatures.REPORT_RETURN_REASONS);
@@ -402,7 +370,7 @@ public class MainScreenController extends MainItems implements Initializable {
                 Map.entry(SidebarShortcut.ADD_SUPPLIER, btnAddSupplierName), Map.entry(SidebarShortcut.SUPPLIERS, btnSuppliers), Map.entry(SidebarShortcut.SUPPLIER_ACCOUNT, btnAccountSuppliers),
                 Map.entry(SidebarShortcut.ADD_EMPLOYEE, btnAddEmployee), Map.entry(SidebarShortcut.EMPLOYEES, btnEmployees), Map.entry(SidebarShortcut.ADD_USER, btnAddUser), Map.entry(SidebarShortcut.USERS, btnUsers),
                 Map.entry(SidebarShortcut.TREASURIES, btnTreasuries), Map.entry(SidebarShortcut.TREASURY_CASH, btnTreasuryCash), Map.entry(SidebarShortcut.TREASURY_TRANSFER, btnTreasuryTransfer), Map.entry(SidebarShortcut.TREASURY_CAPITAL, btnTreasuryCapital), Map.entry(SidebarShortcut.TREASURY_DETAILS, btnTreasuryDetails), Map.entry(SidebarShortcut.TREASURY_PROCESS, btnProcess), Map.entry(SidebarShortcut.EXPENSES, btnExpenses),
-                Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_SALES_YEAR, btnReportSalesByYear), Map.entry(SidebarShortcut.REPORT_PURCHASE_YEAR, btnReportPurchaseByYear), Map.entry(SidebarShortcut.REPORT_CUSTOMER_PAID, btnReportCustomPaid), Map.entry(SidebarShortcut.REPORT_SUPPLIER_PAID, btnReportSuppliersPaid), Map.entry(SidebarShortcut.REPORT_DETAILS, btnReportDetails), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
+                Map.entry(SidebarShortcut.REPORT_HUB, btnReportHub), Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_SALES_YEAR, btnReportSalesByYear), Map.entry(SidebarShortcut.REPORT_PURCHASE_YEAR, btnReportPurchaseByYear), Map.entry(SidebarShortcut.REPORT_CUSTOMER_PAID, btnReportCustomPaid), Map.entry(SidebarShortcut.REPORT_SUPPLIER_PAID, btnReportSuppliersPaid), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
                 Map.entry(SidebarShortcut.HOME, btnHome), Map.entry(SidebarShortcut.SETTINGS, btnSetting), Map.entry(SidebarShortcut.SHIFT_REPORTS, btnShiftReports), Map.entry(SidebarShortcut.BACKUP, btnBackup), Map.entry(SidebarShortcut.DELETE_DATA, btnDeleteData), Map.entry(SidebarShortcut.ABOUT, btnAbout), Map.entry(SidebarShortcut.CLOSE, btnClose), Map.entry(SidebarShortcut.YOUTUBE, btnYouTube));
     }
 
@@ -585,29 +553,6 @@ public class MainScreenController extends MainItems implements Initializable {
         boolean isAdmin = CurrentUser.isSystemAdministrator();
         btnYouTube.setVisible(isAdmin);
         btnYouTube.setManaged(isAdmin);
-    }
-
-    private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
-        return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return monthlySalesInterface.isPurchase()
-                        ? AppPermissions.REPORTS_SHOW_PURCHASE
-                        : AppPermissions.REPORTS_SHOW_SALES;
-            }
-
-            @Override
-            public void action() throws Exception {
-                new MonthlyView(daoFactory, monthlySalesInterface).start(new Stage());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return name;
-            }
-
-        };
     }
 
     private void firstBoxInMain() {

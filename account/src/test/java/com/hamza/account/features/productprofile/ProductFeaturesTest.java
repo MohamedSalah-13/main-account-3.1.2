@@ -9,8 +9,9 @@ class ProductFeaturesTest {
 
     @Test
     void catalogueContainsAllFunctionalSidebarScreens() {
-        assertEquals(51, ProductFeatures.definitions().size());
-        assertEquals(51, ProductFeatures.allKeys().size());
+        // 50 since reports.details went: a button that was permanently disabled and opened nothing.
+        assertEquals(50, ProductFeatures.definitions().size());
+        assertEquals(50, ProductFeatures.allKeys().size());
         assertTrue(ProductFeatures.keysInCategory(ProductFeatures.CATEGORY_SALES)
                 .contains(ProductFeatures.SALES_CREATE));
         assertTrue(ProductFeatures.keysInCategory(ProductFeatures.CATEGORY_SYSTEM)

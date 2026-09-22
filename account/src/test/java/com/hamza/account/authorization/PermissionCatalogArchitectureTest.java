@@ -60,10 +60,7 @@ class PermissionCatalogArchitectureTest {
      * a key wired or removed has to leave here in the same change.
      */
     private static final Map<String, String> DECLARED_BUT_UNREAD = new TreeMap<>(Map.of(
-            "ITEMS_ADD_EXCEL", "the Excel import asks items.create/items.update and never this key",
-            "REPORTS_SHOW_CUSTOMERS_ACCOUNT_AREA", "no screen opens a customer-accounts-by-area report",
-            "REPORTS_SHOW_DAY_DETAILS", "no screen opens a day-details report",
-            "REPORTS_SHOW_DELEGATE", "the delegate reports ask commission.reports instead"));
+            "ITEMS_ADD_EXCEL", "the Excel import asks items.create/items.update and never this key"));
 
     /**
      * The only files allowed to compare a user id against the recovery administrator's. The session

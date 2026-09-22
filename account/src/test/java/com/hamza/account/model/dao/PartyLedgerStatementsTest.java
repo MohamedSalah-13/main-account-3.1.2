@@ -79,11 +79,6 @@ class PartyLedgerStatementsTest {
                     + "customers_accounts.treasury_id  WHERE account_num = ?", dao.selectForUpdateSql());
             assertEquals("SELECT * FROM customers_accounts WHERE account_code=?", dao.selectByPartyCodeSql());
             assertEquals("SELECT * FROM account_customer_totals order by name ", dao.totalsSql());
-            // One trailing space after the alias went with the move. Whitespace only.
-            assertEquals(tokens("SELECT * FROM customers_accounts ca\n"
-                    + "join custom c on c.id = ca.account_code\n"
-                    + "where ca.account_date between ? and ? order by ca.account_date"),
-                    tokens(dao.betweenDatesSql()));
         }
 
         @Test
@@ -159,10 +154,6 @@ class PartyLedgerStatementsTest {
                     + "suppliers_accounts.treasury_id  WHERE account_num = ?", dao.selectForUpdateSql());
             assertEquals("SELECT * FROM suppliers_accounts WHERE account_code=?", dao.selectByPartyCodeSql());
             assertEquals("SELECT * FROM account_suppliers_totals order by name ", dao.totalsSql());
-            assertEquals(tokens("SELECT * FROM suppliers_accounts ca\n"
-                    + "join suppliers c on c.id = ca.account_code\n"
-                    + "where ca.account_date between ? and ? order by ca.account_date"),
-                    tokens(dao.betweenDatesSql()));
         }
     }
 

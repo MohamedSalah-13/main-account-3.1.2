@@ -728,9 +728,10 @@ public class ExpensesController extends LoadData {
 
     /**
      * The reports, over this list's own filter. They change only the dates; a line in them opens this list
-     * on exactly that line, through {@link #applyFilter}.
+     * on exactly that line, through {@link #applyFilter}. Public for the reports hub, which opens this list
+     * in its tab first and then this - so a line in a report still has a list to open on.
      */
-    private void openReports() {
+    public void openReports() {
         try {
             new OpenApplication<>(new ExpenseReportsController(filter, conditionsText(), this::applyFilter));
         } catch (Exception e) {

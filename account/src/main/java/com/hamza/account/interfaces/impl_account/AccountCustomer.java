@@ -107,8 +107,4 @@ public record AccountCustomer(DaoFactory daoFactory) implements AccountData<Cust
         };
     }
 
-    @Override
-    public List<CustomerAccount> getAccountBetweenDate(String dateFrom, String dateTo) throws Exception {
-        return daoFactory.customerAccountDao().getAccountBetweenDate(dateFrom, dateTo);
-    }
 }

@@ -21,7 +21,7 @@ class ProductProfileWiringArchitectureTest {
                 .filter(line -> line.contains("menuButtonSetting.configureButton("))
                 .filter(line -> line.contains("ProductFeatures."))
                 .count();
-        assertEquals(51, gatedScreens);
+        assertEquals(50, gatedScreens);
         assertTrue(source.contains("ProductFeatures.SALES_CREATE"));
         assertTrue(source.contains("ProductFeatures.REPORT_PROFIT_LOSS"));
         assertTrue(source.contains("ProductFeatures.SYSTEM_DELETE_DATA"));

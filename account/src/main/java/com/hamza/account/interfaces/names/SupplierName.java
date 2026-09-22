@@ -1,15 +1,13 @@
 package com.hamza.account.interfaces.names;
 
-import com.hamza.account.interfaces.CustomerPurchaseInterface;
+import com.hamza.account.controller.name_account.PartyProfileController;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.interfaces.api.NameData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Area;
-import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.model.domain.Suppliers;
-import com.hamza.account.view.CustomerPurchasedItemsApplication;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;
@@ -49,20 +47,12 @@ public class SupplierName implements NameData<Suppliers> {
         return "suppliers";
     }
 
+    /**
+     * The row's "show": the party's profile - what it took, when, and what it stopped taking.
+     * It replaced a window of raw invoice lines with no period, no units and no returns.
+     */
     @Override
     public void actionColumnShow(Suppliers suppliers, DaoFactory daoFactory) throws Exception {
-        var app = new CustomerPurchasedItemsApplication(daoFactory
-                , suppliers.getId(), suppliers.getName(), new CustomerPurchaseInterface() {
-            @Override
-            public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
-                return daoFactory.suppliersSalesItemDao().findBySupplierId(customerId);
-            }
-
-            @Override
-            public String title() {
-                return LanguageManager.getInstance().getString("screen.title.items.purchased.by.supplier");
-            }
-        });
-        app.start(new javafx.stage.Stage());
+        new OpenApplication<>(new PartyProfileController(PartyKind.SUPPLIER, suppliers.getId(), suppliers.getName()));
     }
 }

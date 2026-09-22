@@ -171,6 +171,7 @@
                                             <content>
                                                 <VBox styleClass="side-button-box">
                                                             <children>
+                                                                <Button fx:id="btnReportHub" mnemonicParsing="false" text="Reports Hub" />
                                                                 <Button fx:id="btnReportSummary" mnemonicParsing="false" text="Summary" />
                                                                 <Button fx:id="btnReportItems" mnemonicParsing="false" text="Items Report" />
                                                                 <Button fx:id="btnReportItemsDaily" mnemonicParsing="false" text="Items Report Daily" />
@@ -178,7 +179,6 @@
                                                                 <Button fx:id="btnReportPurchaseByYear" mnemonicParsing="false" text="Purchase By Year" />
                                                                 <Button fx:id="btnReportCustomPaid" mnemonicParsing="false" text="Customer Payments" />
                                                                 <Button fx:id="btnReportSuppliersPaid" mnemonicParsing="false" text="Supplier Payments" />
-                                                                <Button fx:id="btnReportDetails" mnemonicParsing="false" text="Details Report" />
                                                                 <Button fx:id="btnReportYearly" mnemonicParsing="false" text="Yearly Report" />
                                                                 <Button fx:id="btnReportProfitLoss" mnemonicParsing="false" text="Profit Loss" />
                                                                 <Button fx:id="btnReportReturnReasons" mnemonicParsing="false" text="Return Reasons" />

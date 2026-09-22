@@ -94,6 +94,26 @@ public record PartyScreenIdentity(PartyKind kind, String styleClass, AppIcon ico
                 styleClass);
     }
 
+    /** The heading of one party's profile - what it took, when, and what it stopped taking. */
+    public PartyFormProfile profileProfile(String partyName) {
+        LanguageManager language = LanguageManager.getInstance();
+        boolean customer = kind == PartyKind.CUSTOMER;
+        return new PartyFormProfile(
+                language.getString(customer
+                        ? "party.profile.customers.title" : "party.profile.suppliers.title", partyName),
+                language.getString(customer
+                        ? "party.profile.customers.subtitle" : "party.profile.suppliers.subtitle"),
+                icon,
+                styleClass);
+    }
+
+    /** The heading of the customers' recency, frequency and value table - customers only. */
+    public PartyFormProfile rfmProfile() {
+        LanguageManager language = LanguageManager.getInstance();
+        return new PartyFormProfile(language.getString("party.rfm.title"),
+                language.getString("party.rfm.subtitle"), icon, styleClass);
+    }
+
     /** The heading of the dialog that records one movement on a party's account. */
     public PartyFormProfile paymentProfile() {
         LanguageManager language = LanguageManager.getInstance();

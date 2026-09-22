@@ -59,7 +59,6 @@ public final class ProductFeatures {
     public static final FeatureKey REPORT_PURCHASES_YEAR = key("reports.purchases-year");
     public static final FeatureKey REPORT_CUSTOMER_PAYMENTS = key("reports.customer-payments");
     public static final FeatureKey REPORT_SUPPLIER_PAYMENTS = key("reports.supplier-payments");
-    public static final FeatureKey REPORT_DETAILS = key("reports.details");
     public static final FeatureKey REPORT_YEARLY = key("reports.yearly");
     public static final FeatureKey REPORT_PROFIT_LOSS = key("reports.profit-loss");
     public static final FeatureKey REPORT_RETURN_REASONS = key("reports.return-reasons");
@@ -94,7 +93,7 @@ public final class ProductFeatures {
             def(REPORT_ITEMS, CATEGORY_REPORTS), def(REPORT_ITEMS_DAILY, CATEGORY_REPORTS),
             def(REPORT_SALES_YEAR, CATEGORY_REPORTS), def(REPORT_PURCHASES_YEAR, CATEGORY_REPORTS),
             def(REPORT_CUSTOMER_PAYMENTS, CATEGORY_REPORTS), def(REPORT_SUPPLIER_PAYMENTS, CATEGORY_REPORTS),
-            def(REPORT_DETAILS, CATEGORY_REPORTS), def(REPORT_YEARLY, CATEGORY_REPORTS),
+            def(REPORT_YEARLY, CATEGORY_REPORTS),
             def(REPORT_PROFIT_LOSS, CATEGORY_REPORTS), def(REPORT_RETURN_REASONS, CATEGORY_REPORTS),
             def(SYSTEM_SETTINGS, CATEGORY_SYSTEM), def(SYSTEM_MY_SHIFT, CATEGORY_SYSTEM),
             def(SYSTEM_SHIFT_REPORTS, CATEGORY_SYSTEM), def(SYSTEM_BACKUP, CATEGORY_SYSTEM),
