@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,440 tests** with 255 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-22 with reports phases 0 to D built. What is
+**3,446 tests** with 256 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-22 for 4.10.0, with the reports item closed. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -322,7 +322,8 @@ Two documents govern work here and are kept current — read them before large c
   the return on equity, the reconciliation of assets against equity, and the items' Pareto - were
   decided in §13 and are **built, green on MySQL twice and seen on a copy** (§13.3, and **Items by
   Pareto** below); the other three (a warehouse filter on the item reports, stock turnover, the
-  periodic tax report) wait on the decisions §13.1 names.
+  periodic tax report) wait on the decisions §13.1 names. **The item is closed and shipped in 4.10.0**
+  (§14, item «2أ» in `docs/product-plan.md` §1), and closing it fixed the item movement report.
   **Read it before adding a report or a chart anywhere, and before touching `controller/reports`,
   `features/party/profile`, `features/capital`, `features/itemreports` or `TreasuryCapitalController`.**
 - **[`docs/permissions-plan.md`](docs/permissions-plan.md)** - the authorization contract: why a
@@ -2267,6 +2268,12 @@ item reports screen: by net sales and by margin. `docs/reports-plan.md` §13.
   labels used to be joined in the wide cell and the figures in the last column's - the width of one
   letter on Pareto - so a reader paired them by position. Every item report with several totals
   printed that way.
+- **The item movement report ("تقرير حركة الأصناف") reads these same figures** (`ItemSalesRankDao`
+  over `JdbcItemSalesRepository`), month or year, most sold first. It read `view_item_sales_rank`,
+  which summed `quantity` across units, subtracted no return and took a line before its own discount;
+  the view is gone, its `DROP` kept, and `ProfitDefinitionTest` refuses it back - it would be a second
+  definition of what an item sold. On a copy of real data 13 item-months were overstated by their
+  line discounts and a month sold by the carton changed its first item.
 
 ### Printed reports
 
@@ -3106,9 +3113,9 @@ and the lesson written down. That is the argument for a test rather than a note:
 not define in its own file, and **also** when it defines one and leaves it behind - a stray helper is
 what the *next* migration calls and finds present on its author's machine and missing in the field.
 
-**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (33
-views; `treasury_balance_after_convert` was removed from it, and the `DROP` for it stays because a
-client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
+**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (32
+views; `treasury_balance_after_convert` and `view_item_sales_rank` were removed from it, and the `DROP`
+for each stays because a client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
 so **changing a view means editing it in place in `R__views.sql`** — do not write a `V<n>` that drops
 and recreates one. This is what stops a client on an older schema from being left without a view that
 newer code queries. Two conventions inside them:

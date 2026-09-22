@@ -42,10 +42,11 @@ class ProfitDefinitionTest {
     /**
      * The per-item views are exempt and it is not an oversight. They rank items, and an
      * invoice-level discount belongs to no single line, so attributing it needs an
-     * allocation rule nobody has agreed on. Both carry a comment saying exactly that.
+     * allocation rule nobody has agreed on. document_profit's own comment says exactly that.
+     * {@code view_item_sales_rank} was the second one, and is gone: see
+     * {@link #theItemMovementReportHasNoViewOfItsOwn()}.
      */
-    private static final List<String> PER_ITEM_VIEWS =
-            List.of("view_item_sales_rank", "card_item_view_details");
+    private static final List<String> PER_ITEM_VIEWS = List.of("card_item_view_details");
 
     @Test
     @DisplayName("document_profit states the rule: net revenue less recorded cost")
@@ -132,11 +133,32 @@ class ProfitDefinitionTest {
         }
         // Deliberately asserted against the comments: the exemption is only safe while
         // the reason for it is written next to the code it excuses.
-        assertTrue(raw.contains("Deliberately a different question from document_profit"),
-                "view_item_sales_rank computes a per-item profit that does not add up to "
-                        + "the profit and loss screen. That is allowed, and the comment "
-                        + "explaining why it is a different question rather than a bug is "
-                        + "the only thing keeping the next reader from rewriting it.");
+        assertTrue(raw.contains("Not included, on purpose: per-item profit"),
+                "a per-item profit does not add up to the profit and loss screen. That is "
+                        + "allowed, and the comment above document_profit explaining why it "
+                        + "is a different question rather than a bug is the only thing "
+                        + "keeping the next reader from rewriting it.");
+    }
+
+    /**
+     * The item movement report read {@code view_item_sales_rank}, which summed quantities across
+     * units, ignored returns and took a line before its own discount. It now reads the Pareto
+     * reports' per-item figures, and a view answering the same question again would be a second
+     * definition of what an item sold.
+     */
+    @Test
+    @DisplayName("the item movement report has no view of its own")
+    void theItemMovementReportHasNoViewOfItsOwn() {
+        assertFalse(sql().contains("CREATE VIEW view_item_sales_rank"),
+                "view_item_sales_rank is back. The item movement report reads "
+                        + "JdbcItemSalesRepository; keep only the DROP for installs that have it.");
+        assertTrue(sql().contains("DROP VIEW IF EXISTS view_item_sales_rank"),
+                "the DROP for view_item_sales_rank is gone, so an install that ran an older "
+                        + "copy keeps a view that answers wrongly and that nothing reads");
+        Path dao = Path.of("src", "main", "java", "com", "hamza", "account", "model", "dao",
+                "ItemSalesRankDao.java");
+        assertTrue(read(dao).contains("new JdbcItemSalesRepository()"),
+                "ItemSalesRankDao has stopped reading the Pareto reports' figures");
     }
 
     @Test
