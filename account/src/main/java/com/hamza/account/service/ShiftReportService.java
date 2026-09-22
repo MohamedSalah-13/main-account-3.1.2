@@ -133,19 +133,14 @@ public record ShiftReportService(
         }
     }
 
+    /**
+     * X reads an open shift and leaves it open; Z is the paper of a closed one. What each prints -
+     * its title included, which used to be the English literal "X-Report" on an Arabic page - is
+     * {@code ShiftReportLayout}'s.
+     */
     public enum ShiftReportType {
-        X("X-Report"),
-        Z("Z-Report");
-
-        private final String label;
-
-        ShiftReportType(String label) {
-            this.label = label;
-        }
-
-        public String label() {
-            return label;
-        }
+        X,
+        Z
     }
 
     private static String message(String key) {

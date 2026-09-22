@@ -11,6 +11,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AboutApplication;
 import com.hamza.account.view.OpenApplication;
@@ -27,6 +28,8 @@ import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 
 @Log4j2
 public class SettingButtons {
@@ -41,6 +44,15 @@ public class SettingButtons {
      * "are you sure you are the right person" gate and not as security.
      */
     private static final String WIPE_PASSWORD = "147852369";
+
+    /**
+     * Every key {@code AdminShiftsController} reads to decide what its tabs allow. A user holding
+     * none of them would open a screen with every tab disabled.
+     */
+    private static final List<PermissionKey> ADMIN_SHIFT_KEYS = List.of(
+            AppPermissions.USER_SHIFT_MANAGE, AppPermissions.SHIFT_REPORT_REPRINT,
+            AppPermissions.SHIFT_FORCE_CLOSE, AppPermissions.SHIFT_LEDGER_VIEW,
+            AppPermissions.SHIFT_POLICY_MANAGE);
 
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
@@ -85,7 +97,8 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.SETTING_SHOW;
+                // A shell command, like About and Close: every user has a home screen.
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override
@@ -124,7 +137,11 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.USER_SHIFT_MANAGE;
+                // It asked user.shift.manage from 1efc3b03, which gave the shift key to this button
+                // and left the shift administration button on PUBLIC_ACCESS - the two the wrong way
+                // round. Leaving the program is not an ability, and the window's own close control
+                // never asked anything.
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override
@@ -150,7 +167,7 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.SETTING_SHOW;
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override
@@ -208,7 +225,9 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.SETTING_SHOW;
+                // Not SETTING_SHOW: opening the settings is not the right to empty the database.
+                // WipeService asks the same key, so this is the hint and that is the rule.
+                return AppPermissions.SETTING_DATA_DELETE;
             }
 
             @Override
@@ -230,7 +249,11 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.PUBLIC_ACCESS;
+                // Open to anybody holding one of the keys the screen reads, and to nobody else. It
+                // was PUBLIC_ACCESS, so a cashier with none of them could open a screen of
+                // disabled tabs - and a sidebar section is hidden only when nothing in it opens.
+                return ADMIN_SHIFT_KEYS.stream().anyMatch(AuthorizationGuard::isGranted)
+                        ? AppPermissions.PUBLIC_ACCESS : PermissionKey.deny();
             }
 
             @Override

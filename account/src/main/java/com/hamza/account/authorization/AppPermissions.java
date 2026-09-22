@@ -334,15 +334,21 @@ public final class AppPermissions {
     public static final PermissionKey JOB_UPDATE = key("job.update");
     public static final PermissionKey JOB_DELETE = key("job.delete");
     /**
-     * Opening the settings, and every tab in it.
+     * Opening the settings screen, and every tab in it - and nothing else.
      * <p>
      * There were four more keys beside this one - {@code setting.company.show},
      * {@code setting.other.show}, {@code setting.items.show} and {@code setting.shows.show} - and
-     * nothing read any of them: all four tabs, and the sidebar button, ask this key
-     * ({@code SettingButtons} in four places, {@code MainScreenController}). They are gone rather
-     * than wired, because which tabs a shop wants apart is a decision nobody has taken, and four
+     * nothing read any of them: all four tabs, and the sidebar button, ask this key. They are gone
+     * rather than wired, because which tabs a shop wants apart is a decision nobody has taken, and four
      * tick boxes that do nothing are worse than none. What the settings screen does grant separately
      * is what leaves the machine: {@link #SETTING_BACKUP_SHOW} and {@link #BACKUP_RESTORE}.
+     * <p>
+     * <b>It used to be the whole sidebar section called "settings" as well.</b> The section was
+     * hidden without it, and with it the section's home, about, delete-data and close buttons were
+     * all asking this one key - so a cashier given only their own shift screen could not reach it,
+     * and one given this key to reach it could also wipe the database. The section now shows whenever
+     * one of its buttons opens, and each button asks its own key: the delete-data button
+     * {@link #SETTING_DATA_DELETE}, the shift screen {@link #SHIFT_SELF_VIEW}.
      */
     public static final PermissionKey SETTING_SHOW = key("setting.show");
     public static final PermissionKey COMPANY_UPDATE = key("company.update");
@@ -367,6 +373,20 @@ public final class AppPermissions {
      * screen, and it can be taken away without taking backups away with it.
      */
     public static final PermissionKey BACKUP_RESTORE = key("backup.restore");
+    /**
+     * Emptying the program's tables - the "delete data" screen.
+     * <p>
+     * It hung off {@link #SETTING_SHOW}, so opening the settings was also the right to wipe the
+     * database, and nothing in {@code WipeService} asked anything at all: the one lock was a password
+     * written into the program. A cashier given the settings to change a printer could empty the
+     * shop's books. The key is asked by the sidebar button and by {@code WipeService.run} itself.
+     * <p>
+     * No migration grants it: a new key reaches {@code SYSTEM_ADMIN} through the start-up
+     * synchronisation and nobody else, on purpose - unlike {@code setting.backup.show}, which V39 gave
+     * to every holder of {@code setting.show}, this is the one ability nobody should keep by accident.
+     * DELETE derives {@code CRITICAL}.
+     */
+    public static final PermissionKey SETTING_DATA_DELETE = key("setting.data.delete");
     /**
      * Who may decide whether the home screen shows the day's totals - which is to say,
      * who may let the staff standing at that screen read the revenue.

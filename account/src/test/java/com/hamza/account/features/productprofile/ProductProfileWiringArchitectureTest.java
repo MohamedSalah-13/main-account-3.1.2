@@ -25,8 +25,15 @@ class ProductProfileWiringArchitectureTest {
         assertTrue(source.contains("ProductFeatures.SALES_CREATE"));
         assertTrue(source.contains("ProductFeatures.REPORT_PROFIT_LOSS"));
         assertTrue(source.contains("ProductFeatures.SYSTEM_DELETE_DATA"));
-        assertTrue(source.contains("showCategory(paneSales, ProductFeatures.CATEGORY_SALES)"));
-        assertTrue(source.contains("showCategory(paneReports, ProductFeatures.CATEGORY_REPORTS)"));
+        assertTrue(source.contains("paneSales, ProductFeatures.CATEGORY_SALES"));
+        assertTrue(source.contains("paneReports, ProductFeatures.CATEGORY_REPORTS"));
+        // A hidden section leaves the accordion's list: the accordion's skin lays out every pane it
+        // holds whatever its visible or managed flag says, so a pane only made invisible left a gap.
+        assertTrue(source.contains("sideAccordion.getPanes().setAll("));
+        // A section is not hidden by one permission: the settings section was, by setting.show, and
+        // took the cashier's own shift screen - which has a key of its own - with it.
+        assertFalse(source.contains("applyPermissionBasedDisable(pane"),
+                "a sidebar section shows when one of its commands opens, not when one key is held");
         assertTrue(menuButton.contains("productFeatures.require(feature)"));
         assertTrue(source.contains("button.isVisible() && button.isManaged()"));
 

@@ -19,12 +19,12 @@ public final class JasperReportPaths {
     }
 
     public static class Shift {
-        // تقرير غلق الوردية — طباعة حرارية 80mm
-        public static final String Z_REPORT_80 = BASE_PATH + "shift-z-report-80mm.jrxml";
-        // تقرير لحظي — طباعة حرارية 80mm
-        public static final String X_REPORT_80 = BASE_PATH + "shift-x-report-80mm.jrxml";
-        public static final String Z_REPORT_80_RESOURCE = "/reports/ar/shift-z-report-80mm.jrxml";
-        public static final String X_REPORT_80_RESOURCE = "/reports/ar/shift-x-report-80mm.jrxml";
+        /**
+         * The X and the Z report on the 80mm thermal printer, one template for both: which rows it
+         * prints is {@code ShiftReportLayout}'s decision. Read from the class path, not from the
+         * {@code reports/} folder, so a program started outside its own folder still finds it.
+         */
+        public static final String REPORT_80_RESOURCE = "/reports/ar/shift-report-80mm.jrxml";
     }
 }
 
