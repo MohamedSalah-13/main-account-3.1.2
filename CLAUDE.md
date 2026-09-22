@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,464 tests** with 256 skipped (below) — the figure `mvn clean test`
+**3,468 tests** with 256 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-22 after the shift reports and the sidebar's settings section. What is
 genuinely covered:
 
@@ -2393,9 +2393,15 @@ columns of their own; and **a Jasper bean's package must be exported in `module-
 first X report printed from the running program failed with `IllegalAccessException` while every test,
 filling the template on the class path, passed. `ShiftReportTemplateFillTest` fills the real file under
 an Arabic locale, checks no two elements overlap and each label is right of its figure, and reads
-`module-info.java` for the export. The blind X report leaves out the expected balance and the two
-totals, as the screen does; the movements stay, as they do on screen - whether a blind close should
-hide them too is a decision, not a fix.
+`module-info.java` for the export.
+
+**A blind close withholds every amount, on the paper and on the screen** (`ShiftScreenSummary`, and
+`ShiftReportLayout`'s blind branch). Both used to hide the expected balance and the difference and show
+the five movement figures that add up to them - so the number being kept from the cashier was one
+addition away, on the screen they count in front of and on the paper handed to them; the closing
+dialog's blind wording recited the same five. What a blind X report and the summary panel now carry is
+what the cashier knows anyway: the shift's details, how many invoices were rung up, and the opening
+float. The paper's subtitle says why it is bare, or an empty report reads as a broken one.
 
 One consequence is accepted rather than fixed: on the 80mm receipt layout the amount columns are
 35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number

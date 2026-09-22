@@ -32,9 +32,12 @@ import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
  * balance, the expected balance, what was counted and the difference. The old paper printed the
  * expected balance before the movements that make it up.
  * <p>
- * Under a blind close the X report leaves out the expected balance, as the shift screen does, and the
- * two totals as well - they are the one step between the rows on the paper and the figure the cashier
- * is not meant to be shown.
+ * <b>Under a blind close the X report carries no amount but the opening balance.</b> It used to print
+ * every movement and hide only the expected balance and the two totals - which left that figure one
+ * addition away, on the paper handed to the person it is being kept from. What remains is what the
+ * cashier knows anyway: the shift's details, how many invoices they rang up, and the float they were
+ * given. {@link ShiftScreenSummary} says the same for the screen, and the closing dialog's blind
+ * wording no longer recites the five movement figures either.
  * <p>
  * No JavaFX and no database: {@link Columns#money} is a static formatter, and the caller hands over
  * the report, the moment of printing, who printed it and the labels.
@@ -66,8 +69,10 @@ public record ShiftReportLayout(String title, String subtitle, List<Row> rows, S
         UserShift shift = data.shift();
         ShiftSummary summary = data.summary();
         boolean closing = data.reportType() == ShiftReportType.Z;
-        // A blind X report hides the expected balance; the totals go with it (see the class comment).
-        boolean totals = data.showExpectedBalance();
+        // A blind close withholds every amount that leads to the expected balance, so under it the
+        // paper carries no movements at all - see ShiftScreenSummary, which says the same for the
+        // screen. Printing the movements while hiding their total left the figure one addition away.
+        boolean amounts = data.showExpectedBalance();
 
         List<Row> rows = new ArrayList<>();
         rows.add(Row.line(labels.text("user.shift.report.row.shift"), String.valueOf(shift.getId())));
@@ -79,24 +84,23 @@ public record ShiftReportLayout(String title, String subtitle, List<Row> rows, S
         }
         rows.add(Row.line(labels.text("user.shift.report.row.invoices"), String.valueOf(summary.getInvoicesCount())));
 
-        rows.add(Row.heading(labels.text("user.shift.report.section.in")));
-        rows.add(Row.line(labels.text("user.shift.report.row.sales"), money(summary.getTotalSales())));
-        rows.add(Row.line(labels.text("user.shift.report.row.deposits"), money(summary.getTotalDeposits())));
-        rows.add(Row.line(labels.text("user.shift.report.row.other.in"), money(summary.getOtherIn())));
-        if (totals) {
+        if (amounts) {
+            rows.add(Row.heading(labels.text("user.shift.report.section.in")));
+            rows.add(Row.line(labels.text("user.shift.report.row.sales"), money(summary.getTotalSales())));
+            rows.add(Row.line(labels.text("user.shift.report.row.deposits"), money(summary.getTotalDeposits())));
+            rows.add(Row.line(labels.text("user.shift.report.row.other.in"), money(summary.getOtherIn())));
             rows.add(Row.total(labels.text("user.shift.report.row.total.in"), money(summary.getTotalIn())));
-        }
 
-        rows.add(Row.heading(labels.text("user.shift.report.section.out")));
-        rows.add(Row.line(labels.text("user.shift.report.row.returns"), money(summary.getTotalSalesReturns())));
-        rows.add(Row.line(labels.text("user.shift.report.row.expenses"), money(summary.getTotalExpenses())));
-        rows.add(Row.line(labels.text("user.shift.report.row.withdrawals"), money(summary.getTotalWithdrawals())));
-        rows.add(Row.line(labels.text("user.shift.report.row.other.out"), money(summary.getOtherOut())));
-        if (totals) {
+            rows.add(Row.heading(labels.text("user.shift.report.section.out")));
+            rows.add(Row.line(labels.text("user.shift.report.row.returns"), money(summary.getTotalSalesReturns())));
+            rows.add(Row.line(labels.text("user.shift.report.row.expenses"), money(summary.getTotalExpenses())));
+            rows.add(Row.line(labels.text("user.shift.report.row.withdrawals"), money(summary.getTotalWithdrawals())));
+            rows.add(Row.line(labels.text("user.shift.report.row.other.out"), money(summary.getOtherOut())));
             rows.add(Row.total(labels.text("user.shift.report.row.total.out"), money(summary.getTotalOut())));
         }
 
         rows.add(Row.heading(labels.text("user.shift.report.section.cash")));
+        // The float the cashier was handed, which they know and the screen's header shows anyway.
         rows.add(Row.line(labels.text("user.shift.report.row.opening"), money(summary.getOpenBalance())));
         if (data.showExpectedBalance()) {
             rows.add(closing
@@ -125,7 +129,10 @@ public record ShiftReportLayout(String title, String subtitle, List<Row> rows, S
                 : List.of();
         return new ShiftReportLayout(
                 labels.text(closing ? "user.shift.report.z.title" : "user.shift.report.x.title"),
-                labels.text(closing ? "user.shift.report.z.subtitle" : "user.shift.report.x.subtitle"),
+                // Written out rather than resolved from a variable: a key a static check cannot see
+                // is a key nothing checks against the three bundles.
+                labels.text(closing ? "user.shift.report.z.subtitle"
+                        : amounts ? "user.shift.report.x.subtitle" : "user.shift.report.x.subtitle.blind"),
                 rows, notes, labels.text("user.shift.report.printed"), printed, signatures);
     }
 

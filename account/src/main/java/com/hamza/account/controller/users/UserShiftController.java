@@ -16,6 +16,7 @@ import com.hamza.account.features.shift.CloseBalanceEntry;
 import com.hamza.account.features.shift.CashierShiftScreenService;
 import com.hamza.account.features.shift.CashierShiftScreenService.CashierShiftScreenData;
 import com.hamza.account.features.shift.ShiftCloseAttempt;
+import com.hamza.account.features.shift.ShiftScreenSummary;
 import com.hamza.account.features.shift.ShiftStatus;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -286,40 +287,32 @@ public class UserShiftController {
 
     private void showLiveSummary(CashierShiftScreenData data) {
         ShiftSummary summary = data.summary();
-        if (summary == null) {
-            clearSummaryLabels();
-            return;
-        }
-        BigDecimal closeBalance = parseBalanceSafe(txtCloseBalance.getText(), summary.getOpenBalance());
-        BigDecimal difference = summary.calculateDifference(closeBalance);
+        BigDecimal counted = summary == null ? BigDecimal.ZERO
+                : parseBalanceSafe(txtCloseBalance.getText(), summary.getOpenBalance());
+        // What a blind close withholds is decided in one place, for the screen and the paper alike.
+        showSummary(ShiftScreenSummary.of(summary, counted, data.blindClose()));
+    }
 
-        labelSummaryTotalSales.setText(format(summary.getTotalSales()));
-        labelSummaryReturns.setText(format(summary.getTotalSalesReturns()));
-        labelSummaryExpenses.setText(format(summary.getTotalExpenses()));
-        labelSummaryExpected.setText(data.blindClose() ? "-" : format(summary.getExpectedBalance()));
-        labelSummaryDifference.setText(data.blindClose() ? "-" : format(difference));
-        labelSummaryInvoices.setText(String.valueOf(summary.getInvoicesCount()));
-        labelSummaryOtherIn.setText(format(summary.getOtherIn()));
-        labelSummaryOtherOut.setText(format(summary.getOtherOut()));
-        if (!data.blindClose()) {
-            setSemanticStyle(labelSummaryDifference, difference.signum() < 0
-                    ? "danger-value" : (difference.signum() > 0 ? "info-value" : "success-value"));
+    private void showSummary(ShiftScreenSummary view) {
+        labelSummaryTotalSales.setText(view.sales());
+        labelSummaryReturns.setText(view.returns());
+        labelSummaryExpenses.setText(view.expenses());
+        labelSummaryExpected.setText(view.expected());
+        labelSummaryDifference.setText(view.difference());
+        labelSummaryInvoices.setText(view.invoices());
+        labelSummaryOtherIn.setText(view.otherIn());
+        labelSummaryOtherOut.setText(view.otherOut());
+        if (view.tone() != ShiftScreenSummary.Tone.NONE) {
+            setSemanticStyle(labelSummaryDifference, switch (view.tone()) {
+                case SHORT -> "danger-value";
+                case OVER -> "info-value";
+                default -> "success-value";
+            });
         }
     }
 
     private void clearSummaryLabels() {
-        labelSummaryTotalSales.setText("-");
-        labelSummaryReturns.setText("-");
-        labelSummaryExpenses.setText("-");
-        labelSummaryExpected.setText("-");
-        labelSummaryDifference.setText("-");
-        labelSummaryInvoices.setText("-");
-        labelSummaryOtherIn.setText("-");
-        labelSummaryOtherOut.setText("-");
-    }
-
-    private String format(BigDecimal v) {
-        return String.format("%,.2f", v);
+        showSummary(ShiftScreenSummary.none());
     }
 
     private BigDecimal parseBalanceSafe(String text, BigDecimal fallback) {
@@ -485,9 +478,10 @@ public class UserShiftController {
     private String buildCloseConfirmMessage(ShiftSummary s, BigDecimal closeBalance,
                                             BigDecimal diff, boolean blindClose) {
         if (blindClose) {
+            // The five movement figures used to be in this message too, which handed the cashier
+            // the expected balance on the way to asking them to count without it.
             return String.format(LanguageManager.getInstance().getString("user.shift.close.confirm.blind"),
-                    s.getTotalSales(), s.getTotalSalesReturns(), s.getTotalExpenses(),
-                    s.getOtherIn(), s.getOtherOut(), closeBalance);
+                    s.getInvoicesCount(), closeBalance);
         }
         String diffLabel;
         if (diff.abs().compareTo(new BigDecimal("0.005")) < 0) diffLabel = LanguageManager.getInstance().getString("user.shift.diff.matched");
