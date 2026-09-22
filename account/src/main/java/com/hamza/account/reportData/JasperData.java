@@ -68,7 +68,18 @@ public class JasperData {
     public void printJasperResourceOrThrow(String resourcePath, String title,
                                            HashMap<String, Object> parameters,
                                            int copies, String printerName) throws JRException {
-        processJasperPrint(title, prepareJasperResource(resourcePath, parameters), copies, printerName);
+        printJasperResourceOrThrow(resourcePath, title, parameters, new JREmptyDataSource(), copies, printerName);
+    }
+
+    /**
+     * A packaged template whose detail band is filled from {@code rows}, one band per row - for a
+     * paper that is a list, such as the shift reports.
+     */
+    public void printJasperResourceOrThrow(String resourcePath, String title,
+                                           HashMap<String, Object> parameters, JRDataSource rows,
+                                           int copies, String printerName) throws JRException {
+        processJasperPrint(title, JasperFillManager.fillReport(CompiledReports.resource(resourcePath), parameters, rows),
+                copies, printerName);
     }
 
     /**
@@ -110,12 +121,6 @@ public class JasperData {
     // Compiled once per template, not per print: see CompiledReports.
     private JasperPrint prepareJasperPrint(String nameUrl, HashMap<String, Object> parameters) throws JRException {
         return JasperFillManager.fillReport(CompiledReports.file(nameUrl), parameters, new JREmptyDataSource());
-    }
-
-    private JasperPrint prepareJasperResource(String resourcePath, HashMap<String, Object> parameters)
-            throws JRException {
-        return JasperFillManager.fillReport(CompiledReports.resource(resourcePath), parameters,
-                new JREmptyDataSource());
     }
 
     private JasperPrint prepareJasperPrintWithConnection(String nameUrl, HashMap<String, Object> parameters, Connection connection) throws JRException {

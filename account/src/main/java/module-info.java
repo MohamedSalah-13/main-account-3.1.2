@@ -188,4 +188,7 @@ module com.hamza.account {
     // receipt under the module launch fails with IllegalAccessException. Public getters need
     // an export, not an opens, so the package is not opened to reflection.
     exports com.hamza.account.features.invoice;
+    // The shift reports' rows (ShiftReportLayout.Row), for the same reason - found the first time
+    // an X report was printed from the running program; every test had passed on the class path.
+    exports com.hamza.account.features.shift;
 }

@@ -386,3 +386,31 @@ maximised, which is what hid the defect the first time):
 **What will happen on the first real start-up of this build**: `synchronizeCatalog` rewrites
 `module_key` for all 162 keys and sets `enabled = 0` on the eight that are gone. Nothing else changes,
 and nothing is deleted.
+
+## 6. The sidebar's settings section (2026-09-22)
+
+§4.6 asked which settings **tabs** deserve a key. The sidebar had the same question one level up and
+answered it with one key for everything: the section was hidden without `setting.show`, and with it
+Home, About, Delete data and the section itself all asked that key. So a cashier who should only open
+and close their own shift - `shift.self.view`/`.open`/`.close` - could not reach the shift screen, and
+one given `setting.show` to reach it could also open the delete-data screen, behind nothing but a
+password written into the program.
+
+Decided with the user, and built:
+
+- **`setting.show` is the settings screen and nothing else.** Home, About and Close are
+  `PUBLIC_ACCESS`; Close had been asking `user.shift.manage` since `1efc3b03`.
+- **`setting.data.delete` is new, and no migration grants it.** `SYSTEM_ADMIN` receives it from
+  `synchronizeCatalog`; every other role has to be given it by hand. This departs from "nobody loses
+  an ability on upgrade" on purpose - it is the one ability nobody should keep by accident - and
+  `WipeService.run` asks it, where it had asked nothing. DELETE derives `CRITICAL`.
+- **The shift administration opens for any of the five keys its tabs read**, not for everybody.
+- **A section shows when a command in it opens, and is otherwise removed** - treasury for a cashier
+  with no treasury key, employees for one with no key to any of its four buttons. Inside a shown
+  section a denied command stays visible and disabled, as before.
+
+Seen on a copy of the development database as `soha` with the four own-shift keys and no
+`setting.show`: five sections, no gaps, the settings section's four open commands enabled and its
+four others disabled, a shift opened, an X report printed, the shift closed and its Z printed.
+**Not seen:** English, and a shop whose owner is not `SYSTEM_ADMIN` and so lost the wipe on upgrade -
+the roles screen is where they get it back.

@@ -1,5 +1,7 @@
 package com.hamza.account.wipe;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
@@ -41,6 +43,8 @@ public class WipeService extends AbstractDao<Void> {
      * @return how many statements ran
      */
     public int run(WipePlan plan) throws DaoException {
+        // Before anything, even an empty plan: the screen's button is only a hint.
+        AuthorizationGuard.require(AppPermissions.SETTING_DATA_DELETE);
         if (plan.isEmpty()) {
             return 0;
         }

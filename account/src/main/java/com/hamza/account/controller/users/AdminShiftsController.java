@@ -1180,7 +1180,7 @@ public class AdminShiftsController {
     private boolean autoPrintApprovedZ(int shiftId) {
         try {
             if (policies.current().autoPrintZ()) {
-                printReports.printShiftZReportOrThrow(shiftReports.buildApprovedZReport(shiftId));
+                printReports.printShiftReportOrThrow(shiftReports.buildApprovedZReport(shiftId));
             }
             return true;
         } catch (Exception e) {
@@ -1355,7 +1355,7 @@ public class AdminShiftsController {
         updateReprintState();
         CompletableFuture.runAsync(() -> {
             try {
-                printReports.printShiftZReportOrThrow(shiftReports.buildZReport(selected.getId()));
+                printReports.printShiftReportOrThrow(shiftReports.buildZReport(selected.getId()));
             } catch (Exception e) {
                 throw new CompletionException(e);
             }

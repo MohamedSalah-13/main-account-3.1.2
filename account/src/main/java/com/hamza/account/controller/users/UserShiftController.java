@@ -386,7 +386,7 @@ public class UserShiftController {
         CompletableFuture.runAsync(() -> {
             try {
                 var data = shiftReportService.buildXReport(currentUserId);
-                printReports.printShiftXReportOrThrow(data);
+                printReports.printShiftReportOrThrow(data);
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
@@ -453,7 +453,7 @@ public class UserShiftController {
                 if (!attempt.pendingApproval() && autoPrintZ) {
                     try {
                         var zData = shiftReportService.buildOwnZReport(attempt.shiftId(), currentUserId);
-                        printReports.printShiftZReportOrThrow(zData);
+                        printReports.printShiftReportOrThrow(zData);
                     } catch (Exception printError) {
                         printed = false;
                         log.error("Error auto-printing Z-Report", printError);

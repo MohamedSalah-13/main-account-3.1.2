@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The X and Z shift reports on the 80mm thermal printer - one template for both.
+
+     Every row arrives from ShiftReportLayout as text: the label, its figure, and what kind of row it is
+     (HEADING, LINE or TOTAL). Nothing here formats, adds or decides which rows apply - a row that does
+     not apply to this report is simply not in the data source, so it leaves no gap.
+
+     Right to left by placement: the label is the right-hand column and its figure the left-hand one.
+     The figures are right-aligned within their column so the decimal points of a column of money stand
+     one above the other.
+
+     It replaced shift-x-report-80mm.jrxml and shift-z-report-80mm.jrxml, which placed the labels on the
+     left, printed doubles through a pattern that the report's Arabic locale turned into Arabic-Indic
+     digits, and drew the treasury row across the rule beneath it. -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="shift-report-80mm" pageWidth="226" pageHeight="842" columnWidth="204" leftMargin="11" rightMargin="11" topMargin="6" bottomMargin="6" isIgnorePagination="true" whenNoDataType="AllSectionsNoDetail" uuid="4b0f6a52-8c1d-4e7a-9d35-2f61c0b8a917">
+	<style name="Label" hTextAlign="Right" vTextAlign="Middle" fontSize="8">
+		<box rightPadding="2"/>
+		<conditionalStyle>
+			<conditionExpression><![CDATA["TOTAL".equals($F{kind})]]></conditionExpression>
+			<style isBold="true"/>
+		</conditionalStyle>
+	</style>
+	<style name="Value" hTextAlign="Right" vTextAlign="Middle" fontSize="8">
+		<box rightPadding="2"/>
+		<conditionalStyle>
+			<conditionExpression><![CDATA["TOTAL".equals($F{kind})]]></conditionExpression>
+			<style isBold="true"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="compName" class="java.lang.String"/>
+	<parameter name="reportTitle" class="java.lang.String"/>
+	<parameter name="reportSubtitle" class="java.lang.String"/>
+	<parameter name="notes" class="java.lang.String"/>
+	<parameter name="printedLabel" class="java.lang.String"/>
+	<parameter name="printed" class="java.lang.String"/>
+	<parameter name="signature1" class="java.lang.String"/>
+	<parameter name="signature2" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="label" class="java.lang.String"/>
+	<field name="value" class="java.lang.String"/>
+	<field name="kind" class="java.lang.String"/>
+	<title>
+		<band height="56" splitType="Stretch">
+			<textField textAdjust="ScaleFont">
+				<reportElement x="0" y="0" width="204" height="18" uuid="0c2b7e61-5d4a-4f38-a1e9-6b8d2c3f7a05"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{compName}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="ScaleFont">
+				<reportElement x="0" y="19" width="204" height="17" uuid="7e4d1a93-2b6c-4f05-8e71-c9a3d5b20f46"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{reportTitle}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="ScaleFont">
+				<reportElement x="0" y="36" width="204" height="14" uuid="a91f3c28-6e0b-4d74-b5a2-18c7e4d09b63"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{reportSubtitle}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="53" width="204" height="1" uuid="d35e8b17-9a4c-4e2f-b061-7c5a2e9f1d84"/>
+			</line>
+		</band>
+	</title>
+	<detail>
+		<band height="16" splitType="Prevent">
+			<!-- A section's name, across the width, under a rule. -->
+			<textField textAdjust="ScaleFont">
+				<reportElement x="0" y="0" width="204" height="16" uuid="5f8a0c3e-1d27-4b69-a4e5-93b6c7d2e018">
+					<printWhenExpression><![CDATA["HEADING".equals($F{kind})]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="2" rightPadding="2">
+					<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{label}]]></textFieldExpression>
+			</textField>
+			<!-- What a section comes to: a dashed rule over the row. -->
+			<line>
+				<reportElement x="0" y="0" width="204" height="1" uuid="b6c4e2a7-0f93-4d18-8e5b-2a7d9c1f3e60">
+					<printWhenExpression><![CDATA["TOTAL".equals($F{kind})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5" lineStyle="Dashed"/>
+				</graphicElement>
+			</line>
+			<textField textAdjust="ScaleFont">
+				<reportElement style="Label" x="92" y="0" width="112" height="16" uuid="2e9d7b40-c8a1-4f56-9b03-e6f41a5c8d72">
+					<printWhenExpression><![CDATA[!"HEADING".equals($F{kind})]]></printWhenExpression>
+				</reportElement>
+				<textFieldExpression><![CDATA[$F{label}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="ScaleFont">
+				<reportElement style="Value" x="0" y="0" width="88" height="16" uuid="c07a5e19-3b8d-4a62-8f4e-d1b92c6e0a35">
+					<printWhenExpression><![CDATA[!"HEADING".equals($F{kind})]]></printWhenExpression>
+				</reportElement>
+				<textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="80" splitType="Stretch">
+			<line>
+				<reportElement positionType="Float" x="0" y="2" width="204" height="1" uuid="e84b2d06-7c15-4a93-b2f8-5d0e9a3c7b41"/>
+			</line>
+			<textField textAdjust="StretchHeight">
+				<reportElement positionType="Float" x="0" y="5" width="204" height="14" isRemoveLineWhenBlank="true" uuid="9a3f6d82-4e0b-4c17-a5d9-0b7e2f84c613">
+					<printWhenExpression><![CDATA[$P{notes} != null && !$P{notes}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right" verticalAlignment="Top">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{notes}]]></textFieldExpression>
+			</textField>
+			<!-- The label and the date in columns of their own, as every row is: in one line, a date
+			     after an Arabic word is reversed by the bidi pass and prints 22-09-2026. -->
+			<textField textAdjust="ScaleFont">
+				<reportElement positionType="Float" x="92" y="21" width="112" height="13" uuid="61d0b8e4-2a7f-4c39-9e15-a4c3f07d2b98"/>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{printedLabel}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="ScaleFont">
+				<reportElement positionType="Float" x="0" y="21" width="88" height="13" uuid="8d2f5a17-c6e3-4b90-a148-e3b07c9d5f21"/>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{printed}]]></textFieldExpression>
+			</textField>
+			<!-- A Z report is signed: by whoever counted the drawer and by whoever took it. -->
+			<textField>
+				<reportElement positionType="Float" x="0" y="44" width="204" height="14" isRemoveLineWhenBlank="true" uuid="f2a85c3d-6b91-4e07-8d4a-3c7e0b19f5a6">
+					<printWhenExpression><![CDATA[$P{signature1} != null]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{signature1} + "  ................................"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="0" y="64" width="204" height="14" isRemoveLineWhenBlank="true" uuid="3c6e19a0-d84b-4f72-a51e-7b2d9f0c8e34">
+					<printWhenExpression><![CDATA[$P{signature2} != null]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{signature2} + "  ................................"]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

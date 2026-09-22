@@ -157,8 +157,7 @@
                 <filtering>false</filtering>
                 <includes>
                     <include>ar/barcode-one-label.jrxml</include>
-                    <include>ar/shift-x-report-80mm.jrxml</include>
-                    <include>ar/shift-z-report-80mm.jrxml</include>
+                    <include>ar/shift-report-80mm.jrxml</include>
                 </includes>
             </resource>
         </resources>

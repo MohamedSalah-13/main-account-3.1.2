@@ -9,6 +9,7 @@ import com.hamza.account.features.invoice.InvoicePdfLayout;
 import com.hamza.account.features.invoice.InvoicePrintDocument;
 import com.hamza.account.features.invoice.InvoiceReceiptLayout;
 import com.hamza.account.features.invoice.MultiInvoicePdfLayout;
+import com.hamza.account.features.shift.ShiftReportLayout;
 import com.hamza.account.features.export.DocumentPdfPage;
 import com.hamza.account.features.export.PdfExportService;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -19,15 +20,12 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.io.File;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.controlsfx.dateTime.DateUtils.DATE_FORMATTER;
-import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 
 public class Print_Reports extends ReportCompany {
 
@@ -159,84 +157,36 @@ public class Print_Reports extends ReportCompany {
     // ==================== Shift Reports ====================
 
     /**
-     * طباعة تقرير X (لحظي) - 80mm حراري.
-     */
-    public void printShiftXReport(ShiftReportService.ShiftReportData data) {
-        HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperResource(
-                JasperReportPaths.Shift.X_REPORT_80_RESOURCE,
-                LanguageManager.getInstance().getString("user.shift.report.x.title"), map, 1, printerNameThermal);
-    }
-
-    public void printShiftXReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
-        HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperResourceOrThrow(
-                JasperReportPaths.Shift.X_REPORT_80_RESOURCE,
-                LanguageManager.getInstance().getString("user.shift.report.x.title"),
-                map, 1, printerNameThermal);
-    }
-
-    /**
-     * طباعة تقرير Z (غلق) - 80mm حراري.
-     */
-    public void printShiftZReport(ShiftReportService.ShiftReportData data) {
-        HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperResource(
-                JasperReportPaths.Shift.Z_REPORT_80_RESOURCE,
-                LanguageManager.getInstance().getString("user.shift.report.z.title"), map, 1, printerNameThermal);
-    }
-
-    /**
-     * The Z report printed as a consequence of a close, not as the operation itself.
+     * The X or the Z report on the 80mm thermal printer - which one is {@code data.reportType()}.
      * <p>
-     * The close has already committed by the time this runs, so a failure here must not be
-     * announced as a failed operation - the caller says what it means. Use this on the close
-     * path and {@link #printShiftZReport} for a reprint the user actually asked for.
+     * It throws rather than telling the user, because it is also printed as a consequence of a close
+     * that has already committed: a failure there must not read as a failed close, so every caller
+     * says what a failure means where it is (see {@link JasperData#printJasperPrintOrThrow}).
      */
-    public void printShiftZReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
-        HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperResourceOrThrow(
-                JasperReportPaths.Shift.Z_REPORT_80_RESOURCE,
-                LanguageManager.getInstance().getString("user.shift.report.z.title"), map, 1, printerNameThermal);
+    public void printShiftReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
+        Users user = CurrentUser.getOrNull();
+        ShiftReportLayout layout = ShiftReportLayout.of(data, LocalDateTime.now(),
+                user == null ? "" : user.getUsername(), LanguageManager.getInstance()::getString);
+        HashMap<String, Object> map = getCompany();
+        map.putAll(shiftReportParameters(layout));
+        jasperData.printJasperResourceOrThrow(JasperReportPaths.Shift.REPORT_80_RESOURCE, layout.title(), map,
+                new JRBeanCollectionDataSource(layout.rows()), 1, printerNameThermal);
     }
 
-//    private HashMap<String, Object> buildShiftReportMap(ShiftShiftReportDataAlias) {
-//        // (placeholder - see real helper below)
-//        return new HashMap<>();
-//    }
-
-    private HashMap<String, Object> buildShiftReportMap(ShiftReportService.ShiftReportData data) {
-        HashMap<String, Object> map = getCompany();
-        var shift = data.shift();
-        var summary = data.summary();
-        BigDecimal expected = summary.getExpectedBalance();
-        BigDecimal diff = data.reportType() == ShiftReportService.ShiftReportType.Z
-                ? summary.calculateDifference(shift.getCloseBalance())
-                : BigDecimal.ZERO;
-
-        map.put("reportType", data.reportType().label());
-        map.put("showExpectedBalance", data.showExpectedBalance());
-        map.put("showActualBalance", data.showActualBalance());
-        map.put("showDifference", data.showDifference());
-        map.put("printTime", data.printTime().format(DATE_TIME_FORMATTER));
-        map.put("shiftId", shift.getId());
-        map.put("username", shift.getUsername());
-        map.put("treasuryName", shift.getTreasuryName());
-        map.put("openTime", shift.getOpenTime() == null ? "" : shift.getOpenTime().format(DATE_TIME_FORMATTER));
-        map.put("closeTime", shift.getCloseTime() == null ? "-" : shift.getCloseTime().format(DATE_TIME_FORMATTER));
-        map.put("openBalance", shift.getOpenBalance().doubleValue());
-        map.put("closeBalance", shift.getCloseBalance().doubleValue());
-        map.put("totalSales", summary.getTotalSales().doubleValue());
-        map.put("totalSalesReturns", summary.getTotalSalesReturns().doubleValue());
-        map.put("totalExpenses", summary.getTotalExpenses().doubleValue());
-        map.put("totalDeposits", summary.getTotalDeposits().doubleValue());
-        map.put("totalWithdrawals", summary.getTotalWithdrawals().doubleValue());
-        map.put("otherIn", summary.getOtherIn().doubleValue());
-        map.put("otherOut", summary.getOtherOut().doubleValue());
-        map.put("invoicesCount", summary.getInvoicesCount());
-        map.put("expectedBalance", expected.doubleValue());
-        map.put("difference", diff.doubleValue());
-        map.put("notes", shift.getNotes() == null ? "" : shift.getNotes());
+    /**
+     * Everything the shift template reads as a parameter except the company name, which
+     * {@link #getCompany()} adds; the rows are its data source. Separate so a test can fill the real
+     * template with it and no database.
+     */
+    public static HashMap<String, Object> shiftReportParameters(ShiftReportLayout layout) {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("reportTitle", layout.title());
+        map.put("reportSubtitle", layout.subtitle());
+        map.put("notes", layout.notes());
+        map.put("printedLabel", layout.printedLabel());
+        map.put("printed", layout.printed());
+        map.put("signature1", layout.signatures().isEmpty() ? null : layout.signatures().get(0));
+        map.put("signature2", layout.signatures().size() < 2 ? null : layout.signatures().get(1));
         return map;
     }
 

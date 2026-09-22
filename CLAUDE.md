@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,446 tests** with 256 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-22 for 4.10.0, with the reports item closed. What is
+**3,464 tests** with 256 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-22 after the shift reports and the sidebar's settings section. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -528,6 +528,25 @@ using the wrong one is the mistake to avoid:
   permission through `PermissionLabels.describe` - it passed the key, and "stock.count.create" sat in
   an Arabic refusal until an ordinary user met it on screen. It belongs in the service
   layer, and there are ~57 calls to it in `service/` today.
+
+**A sidebar section shows when one of its commands opens, and each command asks its own key.** The
+settings section used to be hidden without `setting.show`, and with it Home, About, Delete data and
+the section itself all asked that key - so a cashier given only their own shift screen
+(`shift.self.view`) could not reach it, and one given `setting.show` to reach it could also open the
+delete-data screen. `setting.show` now opens the settings **screen** and nothing else; Home, About and
+Close are `PUBLIC_ACCESS` (Close asked `user.shift.manage` since `1efc3b03`, the key meant for the
+shift administration button, which was `PUBLIC_ACCESS` - the two the wrong way round); the shift
+administration opens for any of the five keys its tabs read; and wiping the tables is
+**`setting.data.delete`**, granted by no migration - `SYSTEM_ADMIN` gets it from the start-up
+synchronisation and nobody keeps it by accident. `WipeService.run` asks it before anything, where
+until then it asked nothing at all and the only lock was a password written into the program.
+`MainScreenController.applySectionVisibility` shows a section when the edition carries it **and** a
+button in it is enabled, so a section with nothing this user can open - treasury for a cashier - is
+gone rather than a column of grey buttons. **It leaves the accordion's list rather than being made
+invisible**: the `Accordion` skin lays out every pane it holds and reads neither `visible` nor
+`managed`, so the employees section, hidden by one key, had been leaving an empty slot in every
+cashier's sidebar - seen on screen, as was every part of this. `SettingButtonsPermissionTest` pins each
+button's key and the wipe's refusal.
 
 **Hiding a button is not enforcement.** The old system only hid buttons, so anything that reached a
 service another way was unguarded. `AuthorizationArchitectureTest` is what keeps that from
@@ -2357,6 +2376,26 @@ invoice screen read the *account* thermal setting. `ReceiptTemplateFillTest` fil
 **`JasperData` compiles each template once** (`CompiledReports`), recompiling a file in `reports/` only
 when it changes on disk. Every print used to load and compile its `.jrxml` first: 1.3 s for the first
 receipt after the program opened and 110-210 ms for each one after, against a 40-70 ms fill.
+
+**The X and Z shift reports are rows, the receipt's way** (`features/shift/ShiftReportLayout`, one
+template `shift-report-80mm.jrxml` for both). The two templates it replaced placed every label on the
+left and its figure on the right - an Arabic paper printed as if it were English - passed the amounts
+as doubles through a `pattern`, so the Arabic report locale printed `١٠٫٠٠` beside a shift number
+written `2`, left a blank where the X report has no counted cash, drew the treasury row through the
+rule under it, and titled the paper with the English literal `X-Report`. The layout writes every row
+as text (`Columns.money`) in the drawer's arithmetic - in, total in, out, total out, opening, expected,
+counted, difference - and a row that does not apply is not in the list; the template is a detail band
+over those rows with the label on the right. Three things only rendering or running found:
+**the sign of a difference goes in its label** ("الفرق - عجز") and the figure prints unsigned, because
+a minus in a right-to-left line lands on the far side of the number; **a date never follows an Arabic
+word in one field** - "وقت الطباعة 2026-09-22" printed `22-09-2026`, so the label and the date have
+columns of their own; and **a Jasper bean's package must be exported in `module-info.java`** - the
+first X report printed from the running program failed with `IllegalAccessException` while every test,
+filling the template on the class path, passed. `ShiftReportTemplateFillTest` fills the real file under
+an Arabic locale, checks no two elements overlap and each label is right of its figure, and reads
+`module-info.java` for the export. The blind X report leaves out the expected balance and the two
+totals, as the screen does; the movements stay, as they do on screen - whether a blind close should
+hide them too is a decision, not a fix.
 
 One consequence is accepted rather than fixed: on the 80mm receipt layout the amount columns are
 35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number

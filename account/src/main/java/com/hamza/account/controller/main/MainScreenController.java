@@ -43,6 +43,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -76,6 +77,8 @@ public class MainScreenController extends MainItems implements Initializable {
     // Right sidebar (formerly MainRightPaneController / mainRightPane-view.fxml)
     // ------------------------------------------------------------------
     private MenuButtonSetting menuButtonSetting;
+    /** Every sidebar section in the FXML's order; the accordion holds the ones this user can use. */
+    private List<TitledPane> allSections;
     @FXML
     private AnchorPane rightPaneRoot;
     @FXML
@@ -274,31 +277,64 @@ public class MainScreenController extends MainItems implements Initializable {
         // Every signed-in user may log out, regardless of what other permissions they hold.
         menuItemLogout.setDisable(false);
 
-        applyProductProfileVisibility();
-        dontShowData();
+        applySectionVisibility();
         sidebarReady = true;
         configureSidebarShortcuts();
     }
 
-    /** Empty product sections disappear; permission-denied commands remain visible and disabled. */
-    private void applyProductProfileVisibility() {
-        showCategory(paneSales, ProductFeatures.CATEGORY_SALES);
-        showCategory(panePurchase, ProductFeatures.CATEGORY_PURCHASES);
-        showCategory(paneItems, ProductFeatures.CATEGORY_ITEMS);
-        showCategory(paneCustom, ProductFeatures.CATEGORY_CUSTOMERS);
-        showCategory(paneSuppliers, ProductFeatures.CATEGORY_SUPPLIERS);
-        showCategory(paneEmployees, ProductFeatures.CATEGORY_TEAM);
-        showCategory(paneTreasury, ProductFeatures.CATEGORY_TREASURY);
-        showCategory(paneReports, ProductFeatures.CATEGORY_REPORTS);
-        // The section also holds shell commands (Home, About and Close), which are
-        // deliberately always available even when every configurable system screen is absent.
+    /**
+     * A section is shown when the edition carries it and at least one of its commands opens for this
+     * user; inside a shown section a command the user may not use stays visible and disabled.
+     * <p>
+     * Two sections used to be hidden by a single key instead - employees by {@code employee.show},
+     * settings by {@code setting.show} - and that was wrong both ways. The settings section holds the
+     * cashier's own shift screen, which has a key of its own, so a user given the shift screen and not
+     * the settings could not reach it; and a user given the settings could reach everything in the
+     * section, the delete-data screen included. The users list was unreachable the same way for
+     * anybody holding {@code users.show} without {@code employee.show}.
+     * <p>
+     * <b>A hidden section leaves the accordion's list; it is not flagged invisible.</b> The accordion's
+     * skin lays out every pane in its list and asks neither {@code visible} nor {@code managed}, so a
+     * section made invisible left an empty slot the height of its header - seen on screen, signed in as
+     * a cashier, with four such slots down the sidebar. The list is rebuilt from the FXML's order each
+     * time, so a section that comes back returns to its place.
+     * <p>
+     * The settings section always shows: home, about and close are open to everybody.
+     */
+    private void applySectionVisibility() {
+        if (allSections == null) {
+            allSections = List.copyOf(sideAccordion.getPanes());
+        }
+        // No category for the settings section: it also holds shell commands (Home, About and Close),
+        // which are deliberately always available even when every configurable system screen is absent.
+        Map<TitledPane, String> categories = Map.of(
+                paneSales, ProductFeatures.CATEGORY_SALES,
+                panePurchase, ProductFeatures.CATEGORY_PURCHASES,
+                paneItems, ProductFeatures.CATEGORY_ITEMS,
+                paneCustom, ProductFeatures.CATEGORY_CUSTOMERS,
+                paneSuppliers, ProductFeatures.CATEGORY_SUPPLIERS,
+                paneEmployees, ProductFeatures.CATEGORY_TEAM,
+                paneTreasury, ProductFeatures.CATEGORY_TREASURY,
+                paneReports, ProductFeatures.CATEGORY_REPORTS);
+        List<TitledPane> shown = allSections.stream()
+                .filter(section -> inEdition(categories.get(section)) && opensSomething(section))
+                .toList();
+        allSections.stream().filter(section -> !shown.contains(section)).forEach(section -> section.setExpanded(false));
+        if (!sideAccordion.getPanes().equals(shown)) {
+            sideAccordion.getPanes().setAll(shown);
+        }
     }
 
-    private void showCategory(Node node, String categoryKey) {
-        boolean available = productFeatures != null && ProductFeatures.keysInCategory(categoryKey).stream()
-                .anyMatch(productFeatures::isEnabled);
-        node.setVisible(available);
-        node.setManaged(available);
+    private boolean inEdition(String categoryKey) {
+        return categoryKey == null || (productFeatures != null
+                && ProductFeatures.keysInCategory(categoryKey).stream().anyMatch(productFeatures::isEnabled));
+    }
+
+    /** Whether any command in the section is on screen and enabled. */
+    private static boolean opensSomething(TitledPane section) {
+        return section.getContent() instanceof Pane box && box.getChildren().stream()
+                .anyMatch(node -> node instanceof Button button
+                        && button.isVisible() && button.isManaged() && !button.isDisable());
     }
 
     private void setupShiftPolicyVisibility() {
@@ -334,6 +370,7 @@ public class MainScreenController extends MainItems implements Initializable {
         // describe the FXML defaults rather than the edition. That call needs nothing -
         // configureAllButtons installs the real map moments later.
         if (sidebarReady && btnMyShift.isVisible() != wasVisible) {
+            applySectionVisibility();
             configureSidebarShortcuts();
         }
     }
@@ -593,12 +630,6 @@ public class MainScreenController extends MainItems implements Initializable {
         AllAlerts.handleError(LanguageManager.getInstance().getString("nav.error.open.screen"), e);
     }
 
-
-    private void dontShowData() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(paneEmployees, AppPermissions.EMPLOYEE_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(paneSetting, AppPermissions.SETTING_SHOW);
-    }
 
 
     private void addTabContextMenu() {
