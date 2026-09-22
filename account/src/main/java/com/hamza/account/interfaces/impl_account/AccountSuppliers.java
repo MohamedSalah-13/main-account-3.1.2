@@ -107,9 +107,4 @@ public record AccountSuppliers(DaoFactory daoFactory) implements AccountData<Sup
 
     }
 
-    @Override
-    public List<SupplierAccount> getAccountBetweenDate(String dateFrom, String dateTo) throws Exception {
-        return daoFactory.suppliersAccountDao().getAccountBetweenDate(dateFrom, dateTo);
-    }
-
 }

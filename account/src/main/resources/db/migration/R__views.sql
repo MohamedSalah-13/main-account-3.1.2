@@ -1391,20 +1391,9 @@ SELECT
 ;
 
 
+-- top_selling_items_current_month is gone: its only reader was the old summary screen, and it
+-- summed quantities across units and ignored returns. The DROP stays for the installs that have it.
 DROP VIEW IF EXISTS top_selling_items_current_month;
-CREATE VIEW top_selling_items_current_month AS
-SELECT
-    i.nameItem AS item_name,
-    SUM(s.quantity) AS total_quantity,
-    CAST((SUM(s.total_sel_price) / SUM(s.quantity)) AS DECIMAL(14,2)) AS average_price
-FROM sales s
-         JOIN total_sales ts ON s.invoice_number = ts.invoice_number
-         JOIN items i ON s.num = i.id
-WHERE YEAR(ts.invoice_date) = YEAR(CURDATE())
-  AND MONTH(ts.invoice_date) = MONTH(CURDATE())
-GROUP BY i.id, i.nameItem
-ORDER BY total_quantity DESC
-LIMIT 10;
 
 DROP VIEW IF EXISTS view_monthly_sales;
 CREATE VIEW view_monthly_sales AS
@@ -1461,35 +1450,11 @@ GROUP BY
     YEAR(invoice_date);
 
 
+-- view_customer_purchased_items and view_suppliers_sales_items are gone: they listed raw lines
+-- with no period, no units and no returns, and the party profile (features/party/profile) reads
+-- the lines itself through ItemNetLines. The DROPs stay for the installs that have them.
 DROP VIEW IF EXISTS view_customer_purchased_items;
-CREATE VIEW view_customer_purchased_items AS
-SELECT
-    c.id AS customer_id,
-    c.name AS customer_name,
-    i.nameItem AS item_name,
-    s.quantity,
-    s.price AS selling_price,
-    ts.invoice_date,
-    ts.invoice_number
-FROM custom c
-         JOIN total_sales ts ON c.id = ts.sup_code
-         JOIN sales s ON ts.invoice_number = s.invoice_number
-         JOIN items i ON s.num = i.id;
-
 DROP VIEW IF EXISTS view_suppliers_sales_items;
-CREATE VIEW view_suppliers_sales_items AS
-SELECT
-    c.id AS customer_id,
-    c.name AS customer_name,
-    i.nameItem AS item_name,
-    s.quantity,
-    s.price AS selling_price,
-    ts.invoice_date,
-    ts.invoice_number
-FROM suppliers c
-         JOIN total_buy ts ON c.id = ts.sup_code
-         JOIN purchase s ON ts.invoice_number = s.invoice_number
-         JOIN items i ON s.num = i.id;
 
 
 DROP VIEW IF EXISTS view_yearly_monthly_report;

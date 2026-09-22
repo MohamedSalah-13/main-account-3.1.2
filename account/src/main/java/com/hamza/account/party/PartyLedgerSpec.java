@@ -250,9 +250,4 @@ public record PartyLedgerSpec(
                         withArea ? ", ta.id, ta.area_name" : "");
     }
 
-    public String betweenDatesSql() {
-        return "SELECT * FROM " + table + " ca\n"
-                + "join " + partyTable + " c on c.id = ca." + PARTY + "\n"
-                + "where ca.account_date between ? and ? order by ca.account_date ";
-    }
 }

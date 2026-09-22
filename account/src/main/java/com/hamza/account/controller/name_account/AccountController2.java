@@ -254,6 +254,11 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 .export(excel)
                 .view(viewMenu)
                 .extra(ageing, trend);
+        // Who bought lately, who buys often and who stopped - customers only, since a supplier is not
+        // somebody the shop tries to bring back. Beside the ageing report, with its permissions.
+        if (partyKind() == PartyKind.CUSTOMER) {
+            toolbar.extra(button("party.rfm.open", AppIcon.PROFILE, this::openRfm));
+        }
     }
 
     /**
@@ -599,7 +604,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     // ---- actions ---------------------------------------------------------------------
 
     /**
-     * The two things you do to one party, in that party's own row.
+     * The things you do to one party, in that party's own row.
      * <p>
      * Both take the row they were pressed in, so neither can be reached without one - which is
      * why neither still needs the "choose a row first" refusal the toolbar versions carried.
@@ -614,7 +619,11 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 // The statement shows what the row already summarises, so it asks the same
                 // permission the screen itself needed to open.
                 RowAction.of("party.action.open.statement", AppIcon.REPORT, "app-neutral-button",
-                        dataInterface.permAccountAndNameInt().showAccounts(), this::openStatement));
+                        dataInterface.permAccountAndNameInt().showAccounts(), this::openStatement),
+                // What the party takes and when - asks what opening the party asks, as the
+                // parties list's own "show" does (PartyProfileService.viewPermission).
+                RowAction.of("party.profile.open", AppIcon.PROFILE, "app-neutral-button",
+                        dataInterface.permAccountAndNameInt().showNames(), this::openProfile));
         return RowActionsColumn.of("party.balances.column.actions", RowAction.permitted(actions));
     }
 
@@ -626,6 +635,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
             new OpenApplication<>(new AccountDetailsWithItemsController<>(
                     daoFactory, dataPublisher, dataInterface,
                     party.partyId(), party.name(), lines));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    private void openProfile(PartyBalanceRow party) {
+        try {
+            new OpenApplication<>(new PartyProfileController(nameAndAccountInterface.partyKind(),
+                    party.partyId(), party.name()));
         } catch (Exception e) {
             report(e);
         }
@@ -644,6 +662,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void openAgeing() {
         try {
             new OpenApplication<>(new PartyAgeingController<>(daoFactory, dataPublisher, dataInterface));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** Every customer's recency, frequency and value over a period. */
+    private void openRfm() {
+        try {
+            new OpenApplication<>(new CustomerRfmController());
         } catch (Exception e) {
             report(e);
         }

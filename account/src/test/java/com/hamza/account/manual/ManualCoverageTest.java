@@ -34,12 +34,7 @@ class ManualCoverageTest {
     /** Commands that are not screens and will never have a page of their own. */
     private static final Set<SidebarShortcut> NOT_A_SCREEN = EnumSet.of(
             SidebarShortcut.CLOSE,      // closes the program
-            SidebarShortcut.YOUTUBE,    // opens a video in the browser
-            // ReportsButtons.detailsReport() answers PermissionKey.deny() and its action() body is
-            // empty: the button is in the sidebar, is permanently disabled, and opens nothing. It
-            // was written a page in the manual before the capture harness reported that its button
-            // could not be pressed - which is how a screen that does not exist got noticed.
-            SidebarShortcut.REPORT_DETAILS);
+            SidebarShortcut.YOUTUBE);   // opens a video in the browser
 
     /**
      * Screens the manual does not cover yet - empty, and meant to stay that way. A screen added to

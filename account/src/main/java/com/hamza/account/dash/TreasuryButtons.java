@@ -22,6 +22,8 @@ import com.hamza.account.view.OpenTreasuryTransferApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.ProcessorApplication;
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.application.Platform;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
@@ -268,7 +270,11 @@ public class TreasuryButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                Pane pane = new OpenFxmlApplication(new ExpensesController(daoFactory, dataPublisher)).getPane();
+                ExpensesController controller = new ExpensesController(daoFactory, dataPublisher);
+                Pane pane = new OpenFxmlApplication(controller).getPane();
+                // Kept on the node so the reports hub can reach the list in the tab it opens or
+                // finds already open (openExpenseReports).
+                pane.getProperties().put(ExpensesController.class, controller);
                 addTape(tabPane, pane, textName(), AppIcon.TREASURY_CASH.graphic(20));
             }
 
@@ -277,6 +283,24 @@ public class TreasuryButtons {
                 return true;
             }
         };
+    }
+
+    /**
+     * The expense reports as the reports hub opens them: the list's tab first - a new one, or the one
+     * already open - and then that list's own reports button, so a line in a report opens the list on
+     * it exactly as it does from the list. Opening the reports with no list behind them would leave
+     * every line of them pointing nowhere.
+     */
+    public void openExpenseReports(TabPane tabPane) throws Exception {
+        openExpenses().actionAddPaneToTabPane(tabPane);
+        Tab shown = tabPane.getSelectionModel().getSelectedItem();
+        if (shown != null && shown.getContent() != null
+                && shown.getContent().getProperties().get(ExpensesController.class) instanceof ExpensesController list) {
+            // Queued behind the list's own first load, which sets its period (this month) in a
+            // runLater of its own: asked straight away, the reports were read over the list's
+            // unset filter - all of history - while the list beside them showed this month.
+            Platform.runLater(list::openReports);
+        }
     }
 
 }

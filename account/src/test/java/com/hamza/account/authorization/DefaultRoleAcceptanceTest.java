@@ -60,7 +60,37 @@ class DefaultRoleAcceptanceTest {
 
         assertEquals(EXPECTED_EFFECTIVE.keySet(), graph.directPermissions().keySet());
         EXPECTED_EFFECTIVE.forEach((role, expected) ->
-                assertEquals(expected, graph.effectivePermissions(role), role));
+                assertEquals(expected, declared(graph.effectivePermissions(role)), role));
+    }
+
+    /**
+     * {@code V13} still names keys the catalogue has since removed, and a shipped migration is never
+     * edited. {@code synchronizeCatalog} disables every system permission the catalogue does not declare,
+     * so those grants stay in the table and resolve to nothing - {@code findEffectivePermissions} reads
+     * enabled rows only. This list is that set, and it fails in both directions: a key removed from the
+     * catalogue has to appear here in the same change, so taking an ability away from a starter role is
+     * visible in review exactly as granting one is.
+     */
+    @Test
+    void theGrantsTheCatalogueNoLongerDeclaresAreExactlyTheRemovedKeys() throws IOException {
+        RoleGraph graph = RoleGraph.fromMigration();
+        Set<String> undeclared = new java.util.TreeSet<>();
+        graph.directPermissions().values().forEach(granted -> granted.stream()
+                .filter(key -> AppPermissions.fromValue(key) == null)
+                .forEach(undeclared::add));
+
+        assertEquals(Set.of(
+                        // docs/permissions-plan.md §3 and docs/reports-plan.md §4: no screen, or superseded
+                        "reports.show.customers.account.area",
+                        "reports.show.day.details",
+                        "reports.show.delegate"),
+                undeclared);
+    }
+
+    private static Set<String> declared(Set<String> keys) {
+        return keys.stream()
+                .filter(key -> AppPermissions.fromValue(key) != null)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
     @Test
@@ -124,8 +154,7 @@ class DefaultRoleAcceptanceTest {
         roles.put(SALES_MANAGER, plus(roles.get(SALES),
                 "sales.update", "sales.delete", "sales.re.update", "sales.re.delete",
                 "customer.update", "customer.delete", "customer.account.update", "customer.account.delete",
-                "reports.show.sales", "reports.show.customers", "reports.show.delegate",
-                "reports.show.day.details"));
+                "reports.show.sales", "reports.show.customers"));
 
         roles.put(PURCHASES, plus(roles.get(BASIC),
                 "purchase.show", "purchase.create", "purchase.update",
@@ -152,7 +181,7 @@ class DefaultRoleAcceptanceTest {
                 "total.sales.show", "total.sales.show.invoice", "total.sales.re.show", "total.sales.re.show.invoice",
                 "total.purchase.show", "total.purchase.show.invoice",
                 "total.purchase.re.show", "total.purchase.re.show.invoice",
-                "reports.show.summary", "reports.show.customers.account.area",
+                "reports.show.summary",
                 "reports.show.sales", "reports.show.purchase", "reports.show.profit",
                 "invoice.profit.show", "show.column.buy.price"));
 

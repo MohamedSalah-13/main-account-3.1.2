@@ -2,16 +2,11 @@ package com.hamza.account.model.domain;
 
 import java.math.BigDecimal;
 
-@lombok.Data
-public class TopSellingItem {
-    private String itemName;
-    private BigDecimal totalQuantity;
-    private BigDecimal averagePrice;
-
-    public TopSellingItem(String itemName, BigDecimal totalQuantity, BigDecimal averagePrice) {
-        this.itemName = itemName;
-        this.totalQuantity = totalQuantity;
-        this.averagePrice = averagePrice;
-    }
-
+/**
+ * One line of the dashboard's best sellers.
+ *
+ * @param totalQuantity net of returns, in the item's base unit - {@code unitName}
+ * @param averagePrice  what one base unit sold for, after each line's own discount
+ */
+public record TopSellingItem(String itemName, BigDecimal totalQuantity, BigDecimal averagePrice, String unitName) {
 }

@@ -27,5 +27,4 @@ public interface AccountData<T extends BaseAccount> {
         return null;
     }
 
-    List<T> getAccountBetweenDate(String dateFrom, String dateTo) throws Exception;
 }

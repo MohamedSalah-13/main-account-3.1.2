@@ -57,6 +57,7 @@
                             <children>
                                 <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="%search" />
                                 <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="%print" />
+                                <Button fx:id="btnExcel" mnemonicParsing="false" styleClass="neutral-button" text="%report.export.excel" />
                             </children>
                         </HBox>
                     </children>

@@ -399,11 +399,8 @@ public final class AppPermissions {
     public static final PermissionKey REPORTS_SHOW_ITEMS = key("reports.show.items");
     public static final PermissionKey REPORTS_SHOW_CUSTOMERS = key("reports.show.customers");
     public static final PermissionKey REPORTS_SHOW_SUPPLIERS = key("reports.show.suppliers");
-    public static final PermissionKey REPORTS_SHOW_CUSTOMERS_ACCOUNT_AREA = key("reports.show.customers.account.area");
     public static final PermissionKey REPORTS_SHOW_SALES = key("reports.show.sales");
     public static final PermissionKey REPORTS_SHOW_PURCHASE = key("reports.show.purchase");
-    public static final PermissionKey REPORTS_SHOW_DAY_DETAILS = key("reports.show.day.details");
-    public static final PermissionKey REPORTS_SHOW_DELEGATE = key("reports.show.delegate");
     public static final PermissionKey REPORTS_SHOW_PROFIT = key("reports.show.profit");
     public static final PermissionKey REPORTS_SHOW_RETURNS = key("reports.show.returns");
     public static final PermissionKey STOCK_COUNT_SHOW = key("stock.count.show");

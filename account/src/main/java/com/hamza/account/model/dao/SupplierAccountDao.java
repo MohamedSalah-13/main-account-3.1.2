@@ -102,10 +102,6 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
         return SPEC.totalsBetweenDatesSql();
     }
 
-    String betweenDatesSql() {
-        return SPEC.betweenDatesSql();
-    }
-
     /** See {@code CustomerAccountDao.insert}: the same write over the other table. */
     @Override
     public int insert(SupplierAccount model) throws DaoException {
@@ -266,15 +262,4 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
         return queryForObjects(selectAccountAndTotalsById, map, dateFrom, dateTo);
     }
 
-    public List<SupplierAccount> getAccountBetweenDate(String dateFrom, String dateTo) throws DaoException {
-        String query = "SELECT * FROM suppliers_accounts ca\n" +
-                "join suppliers c on c.id = ca.account_code\n" +
-                "where ca.account_date between ? and ? order by ca.account_date ";
-        GenericMapper<SupplierAccount> mapMain = resultSet -> {
-            SupplierAccount map = mapMain(resultSet);
-            map.setSuppliers(new Suppliers(resultSet.getInt(ACCOUNT_CODE), resultSet.getString(NAME)));
-            return map;
-        };
-        return queryForObjects(query, mapMain, dateFrom, dateTo);
-    }
 }

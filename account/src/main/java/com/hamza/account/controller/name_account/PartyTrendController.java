@@ -27,13 +27,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -43,7 +37,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -53,20 +46,15 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-import com.hamza.account.table.ChartSnapshot;
+import com.hamza.account.table.TrendChart;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -93,10 +81,6 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
 
     private static final String DEBIT = "trend-debit";
     private static final String CREDIT = "trend-credit";
-    private static final String PREVIOUS = "trend-previous";
-
-    /** Dark on white whatever the theme, for the moment the chart is photographed for a page. */
-    private static final String PRINTING = "trend-print";
 
     /** The table's amount columns, which the printed totals line sums. The period is not one. */
     private static final Set<String> TOTALLED_COLUMNS = Set.of("trend-debit-column",
@@ -113,9 +97,7 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
     private final CheckBox showCredit = new CheckBox();
     private PartySuggestionField<T3> partyField;
 
-    private final CategoryAxis periodAxis = new CategoryAxis();
-    private final NumberAxis amountAxis = new NumberAxis();
-    private final LineChart<String, Number> chart = new LineChart<>(periodAxis, amountAxis);
+    private final TrendChart trendChart = new TrendChart("trend-chart", 280);
     private final Label chartEmpty = new Label(text("party.trend.empty"));
     private final ProgressIndicator progress = new ProgressIndicator();
 
@@ -129,9 +111,6 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
     private final Label statRatio = statValue("trend-ratio");
     private final Label statDebitPrevious = statSubtitle();
     private final Label statCreditPrevious = statSubtitle();
-
-    /** The classes each drawn line wears, by its name - so the printed legend can wear them too. */
-    private final Map<String, List<String>> seriesStyles = new HashMap<>();
 
     private PartyTrend shown;
     private int generation;
@@ -147,7 +126,6 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
     @Override
     public Pane pane() {
         PartyScreenIdentity identity = identity();
-        buildChart();
         buildTable();
 
         StackPane chartArea = new StackPane(chartCard(), progress);
@@ -210,7 +188,7 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
         // Clearing the text is what clears the choice - and that change is what redraws.
         allParties.setOnAction(event -> partyField.clear());
 
-        comparePrevious.setGraphic(marker(PREVIOUS));
+        comparePrevious.setGraphic(TrendChart.marker(TrendChart.PREVIOUS));
         comparePrevious.setOnAction(event -> load());
 
         Button refresh = new Button(text("refresh"), AppIcon.REFRESH.graphic());
@@ -283,8 +261,8 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
         boolean customer = partyKind() == PartyKind.CUSTOMER;
         showDebit.setText(text(customer ? "party.trend.customers.debit" : "party.trend.suppliers.debit"));
         showCredit.setText(text(customer ? "party.trend.customers.credit" : "party.trend.suppliers.credit"));
-        showDebit.setGraphic(marker(DEBIT));
-        showCredit.setGraphic(marker(CREDIT));
+        showDebit.setGraphic(TrendChart.marker(DEBIT));
+        showCredit.setGraphic(TrendChart.marker(CREDIT));
         showDebit.setSelected(true);
         showCredit.setSelected(true);
         showDebit.setOnAction(event -> drawChart());
@@ -295,41 +273,12 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
 
         chartEmpty.getStyleClass().add("form-label");
         chartEmpty.setVisible(false);
-        StackPane plot = new StackPane(chart, chartEmpty);
+        StackPane plot = new StackPane(trendChart.chart(), chartEmpty);
         VBox.setVgrow(plot, Priority.ALWAYS);
 
         VBox card = new VBox(8, legend, plot);
         card.getStyleClass().add("app-card");
         return card;
-    }
-
-    private void buildChart() {
-        chart.getStyleClass().add("party-trend-chart");
-        chart.setId("trend-chart");
-        chart.setAnimated(false);
-        chart.setCreateSymbols(true);
-        chart.setLegendVisible(false);
-        chart.setMinHeight(280);
-        // Time runs left to right on a chart in either language; mirrored, the latest month
-        // would sit where a reader looks for the first.
-        chart.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        periodAxis.setAnimated(false);
-        amountAxis.setAnimated(false);
-        amountAxis.setForceZeroInRange(true);
-        // Whole amounts with separators, and Latin digits whatever the locale - an axis in one
-        // script beside a table in another is the trap the printed reports fell into.
-        DecimalFormat whole = new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(Locale.US));
-        amountAxis.setTickLabelFormatter(new StringConverter<>() {
-            @Override
-            public String toString(Number value) {
-                return value == null ? "" : whole.format(value);
-            }
-
-            @Override
-            public Number fromString(String text) {
-                return null;
-            }
-        });
     }
 
     /**
@@ -389,7 +338,7 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
             return;
         }
         String title = title();
-        File target = TablePdfReport.chooseTarget(chart.getScene().getWindow(), title);
+        File target = TablePdfReport.chooseTarget(trendChart.chart().getScene().getWindow(), title);
         if (target == null) {
             return;
         }
@@ -427,10 +376,9 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
         return subtitle.toString();
     }
 
-    /** The chart as a PNG, at twice its size on screen - see {@link ChartSnapshot} for what it adjusts. */
+    /** The chart as a PNG, at twice its size on screen - see {@link TrendChart#png} for what it adjusts. */
     private byte[] chartImage() throws IOException {
-        return ChartSnapshot.png(chart, PRINTING, seriesStyles,
-                () -> chart.setLegendVisible(true), () -> chart.setLegendVisible(false));
+        return trendChart.png();
     }
 
     // ---- loading ---------------------------------------------------------------------
@@ -525,10 +473,15 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
                 .orElseGet(() -> language.getString("party.trend.stat.previous", Columns.money(previous))));
     }
 
+    /** One line of the chart, which colours it by these classes and says each figure on hover. */
+    private void addSeries(String name, List<PartyTrendPoint> points,
+                           Function<PartyTrendPoint, BigDecimal> value, String line, boolean previous) {
+        trendChart.addSeries(name, points, PartyTrendPoint::label, value, TrendChart.classes(line, previous));
+    }
+
     /** Redraws from what is loaded: ticking a line on or off asks the database nothing. */
     private void drawChart() {
-        chart.getData().clear();
-        seriesStyles.clear();
+        trendChart.clear();
         if (shown == null) {
             return;
         }
@@ -552,42 +505,6 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
                                 : "party.trend.suppliers.previous.credit"),
                         points, PartyTrendPoint::previousCredit, CREDIT, true);
             }
-        }
-    }
-
-    /**
-     * One line. Its nodes exist only once the series is in the chart, so the classes that colour
-     * it are added after - and every point says its own figure on hover, since an axis of whole
-     * thousands cannot.
-     */
-    private void addSeries(String name, List<PartyTrendPoint> points,
-                           Function<PartyTrendPoint, BigDecimal> value, String line, boolean previous) {
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName(name);
-        for (PartyTrendPoint point : points) {
-            series.getData().add(new XYChart.Data<>(point.label(), value.apply(point)));
-        }
-        chart.getData().add(series);
-        seriesStyles.put(name, previous ? List.of(line, PREVIOUS) : List.of(line));
-        style(series.getNode(), line, previous);
-        for (int index = 0; index < points.size(); index++) {
-            Node symbol = series.getData().get(index).getNode();
-            style(symbol, line, previous);
-            if (symbol != null) {
-                PartyTrendPoint point = points.get(index);
-                Tooltip.install(symbol, new Tooltip(name + "\n" + point.label() + ": "
-                        + Columns.money(value.apply(point))));
-            }
-        }
-    }
-
-    private static void style(Node node, String line, boolean previous) {
-        if (node == null) {
-            return;
-        }
-        node.getStyleClass().add(line);
-        if (previous) {
-            node.getStyleClass().add(PREVIOUS);
         }
     }
 
@@ -619,12 +536,6 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
     private void report(Throwable error) {
         AllAlerts.handleError(title(),
                 error instanceof Exception exception ? exception : new Exception(error));
-    }
-
-    private static Region marker(String line) {
-        Region marker = new Region();
-        marker.getStyleClass().addAll("trend-marker", line);
-        return marker;
     }
 
     private static Label caption(String key) {

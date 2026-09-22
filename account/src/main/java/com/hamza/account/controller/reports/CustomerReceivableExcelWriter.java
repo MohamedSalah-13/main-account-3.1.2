@@ -11,9 +11,7 @@ import java.util.List;
  * The receivables report as a spreadsheet.
  * <p>
  * Written because the screen's Excel button had an empty method body, and its PDF button
- * had the export call commented out above a line that told the user it had saved. Modelled
- * on {@code CustomerPurchasedItemsExcelWriter}, which is the one export on the party side
- * that was already done properly.
+ * had the export call commented out above a line that told the user it had saved.
  * <p>
  * The headings are the same bundle keys the screen's columns use, so the file and the
  * screen cannot end up describing their columns differently.

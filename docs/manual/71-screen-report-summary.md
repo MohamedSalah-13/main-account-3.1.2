@@ -4,7 +4,7 @@ title: ملخص الحسابات
 chapter: التقارير
 shortcut: REPORT_SUMMARY
 screenshot: report-summary
-sources: account/src/main/resources/com/hamza/account/view/reports/summary.fxml
+sources: account/src/main/java/com/hamza/account/controller/reports/ModernDashboardApp.java
 ---
 
 صورة سريعة لوضع المحل: ما لك، وما عليك، وما في الخزائن، وقيمة المخزون. تفتح بالاختصار `Ctrl+8`.

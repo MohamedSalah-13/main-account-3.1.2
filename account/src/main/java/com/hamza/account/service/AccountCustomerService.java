@@ -234,7 +234,4 @@ public record AccountCustomerService(DaoFactory daoFactory) {
         return daoFactory.customerAccountDao().getAccountByAccountCode(accountCode);
     }
 
-    public List<CustomerAccount> getAccountBetweenDate(String dateFrom, String dateTo) throws DaoException {
-        return daoFactory.customerAccountDao().getAccountBetweenDate(dateFrom, dateTo);
-    }
 }

@@ -197,14 +197,6 @@ public enum DaoFactory {
         return new MonthlySalesViewDao("view_monthly_purchase");
     }
 
-    public CustomerPurchasedItemDao customerPurchasedItemDao() {
-        return new CustomerPurchasedItemDao();
-    }
-
-    public SuppliersSalesItemDao suppliersSalesItemDao() {
-        return new SuppliersSalesItemDao();
-    }
-
     public TableDataReportsDao tableDataReportsDao() {
         return new TableDataReportsDao();
     }
@@ -215,10 +207,6 @@ public enum DaoFactory {
 
     public DailyItemSalesDao dailyItemSalesDao() {
         return new DailyItemSalesDao();
-    }
-
-    public ComprehensiveSalesDao comprehensiveSalesDao() {
-        return new ComprehensiveSalesDao();
     }
 
     public CustomerReceivableDao customerReceivableDao() {

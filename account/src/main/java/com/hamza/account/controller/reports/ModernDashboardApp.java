@@ -13,6 +13,7 @@ import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.table.Columns;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
@@ -644,12 +645,16 @@ public class ModernDashboardApp {
             topItemsList.getChildren().add(emptyRow(LanguageManager.getInstance().getString("report.dashboard.no.sales.this.period")));
             return;
         }
-        double max = items.stream().mapToDouble(i -> i.getTotalQuantity().doubleValue()).max().orElse(0);
+        double max = items.stream().mapToDouble(i -> i.totalQuantity().doubleValue()).max().orElse(0);
         for (TopSellingItem item : items) {
-            double qty = item.getTotalQuantity().doubleValue();
+            double qty = item.totalQuantity().doubleValue();
             double ratio = max > 0 ? qty / max : 0;
-            topItemsList.getChildren().add(listRow(item.getItemName(),
-                    LanguageManager.getInstance().getString("report.dashboard.unit.suffix", formatMoney(qty)), ratio, "accent-success"));
+            // Base units, net of returns (TopSellingItemDao), so the quantity is written as one
+            // and named in the item's own unit - "12 قطعة", not "12.00 وحدة".
+            String amount = item.unitName().isBlank()
+                    ? LanguageManager.getInstance().getString("report.dashboard.unit.suffix", Columns.quantity(item.totalQuantity()))
+                    : Columns.quantity(item.totalQuantity()) + " " + item.unitName();
+            topItemsList.getChildren().add(listRow(item.itemName(), amount, ratio, "accent-success"));
         }
     }
 
