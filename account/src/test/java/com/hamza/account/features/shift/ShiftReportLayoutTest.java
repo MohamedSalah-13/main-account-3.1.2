@@ -118,14 +118,28 @@ class ShiftReportLayoutTest {
                 "on an X report the expected balance is the answer");
     }
 
+    /**
+     * It used to print every movement and hide the expected balance alone, which left that figure one
+     * addition away on the paper handed to the person it is kept from.
+     */
     @Test
-    void aBlindXReportLeavesOutTheExpectedBalanceAndTheTwoTotalsThatLeadToIt() {
-        List<String> labels = labels(x(false));
+    void aBlindXReportCarriesNoAmountButTheOpeningBalance() {
+        ShiftReportLayout layout = x(false);
+        List<String> labels = labels(layout);
 
+        assertEquals("user.shift.report.x.subtitle.blind", layout.subtitle(), "the paper says why it is bare");
         assertFalse(labels.contains("user.shift.report.row.expected"), labels.toString());
-        assertFalse(labels.contains("user.shift.report.row.total.in"), labels.toString());
-        assertFalse(labels.contains("user.shift.report.row.total.out"), labels.toString());
-        assertTrue(labels.contains("user.shift.report.row.sales"), "the movements are still shown, as on screen");
+        assertFalse(labels.contains("user.shift.report.section.in"), labels.toString());
+        assertFalse(labels.contains("user.shift.report.section.out"), labels.toString());
+        assertTrue(labels.stream().noneMatch(label -> label.startsWith("user.shift.report.row.total")));
+        assertFalse(labels.contains("user.shift.report.row.sales"), labels.toString());
+        assertFalse(labels.contains("user.shift.report.row.expenses"), labels.toString());
+        assertFalse(labels.contains("user.shift.report.row.other.in"), labels.toString());
+        assertFalse(labels.contains("user.shift.report.row.other.out"), labels.toString());
+
+        assertEquals("500.00", value(layout, "user.shift.report.row.opening"), "the float the cashier was given");
+        assertEquals("12", value(layout, "user.shift.report.row.invoices"), "what they rang up is not an amount");
+        assertEquals("soha", value(layout, "user.shift.report.row.cashier"));
     }
 
     @Test
