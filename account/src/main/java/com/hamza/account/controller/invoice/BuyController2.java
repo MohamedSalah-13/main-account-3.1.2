@@ -1493,7 +1493,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         new InvoiceTableCoordinator<>(table, editor.lines(), lineEditService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
                 editor::refreshTotals, getClass(), CurrentUser.isSystemAdministrator(),
-                AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE))
+                AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE),
+                invoiceItemSelectionService::selectUnit)
                 .configure();
     }
 

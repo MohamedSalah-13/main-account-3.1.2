@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.features.invoice.InvoiceItemSelectionService;
 import com.hamza.account.features.invoice.InvoiceLineEditService;
 import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.features.key_setting.MoveRow;
@@ -7,13 +8,13 @@ import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BasePurchasesAndSales;
+import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.Columns;
-import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
@@ -26,6 +27,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
+import javafx.util.StringConverter;
+import javafx.util.converter.DefaultStringConverter;
 
 import java.util.List;
 import java.util.Objects;
@@ -57,6 +60,17 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
     private final Class<?> menuOwner;
     private final boolean showAdminMenu;
     private final boolean mayEditCatalog;
+    private final UnitRepricer unitRepricer;
+
+    /**
+     * The unit a line may be switched to and the price it carries on this screen's tier - what
+     * {@link InvoiceItemSelectionService#selectUnit} answers for the form above the table.
+     */
+    @FunctionalInterface
+    public interface UnitRepricer {
+        InvoiceItemSelectionService.UnitSelection select(ItemsModel item, String unitName, int priceTier)
+                throws Exception;
+    }
 
     /**
      * @param mayEditCatalog whether this user may write the item behind a line - the name
@@ -72,7 +86,8 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
                                    Runnable totalsChanged,
                                    Class<?> menuOwner,
                                    boolean showAdminMenu,
-                                   boolean mayEditCatalog) {
+                                   boolean mayEditCatalog,
+                                   UnitRepricer unitRepricer) {
         this.table = Objects.requireNonNull(table, "table");
         this.lines = Objects.requireNonNull(lines, "lines");
         this.editService = Objects.requireNonNull(editService, "editService");
@@ -82,6 +97,7 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         this.menuOwner = Objects.requireNonNull(menuOwner, "menuOwner");
         this.showAdminMenu = showAdminMenu;
         this.mayEditCatalog = mayEditCatalog;
+        this.unitRepricer = Objects.requireNonNull(unitRepricer, "unitRepricer");
     }
 
     public void configure() {
@@ -146,35 +162,90 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         table.getColumns().add(new ButtonColumn<>(new ButtonDeleteRow() {
             @Override
             public void action(int index) {
+                if (!isLineAt(index)) {
+                    return;
+                }
                 table.getItems().remove(index);
                 table.refresh();
+            }
+
+            /** The quick screen's entry row is not a line, so it offers nothing to delete. */
+            @Override
+            public boolean isButtonDisabled(int index) {
+                return !isLineAt(index);
             }
         }));
     }
 
     private void configureEdits() {
-        ColumnSetting columns = new ColumnSetting();
         // Renaming an item from a line writes the item, so without items.update the cell
         // simply does not open. The quick screen replaces this column's cell factory with
         // its own item search and never commits an edit through it, so it is unaffected.
         if (mayEditCatalog) {
-            columns.enableStringEditing(NAME_COLUMN, event -> withRefreshOnFailure(() ->
-                    editService.editName(rowAt(event.getTablePosition().getRow()),
-                            event.getNewValue())), table);
+            enable(NAME_COLUMN, new DefaultStringConverter(), (line, value) ->
+                    editService.editName(line, value));
         }
-        columns.enableDoubleEditing(QUANTITY_COLUMN, event -> withRefreshOnFailure(() ->
-                editService.editQuantity(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue())), table, NumberTextConverter.quantity());
+        enable(QUANTITY_COLUMN, NumberTextConverter.quantity(), (line, value) ->
+                editService.editQuantity(line, value));
         // The price of this line is always editable; carrying it back to the item is what
         // needs the permission. Dropping the flag here rather than refusing the whole edit
         // keeps the ordinary "sell this one cheaper" working for a cashier.
-        columns.enableDoubleEditing(PRICE_COLUMN, event -> withRefreshOnFailure(() ->
-                editService.editPrice(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue(), mayEditCatalog && updateCatalogPrice.getAsBoolean(),
-                        priceTier.getAsInt())), table, NumberTextConverter.money());
-        columns.enableDoubleEditing(DISCOUNT_COLUMN, event -> withRefreshOnFailure(() ->
-                editService.editDiscount(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue())), table, NumberTextConverter.money());
+        enable(PRICE_COLUMN, NumberTextConverter.money(), (line, value) ->
+                editService.editPrice(line, value, mayEditCatalog && updateCatalogPrice.getAsBoolean(),
+                        priceTier.getAsInt()));
+        enable(DISCOUNT_COLUMN, NumberTextConverter.money(), (line, value) ->
+                editService.editDiscount(line, value));
+        configureUnitEdits();
+    }
+
+    /**
+     * The unit is chosen on the line itself, from that item's own units. It was the one field of
+     * a line that could only be set on the form above the table - so on the quick screen, which
+     * has no form, an item whose carton carries no barcode could not be sold by the carton at all.
+     */
+    private void configureUnitEdits() {
+        TableColumn<T, String> column = column(TYPE_COLUMN);
+        column.setCellFactory(InvoiceLineCells.unit());
+        column.setOnEditCommit(event -> commitEdit(event.getRowValue(), event.getNewValue(),
+                (line, unitName) -> editService.editUnit(line,
+                        unitRepricer.select(line.getItems(), unitName, priceTier.getAsInt()))));
+    }
+
+    private <V> void enable(int columnIndex, StringConverter<V> converter, LineEdit<T, V> edit) {
+        TableColumn<T, V> column = column(columnIndex);
+        column.setCellFactory(InvoiceLineCells.text(converter));
+        column.setOnEditCommit(event -> commitEdit(event.getRowValue(), event.getNewValue(), edit));
+    }
+
+    /**
+     * Applies one committed edit to its own row - {@code getRowValue()}, never the row at the
+     * edited index, which a reload may have moved - and redraws the table whichever way it went,
+     * so a refused edit never leaves the typed value on screen.
+     */
+    private <V> void commitEdit(T line, V value, LineEdit<T, V> edit) {
+        try {
+            edit.apply(line, value);
+            totalsChanged.run();
+        } catch (Exception e) {
+            AllAlerts.handleError(LanguageManager.getInstance().getString("error.operation.table.update"), e);
+        } finally {
+            table.refresh();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <V> TableColumn<T, V> column(int index) {
+        return (TableColumn<T, V>) table.getColumns().get(index);
+    }
+
+    private boolean isLineAt(int index) {
+        return index >= 0 && index < table.getItems().size()
+                && InvoiceLineCells.isLine(table.getItems().get(index));
+    }
+
+    @FunctionalInterface
+    private interface LineEdit<L, V> {
+        void apply(L line, V value) throws Exception;
     }
 
     private void configureSelectionAndKeys() {
@@ -236,23 +307,5 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
                 totalsChanged.run();
             }
         }).tableKeyPressed();
-    }
-
-    private T rowAt(int row) {
-        return table.getItems().get(row);
-    }
-
-    private void withRefreshOnFailure(DaoEdit edit) throws DaoException {
-        try {
-            edit.run();
-        } catch (DaoException e) {
-            table.refresh();
-            throw e;
-        }
-    }
-
-    @FunctionalInterface
-    private interface DaoEdit {
-        void run() throws DaoException;
     }
 }

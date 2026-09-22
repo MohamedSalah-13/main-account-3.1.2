@@ -44,7 +44,7 @@ public final class InvoiceLineEditService {
     public void editName(BasePurchasesAndSales line, String newName) throws DaoException {
         requireLine(line);
         if (newName == null || newName.isBlank()) {
-            throw new UserValidationException("اسم الصنف مطلوب");
+            throw new UserValidationException(text("invoice.entry.error.name.required"));
         }
         String normalized = newName.trim();
         catalogService.updateName(line.getItems().getId(), stockId.getAsInt(), normalized);
@@ -55,7 +55,7 @@ public final class InvoiceLineEditService {
             throws DaoException {
         requireLine(line);
         double quantity = newQuantity == null ? 1 : newQuantity;
-        requirePositiveFinite(quantity, "يجب أن تكون الكمية أكبر من صفر");
+        requirePositiveFinite(quantity, text("invoice.line.error.quantity.positive"));
         line.setQuantity(quantity);
         carrySourceDiscountShare(line);
         InvoiceLineService.recalculate(line);
@@ -89,16 +89,9 @@ public final class InvoiceLineEditService {
         requireLine(line);
         requireNotFromASourceLine(line);
         double price = newPrice == null ? 0 : newPrice;
-        requirePositiveFinite(price, "يجب أن يكون السعر أكبر من صفر");
+        requirePositiveFinite(price, text("invoice.line.error.price.positive"));
 
-        if (documentType == DocumentType.SALES) {
-            double buyPrice = ItemUnits.buyPrice(line.getItems(), line.getUnitsType(),
-                    line.getItems().getBuyPrice());
-            if (price < buyPrice) {
-                throw new BusinessRuleException(
-                        "لا يمكن البيع بسعر أقل من سعر الشراء");
-            }
-        }
+        requireNotBelowCost(line, line.getUnitsType(), price);
 
         if (updateCatalogPrice) {
             catalogService.updateBasePrice(line.getItems().getId(), stockId.getAsInt(),
@@ -108,13 +101,56 @@ public final class InvoiceLineEditService {
         InvoiceLineService.recalculate(line);
     }
 
+    /**
+     * Changes the unit a line is sold or bought in, at the price that unit carries on this
+     * screen's tier - the price the form above the table would have filled in had the unit
+     * been chosen there. The quantity stays as typed: "3" of a carton is three cartons, and
+     * converting it to pieces would be a second change the operator did not ask for.
+     * <p>
+     * A line picked from a source invoice keeps the unit it was sold in, for the reason its
+     * price does ({@link #requireNotFromASourceLine}); a sale is still held to the unit's
+     * cost, exactly as a typed price is.
+     *
+     * @param selection the unit and its price, as {@link InvoiceItemSelectionService#selectUnit}
+     *                  answers them for this line's item
+     */
+    public void editUnit(BasePurchasesAndSales line,
+                         InvoiceItemSelectionService.UnitSelection selection) throws DaoException {
+        requireLine(line);
+        requireNotFromASourceLine(line);
+        if (selection == null || selection.unit() == null) {
+            throw new UserValidationException(text("invoice.entry.error.unit.missing"));
+        }
+        requirePositiveFinite(selection.price(), text("invoice.line.error.price.positive"));
+        requireNotBelowCost(line, selection.unit(), selection.price());
+        line.setUnitsType(selection.unit());
+        line.setPrice(selection.price());
+        InvoiceLineService.recalculate(line);
+    }
+
+    /** A sale is never priced below what the unit cost - the same floor adding a line applies. */
+    private void requireNotBelowCost(BasePurchasesAndSales line, com.hamza.account.model.domain.UnitsModel unit,
+                                     double price) throws BusinessRuleException {
+        if (documentType != DocumentType.SALES) {
+            return;
+        }
+        double buyPrice = ItemUnits.buyPrice(line.getItems(), unit, line.getItems().getBuyPrice());
+        if (price < buyPrice) {
+            throw new BusinessRuleException(text("invoice.line.error.below.cost"));
+        }
+    }
+
+    private static String text(String key, Object... args) {
+        return LanguageManager.getInstance().getString(key, args);
+    }
+
     public void editDiscount(BasePurchasesAndSales line, Double newDiscount)
             throws DaoException {
         requireLine(line);
         requireNotFromASourceLine(line);
         double discount = newDiscount == null ? 0 : newDiscount;
         if (!Double.isFinite(discount) || discount < 0) {
-            throw new UserValidationException("خصم الصنف غير صالح");
+            throw new UserValidationException(text("invoice.line.error.discount.invalid"));
         }
         line.setDiscount(discount);
         InvoiceLineService.recalculate(line);
@@ -166,7 +202,7 @@ public final class InvoiceLineEditService {
     private static void requireLine(BasePurchasesAndSales line)
             throws UserValidationException {
         if (line == null || line.getItems() == null || line.getItems().getId() <= 0) {
-            throw new UserValidationException("سطر الفاتورة غير صالح");
+            throw new UserValidationException(text("invoice.line.error.invalid"));
         }
     }
 

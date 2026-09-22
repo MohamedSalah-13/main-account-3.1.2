@@ -249,6 +249,62 @@ class InvoiceLineEditServiceTest {
         assertEquals(10, line.getDiscount());
     }
 
+    @Test
+    void aUnitChangeTakesThatUnitsPriceAndKeepsTheQuantityAsTyped() throws Exception {
+        // Three pieces become three cartons at the carton's price - not thirty-six pieces,
+        // and not three cartons at the piece's price.
+        Sales line = line(item(false), PIECE, 10);
+        line.setQuantity(3);
+        InvoiceLineService.recalculate(line);
+        InvoiceLineEditService service = editService(DocumentType.SALES,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+
+        service.editUnit(line, new InvoiceItemSelectionService.UnitSelection(CARTON, 120, 0));
+
+        assertEquals(CARTON, line.getUnitsType());
+        assertEquals(3, line.getQuantity());
+        assertEquals(120, line.getPrice());
+        assertEquals(360, line.getTotal_after_discount());
+    }
+
+    @Test
+    void aUnitChangeOnASaleIsHeldToThatUnitsCost() {
+        // A carton costs 12 x 7.5 = 90; a carton "priced" at 50 is the piece price times
+        // something, and a sale below cost is refused whichever way the price arrived.
+        Sales line = line(item(false), PIECE, 10);
+        InvoiceLineEditService service = editService(DocumentType.SALES,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+
+        assertThrows(BusinessRuleException.class, () -> service.editUnit(line,
+                new InvoiceItemSelectionService.UnitSelection(CARTON, 50, 0)));
+        assertEquals(PIECE, line.getUnitsType());
+        assertEquals(10, line.getPrice());
+    }
+
+    @Test
+    void aLinePickedFromAnInvoiceKeepsItsUnit() {
+        Sales line = line(item(false), PIECE, 10);
+        line.setSourceLineId(501);
+        InvoiceLineEditService service = editService(DocumentType.SALES_RETURN,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+
+        assertThrows(BusinessRuleException.class, () -> service.editUnit(line,
+                new InvoiceItemSelectionService.UnitSelection(CARTON, 120, 0)));
+        assertEquals(PIECE, line.getUnitsType());
+    }
+
+    @Test
+    void theEntryRowTakesNoUnit() {
+        // The quick screen's trailing row names no item; nothing may be set on it.
+        Sales entryRow = new Sales();
+        entryRow.setItems(new ItemsModel());
+        InvoiceLineEditService service = editService(DocumentType.SALES,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+
+        assertThrows(com.hamza.controlsfx.error.UserValidationException.class, () -> service.editUnit(
+                entryRow, new InvoiceItemSelectionService.UnitSelection(CARTON, 120, 0)));
+    }
+
     private static InvoiceLineEditService editService(
             DocumentType type, TrackingRepository repository,
             InvoiceItemCatalogService.ItemPriceUpdater updater) {
