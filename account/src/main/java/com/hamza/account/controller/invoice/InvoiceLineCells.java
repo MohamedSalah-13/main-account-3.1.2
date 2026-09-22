@@ -75,31 +75,38 @@ final class InvoiceLineCells {
             }
             List<String> names = ItemUnits.unitsFor(line.getItems()).stream()
                     .map(UnitsModel::getUnit_name).toList();
-            box = new ComboBox<>();
-            box.getItems().setAll(names);
-            box.setValue(getItem());
-            box.setMaxWidth(Double.MAX_VALUE);
+            // The handlers hold their own combo, never the field: a commit clears the field,
+            // and a combo raises an action for a value set in code as well as for a click, so a
+            // second one arriving after the commit used to find the field null.
+            ComboBox<String> combo = new ComboBox<>();
+            combo.getItems().setAll(names);
+            combo.setValue(getItem());
+            combo.setMaxWidth(Double.MAX_VALUE);
             // A choice is the commit: one gesture, as a combo reads everywhere else.
-            box.setOnAction(event -> {
-                String chosen = box.getValue();
+            combo.setOnAction(event -> {
+                if (!isEditing() || box != combo) {
+                    return;
+                }
+                String chosen = combo.getValue();
                 if (chosen != null && !chosen.equals(getItem())) {
                     commitEdit(chosen);
                 } else {
                     cancelEdit();
                 }
             });
-            box.setOnKeyPressed(event -> {
+            combo.setOnKeyPressed(event -> {
                 if (event.getCode() == KeyCode.ESCAPE) {
                     cancelEdit();
                     event.consume();
                 }
             });
+            box = combo;
             setText(null);
-            setGraphic(box);
+            setGraphic(combo);
             Platform.runLater(() -> {
-                if (box != null) {
-                    box.requestFocus();
-                    box.show();
+                if (box == combo && isEditing()) {
+                    combo.requestFocus();
+                    combo.show();
                 }
             });
         }
@@ -107,7 +114,7 @@ final class InvoiceLineCells {
         @Override
         public void cancelEdit() {
             super.cancelEdit();
-            box = null;
+            closeList();
             setGraphic(null);
             setText(getItem());
         }
@@ -115,8 +122,16 @@ final class InvoiceLineCells {
         @Override
         public void commitEdit(String value) {
             super.commitEdit(value);
-            box = null;
+            closeList();
             setGraphic(null);
+        }
+
+        /** The list is a popup of its own window, and outlives the combo leaving the cell unless closed. */
+        private void closeList() {
+            if (box != null) {
+                box.hide();
+            }
+            box = null;
         }
 
         @Override

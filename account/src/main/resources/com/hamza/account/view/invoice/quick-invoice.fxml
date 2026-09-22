@@ -61,10 +61,10 @@
                                         <HBox alignment="CENTER_LEFT" spacing="4.0">
                                             <children>
                                                 <Label fx:id="labelNum" styleClass="form-label" />
-                                                <TextField fx:id="txtNum" editable="false" prefColumnCount="7" />
+                                                <TextField fx:id="txtNum" editable="false" prefColumnCount="6" />
                                             </children>
                                         </HBox>
-                                        <HBox fx:id="partyBox" alignment="CENTER_LEFT" prefWidth="330.0" spacing="4.0">
+                                        <HBox fx:id="partyBox" alignment="CENTER_LEFT" prefWidth="270.0" spacing="4.0">
                                             <children>
                                                 <Label fx:id="labelName" styleClass="form-label" />
                                                 <Button fx:id="btnPinParty" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
@@ -73,14 +73,14 @@
                                         <HBox alignment="CENTER_LEFT" spacing="4.0">
                                             <children>
                                                 <Label fx:id="labelDate" styleClass="form-label" />
-                                                <DatePicker fx:id="date" editable="false" prefWidth="140.0" />
+                                                <DatePicker fx:id="date" editable="false" prefWidth="135.0" />
                                             </children>
                                         </HBox>
                                         <HBox fx:id="boxDelegate" alignment="CENTER_LEFT" spacing="4.0">
                                             <children>
                                                 <Label fx:id="labelDelegate" styleClass="form-label" />
                                                 <Button fx:id="btnPinDelegate" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
-                                                <ComboBox fx:id="comboDelegate" prefWidth="150.0" />
+                                                <ComboBox fx:id="comboDelegate" prefWidth="130.0" />
                                             </children>
                                         </HBox>
                                         <HBox alignment="CENTER_LEFT" spacing="4.0">
@@ -94,7 +94,7 @@
                                             <children>
                                                 <Label fx:id="labelStock" styleClass="form-label" />
                                                 <Button fx:id="btnPinStock" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
-                                                <ComboBox fx:id="comboStock" prefWidth="150.0" />
+                                                <ComboBox fx:id="comboStock" prefWidth="130.0" />
                                             </children>
                                         </HBox>
                                     </children>
@@ -171,7 +171,7 @@
                                 <VBox spacing="4.0">
                                     <children>
                                         <Label fx:id="labelNotes" minWidth="-Infinity" styleClass="form-label" />
-                                        <TextArea fx:id="txtNotes" prefRowCount="2" styleClass="invoice-notes" VBox.vgrow="ALWAYS" />
+                                        <TextArea fx:id="txtNotes" prefRowCount="2" prefWidth="230.0" styleClass="invoice-notes" VBox.vgrow="ALWAYS" />
                                     </children>
                                 </VBox>
                                 <VBox alignment="CENTER" spacing="6.0" styleClass="summary-light-card, quick-invoice-total">

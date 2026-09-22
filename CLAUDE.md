@@ -907,7 +907,21 @@ is not a `UserFacingException` still gets the dialog and its reference code.
 could only be set on the form above the table, so on the quick screen an item whose carton had no
 barcode of its own could not be sold by the carton at all. The editable cells open on a line of the
 invoice only - on the entry row a price or a quantity used to open and then be refused as "the
-invoice line is not valid".
+invoice line is not valid". **The lines table opens with widths of its own** (`applyDefaultWidths`,
+the name taking the room): every column used to open at JavaFX's 80 points, so for anybody but the
+administrator - whose column menu stores widths - an item's name read "زي..." beside half a window of
+empty table. Whether the columns then stretch is the user's "fill the width" setting, which
+`ThemeManager` applies to every table after the screen is built, over any policy set in code.
+
+**Both screens were driven on a schema migrated from nothing (V79 included) and photographed at
+1366**, by a throwaway harness that signs in through `RbacService.signIn` as ordinary users - a cashier
+holding `sales.quick` through the role V79 granted, the same cashier with it denied, and a purchasing
+clerk: a scan, a quantity, an unknown barcode answered in the status line with no dialog, a carton
+chosen on the line at its own price, the save through the payment screen (the invoice stored the
+carton with `type_value` 12), the standard form, the refusals, and a quick purchase. What the pictures
+found and the tests could not: the squeezed columns, a header that wrapped onto a second row, and a
+unit cell whose handler read a field its own commit had cleared. **Not yet seen:** a real scanner and
+keyboard, the toast over an open entry cell, the 80mm receipt, and English.
 
 The quick screen keeps a trailing **entry row** for the operator to scan into. Two rules make that
 safe, and both were missing when it was first written - the screen could not be saved at all:

@@ -104,6 +104,7 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         table.getColumns().addAll(InvoiceTableCoordinator.<T>amountColumns());
         addIdentityColumns();
         addDeleteColumn();
+        applyDefaultWidths();
         // Only the standard screen ever shows this: the quick screen keeps a trailing
         // entry row, so its table is never empty. See QuickInvoiceTable.
         table.setPlaceholder(new Label(LanguageManager.getInstance().getString("invoice.lines.empty")));
@@ -156,6 +157,34 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         addColumn(table, LanguageManager.getInstance().getString("type"), TYPE_COLUMN,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getUnitsType().unit_nameProperty());
+    }
+
+    /**
+     * Widths the table opens with, and the name takes what is left. Without them every column
+     * opened at JavaFX's 80 points with the rest of the window empty beside them, so an item's
+     * name read "زي..." on a screen with half its width unused - on the standard screen as much as
+     * the quick one, for everybody but the administrator, whose column menu stores widths of its
+     * own and is applied after this, so a width somebody chose still wins. The other columns may
+     * grow a little and no more, which is what leaves the spare room to the name.
+     * <p>
+     * Whether the columns stretch to the table's width at all is not decided here: that is the
+     * "fill the available width" choice in the settings, which {@code ThemeManager} applies to
+     * every table once the screen is on its scene, over any policy set now.
+     */
+    private void applyDefaultWidths() {
+        double[] widths = {135, 300, 100, 80, 95, 105, 80, 115};
+        for (int i = 0; i < widths.length; i++) {
+            TableColumn<T, ?> column = table.getColumns().get(i);
+            column.setPrefWidth(widths[i]);
+            if (i != NAME_COLUMN) {
+                column.setMaxWidth(widths[i] * 1.3);
+            }
+        }
+        table.getColumns().get(NAME_COLUMN).setMinWidth(160);
+        TableColumn<T, ?> delete = table.getColumns().get(TOTAL_AFTER_COLUMN + 1);
+        delete.setPrefWidth(64);
+        delete.setMinWidth(64);
+        delete.setMaxWidth(64);
     }
 
     private void addDeleteColumn() {
