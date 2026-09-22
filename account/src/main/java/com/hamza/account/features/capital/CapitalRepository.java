@@ -12,4 +12,7 @@ public interface CapitalRepository {
     CapitalBefore before(LocalDate day) throws DaoException;
 
     BroughtForward broughtForward() throws DaoException;
+
+    /** What the business holds and owes as recorded today - {@link CapitalStatements#RECONCILIATION}. */
+    ReconciliationFigures reconciliation() throws DaoException;
 }

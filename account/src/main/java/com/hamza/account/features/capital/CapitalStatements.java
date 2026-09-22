@@ -1,5 +1,9 @@
 package com.hamza.account.features.capital;
 
+import com.hamza.account.features.items.ItemCatalogSql;
+import com.hamza.account.party.PartyLedgerSpec;
+import com.hamza.account.party.PartyTableSpec;
+
 /**
  * The statements the owner's equity is read from. Pinned character for character with their
  * parameter counts by {@code CapitalStatementsTest}.
@@ -55,6 +59,45 @@ public final class CapitalStatements {
                    (SELECT COALESCE(SUM(st.first_balance * i.buy_price), 0)
                     FROM items_stock st JOIN items i ON i.id = st.item_id) AS stock""";
     public static final int BROUGHT_FORWARD_PARAMETERS = 0;
+
+    /**
+     * What the business holds and owes today, and the two kinds of recorded movement the profit does
+     * not see - the figures {@link EquityReconciliation} sets against the equity. {@code docs/reports-plan.md}
+     * §13.2.
+     * <p>
+     * <b>Each figure is read where it lives.</b> The treasuries from {@code treasury_current_balance},
+     * the one definition of a balance; the parties by the balances screen's own expression, per party
+     * over the ledger view and then split by its sign; the parties' non-cash movements as the account
+     * tables' {@code purchase} column alone - those tables have no {@code discount}, which the ledger view
+     * supplies as a zero for their rows, and the first draft read it and failed on MySQL; the stock by the
+     * items screen's balance times
+     * the buy price, which is the item reports' "stock valuation". {@code CapitalDatabaseAcceptanceTest}
+     * holds each to the screen that shows it.
+     */
+    public static final String RECONCILIATION = """
+            SELECT (SELECT COALESCE(SUM(b.balance), 0) FROM treasury_current_balance b) AS treasuries,
+                   (SELECT COALESCE(SUM(GREATEST(x.balance, 0)), 0) FROM (%1$s) x) AS customers_owe,
+                   (SELECT COALESCE(SUM(GREATEST(-x.balance, 0)), 0) FROM (%1$s) x) AS customers_in_credit,
+                   (SELECT COALESCE(SUM(GREATEST(x.balance, 0)), 0) FROM (%2$s) x) AS suppliers_owed,
+                   (SELECT COALESCE(SUM(GREATEST(-x.balance, 0)), 0) FROM (%2$s) x) AS suppliers_in_advance,
+                   (SELECT COALESCE(SUM(items.buy_price * %3$s), 0)
+                    FROM items JOIN %4$s ip ON items.id = ip.item_id) AS stock,
+                   (SELECT COALESCE(SUM(a.purchase), 0) FROM %5$s a) AS customers_non_cash,
+                   (SELECT COALESCE(SUM(a.purchase), 0) FROM %6$s a) AS suppliers_non_cash,
+                   (SELECT COALESCE(SUM(IF(d.deposit_or_expenses = 1, d.amount, -d.amount)), 0)
+                    FROM treasury_deposit_expenses d
+                    WHERE d.category = 'NORMAL') AS ordinary_cash""".formatted(
+            partyBalances(PartyLedgerSpec.CUSTOMER, PartyTableSpec.CUSTOMER),
+            partyBalances(PartyLedgerSpec.SUPPLIER, PartyTableSpec.SUPPLIER),
+            ItemCatalogSql.BALANCE, ItemCatalogSql.MOVEMENTS,
+            PartyLedgerSpec.CUSTOMER.table(), PartyLedgerSpec.SUPPLIER.table());
+    public static final int RECONCILIATION_PARAMETERS = 0;
+
+    /** One row per party with its balance: {@code PartyBalanceQuery}'s expression, with no date on it. */
+    static String partyBalances(PartyLedgerSpec ledger, PartyTableSpec party) {
+        return "SELECT m.%1$s, ROUND(SUM(m.purchase - m.discount - m.paid), 2) AS balance FROM %2$s m JOIN %3$s p ON p.%4$s = m.%1$s GROUP BY m.%1$s"
+                .formatted(PartyLedgerSpec.PARTY, ledger.view(), party.table(), PartyTableSpec.KEY);
+    }
 
     private CapitalStatements() {
     }

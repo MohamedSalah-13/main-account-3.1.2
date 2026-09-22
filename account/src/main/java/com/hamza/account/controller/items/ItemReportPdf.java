@@ -61,9 +61,10 @@ public final class ItemReportPdf {
 
         // Landscape: these reports are eight to ten columns wide, and portrait squeezes the
         // name column - the one the reader is scanning - into a stack of single letters.
+        String[] totals = totalsLine(result);
         return new PdfExportService().exportGenericReport(
                 filePath, title, subtitle, headers, widths, rows,
-                totalsLabel(result), totalsValue(result), null, PageSize.A4.rotate());
+                totals == null ? null : totals[0], totals == null ? null : totals[1], null, PageSize.A4.rotate());
     }
 
     /**
@@ -93,26 +94,28 @@ public final class ItemReportPdf {
     }
 
     /**
-     * The totals strip, folded into the single label and value the generic exporter offers.
+     * The totals strip, folded into the label cell and the value cell the generic exporter
+     * offers - or null when there is none.
      * <p>
      * A report with several totals gets them joined into one line rather than dropped: the
      * figures under the table are usually the reason the page was printed, and losing all
-     * but the first would be the quiet kind of wrong.
+     * but the first would be the quiet kind of wrong. <b>Each figure stays beside its own
+     * label</b>, in the wide cell, and the value cell is left empty. The labels used to go in
+     * one cell and the figures in the other, which is the width of the report's last column:
+     * a reader had to pair them by position, and on the Pareto paper - whose last column is one
+     * letter wide - the four figures came out as a stack of broken lines.
      */
-    private static String totalsLabel(ItemReportResult result) {
-        if (result.totals().isEmpty()) return null;
+    static String[] totalsLine(ItemReportResult result) {
+        List<ItemReportResult.Total> totals = result.totals();
+        if (totals.isEmpty()) return null;
         LanguageManager language = LanguageManager.getInstance();
-        return result.totals().stream()
-                .map(total -> language.getString(total.labelKey()))
+        if (totals.size() == 1) {
+            return new String[]{language.getString(totals.getFirst().labelKey()), totals.getFirst().value()};
+        }
+        String line = totals.stream()
+                .map(total -> language.getString(total.labelKey()) + ": " + total.value())
                 .reduce((first, second) -> first + "  |  " + second)
-                .orElse(null);
-    }
-
-    private static String totalsValue(ItemReportResult result) {
-        if (result.totals().isEmpty()) return null;
-        return result.totals().stream()
-                .map(ItemReportResult.Total::value)
-                .reduce((first, second) -> first + "  |  " + second)
-                .orElse(null);
+                .orElseThrow();
+        return new String[]{line, ""};
     }
 }

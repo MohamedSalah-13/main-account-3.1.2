@@ -52,6 +52,11 @@ public record ItemReportColumn(String titleKey, Kind kind, int weight) {
         return new ItemReportColumn(titleKey, Kind.NUMBER, 2);
     }
 
+    /** One character - a class letter, a mark. Text, as narrow as a count. */
+    public static ItemReportColumn mark(String titleKey) {
+        return new ItemReportColumn(titleKey, Kind.TEXT, 1);
+    }
+
     public static ItemReportColumn count(String titleKey) {
         return new ItemReportColumn(titleKey, Kind.COUNT, 1);
     }

@@ -61,6 +61,8 @@
                                 <ComboBox fx:id="comboActive" prefWidth="130.0" />
                                 <Label fx:id="labelFrom" styleClass="form-label" text="%itemreport.date.from" />
                                 <DatePicker fx:id="dateFrom" prefWidth="150.0" />
+                                <Label fx:id="labelTo" managed="false" styleClass="form-label" text="%itemreport.date.to" visible="false" />
+                                <DatePicker fx:id="dateTo" managed="false" prefWidth="150.0" visible="false" />
                                 <Region HBox.hgrow="ALWAYS" />
                                 <Button fx:id="btnRun" mnemonicParsing="false" styleClass="primary-button"
                                         text="%itemreport.run" />

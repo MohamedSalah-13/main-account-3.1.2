@@ -62,4 +62,16 @@ public final class EquityStatementService {
         return new EquityStatement(filter, repository.broughtForward(), repository.before(filter.from()),
                 profitBefore, repository.days(filter.from(), filter.to()), profitDays);
     }
+
+    /**
+     * What the business holds less what it owes, against the equity the statement closes on
+     * {@code asOf} - {@code docs/reports-plan.md} §13. The same keys as the statement: it is read
+     * through {@link #statement}, so the profit and loss's own permission is asked there, and whoever
+     * may read the equity may read what it is set against, summed.
+     */
+    public EquityReconciliation reconciliation(LocalDate asOf) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_CAPITAL);
+        BigDecimal equity = statement(new CapitalFilter(asOf, asOf)).closing();
+        return new EquityReconciliation(asOf, repository.reconciliation(), equity);
+    }
 }

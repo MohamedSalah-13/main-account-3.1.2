@@ -2587,6 +2587,13 @@
     -fx-text-fill: -app-text-muted;
 }
 
+/* The two colours above are chosen for the card behind the list; on the selection's own
+   background the muted description vanished, on the one row whose description is being read. */
+.list-cell:filled:selected .item-report-name,
+.list-cell:filled:selected .item-report-hint {
+    -fx-text-fill: white;
+}
+
 .item-report-total {
     -fx-font-size: 1.05em;
     -fx-text-fill: -app-text-strong;

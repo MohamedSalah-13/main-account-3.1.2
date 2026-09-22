@@ -16,6 +16,7 @@ import com.hamza.account.service.SupGroupService;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.others.DateSetting;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -72,13 +73,13 @@ public class ItemReportsController {
     @FXML
     private ListView<ItemReport> reportList;
     @FXML
-    private Label labelDescription, labelFrom;
+    private Label labelDescription, labelFrom, labelTo;
     @FXML
     private ComboBox<ItemsFilterBar.GroupChoice> comboGroup;
     @FXML
     private ComboBox<ItemCatalogFilter.Tristate> comboActive;
     @FXML
-    private DatePicker dateFrom;
+    private DatePicker dateFrom, dateTo;
     @FXML
     private Button btnRun, btnExport, btnPrint;
     @FXML
@@ -105,6 +106,9 @@ public class ItemReportsController {
      * page, and a printed report that does not match the screen is worse than none.
      */
     private ItemReportResult current;
+
+    /** What the first date box held for the other kind of report, while this kind has it. */
+    private java.time.LocalDate periodStart, singleDay;
 
     public void setOpeningFilter(ItemCatalogFilter filter) {
         this.openingFilter = filter == null ? ItemCatalogFilter.EMPTY : filter;
@@ -160,11 +164,51 @@ public class ItemReportsController {
             labelFrom.setManaged(dated);
             // "From" and "until" are opposite questions; the report says which one it asks.
             labelFrom.setText(LanguageManager.getInstance().getString(report.dateLabelKey()));
+            boolean period = report.usesPeriod();
+            dateTo.setVisible(period);
+            dateTo.setManaged(period);
+            labelTo.setVisible(period);
+            labelTo.setManaged(period);
+            // The first box is two different questions - where a period starts, or the one day a
+            // dated report asks "until" or "since" - so each kind keeps its own answer. Shared,
+            // a Pareto run left 2025/10/01 in it and "expiring" then listed what had expired by
+            // then, under the word "until".
+            if (old != null && old.usesPeriod() != period) {
+                java.time.LocalDate leaving = dateFrom.getValue();
+                dateFrom.setValue(period ? periodStart : singleDay);
+                if (period) {
+                    singleDay = leaving;
+                } else {
+                    periodStart = leaving;
+                }
+            }
+            if (period) {
+                seedPeriod();
+            }
             run();
         });
     }
 
+    /**
+     * A period report opens on the twelve months to today - the party profile's default - where the
+     * boxes are empty, and never over a date somebody chose. Both boxes are filled, so what is on
+     * screen is what the report is about.
+     */
+    private void seedPeriod() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (dateTo.getValue() == null) {
+            dateTo.setValue(today);
+        }
+        if (dateFrom.getValue() == null) {
+            dateFrom.setValue(today.withDayOfMonth(1).minusMonths(11));
+        }
+    }
+
     private void setUpFilters() {
+        // The format every other screen writes a date in - the bare pickers wrote 9/22/2026 - and
+        // no seeded today: an empty box means "not asked", and seedPeriod fills a period itself.
+        DateSetting.dateFilter(dateFrom);
+        DateSetting.dateFilter(dateTo);
         comboActive.setItems(FXCollections.observableArrayList(ItemCatalogFilter.Tristate.values()));
         comboActive.setConverter(new StringConverter<>() {
             @Override
@@ -254,7 +298,8 @@ public class ItemReportsController {
                 .withActive(comboActive.getValue() == null
                         ? ItemCatalogFilter.Tristate.ANY : comboActive.getValue());
         ItemReportRequest request = new ItemReportRequest(filter,
-                report.usesDateRange() ? dateFrom.getValue() : null, null);
+                report.usesDateRange() ? dateFrom.getValue() : null,
+                report.usesPeriod() ? dateTo.getValue() : null);
 
         setBusy(true);
         Task<ItemReportResult> task = new Task<>() {
@@ -269,8 +314,11 @@ public class ItemReportsController {
         });
         task.setOnFailed(event -> {
             setBusy(false);
+            // Handed on as it is: wrapped in a plain Exception, a refusal or a period typed the wrong way
+            // round reached the operator as a reference code, as if the report had broken.
+            Throwable error = task.getException();
             AllAlerts.handleError(LanguageManager.getInstance().getString("itemreport.error.title"),
-                    new Exception(task.getException()));
+                    error instanceof Exception exception ? exception : new Exception(error));
         });
         RUNNER.execute(task);
     }
@@ -375,6 +423,8 @@ public class ItemReportsController {
         if (file == null) return;
 
         String subtitle = language.getString(report.descriptionKey())
+                + (report.usesPeriod() ? "  -  " + language.getString("itemreport.date.from") + " " + dateFrom.getValue()
+                + " " + language.getString("itemreport.date.to") + " " + dateTo.getValue() : "")
                 + "  -  " + java.time.LocalDate.now();
         boolean written = ItemReportPdf.write(current,
                 language.getString(report.titleKey()), subtitle, file.getAbsolutePath());
