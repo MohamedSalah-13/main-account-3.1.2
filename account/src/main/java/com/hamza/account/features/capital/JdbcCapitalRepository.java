@@ -18,6 +18,7 @@ public final class JdbcCapitalRepository implements CapitalRepository {
     private final Days days = new Days();
     private final Before before = new Before();
     private final Forward forward = new Forward();
+    private final Reconciliation reconciliation = new Reconciliation();
 
     @Override
     public List<CapitalDay> days(LocalDate from, LocalDate to) throws DaoException {
@@ -35,6 +36,26 @@ public final class JdbcCapitalRepository implements CapitalRepository {
     public BroughtForward broughtForward() throws DaoException {
         List<BroughtForward> rows = forward.queryForObjects(CapitalStatements.BROUGHT_FORWARD, forward::map);
         return rows.getFirst();
+    }
+
+    @Override
+    public ReconciliationFigures reconciliation() throws DaoException {
+        return reconciliation.queryForObjects(CapitalStatements.RECONCILIATION, reconciliation::map).getFirst();
+    }
+
+    private static final class Reconciliation extends AbstractDao<ReconciliationFigures> {
+        @Override
+        public ReconciliationFigures map(ResultSet rs) throws DaoException {
+            try {
+                return new ReconciliationFigures(rs.getBigDecimal("treasuries"), rs.getBigDecimal("customers_owe"),
+                        rs.getBigDecimal("customers_in_credit"), rs.getBigDecimal("suppliers_owed"),
+                        rs.getBigDecimal("suppliers_in_advance"), rs.getBigDecimal("stock"),
+                        rs.getBigDecimal("customers_non_cash"), rs.getBigDecimal("suppliers_non_cash"),
+                        rs.getBigDecimal("ordinary_cash"));
+            } catch (SQLException e) {
+                throw new DaoException(e);
+            }
+        }
     }
 
     private static final class Days extends AbstractDao<CapitalDay> {

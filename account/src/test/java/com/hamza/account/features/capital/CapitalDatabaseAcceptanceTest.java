@@ -1,5 +1,12 @@
 package com.hamza.account.features.capital;
 
+import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.itemreports.CatalogFact;
+import com.hamza.account.features.itemreports.JdbcCatalogFactRepository;
+import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.features.party.balances.PartyBalanceFilter;
+import com.hamza.account.features.party.balances.PartyBalanceService;
+import com.hamza.account.features.party.balances.PartyBalanceSummary;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -44,6 +51,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * quarter 5,000 paid in, 800 drawn from a second treasury, and two sales earning 900. The opening
  * equity is 5,200 and the closing 10,300 - and the profit and loss for the quarter is 900 exactly,
  * which is the proof that neither the 5,000 nor the 800 reached it.</p>
+ *
+ * <p>The reconciliation (§13) as at the quarter's end, by hand: the treasuries hold 11,177, the
+ * customer owes 460 (the 400 brought forward and a debit note of 60), the supplier is owed 150 and two
+ * pieces are left at 50 - net assets of 11,587 against equity of 10,300. The 777 ordinary deposit and
+ * the 60 note explain 837 of the 1,287 between them; the 450 left is the sales' recorded costs (600)
+ * less what the three pieces were worth at the buy price (150), which is exactly the kind of difference
+ * the screen says it leaves unexplained.</p>
  *
  * <p>One scratch schema, migrated from empty and dropped in {@code @AfterAll}; the configured
  * database is a credential carrier and is never opened. <b>The session is never user 1.</b></p>
@@ -165,11 +179,68 @@ class CapitalDatabaseAcceptanceTest {
     }
 
     @Test
+    @DisplayName("the return is the period's profit over the mean of its opening and closing equity")
+    void theReturnOnEquity() throws Exception {
+        signIn(AppPermissions.TREASURY_CAPITAL, AppPermissions.REPORTS_SHOW_PROFIT);
+        List<EquityPeriod> months = SERVICE.statement(Q1).periods(TrendGranularity.MONTH);
+
+        assertMoney("8000", months.get(0).averageEquity());
+        assertMoney("7.50", months.get(0).returnOnEquity().orElseThrow());
+        assertMoney("0.00", months.get(1).returnOnEquity().orElseThrow());
+        assertMoney("10550", months.get(2).averageEquity());
+        assertMoney("2.84", months.get(2).returnOnEquity().orElseThrow());
+    }
+
+    @Test
+    @DisplayName("the reconciliation, worked by hand: 450 left unexplained, and it is the costs")
+    void theReconciliation() throws Exception {
+        signIn(AppPermissions.TREASURY_CAPITAL, AppPermissions.REPORTS_SHOW_PROFIT);
+        EquityReconciliation reconciliation = SERVICE.reconciliation(Q1.to());
+        ReconciliationFigures figures = reconciliation.figures();
+
+        assertMoney("11177", figures.treasuries());
+        assertMoney("460", figures.customersOwe());
+        assertMoney("0", figures.customersInCredit());
+        assertMoney("150", figures.suppliersOwed());
+        assertMoney("0", figures.suppliersInAdvance());
+        assertMoney("100", figures.stock());
+        assertMoney("60", figures.customersNonCash());
+        assertMoney("777", figures.ordinaryCash());
+        assertMoney("11587", reconciliation.netAssets());
+        assertMoney("10300", reconciliation.equity());
+        assertMoney("1287", reconciliation.difference());
+        assertMoney("450", reconciliation.unexplained());
+    }
+
+    /** Each figure is the one the screen that owns it shows - read from that screen's own code. */
+    @Test
+    @DisplayName("each figure of the reconciliation is its own screen's")
+    void eachFigureIsItsScreens() throws Exception {
+        signIn(AppPermissions.TREASURY_CAPITAL, AppPermissions.REPORTS_SHOW_PROFIT,
+                AppPermissions.CUSTOMER_ACCOUNT_SHOW, AppPermissions.SUPPLIERS_ACCOUNT_SHOW);
+        ReconciliationFigures figures = SERVICE.reconciliation(Q1.to()).figures();
+        PartyBalanceService balances = new PartyBalanceService();
+        PartyBalanceSummary customers = balances.search(PartyBalanceFilter.allToday(PartyKind.CUSTOMER)).summary();
+        PartyBalanceSummary suppliers = balances.search(PartyBalanceFilter.allToday(PartyKind.SUPPLIER)).summary();
+        double stock = new JdbcCatalogFactRepository().facts(ItemCatalogFilter.EMPTY, false).stream()
+                .mapToDouble(CatalogFact::valueAtCost).sum();
+
+        assertEquals(0, customers.totalOwed().compareTo(figures.customersOwe()));
+        assertEquals(0, customers.totalInCredit().compareTo(figures.customersInCredit()));
+        assertEquals(0, suppliers.totalOwed().compareTo(figures.suppliersOwed()));
+        assertEquals(0, suppliers.totalInCredit().compareTo(figures.suppliersInAdvance()));
+        assertEquals(stock, figures.stock().doubleValue(), 0.001, "the item reports' stock valuation");
+        assertEquals(scalar("SELECT ROUND(SUM(balance)) FROM treasury_current_balance"),
+                figures.treasuries().intValue());
+    }
+
+    @Test
     @DisplayName("the capital alone opens the movements; the statement also needs the profit")
     void thePermissions() throws Exception {
         signIn(AppPermissions.TREASURY_CAPITAL);
         assertEquals(2, SERVICE.movements(Q1).size());
         assertThrows(BusinessRuleException.class, () -> SERVICE.statement(Q1));
+        assertThrows(BusinessRuleException.class, () -> SERVICE.reconciliation(Q1.to()));
 
         signIn(AppPermissions.REPORTS_SHOW_PROFIT);
         assertThrows(BusinessRuleException.class, () -> SERVICE.movements(Q1));
@@ -215,6 +286,9 @@ class CapitalDatabaseAcceptanceTest {
         sale(8003, customer, "2026-03-20", "500", "200", item);
         // An ordinary deposit is the till's, not the owner's: in no line of the statement.
         owner("2026-02-02", drawer, 1, "NORMAL", "777");
+        // A debit note: the customer owes 60 more, and no cash and no profit moved.
+        execute("INSERT INTO customers_accounts (account_code, account_date, purchase, paid, notes, numberInv)"
+                + " VALUES (" + customer + ", '2026-02-10', 60, 0, '" + STAMP + "', 0)");
     }
 
     private static void owner(String date, int treasury, int direction, String category, String amount)

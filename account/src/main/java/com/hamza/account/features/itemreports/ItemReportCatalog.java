@@ -21,7 +21,11 @@ public final class ItemReportCatalog {
     private final Map<String, ItemReport> byId = new LinkedHashMap<>();
 
     public ItemReportCatalog(CatalogFactRepository repository) {
-        for (ItemReport report : reports(repository)) {
+        this(repository, new JdbcItemSalesRepository());
+    }
+
+    public ItemReportCatalog(CatalogFactRepository repository, ItemSalesRepository sales) {
+        for (ItemReport report : reports(repository, sales)) {
             byId.put(report.id(), report);
         }
     }
@@ -30,13 +34,16 @@ public final class ItemReportCatalog {
      * The reports, in the order an owner would work through them: what is going off first,
      * because that one has a date attached and the others do not; then what is running out,
      * what the catalogue is worth, what is priced wrongly, what has been sitting still, and
-     * finally the whole catalogue by group.
+     * finally the whole catalogue by group. The two Pareto reports follow the valuation: after what
+     * the stock is worth, which few items the money comes from.
      */
-    private static List<ItemReport> reports(CatalogFactRepository repository) {
+    private static List<ItemReport> reports(CatalogFactRepository repository, ItemSalesRepository sales) {
         return List.of(
                 new ExpiringItemsReport(repository),
                 new StockLevelReport(repository),
                 new ValuationReport(repository),
+                new ParetoReport(sales, ParetoReport.Basis.NET),
+                new ParetoReport(sales, ParetoReport.Basis.MARGIN),
                 new PriceAnomalyReport(repository),
                 new UnusedItemsReport(repository),
                 new GroupBreakdownReport(repository));

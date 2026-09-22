@@ -5,6 +5,7 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.features.capital.CapitalByTreasuryRow;
 import com.hamza.account.features.capital.CapitalFilter;
+import com.hamza.account.features.capital.EquityReconciliation;
 import com.hamza.account.features.capital.EquityPeriod;
 import com.hamza.account.features.capital.EquityStatement;
 import com.hamza.account.features.capital.EquityStatementLine;
@@ -78,7 +79,9 @@ import java.util.Set;
  * row per treasury - the row {@code docs/treasury-plan.md} §4.3 specified and this screen never had -
  * and totals added up in SQL rather than over whatever happened to be loaded. The second is the
  * equity statement of {@code docs/reports-plan.md} §6: brought forward, the owner's movements and the
- * profit and loss's own profit, with the equity drawn over the period. The arithmetic is all
+ * profit and loss's own profit, with the equity drawn over the period, and the return on it period
+ * by period. The fourth sets what the business holds less what it owes against that equity, as
+ * recorded today (§13). The arithmetic is all
  * {@code features/capital}'s, with a test each, and held to MySQL by
  * {@code CapitalDatabaseAcceptanceTest}.</p>
  *
@@ -136,10 +139,17 @@ public class TreasuryCapitalController {
     private final ContentSizedColumns<CapitalByTreasuryRow> treasuryWidths = new ContentSizedColumns<>();
     private final ContentSizedColumns<EquityStatementLine> lineWidths = new ContentSizedColumns<>();
     private final ContentSizedColumns<EquityPeriod> periodWidths = new ContentSizedColumns<>();
+    private final TableView<EquityStatementLine> reconcileTable = new TableView<>();
+    private final ContentSizedColumns<EquityStatementLine> reconcileWidths = new ContentSizedColumns<>();
+    private final Label reconcileAsOf = new Label();
+    private final Label reconcileDifference = new Label();
+    private final Label reconcileUnexplained = new Label();
     private final ProgressIndicator progress = new ProgressIndicator();
     private Tab movementsTab;
     private Tab equityTab;
     private Tab periodsTab;
+    private Tab reconcileTab;
+    private EquityReconciliation reconciliation;
     private EquityStatement statement;
     private int generation;
 
@@ -194,7 +204,15 @@ public class TreasuryCapitalController {
         if (AuthorizationGuard.isGranted(AppPermissions.REPORTS_SHOW_PROFIT)) {
             equityTab = new Tab(text("capital.tab.equity"), equityPane());
             periodsTab = new Tab(text("capital.tab.periods"), periodsPane());
-            tabs.getTabs().addAll(equityTab, periodsTab);
+            reconcileTab = new Tab(text("capital.tab.reconcile"), reconcilePane());
+            tabs.getTabs().addAll(equityTab, periodsTab, reconcileTab);
+            // As recorded today, whatever the period above says - so read when it is looked at, and
+            // again each time, rather than with every change of a date it does not use.
+            tabs.getSelectionModel().selectedItemProperty().addListener((observable, was, now) -> {
+                if (now == reconcileTab) {
+                    loadReconciliation();
+                }
+            });
         }
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         progress.setMaxSize(48, 48);
@@ -271,7 +289,11 @@ public class TreasuryCapitalController {
                 named("capitalPeriodIn", Columns.money("capital.equity.paid.in", EquityPeriod::paidIn)),
                 named("capitalPeriodOut", Columns.money("capital.equity.drawn", EquityPeriod::drawn)),
                 named("capitalPeriodProfit", Columns.money("capital.equity.profit", EquityPeriod::profit)),
-                named("capitalPeriodClosing", Columns.money("capital.column.closing", EquityPeriod::closing))));
+                named("capitalPeriodClosing", Columns.money("capital.column.closing", EquityPeriod::closing)),
+                named("capitalPeriodAverage", Columns.money("capital.column.average", EquityPeriod::averageEquity)),
+                // Absent, not zero, where the average is nothing or a deficit (EquityPeriod.returnOnEquity).
+                named("capitalPeriodReturn", Columns.text("capital.column.return", period -> period.returnOnEquity()
+                        .map(value -> value.toPlainString() + "%").orElse("—")))));
         periodWidths.install(periodsTable);
 
         granularityCombo(comboPeriodsGranularity);
@@ -295,6 +317,74 @@ public class TreasuryCapitalController {
         VBox.setVgrow(periodsTable, Priority.ALWAYS);
         pane.setPadding(new Insets(6, 0, 0, 0));
         return pane;
+    }
+
+    /**
+     * What the business holds less what it owes, against the equity, as recorded today - with the
+     * statement's own row styles, since its lines are the statement's kind of line.
+     * <p>
+     * The day, the two answers and the hint stand <b>beside</b> the table rather than above and
+     * below it. Stacked, the fourteen lines ran past a 1366x768 window and the last of them - what
+     * nothing explains, the line the tab exists to answer - was the one behind the scroll bar.
+     */
+    private HBox reconcilePane() {
+        reconcileTable.setId("capitalReconciliation");
+        reconcileTable.getColumns().setAll(List.of(
+                named("capitalReconcileLabel", Columns.text("capital.column.line", line -> label(line))),
+                named("capitalReconcileAmount", Columns.money("capital.column.amount", EquityStatementLine::amount))));
+        reconcileWidths.install(reconcileTable);
+        reconcileTable.setRowFactory(table -> new TableRow<>() {
+            @Override
+            protected void updateItem(EquityStatementLine line, boolean empty) {
+                super.updateItem(line, empty);
+                pseudoClassStateChanged(TOTAL, !empty && line != null && line.kind() == EquityStatementLine.Kind.TOTAL);
+                pseudoClassStateChanged(DETAIL, !empty && line != null && line.kind() == EquityStatementLine.Kind.DETAIL);
+            }
+        });
+        reconcileTable.setMaxWidth(560);
+        reconcileAsOf.getStyleClass().add("form-label");
+        reconcileDifference.getStyleClass().add("section-title");
+        reconcileUnexplained.getStyleClass().add("section-title");
+
+        Label hint = new Label(text("capital.reconcile.hint"));
+        hint.getStyleClass().add("page-subtitle");
+        hint.setWrapText(true);
+        hint.setMinHeight(Region.USE_PREF_SIZE);
+        VBox side = new VBox(10, reconcileAsOf, reconcileDifference, reconcileUnexplained, hint);
+        side.setMaxWidth(460);
+        HBox pane = new HBox(16, reconcileTable, side);
+        HBox.setHgrow(reconcileTable, Priority.ALWAYS);
+        pane.setPadding(new Insets(6, 0, 0, 0));
+        return pane;
+    }
+
+    private void loadReconciliation() {
+        LocalDate today = LocalDate.now();
+        progress.setVisible(true);
+        Task<EquityReconciliation> task = new Task<>() {
+            @Override
+            protected EquityReconciliation call() throws Exception {
+                return equityService.reconciliation(today);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            progress.setVisible(false);
+            reconciliation = task.getValue();
+            reconcileAsOf.setText(LanguageManager.getInstance().getString("capital.reconcile.as.of", today));
+            reconcileDifference.setText(text("capital.reconcile.difference") + ": "
+                    + Columns.money(reconciliation.difference()));
+            reconcileUnexplained.setText(text("capital.reconcile.unexplained") + ": "
+                    + Columns.money(reconciliation.unexplained()));
+            reconcileTable.getItems().setAll(reconciliation.lines());
+            reconcileWidths.layout(reconcileTable);
+        });
+        task.setOnFailed(event -> {
+            progress.setVisible(false);
+            Throwable error = task.getException();
+            AllAlerts.handleError(text("treasury.capital.op.load"),
+                    error instanceof Exception exception ? exception : new Exception(error));
+        });
+        TablePdfReport.start(task, "treasury-capital-reconcile");
     }
 
     private void granularityCombo(ComboBox<TrendGranularity> combo) {
@@ -501,6 +591,10 @@ public class TreasuryCapitalController {
             printPeriods();
             return;
         }
+        if (selected == reconcileTab && reconcileTab != null) {
+            printReconciliation();
+            return;
+        }
         historyTable.print(text("treasury.capital.title"),
                 text("from") + ": " + fromDate.getValue() + "  |  " + text("to") + ": " + toDate.getValue()
                         + "  |  " + paidInLabel.getText() + "  |  " + drawnLabel.getText()
@@ -522,6 +616,23 @@ public class TreasuryCapitalController {
         // statement itself - on page two; the periods paper carries the equity figure by period.
         TablePdfLayout layout = TablePdfLayout.from(linesTable, linesTable.getItems(), Set.of());
         TablePdfReport.write(target, title, subtitle(), layout, () -> { });
+    }
+
+    /** Alone and upright, like the statement it is set against; the day it is as at in the subtitle. */
+    private void printReconciliation() {
+        if (reconciliation == null) {
+            AllAlerts.alertError(text("party.error.no.data.print"));
+            return;
+        }
+        String title = text("capital.tab.reconcile");
+        File target = TablePdfReport.chooseTarget(root.getScene().getWindow(), title);
+        if (target == null) {
+            return;
+        }
+        TablePdfLayout layout = TablePdfLayout.from(reconcileTable, reconcileTable.getItems(), Set.of());
+        // Today's stock, not the opening one the equity statement's caveat is about.
+        TablePdfReport.write(target, title, reconcileAsOf.getText() + "  |  " + text("capital.reconcile.stock.valuation"),
+                layout, () -> { });
     }
 
     /** The periods under the bars as drawn, with the three movements totalled - the closing is not a sum. */
@@ -558,6 +669,18 @@ public class TreasuryCapitalController {
                 }
                 int written = ExportData.exportDataToExcel(periods,
                         VisibleColumnsExcelWriter.of(text("capital.tab.periods"), periodsTable, Set.of(), periods));
+                if (written >= 1) {
+                    AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
+                }
+                return;
+            }
+            if (tabs.getSelectionModel().getSelectedItem() == reconcileTab && reconcileTab != null) {
+                List<EquityStatementLine> lines = List.copyOf(reconcileTable.getItems());
+                if (lines.isEmpty()) {
+                    throw new UserValidationException(text("party.error.no.data.export"));
+                }
+                int written = ExportData.exportDataToExcel(lines,
+                        VisibleColumnsExcelWriter.of(text("capital.tab.reconcile"), reconcileTable, Set.of(), lines));
                 if (written >= 1) {
                     AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
                 }

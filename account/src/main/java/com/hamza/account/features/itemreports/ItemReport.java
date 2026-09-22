@@ -52,5 +52,14 @@ public interface ItemReport {
         return "itemreport.date.from";
     }
 
+    /**
+     * Whether the report reads a period - the date box as its start and a second as its end. A report
+     * over a period answers about exactly those dates, so the second box is shown only where it is read,
+     * for the reason {@link #usesDateRange} gives.
+     */
+    default boolean usesPeriod() {
+        return false;
+    }
+
     ItemReportResult run(ItemReportRequest request) throws DaoException;
 }

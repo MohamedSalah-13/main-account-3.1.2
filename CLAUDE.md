@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,398 tests** with 248 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-22 with reports phases 0 to C built. What is
+**3,440 tests** with 255 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-22 with reports phases 0 to D built. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -91,10 +91,11 @@ checks for its own residue rather than trusting the rollback.
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 **That list is itself out of date** - forty `*AcceptanceTest` files exist, and the later areas' own
-sections name theirs. The reports work added three, each building a scratch schema of its own from
+sections name theirs. The reports work added four, each building a scratch schema of its own from
 nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
-`PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest` and
-`CustomerRfmDatabaseAcceptanceTest` (`docs/reports-plan.md` §12).
+`PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest`,
+`CustomerRfmDatabaseAcceptanceTest` and `ParetoDatabaseAcceptanceTest` (`docs/reports-plan.md` §12
+and §13.3).
 **They read `account/config.xml` for the credentials alone**, and `ExpenseDatabaseAcceptanceTest` also
 takes `ACCOUNT_DB_ACCEPTANCE_CONFIG` to name that file outright - which is how it runs from a worktree,
 where there is deliberately no database configuration to copy a secret into.
@@ -305,8 +306,8 @@ Two documents govern work here and are kept current — read them before large c
   run, and why a collection's delegate is written at entry rather than derived. **Read the first before
   starting any large item, and the matching one before touching `TrialManager` or anything under
   `features/delegate`.**
-- **[`docs/reports-plan.md`](docs/reports-plan.md)** - the reports contract, written 2026-09-22 and
-  **not yet built**: every "opening" figure is equity brought forward and never a period movement,
+- **[`docs/reports-plan.md`](docs/reports-plan.md)** - the reports contract, written 2026-09-22:
+  every "opening" figure is equity brought forward and never a period movement,
   the profit on the equity statement is `ProfitLossDao`'s and nothing recomputes it, a report
   explains a figure a screen already shows and is held to it on MySQL, and the hub (phase C) opens
   existing screens rather than hosting copies. §2 is what the review found in the existing reports -
@@ -317,9 +318,13 @@ Two documents govern work here and are kept current — read them before large c
   owner's equity) and C (the reports hub, the shared trend chart and the customers' recency, frequency
   and value) are **built, green on MySQL and seen on a copy of the development data** - see
   **A party's profile**, **The owner's equity** and **The reports hub** below; §12 is what differed
-  from the plan and what only the screen and the rendered paper found. §8 is what still needs a decision.
+  from the plan and what only the screen and the rendered paper found. Phase D's first three items -
+  the return on equity, the reconciliation of assets against equity, and the items' Pareto - were
+  decided in §13 and are **built, green on MySQL twice and seen on a copy** (§13.3, and **Items by
+  Pareto** below); the other three (a warehouse filter on the item reports, stock turnover, the
+  periodic tax report) wait on the decisions §13.1 names.
   **Read it before adding a report or a chart anywhere, and before touching `controller/reports`,
-  `features/party/profile`, `features/capital` or `TreasuryCapitalController`.**
+  `features/party/profile`, `features/capital`, `features/itemreports` or `TreasuryCapitalController`.**
 - **[`docs/permissions-plan.md`](docs/permissions-plan.md)** - the authorization contract: why a
   permission is a string key with no database id, why a declared key must be read by something (eight
   were not), why a permission's name comes from the bundles and not from
@@ -2182,8 +2187,24 @@ with no period, no units and no returns. `docs/reports-plan.md` §5 and §12.2.
   sides at once. The totals are summed in SQL by day and treasury - the row per treasury
   `docs/treasury-plan.md` §4.3 specified.
 - It is **not a balance sheet**: without a ledger nothing proves the assets equal this figure, and the
-  screen says that in a sentence. `CapitalDatabaseAcceptanceTest` (gated, five cases) works a quarter
+  screen says that in a sentence. `CapitalDatabaseAcceptanceTest` (gated, eight cases) works a quarter
   out by hand and checks the profit and loss for it is exactly the trading profit.
+- **The return on equity is the period's profit over the mean of its opening and closing equity**
+  (`EquityPeriod.returnOnEquity`), and it is **absent, not zero**, when that mean is zero or less -
+  dividing by it means nothing. The opening is the closing less the period's change, so the column
+  needs no query of its own.
+- **The reconciliation sets what the business holds today against the equity, and does not call
+  itself a balance sheet** (`EquityReconciliation`, the fourth tab). **Each figure is read where it
+  lives** (`CapitalStatements.RECONCILIATION`): the treasuries from `treasury_current_balance`, each
+  party by the balances screen's own expression and then split by its sign, the stock by the items
+  screen's balance times the buy price - the item reports' valuation, which a copy of real data showed
+  equal to the piastre. What explains part of the difference is shown by name: the parties' non-cash
+  movements, and the treasury's ordinary deposits and withdrawals, which `ProfitLossDao` never reads.
+  The rest is **unexplained**, on the table and beside it. Two traps it met: **the account tables have
+  no `discount` column** - the ledger view supplies a zero for their rows - so the non-cash line is
+  `SUM(purchase)` alone, and the first draft failed on the first MySQL it met; and **employees are
+  left out on purpose**, since the profit counts a salary on the day it is paid. As at today only: a
+  past day would need a second definition of an item's balance.
 
 ### The reports hub
 
@@ -2221,6 +2242,31 @@ settings name one** (`PropertiesName.getChosenDefaultCustomer`): the setting's o
 `1`, and on a real database customer 1 was a person while the bucket was number 48 - excluded on that
 guess, a real customer vanished from the table while the bucket headed it. The screen and the paper
 say who was left out, or that nobody was.
+
+### Items by Pareto
+
+`features/itemreports` (`ParetoRanking`, `ParetoReport`, `JdbcItemSalesRepository`), two reports in the
+item reports screen: by net sales and by margin. `docs/reports-plan.md` §13.
+
+- **Per item, sales less returns, each side grouped before the union**; a line's amount is
+  `ItemNetLines.lineAmount`, so the rows and the party profile read a line one way. **A discount on a
+  whole invoice is not shared among items**: it is its own line under the table, shown only when
+  nothing narrows the report, and items less it is `document_profit`'s net and profit -
+  `ParetoDatabaseAcceptanceTest` holds both on MySQL.
+- **The class is decided by the cumulative share *before* the item**: under 80% A, under 95% B, the rest
+  C, so the first item is always A. An item whose figure is zero or less has no share and no class
+  ("—"). Net asks `reports.show.items`; margin asks `reports.show.profit` on top, being a profit.
+- **Both reports fit the table at 1366x768** (`ParetoReport.FITS_THE_SMALLEST_SCREEN`, 18 width units):
+  drawn first, the margin report was nine columns and its class - the answer - sat behind the
+  horizontal scroll bar. The class is one letter wide (`ItemReportColumn.mark`) and the margin report
+  leaves the quantity to the net one.
+- **A period report and a dated one read the first date box as two questions**, so each kind keeps
+  its own value (`ItemReportsController.periodStart`/`singleDay`): shared, a Pareto run left its start
+  in the box and "expiring" then listed what had expired by that day, under the word "until".
+- **An item report's paper keeps each total beside its label** (`ItemReportPdf.totalsLine`). The
+  labels used to be joined in the wide cell and the figures in the last column's - the width of one
+  letter on Pareto - so a reader paired them by position. Every item report with several totals
+  printed that way.
 
 ### Printed reports
 

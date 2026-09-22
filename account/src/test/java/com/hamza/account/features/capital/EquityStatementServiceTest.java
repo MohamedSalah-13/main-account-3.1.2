@@ -76,6 +76,36 @@ class EquityStatementServiceTest {
         assertEquals(0, statement.opening().signum());
     }
 
+    @Test
+    void theReconciliationNeedsTheCapitalPermission() {
+        signIn(AppPermissions.REPORTS_SHOW_PROFIT);
+        Recording repository = new Recording();
+
+        assertThrows(BusinessRuleException.class, () -> new EquityStatementService(repository, (from, to) -> List.of())
+                .reconciliation(LocalDate.of(2026, 3, 31)));
+        assertTrue(repository.calls.isEmpty());
+    }
+
+    /** The equity side is the statement's close on the same day, read through the statement itself. */
+    @Test
+    void theReconciliationSetsTheFiguresAgainstTheStatementsClose() throws Exception {
+        signIn(AppPermissions.TREASURY_CAPITAL);
+        Recording repository = new Recording();
+        List<String> profitAsked = new ArrayList<>();
+
+        EquityReconciliation reconciliation = new EquityStatementService(repository, (from, to) -> {
+            profitAsked.add(from + ".." + to);
+            return List.of();
+        }).reconciliation(LocalDate.of(2026, 3, 31));
+
+        assertEquals(List.of("2026-03-31..2026-03-31", "null..2026-03-30"), profitAsked);
+        assertEquals(List.of("forward", "before 2026-03-31", "days 2026-03-31..2026-03-31", "reconciliation"),
+                repository.calls);
+        assertEquals(0, reconciliation.equity().signum());
+        assertEquals(0, new BigDecimal("1500").compareTo(reconciliation.netAssets()), "1000 + 300 + 400 - 200");
+        assertEquals(0, new BigDecimal("1500").compareTo(reconciliation.unexplained()));
+    }
+
     private static final class Recording implements CapitalRepository {
         private final List<String> calls = new ArrayList<>();
 
@@ -95,6 +125,14 @@ class EquityStatementServiceTest {
         public BroughtForward broughtForward() {
             calls.add("forward");
             return BroughtForward.NONE;
+        }
+
+        @Override
+        public ReconciliationFigures reconciliation() {
+            calls.add("reconciliation");
+            return new ReconciliationFigures(new BigDecimal("1000"), new BigDecimal("300"), BigDecimal.ZERO,
+                    new BigDecimal("200"), BigDecimal.ZERO, new BigDecimal("400"), BigDecimal.ZERO, BigDecimal.ZERO,
+                    BigDecimal.ZERO);
         }
     }
 }

@@ -70,7 +70,7 @@ public enum ItemNetLines {
      * the purchase tables have no such column, and {@code quantity * price} is what it holds on the
      * sales side (see {@link DocumentTableSpec}'s item report, which checked it on real lines).
      */
-    static String lineAmount(DocumentTableSpec spec, String alias) {
+    public static String lineAmount(DocumentTableSpec spec, String alias) {
         return spec.hasProfit()
                 ? alias + ".total_sel_price - " + alias + ".discount"
                 : alias + ".quantity * " + alias + ".price - " + alias + ".discount";
