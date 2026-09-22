@@ -1,6 +1,7 @@
 package com.hamza.account.features.party.ageing;
 
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,6 +22,9 @@ import java.time.LocalDate;
  *                       made after it are both ignored, or the two halves of the
  *                       reconciliation would answer different questions
  * @param areaId         one area, or null for every area
+ * @param delegateId     the customers one delegate follows, {@link CustomerDelegateCondition#NO_DELEGATE}
+ *                       for those nobody follows, or null for everyone. It narrows which parties are
+ *                       listed and never which of their invoices are aged, so each row still reconciles
  * @param overdueOnly    only parties with something actually past its due date. It asks about
  *                       the four overdue bands and not about the balance - a party whose
  *                       balance is zero because an old unpaid invoice is offset by a newer
@@ -39,6 +43,7 @@ public record PartyAgeingFilter(
         PartyKind kind,
         LocalDate asOf,
         Integer areaId,
+        Integer delegateId,
         boolean overdueOnly,
         boolean includeSettled,
         BigDecimal minimumBalance,
@@ -72,7 +77,15 @@ public record PartyAgeingFilter(
         if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
             throw new IllegalArgumentException("invalid page size: " + pageSize);
         }
+        CustomerDelegateCondition.requireCustomer(kind == PartyKind.CUSTOMER, delegateId);
         text = text == null ? "" : text.trim();
+    }
+
+    /** Without a delegate - what every caller meant before the delegate filter existed. */
+    public PartyAgeingFilter(PartyKind kind, LocalDate asOf, Integer areaId, boolean overdueOnly,
+                             boolean includeSettled, BigDecimal minimumBalance, String text, int page,
+                             int pageSize) {
+        this(kind, asOf, areaId, null, overdueOnly, includeSettled, minimumBalance, text, page, pageSize);
     }
 
     /** Today's report of everyone who is behind. */
@@ -91,6 +104,7 @@ public record PartyAgeingFilter(
         int count = 0;
         if (!asOf.equals(today)) count++;
         if (areaId != null) count++;
+        if (delegateId != null) count++;
         if (overdueOnly) count++;
         if (includeSettled) count++;
         if (minimumBalance != null) count++;
@@ -102,12 +116,12 @@ public record PartyAgeingFilter(
     }
 
     public PartyAgeingFilter withPage(int newPage) {
-        return new PartyAgeingFilter(kind, asOf, areaId, overdueOnly, includeSettled,
+        return new PartyAgeingFilter(kind, asOf, areaId, delegateId, overdueOnly, includeSettled,
                 minimumBalance, text, newPage, pageSize);
     }
 
     public PartyAgeingFilter withPageSize(int newPageSize) {
-        return new PartyAgeingFilter(kind, asOf, areaId, overdueOnly, includeSettled,
+        return new PartyAgeingFilter(kind, asOf, areaId, delegateId, overdueOnly, includeSettled,
                 minimumBalance, text, page, newPageSize);
     }
 

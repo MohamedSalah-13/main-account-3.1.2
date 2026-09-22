@@ -1,6 +1,7 @@
 package com.hamza.account.features.party.balances;
 
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,6 +33,8 @@ import java.util.Objects;
  * @param areaId       one area, or {@code null}. The column has been on the totals view all along
  *                     with no screen reading it
  * @param priceTierId  one customer price tier, or {@code null}. Meaningless for a supplier
+ * @param delegateId   the customers one delegate follows, {@link CustomerDelegateCondition#NO_DELEGATE}
+ *                     for those nobody follows, or {@code null} for everyone. A supplier has no delegate
  * @param overLimitOnly only parties whose balance has passed their credit limit. A condition, rather
  *                     than the hourly poll {@code CreditLimitSource} does
  * @param idleDays     only parties with no movement for this many days, or {@code null}
@@ -48,6 +51,7 @@ public record PartyBalanceFilter(
         BigDecimal maxBalance,
         Integer areaId,
         Integer priceTierId,
+        Integer delegateId,
         boolean overLimitOnly,
         Integer idleDays,
         String text,
@@ -76,7 +80,16 @@ public record PartyBalanceFilter(
         if (idleDays != null && idleDays < 0) {
             throw new IllegalArgumentException("idleDays must not be negative");
         }
+        CustomerDelegateCondition.requireCustomer(partyKind == PartyKind.CUSTOMER, delegateId);
         text = text == null ? "" : text.strip();
+    }
+
+    /** Without a delegate - what every caller meant before the delegate filter existed. */
+    public PartyBalanceFilter(PartyKind partyKind, LocalDate asOf, LocalDate periodFrom, BalanceState state,
+                              BigDecimal minBalance, BigDecimal maxBalance, Integer areaId, Integer priceTierId,
+                              boolean overLimitOnly, Integer idleDays, String text, int page, int pageSize) {
+        this(partyKind, asOf, periodFrom, state, minBalance, maxBalance, areaId, priceTierId, null,
+                overLimitOnly, idleDays, text, page, pageSize);
     }
 
     /** Everyone who owes something today: what the screen opens on. */
@@ -101,12 +114,12 @@ public record PartyBalanceFilter(
 
     public PartyBalanceFilter onPage(int newPage) {
         return new PartyBalanceFilter(partyKind, asOf, periodFrom, state, minBalance, maxBalance,
-                areaId, priceTierId, overLimitOnly, idleDays, text, newPage, pageSize);
+                areaId, priceTierId, delegateId, overLimitOnly, idleDays, text, newPage, pageSize);
     }
 
     public PartyBalanceFilter firstPageWithSize(int size) {
         return new PartyBalanceFilter(partyKind, asOf, periodFrom, state, minBalance, maxBalance,
-                areaId, priceTierId, overLimitOnly, idleDays, text, 0, size);
+                areaId, priceTierId, delegateId, overLimitOnly, idleDays, text, 0, size);
     }
 
     /** The window the movement columns cover: the period if one is set, otherwise all of it. */
@@ -129,6 +142,7 @@ public record PartyBalanceFilter(
         if (maxBalance != null) count++;
         if (areaId != null) count++;
         if (priceTierId != null) count++;
+        if (delegateId != null) count++;
         if (overLimitOnly) count++;
         if (idleDays != null) count++;
         if (periodFrom != null) count++;

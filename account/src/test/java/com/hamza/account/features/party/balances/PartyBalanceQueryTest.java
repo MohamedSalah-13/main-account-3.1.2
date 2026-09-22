@@ -1,6 +1,7 @@
 package com.hamza.account.features.party.balances;
 
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,8 +31,14 @@ class PartyBalanceQueryTest {
 
     private static PartyBalanceFilter filter(BalanceState state, BigDecimal min, BigDecimal max,
                                              boolean overLimit, Integer idleDays, String text) {
+        return filter(state, min, max, overLimit, idleDays, text, null);
+    }
+
+    private static PartyBalanceFilter filter(BalanceState state, BigDecimal min, BigDecimal max,
+                                             boolean overLimit, Integer idleDays, String text,
+                                             Integer delegateId) {
         return new PartyBalanceFilter(PartyKind.CUSTOMER, AS_OF, null, state, min, max,
-                null, null, overLimit, idleDays, text, 0, 50);
+                null, null, delegateId, overLimit, idleDays, text, 0, 50);
     }
 
     private static int placeholders(String sql) {
@@ -40,10 +47,12 @@ class PartyBalanceQueryTest {
 
     /**
      * How many values {@code JdbcPartyBalanceRepository.bindFilter} supplies, before the limit and
-     * offset: six dates, then area ×2, tier ×2, text ×3, then one per aggregate condition that is set.
+     * offset: six dates, then area ×2, tier ×2, text ×3, the delegate when one is named, then one per
+     * aggregate condition that is set.
      */
     private static int boundValues(PartyBalanceFilter f) {
-        int fixed = 6 + 2 + 2 + 3;
+        int fixed = 6 + 2 + 2 + 3 + (f.delegateId() == null
+                || f.delegateId() == CustomerDelegateCondition.NO_DELEGATE ? 0 : 1);
         int aggregates = (f.minBalance() == null ? 0 : 1)
                 + (f.maxBalance() == null ? 0 : 1)
                 + (f.idleDays() == null ? 0 : 1);
@@ -163,13 +172,15 @@ class PartyBalanceQueryTest {
                     for (boolean overLimit : new boolean[]{false, true}) {
                         for (Integer idle : new Integer[]{null, 90}) {
                             for (String text : new String[]{"", "ahmed"}) {
-                                PartyBalanceFilter f = filter(state, min, max, overLimit, idle, text);
-                                assertEquals(boundValues(f) + 2,
-                                        placeholders(PartyBalanceQuery.pageSql(f)),
-                                        "page parameters for " + describe(f));
-                                assertEquals(boundValues(f),
-                                        placeholders(PartyBalanceQuery.summarySql(f)),
-                                        "summary parameters for " + describe(f));
+                                for (Integer delegate : new Integer[]{null, CustomerDelegateCondition.NO_DELEGATE, 7}) {
+                                    PartyBalanceFilter f = filter(state, min, max, overLimit, idle, text, delegate);
+                                    assertEquals(boundValues(f) + 2,
+                                            placeholders(PartyBalanceQuery.pageSql(f)),
+                                            "page parameters for " + describe(f));
+                                    assertEquals(boundValues(f),
+                                            placeholders(PartyBalanceQuery.summarySql(f)),
+                                            "summary parameters for " + describe(f));
+                                }
                             }
                         }
                     }
@@ -223,6 +234,59 @@ class PartyBalanceQueryTest {
     private static String describe(PartyBalanceFilter f) {
         return f.state() + " min=" + f.minBalance() + " max=" + f.maxBalance()
                 + " overLimit=" + f.overLimitOnly() + " idle=" + f.idleDays()
-                + " text='" + f.text() + "'";
+                + " text='" + f.text() + "' delegate=" + f.delegateId();
+    }
+
+    /**
+     * The customers a delegate follows, by the customer's default as it stands - a condition on the
+     * party row, so it sits in the WHERE both the page and the footer share, and never near the
+     * balance: narrowing by a delegate chooses parties, it does not change what any of them owes.
+     */
+    @Test
+    @DisplayName("a delegate narrows which customers are listed, in the select the footer shares")
+    void aDelegateNarrowsTheCustomersListed() {
+        PartyBalanceFilter f = filter(BalanceState.ALL, null, null, false, null, "", 7);
+        String page = PartyBalanceQuery.pageSql(f);
+        String where = page.substring(page.indexOf("WHERE"), page.indexOf("GROUP BY"));
+
+        assertTrue(where.contains("AND p.default_delegate_id = ?"), where);
+        assertTrue(PartyBalanceQuery.summarySql(f).contains("AND p.default_delegate_id = ?"));
+        assertFalse(PartyBalanceQuery.pageSql(filter(BalanceState.ALL, null, null, false, null, ""))
+                .contains("default_delegate_id"), "no delegate asked, no condition written");
+    }
+
+    /**
+     * "Nobody follows this customer" is answered through {@code employees} and {@code jobs}, as the
+     * customer's own screen answers it: the column has no foreign key, so a default naming an employee
+     * since deleted, or one no longer a delegate, shows nobody there. A stored zero alone would hide
+     * those customers from every choice in the combo.
+     */
+    @Test
+    @DisplayName("\"no delegate\" is no delegate behind the default, and binds nothing")
+    void noDelegateIsNoDelegateBehindTheDefault() {
+        PartyBalanceFilter f = filter(BalanceState.ALL, null, null, false, null, "",
+                CustomerDelegateCondition.NO_DELEGATE);
+        String page = PartyBalanceQuery.pageSql(f);
+
+        assertTrue(page.contains("AND NOT EXISTS (SELECT 1 FROM employees e JOIN jobs j ON j.id = e.job WHERE e.id = p.default_delegate_id AND j.is_delegate = 1)"), page);
+        assertEquals(placeholders(PartyBalanceQuery.pageSql(filter(BalanceState.ALL, null, null, false, null, ""))),
+                placeholders(page));
+    }
+
+    /** A supplier's row has no default delegate, so asking the supplier list about one is refused. */
+    @Test
+    void aSupplierHasNoDelegate() {
+        assertThrows(IllegalArgumentException.class, () -> new PartyBalanceFilter(PartyKind.SUPPLIER, AS_OF,
+                null, BalanceState.ALL, null, null, null, null, 7, false, null, "", 0, 50));
+        assertFalse(PartyBalanceQuery.pageSql(PartyBalanceFilter.allToday(PartyKind.SUPPLIER))
+                .contains("default_delegate_id"));
+    }
+
+    @Test
+    void aDelegateIsOneMoreConditionOnTheFiltersButton() {
+        assertEquals(1, filter(BalanceState.ALL, null, null, false, null, "", 7).panelConditionCount(AS_OF));
+        assertEquals(1, filter(BalanceState.ALL, null, null, false, null, "",
+                CustomerDelegateCondition.NO_DELEGATE).panelConditionCount(AS_OF));
+        assertEquals(0, filter(BalanceState.ALL, null, null, false, null, "").panelConditionCount(AS_OF));
     }
 }

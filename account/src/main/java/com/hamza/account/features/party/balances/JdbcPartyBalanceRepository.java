@@ -1,6 +1,7 @@
 package com.hamza.account.features.party.balances;
 
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.CustomerDelegateCondition;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -89,6 +90,7 @@ public final class JdbcPartyBalanceRepository extends AbstractDao<PartyBalanceRo
         values.add(text);
         values.add(text == null ? null : PartyBalanceQuery.pattern(text));
         values.add(text == null ? null : PartyBalanceQuery.pattern(text));
+        values.addAll(CustomerDelegateCondition.values(filter.delegateId()));
 
         if (filter.minBalance() != null) {
             values.add(filter.minBalance());

@@ -202,7 +202,9 @@ public class DelegatePerformanceController implements AppSettingInterface {
                 // No permission of its own - whoever reads this row may read what it is made of.
                 named(ACTIONS, RowActionsColumn.of("employee.column.actions", List.of(
                         RowAction.of("delegate.detail.title", AppIcon.SHOW, "app-neutral-button",
-                                null, this::openDetail)))),
+                                null, this::openDetail),
+                        RowAction.of("delegate.trend.title", AppIcon.TREND, "app-neutral-button",
+                                null, this::openTrend)))),
                 named("delegate-name", Columns.text("delegate.performance.column.name", DelegatePerformanceRow::name)),
                 named("delegate-sales", Columns.money("delegate.performance.column.sales",
                         row -> row.activity().sales())),
@@ -245,6 +247,16 @@ public class DelegatePerformanceController implements AppSettingInterface {
         try {
             new com.hamza.account.view.OpenApplication<>(
                     new DelegateDetailController(row.activity().employeeId(), row.name(), month));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** His months side by side, and the same dates a year back - on the report's own figures. */
+    private void openTrend(DelegatePerformanceRow row) {
+        try {
+            new com.hamza.account.view.OpenApplication<>(
+                    new DelegateTrendController(row.activity().employeeId(), row.name()));
         } catch (Exception e) {
             report(e);
         }

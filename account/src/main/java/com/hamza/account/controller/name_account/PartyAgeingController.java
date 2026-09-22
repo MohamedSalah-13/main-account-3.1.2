@@ -52,6 +52,7 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -113,6 +114,8 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
     private final TableView<PartyAgeingRow> table = new TableView<>();
     private final DatePicker asOf = new DatePicker(LocalDate.now());
     private final ComboBox<PartyAreaOption> comboArea = new ComboBox<>();
+    /** Customers only: a supplier has no delegate who follows him. */
+    private final DelegateFilterCombo delegate = new DelegateFilterCombo("ageing-delegate");
     private final CheckBox overdueOnly = new CheckBox(text("party.ageing.filter.overdue.only"));
     private final CheckBox includeSettled = new CheckBox(text("party.ageing.filter.include.settled"));
     private final TextField minimumBalance = new TextField();
@@ -210,6 +213,8 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
         comboArea.setConverter(converter(option -> option == null || option.id() == 0
                 ? text("party.statement.filter.all") : option.name()));
         comboArea.setOnAction(event -> reload());
+        delegate.node().setOnAction(event -> reload());
+        delegate.node().setTooltip(new Tooltip(text("party.filter.delegate.tip")));
 
         overdueOnly.setOnAction(event -> reload());
         includeSettled.setOnAction(event -> reload());
@@ -234,8 +239,15 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
         // report is narrowed while the panel is closed.
         FlowPane panel = new FlowPane(8, 8,
                 caption("party.ageing.filter.as.of"), asOf,
-                caption("party.column.area"), comboArea,
-                minimumBalance, overdueOnly, includeSettled);
+                caption("party.column.area"), comboArea);
+        if (isCustomer()) {
+            // The caption and its combo in one box, so the pane never wraps between them.
+            HBox delegateChoice = new HBox(8, caption("party.delegate.default"), delegate.node());
+            // Centred like the captions beside it: an HBox lays its children along the top.
+            delegateChoice.setAlignment(Pos.CENTER_LEFT);
+            panel.getChildren().add(delegateChoice);
+        }
+        panel.getChildren().addAll(minimumBalance, overdueOnly, includeSettled);
         panel.setAlignment(Pos.CENTER_LEFT);
 
         search.setPrefWidth(260);
@@ -350,9 +362,16 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
             areas.add(new PartyAreaOption(0, ""));
             areas.addAll(balanceService.areas(partyKind()));
             loading = true;
-            comboArea.setItems(FXCollections.observableArrayList(areas));
-            comboArea.getSelectionModel().selectFirst();
-            loading = false;
+            try {
+                comboArea.setItems(FXCollections.observableArrayList(areas));
+                comboArea.getSelectionModel().selectFirst();
+                if (isCustomer()) {
+                    delegate.load();
+                }
+            } finally {
+                // Left set by a failed read, it would swallow every search after it without a word.
+                loading = false;
+            }
         } catch (Exception e) {
             report(e);
         }
@@ -369,6 +388,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
         loading = true;
         asOf.setValue(LocalDate.now());
         comboArea.getSelectionModel().selectFirst();
+        delegate.reset();
         overdueOnly.setSelected(false);
         includeSettled.setSelected(false);
         minimumBalance.clear();
@@ -417,6 +437,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
                 partyKind(),
                 asOf.getValue() == null ? LocalDate.now() : asOf.getValue(),
                 area == null || area.id() == 0 ? null : area.id(),
+                isCustomer() ? delegate.value() : null,
                 overdueOnly.isSelected(),
                 includeSettled.isSelected(),
                 amount(minimumBalance),
@@ -514,6 +535,10 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     // ---- plumbing --------------------------------------------------------------------
+
+    private boolean isCustomer() {
+        return partyKind() == PartyKind.CUSTOMER;
+    }
 
     private PartyKind partyKind() {
         return nameAndAccountInterface.partyKind();

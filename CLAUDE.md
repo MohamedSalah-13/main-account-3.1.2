@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,266 tests** with 228 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-21 with the 4.8.2 fixes. What is
+**3,294 tests** with 229 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-22 with the delegates item closed. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -1693,8 +1693,10 @@ old, so nobody loses an ability on upgrade, but a role given only `employee.pay`
 rule** (`V70`, `employee_commission_rule`), the arithmetic over its tiers and the rules screen opened
 from a delegate's row; then the **delegate of a collection** (`V71`), the two commission bases in SQL
 and the monthly performance report; then the **frozen monthly run** (`V72`) and its posting, once, by
-one of two roads; then D1, the delegate's commission statement and two reminders; then, of D2, the
-discount ceiling (`V73`) and the month-in-detail report. The screens open from the employees screen.
+one of two roads; then D1, the delegate's commission statement and two reminders; then D2, the
+discount ceiling (`V73`), the month-in-detail report, the delegate filter on the balances and ageing
+screens and the delegate trend - **the item is closed** (`docs/delegates-plan.md` §15). The screens
+open from the employees screen.
 
 **It replaces `targeted_sales`/`target_delegate`, which nothing new may read.** That row had no period,
 so the view joined it to every month in history and changing a target changed last January's
@@ -1826,8 +1828,22 @@ the lines (`total_sel_price - discount`), and **a discount taken on a whole invo
 among items** - that would be an invented rule - but shown as a figure of its own, so lines less header
 discounts is the same net. `DelegateDetailDatabaseAcceptanceTest` holds all four breakdowns to the
 activity query's net, read rather than typed twice. No profit column: a line's `total_profit` is not
-this system's definition of profit. **Not built from D2:** the delegate filter on the ageing and
-balances screens, and the delegate trend (`docs/delegates-plan.md` §14.4).
+this system's definition of profit.
+
+**"The customers a delegate follows" is `features/party/CustomerDelegateCondition`, one condition for
+the balances list and the ageing report** - derived from `custom.default_delegate_id` as it is today,
+which is right for "who follows this customer now" and wrong for a commission, where the delegate is
+written at the event. **"No delegate" means no delegate stands behind the default** - `jobs.is_delegate`,
+not a stored zero: the column has no key, so it can name an employee since deleted or no longer a
+delegate, and the customer's own form shows nobody for both. With the combo listing every delegate
+(`EmployeeScope.EVERYONE`), the choices cover each customer exactly once; the first draft said "no
+employee" and left such a customer under no choice at all. It narrows which parties are listed and
+touches no aged invoice, so every ageing row still reconciles. **The delegate trend defines nothing**
+(`features/delegate/trend`): its four sums and its date conditions are `ACTIVITY_SQL`'s own text,
+which `DelegateTrendQueryTest` finds there, and `DelegateActivityDatabaseAcceptanceTest` holds each
+month of it to that month's performance row on MySQL. Its periods are `TrendGranularity`'s - one
+definition of a week for both charts - and it is a screen of its own because the party trend is built
+on a `DataInterface` a delegate has none of.
 
 **D2 was then watched on a copy of a real database** (§14.5), signed in as an ordinary user - user 1
 bypasses the override like every permission. A sale of 300 discounted 50 against a ceiling of 10% was
