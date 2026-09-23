@@ -27,8 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,746 tests** with 292 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after a customer and a supplier learned to deal in their own currency. What is
+**3,795 tests** with 298 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after a customer and a supplier learned to deal in their own currency
+and the yearly report became the profit and loss by the month. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -90,8 +91,9 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - forty-four `*AcceptanceTest` files exist, and the later areas' own
-sections name theirs; the newest is `PartyCurrencyDatabaseAcceptanceTest` (V82, see **Currencies**). The
+**That list is itself out of date** - forty-five `*AcceptanceTest` files exist, and the later areas' own
+sections name theirs; the newest are `PartyCurrencyDatabaseAcceptanceTest` (V82, see **Currencies**) and
+`YearlyReportDatabaseAcceptanceTest` (see **The yearly report**). The
 reports work added four, each building a scratch schema of its own from
 nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
 `PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest`,
