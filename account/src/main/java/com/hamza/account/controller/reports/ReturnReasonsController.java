@@ -12,6 +12,7 @@ import com.hamza.account.features.returns.reasons.ReturnReasonsService;
 import com.hamza.account.features.returns.reasons.ReturnSide;
 import com.hamza.account.features.returns.reasons.ReturnedItem;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.FigureLine;
 import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PeriodPicker;
 import com.hamza.account.table.RowAction;
@@ -215,7 +216,7 @@ public class ReturnReasonsController {
         title.getStyleClass().add("stat-title");
         VBox card = new VBox(4, title, value);
         for (FigureLine line : lines) {
-            card.getChildren().add(line.box);
+            card.getChildren().add(line.node());
         }
         card.getStyleClass().addAll("dashboard-tile", "party-stat-card");
         card.setMinWidth(190);
@@ -498,41 +499,6 @@ public class ReturnReasonsController {
         label.pseudoClassStateChanged(Columns.NEGATIVE, value.signum() < 0);
     }
 
-    /** A caption and its figures, each a left-to-right label of its own, never inside an Arabic sentence. */
-    private static final class FigureLine {
-        private final Label caption = subtitleLabel();
-        private final Label value = subtitleLabel();
-        private final Label extra = subtitleLabel();
-        private final HBox box = new HBox(6, caption, value, extra);
-
-        FigureLine() {
-            value.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            extra.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            box.setAlignment(Pos.CENTER_LEFT);
-            hide();
-        }
-
-        void show(String captionKey, String valueText, String extraText) {
-            caption.setText(text(captionKey));
-            value.setText(valueText);
-            extra.setText(extraText == null ? "" : extraText);
-            extra.setVisible(extraText != null);
-            extra.setManaged(extraText != null);
-            box.setVisible(true);
-            box.setManaged(true);
-        }
-
-        void hide() {
-            box.setVisible(false);
-            box.setManaged(false);
-        }
-
-        private static Label subtitleLabel() {
-            Label label = new Label();
-            label.getStyleClass().add("stat-subtitle");
-            return label;
-        }
-    }
 
     private static void report(String titleKey, Throwable error) {
         AllAlerts.handleError(text(titleKey), error instanceof Exception exception ? exception : new Exception(error));

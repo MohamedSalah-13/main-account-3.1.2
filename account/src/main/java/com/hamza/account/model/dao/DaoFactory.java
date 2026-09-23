@@ -189,14 +189,6 @@ public enum DaoFactory {
         return new TopSellingItemDao();
     }
 
-    public MonthlySalesViewDao monthlySalesViewDao() {
-        return new MonthlySalesViewDao("view_monthly_sales");
-    }
-
-    public MonthlySalesViewDao monthlyPurchaseViewDao() {
-        return new MonthlySalesViewDao("view_monthly_purchase");
-    }
-
     public ItemSalesRankDao itemSalesRankDao() {
         return new ItemSalesRankDao();
     }

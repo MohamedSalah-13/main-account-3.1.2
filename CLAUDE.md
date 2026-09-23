@@ -27,10 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,924 tests** with 319 skipped (below) — the figure `mvn clean test`
+**3,956 tests** with 323 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-23 after an invoice learned to be typed in its party's currency, the profit
-and loss became a statement, the returns reasons a report of their own and the two payments reports one
-screen. What is
+and loss became a statement, the returns reasons a report of their own, and the two payments reports and
+the two monthly totals reports each one screen. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -2740,6 +2740,34 @@ tab). Rebuilt 2026-09-23; `DialogReturnReasonsReport`, `ReturnReasonReportServic
   one place. The cards split what came in from what went back; the table shows who entered each row.
 - `PartyPaymentsDatabaseAcceptanceTest` (gated, scratch schema, three cases, green twice).
 
+### The monthly sales and purchases
+
+`MonthlyTotalsController` over `features/report/monthly` - one sidebar button («المبيعات والمشتريات
+الشهرية») and one tab since 2026-09-23. `MonthlySalesController`, `MonthlySalesInterface`, `MonthlyView`,
+`MonthlySalesView.fxml`, `MonthlySalesViewDao`, their model, their two fixed-column writers and the two
+views they read are gone. `docs/reports-plan.md` §19.
+
+- **The side is chosen in the bar**, the payments screen's way (`MonthlyTotalsService.offeredSides`, and
+  `openingSide` for the sidebar's null): sales ask `reports.show.sales`, purchases `reports.show.purchase`,
+  on every read. Both features stay, and `REPORT_SALES_YEAR`/`REPORT_PURCHASE_YEAR` shortcuts are carried
+  onto `REPORT_MONTHLY_TOTALS`. The hub keeps its two cards, each opening on its side.
+- **The figure is chosen beside it** (`MonthlyMeasure`): the net by default - `total - discount` over the
+  invoices less the same over the returns, the profit and loss's net sales - or its pieces. The old screen
+  showed only the gross, which it called the total, with nothing returned taken off.
+  `MonthlyTotalsDatabaseAcceptanceTest` holds every month to `view_yearly_monthly_report` on both sides.
+- **A row per year from the first document to this one**: the running year stops at this month, and the
+  **first year starts at its first document's month** (`YearRow.firstMonth`) - the months before it are
+  blank, not zeros the chart would draw as a collapse. A quiet year in between is a row of zeros.
+- **The comparison is by the day**, this year to today against last year to the same date, and the query
+  answers a row per day (`MonthlyTotalsQuery`, the headers alone) for exactly that; the months are folded
+  in Java. `view_monthly_sales`/`view_monthly_purchase` are gone and `MonthlyTotalsQueryTest` refuses
+  them back.
+- The chart is a `TrendChart` line per year (`trend-year-0..4`, the newest the primary colour), and a
+  count is hovered and written as a whole number (`TrendChart.addSeries` takes a format). The month
+  columns use the short month name: fourteen columns of whole English month names were wider than 1366.
+- `account.table.FigureLine` is the caption-and-figure line under a report's card - it was a private copy
+  in the profit and loss, the yearly report and the returns reasons, and those three now use it.
+
 ### Printed reports
 
 The `.jrxml` templates live in **`reports/` at the repository root**, and `Configs.FILE_REPORTS`
@@ -3630,9 +3658,10 @@ and the lesson written down. That is the argument for a test rather than a note:
 not define in its own file, and **also** when it defines one and leaves it behind - a stray helper is
 what the *next* migration calls and finds present on its author's machine and missing in the field.
 
-**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (32
-views; `treasury_balance_after_convert` and `view_item_sales_rank` were removed from it, and the `DROP`
-for each stays because a client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
+**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (30
+views; `treasury_balance_after_convert`, `view_item_sales_rank`, `view_monthly_sales` and
+`view_monthly_purchase` were removed from it, and the `DROP` for each stays because a client that ran an
+older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
 so **changing a view means editing it in place in `R__views.sql`** — do not write a `V<n>` that drops
 and recreates one. This is what stops a client on an older schema from being left without a view that
 newer code queries. Two conventions inside them:

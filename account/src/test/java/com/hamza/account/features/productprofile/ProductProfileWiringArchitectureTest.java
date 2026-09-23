@@ -23,8 +23,9 @@ class ProductProfileWiringArchitectureTest {
                 .count();
         // 52 since the quick sale and quick purchase entries, which ask the invoices' own features;
         // 53 since the currencies screen (V80), which asks the treasuries' feature rather than a new one.
-        // 52 since the customers' and suppliers' payments became one button, which either feature opens.
-        assertEquals(52, gatedScreens);
+        // 52 since the customers' and suppliers' payments became one button, which either feature opens;
+        // 51 since the sales and purchases by year became one button of monthly totals the same way.
+        assertEquals(51, gatedScreens);
         assertTrue(source.contains("ProductFeatures.SALES_CREATE"));
         assertTrue(source.contains("ProductFeatures.REPORT_PROFIT_LOSS"));
         assertTrue(source.contains("ProductFeatures.SYSTEM_DELETE_DATA"));

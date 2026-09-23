@@ -32,9 +32,13 @@ public final class SidebarShortcutManager {
     /** The customers' and the suppliers' payments reports became one screen with one button. */
     private static final String[] RETIRED_PAYMENTS = {"REPORT_CUSTOMER_PAID", "REPORT_SUPPLIER_PAID"};
 
+    /** The sales and the purchases by year became one screen of monthly totals with one button. */
+    private static final String[] RETIRED_MONTHLY = {"REPORT_SALES_YEAR", "REPORT_PURCHASE_YEAR"};
+
     static {
         adoptRetiredShortcuts(PREFS, RETIRED, SidebarShortcut.MASTER_DATA);
         adoptRetiredShortcuts(PREFS, RETIRED_PAYMENTS, SidebarShortcut.REPORT_PARTY_PAYMENTS);
+        adoptRetiredShortcuts(PREFS, RETIRED_MONTHLY, SidebarShortcut.REPORT_MONTHLY_TOTALS);
     }
 
     private SidebarShortcutManager() { }
