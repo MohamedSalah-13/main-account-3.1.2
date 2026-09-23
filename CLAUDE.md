@@ -27,11 +27,11 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,986 tests** with 330 skipped (below) — the figure `mvn clean test`
+**4,030 tests** with 339 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-23 after the exchange differences were named (phase E of the currencies),
 an invoice learned to be typed in its party's currency, the profit and loss became a statement, the
-returns reasons a report of their own, and the two payments reports and the two monthly totals reports
-each one screen. What is
+returns reasons a report of their own, the two payments reports, the two monthly totals reports and the
+two item reports each one screen, and the summary's figures became its screens' own. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -93,13 +93,14 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - fifty-one `*AcceptanceTest` files exist, and the later areas' own
+**That list is itself out of date** - fifty-three `*AcceptanceTest` files exist, and the later areas' own
 sections name theirs; the newest are `ExchangeDifferenceDatabaseAcceptanceTest` (phase E, no migration),
 `DocumentCurrencyDatabaseAcceptanceTest` (V83) and `PartyCurrencyDatabaseAcceptanceTest` (V82), all three
 under **Currencies**, `MonthlyTotalsDatabaseAcceptanceTest`, the reports work's
 `ProfitLossStatementDatabaseAcceptanceTest`, `ReturnReasonsDatabaseAcceptanceTest` and
-`PartyPaymentsDatabaseAcceptanceTest`, and `YearlyReportDatabaseAcceptanceTest` (see **The yearly
-report**). The
+`PartyPaymentsDatabaseAcceptanceTest`, `YearlyReportDatabaseAcceptanceTest` (see **The yearly
+report**), and `ItemSalesDatabaseAcceptanceTest` and `SummaryDatabaseAcceptanceTest` (see **The item sales**
+and **The summary**). The
 reports work added four, each building a scratch schema of its own from
 nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
 `PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest`,
@@ -2675,12 +2676,12 @@ item reports screen: by net sales and by margin. `docs/reports-plan.md` §13.
   labels used to be joined in the wide cell and the figures in the last column's - the width of one
   letter on Pareto - so a reader paired them by position. Every item report with several totals
   printed that way.
-- **The item movement report ("تقرير حركة الأصناف") reads these same figures** (`ItemSalesRankDao`
-  over `JdbcItemSalesRepository`), month or year, most sold first. It read `view_item_sales_rank`,
-  which summed `quantity` across units, subtracted no return and took a line before its own discount;
-  the view is gone, its `DROP` kept, and `ProfitDefinitionTest` refuses it back - it would be a second
-  definition of what an item sold. On a copy of real data 13 item-months were overstated by their
-  line discounts and a month sold by the carton changed its first item.
+- **The item movement report ("تقرير حركة الأصناف") read these same figures** until it became the item
+  sales report (see **The item sales**). It had read `view_item_sales_rank`, which summed `quantity`
+  across units, subtracted no return and took a line before its own discount; the view is gone, its
+  `DROP` kept, and `ProfitDefinitionTest` refuses it back - it would be a second definition of what an
+  item sold. On a copy of real data 13 item-months were overstated by their line discounts and a month
+  sold by the carton changed its first item.
 
 ### The yearly report
 
@@ -2825,6 +2826,61 @@ views they read are gone. `docs/reports-plan.md` §19.
   columns use the short month name: fourteen columns of whole English month names were wider than 1366.
 - `account.table.FigureLine` is the caption-and-figure line under a report's card - it was a private copy
   in the profit and loss, the yearly report and the returns reasons, and those three now use it.
+
+### The item sales
+
+`ItemSalesController` over `features/report/itemsales` - one sidebar button («مبيعات الأصناف») and one tab
+since 2026-09-23, where the item movement ranking and the daily item sales were two windows. The class
+names, the FXML, the two DAOs, their models and their fixed-column writers are gone.
+`docs/reports-plan.md` §20.
+
+- **A row is an item in its base unit, returns dated in the period taken off, ranked by value.** The ranking
+  ranked by quantity - twelve pieces of soap above ten kilos of rice - and the daily report listed one day's
+  lines before their discounts, a carton and a piece as two rows told apart by price, grouped by the item's
+  name. A line is worth `ItemNetLines.lineAmount` and each side is grouped before the union
+  (`ItemSalesQuery`); `ProfitDefinitionTest` checks the query still reads a line that way.
+- **The invoices' own discounts are a card of their own**, asked of the Pareto repository rather than written
+  twice, and left out while a search narrows the items: the items' net less them is the profit and loss's
+  net sales (`ItemSalesDatabaseAcceptanceTest` holds it to `document_profit`).
+- **`reports.show.items` is asked by the service, and the cost is read only with `reports.show.profit`**: the
+  ranking showed a profit column to anybody who could open it, and its screens asked nothing at all.
+- A row's button opens its lines by unit and price in a `RowDetailDrawer` - what the daily report listed.
+  The period is `PeriodPicker`; the sidebar opens on today, the hub's two cards on this month and on today,
+  and the summary's best sellers on the summary's own dates (`PeriodPicker.chooseDates`). The shortcuts
+  `REPORT_ITEMS` and `REPORT_ITEMS_DAILY` are carried onto `REPORT_ITEM_SALES`.
+- **The table shows the net, not what was sold and refunded beside it**: with those two columns the net and
+  the share - the answer - sat behind the horizontal scroll bar at 1366. They are on the cards and in the
+  drawer. **The bar chart runs left to right in either language**, as `TrendChart` does: drawn right to left,
+  `ChartSnapshot` did not flip it back and the paper printed every name backwards.
+
+### The summary
+
+`ModernDashboardApp` over `features/report/summary` - the home tab and the sidebar's «ملخص الحسابات»,
+which now opens it in a tab rather than a second window. The layout is the dashboard's; every figure is
+someone else's. `docs/reports-plan.md` §20.
+
+- **The sales and the purchases are net** (`MonthFigures.net()`, read through the monthly totals' own
+  statement bounded to the period, `MonthlyTotalsQuery.daysBetweenSql`), and **the discounts are the sales'
+  own**. The summary showed the invoices before their discounts with no return taken off, and added the
+  discounts given on sales to those taken on purchases and returns.
+- **The week starts on Saturday** (`SummaryPeriod`), the month is set against the same days of the month
+  before (`ProfitLossPeriod`'s rule) and **the week against the same days of the week before** - five days
+  straight before Saturday-to-Wednesday are Monday to Friday, the weekend's takings set against two quiet
+  weekdays. The trend has every one of its fourteen days, a quiet one as zero, through `TrendChart`.
+- **The cash is `treasury_balance`'s movements less an opening and a transfer between treasuries**
+  (`JdbcSummaryRepository.CASH_SQL`, by `TreasuryMovementKind` code), **the debts the customer balances
+  screen's "debtors today"** through `PartyBalanceService`, and a card opens that screen in a tab.
+  `CustomerReceivableController`, its FXML and writer - a second copy of the balances screen - are gone;
+  `view_customer_receivables` stays for `CreditLimitSource`.
+- **Each card is read and drawn only for the key of the screen it summarises** (`SummaryCard`): the
+  treasuries for `treasury.show`, the debts for `customer.account.show`, the purchases for
+  `reports.show.purchase`. `reports.show.summary` alone shows, and reads, nothing.
+- **A figure never shares a label with an Arabic word**: the low stock's "-7 / 5 قطعة" was drawn
+  "قطعة 5 / 7-". The unit is a label of its own, and the currency is named once in the header rather than
+  after every amount. `daily_dashboard_report` - read by nothing, and a third answer to what a day sold - is
+  gone with `DashboardPeriodDao`, `DailySalesPointDao` and `DailyDashboardReportDao`; its `DROP` stays.
+- `SummaryDatabaseAcceptanceTest` (gated, scratch schema, five cases) works September out by hand - a
+  transfer and an opening balance that must not move the cash, a debtor, an item sold below zero.
 
 ### Printed reports
 
@@ -3716,9 +3772,9 @@ and the lesson written down. That is the argument for a test rather than a note:
 not define in its own file, and **also** when it defines one and leaves it behind - a stray helper is
 what the *next* migration calls and finds present on its author's machine and missing in the field.
 
-**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (30
-views; `treasury_balance_after_convert`, `view_item_sales_rank`, `view_monthly_sales` and
-`view_monthly_purchase` were removed from it, and the `DROP` for each stays because a client that ran an
+**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (29
+views; `treasury_balance_after_convert`, `view_item_sales_rank`, `view_monthly_sales`,
+`view_monthly_purchase` and `daily_dashboard_report` were removed from it, and the `DROP` for each stays because a client that ran an
 older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
 so **changing a view means editing it in place in `R__views.sql`** — do not write a `V<n>` that drops
 and recreates one. This is what stops a client on an older schema from being left without a view that

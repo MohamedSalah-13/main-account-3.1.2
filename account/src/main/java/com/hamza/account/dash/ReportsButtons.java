@@ -1,6 +1,5 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.Main;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
@@ -16,6 +15,7 @@ import com.hamza.account.controller.name_account.PartyTrendController;
 import com.hamza.account.controller.reports.*;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.party.payment.PartyPaymentsService;
+import com.hamza.account.features.party.statement.StatementPeriod;
 import com.hamza.account.features.report.ReportEntry;
 import com.hamza.account.features.report.monthly.MonthlySide;
 import com.hamza.account.model.dao.DaoFactory;
@@ -26,18 +26,13 @@ import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.ExchangeDifferencesApplication;
 import com.hamza.account.view.ItemReportsApplication;
 import com.hamza.account.view.ReportTotalYearlyApplication;
-import com.hamza.account.view.SceneAll;
-import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.language.LanguageManager;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
+import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -52,6 +47,10 @@ public class ReportsButtons extends LoadData {
         this.mainScreenData = mainScreenData;
     }
 
+    /**
+     * The summary, in a tab - it opened a second window of the home tab's own screen. It asks
+     * {@code reports.show.summary}, and each of its cards the key of the screen it summarises.
+     */
     public ButtonWithPerm summaryReport() {
         return new ButtonWithPerm() {
             @Override
@@ -60,15 +59,25 @@ public class ReportsButtons extends LoadData {
             }
 
             @Override
-            public void action() throws Exception {
-//                new SummaryApplication(daoFactory, textName()).start(new Stage());
-                new ModernDashboardApp(daoFactory, dataPublisher).showWindow();
+            public void action() {
+
             }
 
             @NotNull
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("report.summary.accounts.title");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                ModernDashboardApp summary = new ModernDashboardApp(ModernDashboardApp.roads(mainScreenData, tabPane));
+                addTape(tabPane, summary.getPane(), textName(), AppIcon.REPORT.graphic(20));
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
@@ -158,7 +167,14 @@ public class ReportsButtons extends LoadData {
         };
     }
 
-    public ButtonWithPerm itemsReport() {
+    /**
+     * What the items sold over a period, one screen since 2026-09-23 where there were two - the item movement
+     * ranking and the daily item sales, each in a window of its own. It asks {@code reports.show.items}, as
+     * both did, and the service asks it again on every read.
+     *
+     * @param preset the period it opens on, or null for today - which is what the sidebar's button passes
+     */
+    public ButtonWithPerm itemSales(StatementPeriod preset) {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
@@ -166,37 +182,31 @@ public class ReportsButtons extends LoadData {
             }
 
             @Override
-            public void action() throws IOException {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"),
-                LanguageManager.getInstance().getResourceBundle());
-                Parent root = loader.load();
+            public void action() {
 
-                ItemSalesRankController controller = loader.getController();
-                controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
-
-                Scene scene = new SceneAll(root);
-                StageManager.show(
-                        "item-sales-rank",
-                        scene,
-                        this.textName()
-                );
             }
 
             @NotNull
             @Override
             public String textName() {
-                return LanguageManager.getInstance().getString("report.dashboard.item.sales.rank.stage.title");
+                return LanguageManager.getInstance().getString("report.itemsales.title");
             }
 
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = ItemSalesController.standard(preset).pane();
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
+            }
 
             @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) {
-
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
 
-    public ButtonWithPerm itemsReportDaily() {
+    /** The item sales on two dates - the summary's period, opened from its best sellers. */
+    public ButtonWithPerm itemSalesBetween(LocalDate from, LocalDate to) {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
@@ -204,31 +214,25 @@ public class ReportsButtons extends LoadData {
             }
 
             @Override
-            public void action() throws IOException {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/DailyItemSalesView.fxml"),
-                LanguageManager.getInstance().getResourceBundle());
-                Parent root = loader.load();
+            public void action() {
 
-                DailyItemSalesController controller = loader.getController();
-                controller.setDaoFactory(daoFactory);  // تمرير اتصال قاعدة البيانات
-
-                StageManager.show(
-                        "item-sales-daily",
-                        new SceneAll(root),
-                        this.textName()
-                );
             }
 
             @NotNull
             @Override
             public String textName() {
-                return LanguageManager.getInstance().getString("report.daily.item.sales.title");
+                return LanguageManager.getInstance().getString("report.itemsales.title");
             }
 
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = ItemSalesController.between(from, to).pane();
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
+            }
 
             @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) {
-
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
@@ -315,8 +319,8 @@ public class ReportsButtons extends LoadData {
         openers.put(ReportEntry.YEARLY, () -> run(reportYearly(), tabPane).open());
         openers.put(ReportEntry.SALES_BY_YEAR, run(monthlyTotals(MonthlySide.SALES), tabPane));
         openers.put(ReportEntry.PURCHASES_BY_YEAR, run(monthlyTotals(MonthlySide.PURCHASES), tabPane));
-        openers.put(ReportEntry.ITEMS_RANK, run(itemsReport(), tabPane));
-        openers.put(ReportEntry.ITEMS_DAILY, run(itemsReportDaily(), tabPane));
+        openers.put(ReportEntry.ITEMS_RANK, run(itemSales(StatementPeriod.THIS_MONTH), tabPane));
+        openers.put(ReportEntry.ITEMS_DAILY, run(itemSales(StatementPeriod.TODAY), tabPane));
         openers.put(ReportEntry.RETURN_REASONS, run(returnReasonsReport(), tabPane));
 
         openers.put(ReportEntry.CUSTOMER_BALANCES, run(mainScreenData.getAccountButtonsCustom(), tabPane));

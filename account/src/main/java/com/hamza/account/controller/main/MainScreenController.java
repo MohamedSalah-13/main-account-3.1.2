@@ -95,7 +95,7 @@ public class MainScreenController extends MainItems implements Initializable {
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
             btnTreasuries, btnCurrencies, btnTreasuryCash, btnTreasuryTransfer, btnTreasuryCapital, btnTreasuryDetails, btnProcess, btnExpenses,
-            btnReportHub, btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportMonthlyTotals,
+            btnReportHub, btnReportSummary, btnReportItemSales, btnReportMonthlyTotals,
             btnReportPartyPayments, btnReportYearly, btnReportProfitLoss,
             btnReportReturnReasons,
             btnHome, btnSetting, btnMyShift, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
@@ -258,8 +258,9 @@ public class MainScreenController extends MainItems implements Initializable {
         // from every profile already signed, and would take the hub away from each of those shops.
         menuButtonSetting.configureButton(btnReportHub, getReportsButtons().reportsHub());
         menuButtonSetting.configureButton(btnReportSummary, getReportsButtons().summaryReport(), ProductFeatures.REPORT_SUMMARY);
-        menuButtonSetting.configureButton(btnReportItems, getReportsButtons().itemsReport(), ProductFeatures.REPORT_ITEMS);
-        menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily(), ProductFeatures.REPORT_ITEMS_DAILY);
+        // One screen for the item movement ranking and the daily item sales: shown while the edition
+        // carries either, as the two buttons it replaced each were.
+        menuButtonSetting.configureButton(btnReportItemSales, getReportsButtons().itemSales(null), ProductFeatures.REPORT_ITEMS, ProductFeatures.REPORT_ITEMS_DAILY);
         // One screen for sales and purchases since 2026-09-23, and so one button that either side's feature opens.
         menuButtonSetting.configureButton(btnReportMonthlyTotals, getReportsButtons().monthlyTotals(null), ProductFeatures.REPORT_SALES_YEAR, ProductFeatures.REPORT_PURCHASES_YEAR);
         // One screen for both sides since 2026-09-23, and so one button that either side's feature opens.
@@ -413,7 +414,7 @@ public class MainScreenController extends MainItems implements Initializable {
                 Map.entry(SidebarShortcut.ADD_SUPPLIER, btnAddSupplierName), Map.entry(SidebarShortcut.SUPPLIERS, btnSuppliers), Map.entry(SidebarShortcut.SUPPLIER_ACCOUNT, btnAccountSuppliers),
                 Map.entry(SidebarShortcut.ADD_EMPLOYEE, btnAddEmployee), Map.entry(SidebarShortcut.EMPLOYEES, btnEmployees), Map.entry(SidebarShortcut.ADD_USER, btnAddUser), Map.entry(SidebarShortcut.USERS, btnUsers),
                 Map.entry(SidebarShortcut.TREASURIES, btnTreasuries), Map.entry(SidebarShortcut.CURRENCIES, btnCurrencies), Map.entry(SidebarShortcut.TREASURY_CASH, btnTreasuryCash), Map.entry(SidebarShortcut.TREASURY_TRANSFER, btnTreasuryTransfer), Map.entry(SidebarShortcut.TREASURY_CAPITAL, btnTreasuryCapital), Map.entry(SidebarShortcut.TREASURY_DETAILS, btnTreasuryDetails), Map.entry(SidebarShortcut.TREASURY_PROCESS, btnProcess), Map.entry(SidebarShortcut.EXPENSES, btnExpenses),
-                Map.entry(SidebarShortcut.REPORT_HUB, btnReportHub), Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_MONTHLY_TOTALS, btnReportMonthlyTotals), Map.entry(SidebarShortcut.REPORT_PARTY_PAYMENTS, btnReportPartyPayments), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
+                Map.entry(SidebarShortcut.REPORT_HUB, btnReportHub), Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEM_SALES, btnReportItemSales), Map.entry(SidebarShortcut.REPORT_MONTHLY_TOTALS, btnReportMonthlyTotals), Map.entry(SidebarShortcut.REPORT_PARTY_PAYMENTS, btnReportPartyPayments), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
                 Map.entry(SidebarShortcut.HOME, btnHome), Map.entry(SidebarShortcut.SETTINGS, btnSetting), Map.entry(SidebarShortcut.SHIFT_REPORTS, btnShiftReports), Map.entry(SidebarShortcut.BACKUP, btnBackup), Map.entry(SidebarShortcut.DELETE_DATA, btnDeleteData), Map.entry(SidebarShortcut.ABOUT, btnAbout), Map.entry(SidebarShortcut.CLOSE, btnClose), Map.entry(SidebarShortcut.YOUTUBE, btnYouTube));
     }
 
@@ -599,12 +600,8 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void firstBoxInMain() {
-        try {
-            box.getChildren().clear();
-            box.getChildren().add(new ModernDashboardApp(daoFactory, this).getPane());
-        } catch (DaoException e) {
-            logException(e);
-        }
+        box.getChildren().clear();
+        box.getChildren().add(new ModernDashboardApp(ModernDashboardApp.roads(this, menuButtonSetting.tabPane())).getPane());
     }
 
     private void setBackgroundImage() {
