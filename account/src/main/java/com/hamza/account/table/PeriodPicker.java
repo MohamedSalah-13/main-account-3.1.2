@@ -111,6 +111,25 @@ public final class PeriodPicker {
         onChange.run();
     }
 
+    /**
+     * Sets two dates as "custom" and reports the change once - for a screen opened on a period another
+     * screen was showing, such as the summary's own dates.
+     */
+    public void chooseDates(LocalDate start, LocalDate end) {
+        Objects.requireNonNull(start, "start");
+        Objects.requireNonNull(end, "end");
+        arranging = true;
+        try {
+            presets.setValue(Choice.CUSTOM);
+            from.setValue(start);
+            to.setValue(end);
+        } finally {
+            arranging = false;
+        }
+        presetChosen = false;
+        onChange.run();
+    }
+
     /** A preset, or "custom" for dates typed in - a record because "custom" is not a preset. */
     private record Choice(StatementPeriod preset) {
         static final Choice CUSTOM = new Choice(null);

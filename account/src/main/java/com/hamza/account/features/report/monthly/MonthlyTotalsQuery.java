@@ -20,6 +20,20 @@ public final class MonthlyTotalsQuery {
 
     /** Every day holding a document of the side, oldest first. No parameters. */
     public static String daysSql(MonthlySide side) {
+        return days(side, "", "");
+    }
+
+    /**
+     * The same days between two dates, both included - for a reader that wants a period rather than
+     * the whole history, such as the summary. Four parameters: the period for the invoices, then for
+     * the returns.
+     */
+    public static String daysBetweenSql(MonthlySide side) {
+        return days(side, "\n                      WHERE d.invoice_date BETWEEN ? AND ?",
+                "\n                      WHERE r.invoice_date BETWEEN ? AND ?");
+    }
+
+    private static String days(MonthlySide side, String documentsWhere, String returnsWhere) {
         return """
                 SELECT day,
                        SUM(invoices) AS invoices, SUM(gross) AS gross, SUM(discount) AS discount,
@@ -27,11 +41,11 @@ public final class MonthlyTotalsQuery {
                        SUM(returns_discount) AS returns_discount
                 FROM (SELECT d.invoice_date AS day, 1 AS invoices, d.total AS gross, d.discount AS discount,
                              0 AS return_documents, 0 AS returns_gross, 0 AS returns_discount
-                      FROM %1$s d
+                      FROM %1$s d%3$s
                       UNION ALL
                       SELECT r.invoice_date, 0, 0, 0, 1, r.total, r.discount
-                      FROM %2$s r) documents
+                      FROM %2$s r%4$s) documents
                 GROUP BY day
-                ORDER BY day""".formatted(side.documents(), side.returns());
+                ORDER BY day""".formatted(side.documents(), side.returns(), documentsWhere, returnsWhere);
     }
 }
