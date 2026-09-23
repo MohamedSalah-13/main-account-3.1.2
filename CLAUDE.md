@@ -1556,7 +1556,6 @@ move in the base alone: what was typed is written **beside** the base figure eve
   already on the invoice.
 
 ### Shifts
-### Shifts
 
 A cash drawer answered for by whoever is on it. `docs/shift-plan.md` is the contract; the four things
 to know before touching any of it:
