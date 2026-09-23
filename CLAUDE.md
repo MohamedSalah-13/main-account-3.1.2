@@ -355,6 +355,8 @@ Two documents govern work here and are kept current — read them before large c
   included (§13), C a customer or a supplier dealing in one (§14), D a document typed in its party's
   currency (§15), and E the exchange differences, at the average rate and shown under the net profit
   without being counted in it (§16) - and so is fetching today's rates from the internet (ق-٩, §12).
+  **The item is closed and ships in 4.11.0** (§17, item «2ب» in `docs/product-plan.md` §1); its two
+  open decisions - typing a rate either way round, and warning of a stale rate - moved to the ideas log.
   **Read it before touching `features/currency`,
   `features/party/currency`, `V80`-`V83`, the foreign half of `InvoiceSaveService`, or adding any column
   that holds an amount in a currency other than the base.**
@@ -1553,13 +1555,15 @@ move in the base alone: what was typed is written **beside** the base figure eve
 - `DocumentCurrencyDatabaseAcceptanceTest` drives `InvoiceSaveService`, built by its public constructor
   as `CustomData` builds it, on a scratch schema: a dollar sale worked out by hand line by line, a cash one
   into the dollar drawer, the three refusals with the counter unmoved, a return picked from the dollar
-  sale passing every base guard, a dinar customer still translated, and the paper read back. Eight cases.
+  sale passing every base guard, a dinar customer still translated, the paper read back, and - added when
+  the item closed (§17) - a dollar purchase and a return picked from it, and an edit of a dollar invoice
+  after today's rate was corrected, which keeps the rate it was saved with. Eleven cases, green twice.
 - **Both invoice screens, the A4 page and the receipt were drawn for a dollar invoice saved through the
   real save.** The pictures found one thing: the badge said "today's rate" on a reopened invoice, whose
   rate is its own - now "exchange rate". **Draw the 80mm receipt through Java2D**
   (`JasperPrintManager.printPageToImage`), the road the thermal printer takes: Jasper's PDF export has no
-  Arabic font on a Linux build machine and prints every label blank, the old ones included. **Not run on
-  MySQL**: the purchase side and an edit of a typed document. **Not seen**: English, the dark theme,
+  Arabic font on a Linux build machine and prints every label blank, the old ones included. **Not seen**:
+  English, the dark theme,
   Windows, a real thermal printer, picking a return's lines on screen, and changing the party with lines
   already on the invoice.
 
