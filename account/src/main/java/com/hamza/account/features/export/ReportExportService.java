@@ -72,42 +72,6 @@ public class ReportExportService {
         );
     }
 
-    /**
-     * تصدير فاتورة مبيعات
-     */
-    public boolean exportSalesInvoice(
-            SalesInvoiceData invoiceData,
-            String outputPath) {
-
-        List<InvoiceItem> items = new ArrayList<>();
-        for (var item : invoiceData.getItems()) {
-            items.add(InvoiceItem.builder()
-                    .itemName(item.getItemName())
-                    .quantity(item.getQuantity())
-                    .price(item.getPrice())
-                    .total(item.getTotal())
-                    .build());
-        }
-
-        InvoiceData data = InvoiceData.builder()
-                .companyName(invoiceData.getCompanyName())
-                .companyAddress(invoiceData.getCompanyAddress())
-                .companyPhone(invoiceData.getCompanyPhone())
-                .invoiceType("فاتورة مبيعات")
-                .invoiceNumber(invoiceData.getInvoiceNumber())
-                .invoiceDate(invoiceData.getInvoiceDate())
-                .customerName(invoiceData.getCustomerName())
-                .items(items)
-                .subtotal(invoiceData.getSubtotal())
-                .discount(invoiceData.getDiscount())
-                .tax(invoiceData.getTax())
-                .total(invoiceData.getTotal())
-                .notes(invoiceData.getNotes())
-                .build();
-
-        return pdfExportService.exportInvoice(data, outputPath, PageSize.A4.rotate());
-    }
-
     // أضف هذه الدالة داخل كلاس ReportExportService.java
 
     public boolean exportItemSalesRankReport(

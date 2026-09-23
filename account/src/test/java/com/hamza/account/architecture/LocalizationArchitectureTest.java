@@ -104,5 +104,5 @@ class LocalizationArchitectureTest {
     }
 
     /** Literals under {@code features/} when the rule was written. Only ever lower this. */
-    private static final int ARABIC_LITERAL_BASELINE = 264;
+    private static final int ARABIC_LITERAL_BASELINE = 119;
 }
