@@ -446,11 +446,5 @@ class ReturnCostResolverTest {
         public Optional<Integer> sourcePartyId(DocumentType sourceType, int sourceId) {
             throw new UnsupportedOperationException("not used by ReturnCostResolver");
         }
-
-        @Override
-        public List<ReasonCount> reasonCounts(
-                DocumentType returnType, java.time.LocalDate from, java.time.LocalDate to) {
-            throw new UnsupportedOperationException("not used by ReturnCostResolver");
-        }
     }
 }

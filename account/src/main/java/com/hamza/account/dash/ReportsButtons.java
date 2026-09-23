@@ -17,8 +17,6 @@ import com.hamza.account.controller.reports.*;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.report.ReportEntry;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
-import com.hamza.account.features.returns.JdbcReturnableRepository;
-import com.hamza.account.features.returns.ReturnReasonReportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
@@ -138,14 +136,24 @@ public class ReportsButtons extends LoadData {
 
             @Override
             public void action() {
-                var service = new ReturnReasonReportService(new JdbcReturnableRepository());
-                DialogReturnReasonsReport.show(service);
+
             }
 
             @NotNull
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("report.returns.reasons.title");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = ReturnReasonsController.standard().pane();
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }

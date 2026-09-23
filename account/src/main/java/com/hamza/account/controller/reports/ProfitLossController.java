@@ -20,14 +20,15 @@ import com.hamza.account.features.profitloss.statement.ProfitLossReportService;
 import com.hamza.account.features.profitloss.statement.StatementLine;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.ListToolbar;
+import com.hamza.account.table.PeriodPicker;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.RowDetailDrawer;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
+import com.hamza.account.table.RowsExcelWriter;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.table.VisibleColumns;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExportData;
@@ -41,7 +42,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.ProgressIndicator;
@@ -115,9 +115,7 @@ public class ProfitLossController {
 
     private final ProfitLossReportService service;
 
-    private final ComboBox<PeriodChoice> comboPeriod = new ComboBox<>();
-    private final DatePicker dateFrom = new DatePicker();
-    private final DatePicker dateTo = new DatePicker();
+    private final PeriodPicker period = new PeriodPicker("pl");
     private final ComboBox<ComparisonBasis> comboBasis = new ComboBox<>();
     private final ComboBox<ProfitLossGrouping> comboGrouping = new ComboBox<>();
     private final Label subtitle = new Label();
@@ -200,7 +198,7 @@ public class ProfitLossController {
         screen.setId("profit-loss");
         screen.setPrefSize(1280, 800);
 
-        choosePreset(StatementPeriod.THIS_MONTH);
+        period.choose(StatementPeriod.THIS_MONTH);
         return screen;
     }
 
@@ -222,39 +220,20 @@ public class ProfitLossController {
 
     /** The period says which statement this is, so it stays in the bar; there is no filters panel. */
     private HBox bar() {
-        comboPeriod.setId("pl-period-choice");
-        comboPeriod.getItems().setAll(PeriodChoice.all());
-        comboPeriod.setConverter(PeriodChoice.CONVERTER);
-        comboPeriod.setOnAction(event -> {
-            PeriodChoice choice = comboPeriod.getValue();
-            if (!arranging && choice != null && choice.preset() != null) {
-                choosePreset(choice.preset());
-            }
-        });
-        for (DatePicker picker : new DatePicker[]{dateFrom, dateTo}) {
-            picker.setPrefWidth(130);
-            picker.valueProperty().addListener((observable, was, now) -> {
-                if (!arranging) {
-                    arranging = true;
-                    try {
-                        comboPeriod.setValue(PeriodChoice.CUSTOM);
-                    } finally {
-                        arranging = false;
-                    }
-                    reload();
+        period.setOnChange(() -> {
+            if (period.lastChangeWasPreset()) {
+                arranging = true;
+                try {
+                    comboGrouping.setValue(ProfitLossGrouping.suitedTo(new ProfitLossPeriod(period.from(),
+                            period.to())));
+                } finally {
+                    arranging = false;
                 }
-            });
-        }
-        dateFrom.setId("pl-from");
-        dateTo.setId("pl-to");
-        Label caption = new Label(text("profitloss.period"));
-        caption.getStyleClass().add("form-label");
-        Label dash = new Label("–");
-        dash.getStyleClass().add("form-label");
-        HBox period = new HBox(8, caption, comboPeriod, dateFrom, dash, dateTo);
-        period.setAlignment(Pos.CENTER_LEFT);
+            }
+            reload();
+        });
 
-        toolbar.searchField(period)
+        toolbar.searchField(period.node())
                 .refresh(ListToolbar.refreshButton(this::reload))
                 .print(ListToolbar.printButton(this::print))
                 .export(ListToolbar.button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
@@ -495,26 +474,10 @@ public class ProfitLossController {
 
     // ---- loading ---------------------------------------------------------------------
 
-    /** Sets the pickers to a preset and the grouping to what suits its length, then loads once. */
-    private void choosePreset(StatementPeriod preset) {
-        LocalDate today = LocalDate.now();
-        arranging = true;
-        try {
-            comboPeriod.setValue(PeriodChoice.of(preset));
-            dateFrom.setValue(preset.from(today));
-            dateTo.setValue(preset.to(today));
-            comboGrouping.setValue(ProfitLossGrouping.suitedTo(new ProfitLossPeriod(preset.from(today),
-                    preset.to(today))));
-        } finally {
-            arranging = false;
-        }
-        reload();
-    }
-
     private void reload() {
-        ProfitLossPeriod period;
+        ProfitLossPeriod chosen;
         try {
-            period = ProfitLossPeriod.of(dateFrom.getValue(), dateTo.getValue());
+            chosen = ProfitLossPeriod.of(period.from(), period.to());
         } catch (UserValidationException e) {
             AllAlerts.alertError(e.getMessage());
             return;
@@ -526,7 +489,7 @@ public class ProfitLossController {
         Task<ProfitLossReport> task = new Task<>() {
             @Override
             protected ProfitLossReport call() throws Exception {
-                return service.report(period, basis, grouping);
+                return service.report(chosen, basis, grouping);
             }
         };
         task.setOnSucceeded(event -> {
@@ -622,17 +585,24 @@ public class ProfitLossController {
             AllAlerts.alertError(text("party.error.no.data.print"));
             return;
         }
-        String title = text("report.profit.loss.title");
-        File target = TablePdfReport.chooseTarget(table.getScene().getWindow(), title);
-        if (target == null) {
-            return;
+        File target = TablePdfReport.chooseTarget(table.getScene().getWindow(), text("report.profit.loss.title"));
+        if (target != null) {
+            TablePdfReport.write(target, paper());
         }
+    }
+
+    /**
+     * The paper, its layouts read from the tables now, on the JavaFX thread; the file is written later,
+     * off it, by whoever calls the writer.
+     */
+    private TablePdfReport.PdfFileWriter paper() {
+        String title = text("report.profit.loss.title");
         StatementPdfLayout statement = statementLayout(shown);
         TablePdfLayout rows = TablePdfLayout.from(table, shown.rows(), Set.of(ACTIONS), TOTALLED, text("total"));
         String subtitleText = printSubtitle();
-        TablePdfReport.write(target, file -> new PdfExportService().exportStatementReport(file.getAbsolutePath(),
-                title, subtitleText, statement, rows.headers(), rows.columnWidths(), rows.rows(), rows.totals(),
-                TablePdfReport.pageSizeFor(Math.max(rows.headers().length, 4))));
+        return file -> new PdfExportService().exportStatementReport(file.getAbsolutePath(), title, subtitleText,
+                statement, rows.headers(), rows.columnWidths(), rows.rows(), rows.totals(),
+                TablePdfReport.pageSizeFor(Math.max(rows.headers().length, 4)));
     }
 
     private StatementPdfLayout statementLayout(ProfitLossReport report) {
@@ -675,21 +645,11 @@ public class ProfitLossController {
                         line.current(), line.previous(), change(line.change())});
             }
             rows.add(new Object[]{""});
-            List<TableColumn<ProfitLossPeriodRow, ?>> columns =
-                    VisibleColumns.dataColumns(table.getVisibleLeafColumns(), Set.of(ACTIONS));
-            rows.add(columns.stream().map(TableColumn::getText).toArray());
-            for (ProfitLossPeriodRow row : shown.rows()) {
-                Object[] cells = new Object[columns.size()];
-                for (int index = 0; index < columns.size(); index++) {
-                    Object value = VisibleColumns.value(columns.get(index), row);
-                    cells[index] = value == null ? "" : value;
-                }
-                rows.add(cells);
-            }
+            rows.addAll(RowsExcelWriter.tableRows(table, Set.of(ACTIONS), shown.rows()));
             Object[] headers = {text("profitloss.column.line"), text("profitloss.column.current"),
                     text("profitloss.column.previous"), text("profitloss.column.change")};
             int written = ExportData.exportDataToExcel(rows,
-                    new ProfitLossExcelWriter(text("report.profit.loss.title"), headers, rows));
+                    new RowsExcelWriter(text("report.profit.loss.title"), headers, rows));
             if (written >= 1) {
                 AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
             }
@@ -778,43 +738,6 @@ public class ProfitLossController {
                 return null;
             }
         };
-    }
-
-    /**
-     * The choices of the period combo: the statement's presets, less "everything there has ever been", and
-     * "custom" for dates typed in. A record rather than the preset itself, because "custom" is not one.
-     */
-    private record PeriodChoice(StatementPeriod preset) {
-        static final PeriodChoice CUSTOM = new PeriodChoice(null);
-        static final StringConverter<PeriodChoice> CONVERTER = new StringConverter<>() {
-            @Override
-            public String toString(PeriodChoice choice) {
-                if (choice == null) {
-                    return "";
-                }
-                return text(choice.preset() == null ? "profitloss.period.custom" : choice.preset().messageKey());
-            }
-
-            @Override
-            public PeriodChoice fromString(String string) {
-                return null;
-            }
-        };
-
-        static PeriodChoice of(StatementPeriod preset) {
-            return new PeriodChoice(preset);
-        }
-
-        static List<PeriodChoice> all() {
-            List<PeriodChoice> choices = new ArrayList<>();
-            for (StatementPeriod preset : StatementPeriod.values()) {
-                if (!preset.needsEarliestMovement()) {
-                    choices.add(new PeriodChoice(preset));
-                }
-            }
-            choices.add(CUSTOM);
-            return choices;
-        }
     }
 
     /**

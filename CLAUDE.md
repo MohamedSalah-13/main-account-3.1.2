@@ -2635,6 +2635,28 @@ code; `profit-loss.fxml` and `ReportExportService.exportProfitLossReport` are go
   with the drawer open, and its PDF rendered. **Not seen:** the direct print, the Excel file opened, and
   a reader without the key on screen.
 
+### The returns reasons report
+
+`features/returns/reasons` and `ReturnReasonsController` (the sidebar's «تقرير أسباب المرتجعات», now a
+tab). Rebuilt 2026-09-23; `DialogReturnReasonsReport`, `ReturnReasonReportService` and
+`ReturnableRepository.reasonCounts` are gone.
+
+- **A return is worth its total less its own discount** - what was refunded, `document_profit`'s figure.
+  The old dialog summed `total`, so every return with a discount was reported at more than it was worth.
+- **`reports.show.returns` is asked by the service**, before either read (the report, and a reason's
+  returns); the old service asked nothing and threw Arabic sentences, and it leaves
+  `LocalizationArchitectureTest`'s list with it.
+- **A reason is its stored value**, so "none given" (NULL or blank, counted together, and never the
+  leading reason) and a value this build does not know are rows of their own rather than a failed report.
+- **The items that came back most** are read with `ItemNetLines.lineAmount` in base units - a return's
+  own discount is not shared among them, and the screen says so.
+- The period is `account.table.PeriodPicker` - a `StatementPeriod` preset or two dates, one change
+  reported once - now shared with the profit and loss screen; a report of several tables exports one
+  sheet through `RowsExcelWriter`.
+- `ReturnReasonsDatabaseAcceptanceTest` (gated, scratch schema, five cases, green twice) works September
+  2025 out by hand, both sides. Seen on a demo schema at 1366x768 in Arabic and English, light and dark,
+  with the drawer, the empty state, and its PDF.
+
 ### Printed reports
 
 The `.jrxml` templates live in **`reports/` at the repository root**, and `Configs.FILE_REPORTS`

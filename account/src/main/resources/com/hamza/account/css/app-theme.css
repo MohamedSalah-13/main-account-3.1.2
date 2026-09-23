@@ -755,13 +755,15 @@
 /* Its cards stand on no party palette, and a stat value with no colour of its own came out dark on the
    dark theme's dark card. */
 .yearly-report .party-stat-card .stat-value,
-.profit-loss .party-stat-card .stat-value {
+.profit-loss .party-stat-card .stat-value,
+.return-reasons .party-stat-card .stat-value {
     -fx-text-fill: -app-text-strong;
 }
 
 .party-stat-card .stat-value:negative-amount,
 .yearly-report .party-stat-card .stat-value:negative-amount,
 .profit-loss .party-stat-card .stat-value:negative-amount,
+.return-reasons .party-stat-card .stat-value:negative-amount,
 .party-stat-card .stat-subtitle:negative-amount,
 .party-summary-bar .stat-value:negative-amount {
     -fx-text-fill: -app-danger;
@@ -786,9 +788,10 @@
     -fx-text-fill: -app-primary;
 }
 
-/* The two card titles over the statement and the table: the shared title's dark blue is lost on the dark
-   theme's dark card. */
-.profit-loss .section-title {
+/* The card titles over a report's tables: the shared title's dark blue is lost on the dark theme's dark
+   card. */
+.profit-loss .section-title,
+.return-reasons .section-title {
     -fx-text-fill: -app-text-strong;
 }
 
