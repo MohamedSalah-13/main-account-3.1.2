@@ -1,0 +1,121 @@
+/* The startup window: what the program is doing between being launched and showing the sign-in, a line
+   per step, with the program's own log a toggle away. A stylesheet of its own, added to that one scene,
+   so the shared theme carries nothing only this window uses. Colours are theme tokens only. */
+
+.startup-root {
+    -fx-background-color: -app-surface;
+    -fx-padding: 22 26 20 26;
+}
+
+.startup-product-name {
+    -fx-font-size: 1.5em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.startup-version {
+    -fx-text-fill: -app-text-muted;
+}
+
+.startup-heading {
+    -fx-font-size: 1.6em;
+    -fx-text-fill: -app-text-strong;
+}
+
+/* The log: a pale panel, no borders between its lines - a list being written, not a table. */
+.startup-log,
+.startup-details {
+    -fx-background-color: -app-bg;
+    -fx-background-radius: 6;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 6;
+    -fx-padding: 6;
+}
+
+.startup-log .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -app-text;
+    -fx-padding: 3 6 3 6;
+}
+
+.startup-log .list-cell:filled:selected,
+.startup-log .list-cell:filled:hover {
+    -fx-background-color: transparent;
+}
+
+/* A line's words are a label inside the cell, which takes no colour from the cell's own text fill - on the
+   dark theme a step read dark on dark until it was given one here. */
+.startup-log .label {
+    -fx-text-fill: -app-text;
+}
+
+.startup-log .label.startup-line-detail {
+    -fx-text-fill: -app-text-muted;
+}
+
+.startup-log .label.startup-line-failed {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.startup-line-done-icon {
+    -fx-icon-color: -app-success;
+}
+
+.startup-line-failed-icon {
+    -fx-icon-color: -app-danger;
+}
+
+.startup-log .label.startup-elapsed {
+    -fx-text-fill: -app-text-muted;
+}
+
+/* The program's own log, as it is written: English and left to right, whatever the interface language. */
+.startup-details {
+    -fx-font-family: "monospace";
+    -fx-font-size: 0.85em;
+}
+
+.startup-details .content {
+    -fx-background-color: -app-bg;
+}
+
+.startup-progress {
+    -fx-accent: -app-primary;
+}
+
+.startup-progress .bar {
+    -fx-background-radius: 3;
+    -fx-background-insets: 0;
+    -fx-padding: 3;
+}
+
+.startup-progress .track {
+    -fx-background-color: -app-border;
+    -fx-background-radius: 3;
+}
+
+.startup-progress-failed {
+    -fx-accent: -app-danger;
+}
+
+.startup-percent {
+    -fx-text-fill: -app-text-muted;
+}
+
+.startup-failure {
+    -fx-background-color: -app-danger-soft;
+    -fx-border-color: -app-danger-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10 12 10 12;
+}
+
+.startup-failure-message {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.startup-failure-reference {
+    -fx-text-fill: -app-text;
+}

@@ -66,6 +66,8 @@ import com.hamza.account.features.shift.ShiftShortageChargeService;
 import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.expense.ExpenseHeadingService;
+import com.hamza.account.features.startup.StartupProgress;
+import com.hamza.account.features.startup.StartupStep;
 import com.hamza.account.features.currency.CurrencyService;
 import com.hamza.account.features.currency.online.OnlineRateService;
 import com.hamza.account.features.currency.online.RateSources;
@@ -90,7 +92,6 @@ import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.account.service.version.MigrationResult;
 import com.hamza.account.trial.TrialManager;
-import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DataSourceProvider;
@@ -99,15 +100,8 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
@@ -131,37 +125,19 @@ public class DownLoadApplication extends Application {
         UiScale.initialize();
         ThemeManager.initialize();
 
-        LanguageManager language = LanguageManager.getInstance();
-        Label status = new Label(language.getString("startup.preparing"));
-        ProgressIndicator progress = new ProgressIndicator();
-        progress.setMaxSize(56, 56);
-        Button close = new Button(language.getString("common.close"));
-        close.setVisible(false);
-        close.setManaged(false);
-        close.setOnAction(event -> Platform.exit());
-
-        VBox root = new VBox(18, progress, status, close);
-        root.setAlignment(Pos.CENTER);
-        Scene scene = new Scene(root, 420, 260);
-        ThemeManager.apply(scene);
-        ChangeOrientation.sceneOrientation(scene);
-
-        primaryStage.setTitle(language.getString("startup.title"));
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(false);
-        primaryStage.setOnCloseRequest(event -> Platform.exit());
-        primaryStage.show();
+        // A line per step and per migration, and the program's own log a toggle away - it replaced a
+        // spinner over one sentence that did not change for the whole start (features/startup).
+        StartupWindow window = new StartupWindow(primaryStage);
+        StartupProgress progress = window.progress();
 
         Task<BootstrapResult> bootstrapTask = new Task<>() {
             @Override
             protected BootstrapResult call() {
-                updateMessage(language.getString("startup.preparing"));
-                return bootstrap();
+                return bootstrap(progress);
             }
         };
-        status.textProperty().bind(bootstrapTask.messageProperty());
         bootstrapTask.setOnSucceeded(event -> {
-            status.textProperty().unbind();
+            window.close();
             BootstrapResult result = bootstrapTask.getValue();
             showMigrationResult(result.migrationResult());
 
@@ -176,15 +152,9 @@ public class DownLoadApplication extends Application {
             ServiceRegistry.register(ApplicationNavigator.class, navigator);
             navigator.showLogin();
         });
-        bootstrapTask.setOnFailed(event -> {
-            status.textProperty().unbind();
-            progress.setVisible(false);
-            progress.setManaged(false);
-            status.setText(language.getString("startup.failed"));
-            close.setVisible(true);
-            close.setManaged(true);
-            AllAlerts.handleError(language.getString("startup.operation"), bootstrapTask.getException());
-        });
+        // The window says where the start stopped, why, and the reference to quote - in place of a
+        // dialog over a window that said nothing.
+        bootstrapTask.setOnFailed(event -> window.failed(bootstrapTask.getException()));
 
         Thread thread = new Thread(bootstrapTask, "application-bootstrap");
         thread.setDaemon(true);
@@ -200,21 +170,29 @@ public class DownLoadApplication extends Application {
      * half-wired application is a picture of a defect the running program does not have.
      */
     public static void bootstrapForTooling() {
-        bootstrap();
+        bootstrap(StartupProgress.SILENT);
     }
 
-    private static BootstrapResult bootstrap() {
+    /** The start, step by step, told to {@code progress} as it goes - the window's lines are these. */
+    private static BootstrapResult bootstrap(StartupProgress progress) {
+        progress.begin(StartupStep.CONFIGURATION);
         connectionToDatabase = new ConnectionToDatabase();
-        MigrationResult migration = new DatabaseMigrationService(connectionToDatabase).updateDatabaseIfNeeded();
+        MigrationResult migration = new DatabaseMigrationService(connectionToDatabase, progress)
+                .updateDatabaseIfNeeded();
+        progress.begin(StartupStep.SETTINGS);
         DaoFactory daoFactory = getDaoFactory();
         // After the pool and before anything reads a setting: until this call every key
         // answers from this machine's own Preferences, which is what the theme and the
         // fonts above have already done.
         SharedSettings.install(new SharedSettingsStore());
         BackupPolicy.claimIfUnowned();
+        progress.begin(StartupStep.LICENSE);
         checkTrialStatus();
+        progress.begin(StartupStep.PRODUCT);
         ProductProfile productProfile = loadProductProfile();
+        progress.begin(StartupStep.SERVICES);
         registerServices(daoFactory, productProfile);
+        progress.finish();
         return new BootstrapResult(daoFactory, migration);
     }
 
