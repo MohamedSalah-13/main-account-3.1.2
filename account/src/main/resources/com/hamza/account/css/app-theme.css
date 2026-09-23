@@ -892,6 +892,27 @@
     -fx-text-fill: -app-primary;
 }
 
+/* The print preview: the page sits on a muted desk, the way paper sits on a table, and the toolbar above
+   it is the window's own surface. */
+.report-preview-canvas {
+    -fx-background-color: -app-neutral-hover;
+}
+
+.report-preview-scroll,
+.report-preview-scroll > .viewport {
+    -fx-background-color: -app-neutral-hover;
+}
+
+.report-preview-toolbar {
+    -fx-background-color: -app-surface;
+    -fx-border-color: transparent transparent -app-border transparent;
+}
+
+.report-preview-pagebar {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border transparent transparent transparent;
+}
+
 /* The card titles over a report's tables, and over the report appearance settings: the shared title's dark
    blue is lost on the dark theme's dark card. */
 .profit-loss .section-title,

@@ -3046,6 +3046,22 @@ and the 80mm receipt is Jasper's. The checks tab's «طباعة عنوان ال�
 a Jasper parameter no template reads - it predates this and does nothing. **Not seen**: Windows, a real
 printer, and the tab with a database behind it (the harness handed it the company).
 
+**A report can be looked at before it goes anywhere** (`ReportOutputMode.PREVIEW`, «معاينة قبل الطباعة»,
+beside save, print directly and ask - and offered in the ask dialog too). `TablePdfReport` writes the PDF
+to a temporary file exactly as for the other modes and hands it to `table/ReportPreviewWindow`, so what is
+looked at is the file the printer gets, drawn by PDFBox, which the direct print already sends through. The
+window prints to a printer and a number of copies chosen there for this print only
+(`DirectPdfPrintService.print(..., copies)`), saves a copy, and deletes the file when it closes - after
+closing the document holding it, since Windows will not delete an open file. **One page is drawn at a
+time**, at the size shown and the screen's density (`features/export/PdfPageRenderer`): all of a hundred
+pages drawn up front is hundreds of megabytes. Which page and what size are `PreviewPager`'s, tested without
+a toolkit. **The page arrows are picked by the language**: a right-to-left window lays its buttons out
+mirrored but draws each glyph as it is, so "next" is the arrow pointing left in Arabic. The default mode is
+still saving a file, so nothing changed on upgrade; the shop turns the preview on in the printers tab.
+**Only reports that go through `TablePdfReport.chooseTarget` have it** - the item reports' own save dialog,
+the shift and the audit exports and the Jasper receipt do not. **Not seen**: a real printer (none in the
+build environment) and the save dialog, which is the system's.
+
 ### Period locks and stock counts
 
 `accounting_lock` (`V9`) closes a period, and `PeriodLockRegistry` declares every dated document the
