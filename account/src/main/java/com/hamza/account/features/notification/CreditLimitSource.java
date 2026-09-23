@@ -101,7 +101,9 @@ public class CreditLimitSource implements NotificationSource {
         List<CustomerReceivable> overLimit = new ArrayList<>();
         for (CustomerReceivable receivable : receivables()) {
             Double limit = limitById.get(receivable.getCustomerId());
-            if (limit != null && receivable.getTotalReceivable() > limit) {
+            // The limit is written in the customer's own currency, so it is held against what they owe
+            // in it (V82, docs/currency-plan.md §14 ق-ج٨) - the base figure for a customer in the base.
+            if (limit != null && receivable.getTotalReceivableOwn() > limit) {
                 overLimit.add(receivable);
             }
         }
@@ -121,7 +123,7 @@ public class CreditLimitSource implements NotificationSource {
     }
 
     private List<CustomerReceivable> receivables() throws Exception {
-        return com.hamza.account.model.dao.DaoFactory.INSTANCE.customerReceivableDao().getReceivablesReport();
+        return com.hamza.account.model.dao.DaoFactory.INSTANCE.customerReceivableDao().getOwedInOwnCurrency();
     }
 
     /**
@@ -131,7 +133,7 @@ public class CreditLimitSource implements NotificationSource {
     private String summary(List<CustomerReceivable> overLimit) {
         if (overLimit.size() == 1) {
             CustomerReceivable only = overLimit.getFirst();
-            return only.getCustomerName() + " - المديونية: " + Math.round(only.getTotalReceivable());
+            return only.getCustomerName() + " - المديونية: " + Math.round(only.getTotalReceivableOwn());
         }
         return "عدد العملاء: " + overLimit.size();
     }
@@ -158,7 +160,7 @@ public class CreditLimitSource implements NotificationSource {
                                 Columns.number("report.customer.receivables.col.opening", CustomerReceivable::getOpeningBalance),
                                 Columns.number("report.customer.receivables.col.invoices", CustomerReceivable::getInvoicesDebt),
                                 Columns.number("report.customer.receivables.col.payments", CustomerReceivable::getTotalPayments),
-                                Columns.number("report.customer.receivables.col.total", CustomerReceivable::getTotalReceivable)
+                                Columns.number("report.customer.receivables.col.total", CustomerReceivable::getTotalReceivableOwn)
                         );
                     }
                 };

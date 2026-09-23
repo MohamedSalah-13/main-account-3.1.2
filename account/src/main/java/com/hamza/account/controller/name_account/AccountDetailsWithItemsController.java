@@ -11,10 +11,12 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.party.statement.PartyStatementFilter;
 import com.hamza.account.features.party.statement.PartyStatementOptions;
 import com.hamza.account.features.party.statement.PartyStatementPage;
+import com.hamza.account.features.party.statement.PartyStatementCurrency;
+import com.hamza.account.features.party.statement.PartyStatementTotals;
+import com.hamza.account.features.currency.CurrencyFormat;
 import com.hamza.account.features.party.statement.PartyStatementPrintData;
 import com.hamza.account.features.party.statement.PartyStatementRow;
 import com.hamza.account.features.party.statement.PartyStatementService;
-import com.hamza.account.features.party.statement.PartyStatementSummary;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -130,7 +132,20 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
     private PartyStatementFilter currentFilter;
     private PartyStatementPage currentPage = new PartyStatementPage(
-            List.of(), PartyStatementSummary.EMPTY, 0, false, false);
+            List.of(), PartyStatementTotals.EMPTY, 0, false, false, PartyStatementCurrency.BASE);
+    /**
+     * How a figure of the statement is written: two places in the base, the party's own places when it
+     * deals in a foreign currency (docs/currency-plan.md §14 ق-ج٨). A document's own lines stay in the
+     * base - an invoice is written in the base and only translated - so their cells use the base writer.
+     */
+    private java.util.function.Function<BigDecimal, String> amountFormat = Columns::money;
+    /** Each movement's value in the books, beside it on a foreign party's statement. */
+    private final java.util.Map<AccountCard, BigDecimal> bookValues = new IdentityHashMap<>();
+    private final Label currencyNote = new Label();
+    private TreeTableColumn<AccountCard, BigDecimal> debitColumn;
+    private TreeTableColumn<AccountCard, BigDecimal> creditColumn;
+    private TreeTableColumn<AccountCard, BigDecimal> balanceColumn;
+    private TreeTableColumn<AccountCard, BigDecimal> bookColumn;
     private BigDecimal creditLimit;
     private Task<?> activeTask;
     private int generation;
@@ -169,7 +184,11 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
         BorderPane layout = new BorderPane();
         layout.getStyleClass().addAll("app-container", "party-statement-shell");
-        layout.setTop(new VBox(10, hero(), header, filters));
+        currencyNote.getStyleClass().add("page-subtitle");
+        currencyNote.setWrapText(true);
+        currencyNote.managedProperty().bind(currencyNote.visibleProperty());
+        currencyNote.setVisible(false);
+        layout.setTop(new VBox(10, hero(), header, currencyNote, filters));
         layout.setCenter(content);
         layout.setBottom(footer());
 
@@ -261,17 +280,21 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         treeView.setPlaceholder(new Label(text("party.statement.empty")));
         root.setExpanded(true);
 
+        debitColumn = named("statement-debit", money("common.debtor", AccountCard::getPurchase,
+                "party-statement-debit-cell"));
+        creditColumn = named("statement-credit", money("common.creditor", AccountCard::getPaid,
+                "party-statement-credit-cell"));
+        balanceColumn = named("statement-balance", money("party.statement.column.running", AccountCard::getDetails,
+                "party-statement-balance-cell"));
+        bookColumn = named("statement-book", bookColumn());
         treeView.getColumns().setAll(List.of(
                 named("statement-date", tree("date", AccountCard::getDate, 108)),
                 named("statement-kind", kindColumn()),
                 named("statement-reference", tree("party.statement.column.reference",
                         card -> card.getId() == 0 ? "" : String.valueOf(card.getId()), 92)),
-                named("statement-debit", money("common.debtor", AccountCard::getPurchase,
-                        "party-statement-debit-cell")),
-                named("statement-credit", money("common.creditor", AccountCard::getPaid,
-                        "party-statement-credit-cell")),
-                named("statement-balance", money("party.statement.column.running", AccountCard::getDetails,
-                        "party-statement-balance-cell")),
+                debitColumn,
+                creditColumn,
+                balanceColumn,
                 named("statement-treasury", tree("party.statement.column.treasury", AccountCard::getName, 130)),
                 named("statement-user", tree("party.statement.column.user", AccountCard::getUserName, 120)),
                 named("statement-notes", tree("column.notes", AccountCard::getNotes, 260))));
@@ -390,9 +413,10 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     private void show(PartyStatementPage page, PartyStatementFilter filter) {
         currentFilter = filter;
         currentPage = page;
-        header.show(page.summary());
-        header.showCreditLimit(creditLimit, page.summary().closingBalance());
-        buildRows(page.rows());
+        showCurrency(page.currency(), page.totals());
+        header.show(page.summary(), amountFormat);
+        header.showCreditLimit(creditLimit, page.summary().closingBalance(), amountFormat);
+        buildRows(page.rows(), page.currency());
 
         status.setText(text("party.statement.page.status", page.rows().size()));
         pageLabel.setText(text("party.statement.page.number", page.page() + 1));
@@ -453,13 +477,43 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         next.setDisable(activeTask != null || !currentPage.hasNext());
     }
 
-    private void buildRows(List<PartyStatementRow> rows) {
+    /**
+     * Writes the statement in the party's own currency or the base (docs/currency-plan.md §14 ق-ج٨): the
+     * code in the three amount headings, a book-value column beside them, and a line under the cards
+     * saying what the figures are in and what the balance is worth in the books. The book column is
+     * added to the table after {@code TableSetting} read it, so whether it is there follows the currency
+     * and is saved as nobody's choice.
+     */
+    private void showCurrency(PartyStatementCurrency currency, PartyStatementTotals totals) {
+        amountFormat = currency.isForeign()
+                ? amount -> CurrencyFormat.amount(amount, currency.foreign())
+                : Columns::money;
+        String code = currency.isForeign() ? " (" + currency.code() + ")" : "";
+        debitColumn.setText(text("common.debtor") + code);
+        creditColumn.setText(text("common.creditor") + code);
+        balanceColumn.setText(text("party.statement.column.running") + code);
+        if (currency.isForeign() && !treeView.getColumns().contains(bookColumn)) {
+            treeView.getColumns().add(treeView.getColumns().indexOf(balanceColumn) + 1, bookColumn);
+        } else if (!currency.isForeign()) {
+            treeView.getColumns().remove(bookColumn);
+        }
+        currencyNote.setVisible(currency.isForeign());
+        currencyNote.setText(currency.isForeign() ? text("party.statement.currency.note",
+                currency.code(), Columns.money(totals.base().closingBalance())) : "");
+    }
+
+    private void buildRows(List<PartyStatementRow> rows, PartyStatementCurrency currency) {
         expanded.clear();
         loadingDetails.clear();
         detailErrorReported = false;
+        bookValues.clear();
         root.getChildren().clear();
         for (PartyStatementRow row : rows) {
-            TreeItem<AccountCard> item = new TreeItem<>(toCard(row));
+            AccountCard card = toCard(currency.shown(row));
+            if (currency.isForeign()) {
+                bookValues.put(card, currency.bookValue(row));
+            }
+            TreeItem<AccountCard> item = new TreeItem<>(card);
             root.getChildren().add(item);
             if (row.hasDocumentLines()) {
                 item.getChildren().add(detailPlaceholder("party.statement.details.loading"));
@@ -597,7 +651,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
             }
             try {
                 int written = ExportData.exportDataToExcel(extract.rows(),
-                        new PartyStatementExcelWriter(extract.rows(), extract.summary()));
+                        new PartyStatementExcelWriter(extract.rows(), extract.summary(), extract.currency()));
                 if (written < 1) {
                     throw new BusinessRuleException(text("party.error.cannot.save"));
                 }
@@ -675,13 +729,34 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
             @Override
             protected void updateItem(BigDecimal amount, boolean empty) {
                 super.updateItem(amount, empty);
-                setText(empty || amount == null ? null : Columns.money(amount));
+                TreeItem<AccountCard> item = empty ? null : getTableRow().getTreeItem();
+                boolean line = item != null && item.getParent() != null && item.getParent() != root;
+                setText(empty || amount == null ? null
+                        : line ? Columns.money(amount) : amountFormat.apply(amount));
                 pseudoClassStateChanged(Columns.NEGATIVE, amount != null && amount.signum() < 0);
                 getStyleClass().removeAll("party-statement-debit-cell",
                         "party-statement-credit-cell", "party-statement-balance-cell");
                 if (!empty) {
                     getStyleClass().add(styleClass);
                 }
+            }
+        });
+        return column;
+    }
+
+    /** A movement's value in the books, for a foreign party's statement. Written as the base is. */
+    private TreeTableColumn<AccountCard, BigDecimal> bookColumn() {
+        TreeTableColumn<AccountCard, BigDecimal> column =
+                new TreeTableColumn<>(text("treasury.statement.column.book"));
+        column.setPrefWidth(140);
+        column.setCellValueFactory(features -> new javafx.beans.property.ReadOnlyObjectWrapper<>(
+                bookValues.get(features.getValue().getValue())));
+        column.setCellFactory(ignored -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal amount, boolean empty) {
+                super.updateItem(amount, empty);
+                setText(empty || amount == null ? null : Columns.money(amount));
+                pseudoClassStateChanged(Columns.NEGATIVE, amount != null && amount.signum() < 0);
             }
         });
         return column;

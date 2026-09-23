@@ -58,7 +58,9 @@ public final class SchemaForeignKeys {
             // A currency's rates point at it without cascading, which DeleteRegistry.CURRENCIES declares.
             "V80__currencies.sql",
             // A treasury in a foreign currency points at it without cascading (DeleteRegistry.CURRENCIES).
-            "V81__foreign_currency_treasury.sql");
+            "V81__foreign_currency_treasury.sql",
+            // And so does a customer or a supplier dealing in it.
+            "V82__party_currency.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

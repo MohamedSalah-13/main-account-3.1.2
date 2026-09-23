@@ -64,9 +64,26 @@ public final class PartyAgeingQuery {
             "ROUND(SUM(CASE WHEN m.account_date <= ? THEN m.purchase - m.discount - m.paid ELSE 0 END), 2)";
 
     /**
+     * The same balance in the party's own currency (V82, docs/currency-plan.md §14 ق-ج٨) - the view's
+     * {@code *_own} columns, which for a party in the base are its base figures. It is what a row's bands
+     * add up to: an invoice's remainder is measured in the party's currency, as an allocation is.
+     */
+    static final String BALANCE_OWN =
+            "ROUND(SUM(CASE WHEN m.account_date <= ? THEN m.purchase_own - m.discount_own - m.paid_own ELSE 0 END), 3)";
+
+    /**
      * One page of the ageing list.
      * <p>
-     * Parameters in order: {@code asOf} for the balance; then the aged sub-select's own -
+     * <b>A row is in its party's own currency, and the foot of the report is in the base</b>
+     * (docs/currency-plan.md §14 ق-ج٨). Each band is selected twice: in the party's currency, which the
+     * row shows and reconciles to {@code balance_own}, and in the books ({@code book_} bands) - every
+     * invoice's remainder valued at the rate copied onto that invoice, so the footer can add a dollar
+     * customer to a pound one. The book bands reconcile to {@code balance} through a
+     * {@code book_unallocated} of their own, which is where a difference the rates made lands. For a
+     * party in the base the two sets are one.
+     * <p>
+     * Parameters in order: {@code asOf} for the balance, twice, and for the balance in the party's own
+     * currency, twice; then the aged sub-select's own -
      * {@code asOf} for its allocations, {@code asOf} for its invoices, and {@code asOf} for
      * each of the five bands; then the row filters - area, the delegate, text ×3 - then the {@code HAVING}
      * conditions, and finally the limit and the offset.
@@ -87,19 +104,25 @@ public final class PartyAgeingQuery {
     public static String summarySql(PartyAgeingFilter filter) {
         StringBuilder sums = new StringBuilder();
         for (AgeingBucket bucket : AgeingBucket.inReadingOrder()) {
-            sums.append("       COALESCE(SUM(aged.").append(column(bucket)).append("), 0) AS ")
+            sums.append("       COALESCE(SUM(aged.").append(bookColumn(bucket)).append("), 0) AS ")
                     .append(column(bucket)).append(",\n");
         }
+        // In the base: a footer adds parties together, and the base is the one currency they share.
         return "SELECT COUNT(*) AS parties,\n"
                 + sums
                 + "       COALESCE(SUM(aged.balance), 0) AS balance,\n"
-                + "       COALESCE(SUM(aged.unallocated), 0) AS unallocated\n"
+                + "       COALESCE(SUM(aged.book_unallocated), 0) AS unallocated\n"
                 + "FROM (" + select(filter) + havingSql(filter) + ") aged";
     }
 
     /** The column a band is selected as. Derived from the enum so the two cannot drift. */
     static String column(AgeingBucket bucket) {
         return "bucket_" + bucket.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** The same band valued in the books, at each invoice's own copied rate (V82). */
+    static String bookColumn(AgeingBucket bucket) {
+        return "book_" + column(bucket);
     }
 
     private static String select(PartyAgeingFilter filter) {
@@ -111,6 +134,10 @@ public final class PartyAgeingQuery {
             buckets.append("       COALESCE(aged.").append(column(bucket)).append(", 0) AS ")
                     .append(column(bucket)).append(",\n");
         }
+        for (AgeingBucket bucket : AgeingBucket.inReadingOrder()) {
+            buckets.append("       COALESCE(aged.").append(bookColumn(bucket)).append(", 0) AS ")
+                    .append(bookColumn(bucket)).append(",\n");
+        }
 
         return """
                 SELECT p.%2$s                                        AS party_id,
@@ -118,19 +145,23 @@ public final class PartyAgeingQuery {
                        p.tel                                         AS party_phone,
                        COALESCE(area.area_name, '')                  AS area_name,
                        p.payment_terms_days                          AS payment_terms_days,
+                       p.currency_id                                 AS currency_id,
                 %6$s       %1$s AS balance,
-                       ROUND(%1$s - (%7$s), 2) AS unallocated
+                       ROUND(%1$s - (%12$s), 2) AS book_unallocated,
+                       %13$s AS balance_own,
+                       ROUND(%13$s - (%7$s), 3) AS unallocated
                 FROM %4$s p
                      LEFT JOIN table_area area ON area.id = p.area_id
                      JOIN %5$s m ON m.%8$s = p.%2$s
                      LEFT JOIN (%9$s) aged ON aged.party_id = p.%2$s
                 WHERE 1 = 1%10$s
-                GROUP BY p.%2$s, p.%3$s, p.tel, area.area_name, p.payment_terms_days%11$s
+                GROUP BY p.%2$s, p.%3$s, p.tel, area.area_name, p.payment_terms_days, p.currency_id%11$s
                 """
                 .formatted(BALANCE, PartyTableSpec.KEY, PartyTableSpec.NAME,
                         party.table(), ledger.view(), buckets,
                         agedTotalExpression(), PartyLedgerSpec.PARTY,
-                        agedSql(filter.kind()), rowFilterSql(filter), agedGroupBy());
+                        agedSql(filter.kind()), rowFilterSql(filter), agedGroupBy(),
+                        bookAgedTotalExpression(), BALANCE_OWN);
     }
 
     /** The five bands added together - what the open invoices account for. */
@@ -145,11 +176,26 @@ public final class PartyAgeingQuery {
         return total.toString();
     }
 
+    /** The five book bands added together - what the open invoices are worth in the books. */
+    private static String bookAgedTotalExpression() {
+        StringBuilder total = new StringBuilder();
+        for (AgeingBucket bucket : AgeingBucket.inReadingOrder()) {
+            if (total.length() > 0) {
+                total.append(" + ");
+            }
+            total.append("COALESCE(aged.").append(bookColumn(bucket)).append(", 0)");
+        }
+        return total.toString();
+    }
+
     /** Every aged column repeated in the GROUP BY, since they come from the joined derived table. */
     private static String agedGroupBy() {
         StringBuilder group = new StringBuilder();
         for (AgeingBucket bucket : AgeingBucket.inReadingOrder()) {
             group.append(", aged.").append(column(bucket));
+        }
+        for (AgeingBucket bucket : AgeingBucket.inReadingOrder()) {
+            group.append(", aged.").append(bookColumn(bucket));
         }
         return group.toString();
     }
@@ -172,10 +218,15 @@ public final class PartyAgeingQuery {
 
         StringBuilder bands = new StringBuilder();
         AgeingBucket[] order = AgeingBucket.inReadingOrder();
+        for (AgeingBucket bucket : order) {
+            bands.append("              ROUND(SUM(CASE WHEN ").append(bandCondition(bucket))
+                    .append(" THEN open.remaining ELSE 0 END), 3) AS ").append(column(bucket)).append(",\n");
+        }
         for (int index = 0; index < order.length; index++) {
             AgeingBucket bucket = order[index];
             bands.append("              ROUND(SUM(CASE WHEN ").append(bandCondition(bucket))
-                    .append(" THEN open.remaining ELSE 0 END), 2) AS ").append(column(bucket));
+                    .append(" THEN ROUND(open.remaining * COALESCE(open.exchange_rate, 1), 2) ELSE 0 END), 2) AS ")
+                    .append(bookColumn(bucket));
             bands.append(index == order.length - 1 ? "\n" : ",\n");
         }
 
@@ -183,16 +234,21 @@ public final class PartyAgeingQuery {
                 SELECT open.party_id,
                 %7$s       FROM (SELECT d.%3$s AS party_id,
                                     DATEDIFF(?, DATE_ADD(d.%6$s, INTERVAL op.payment_terms_days DAY)) AS days_overdue,
-                                    ROUND(d.total - d.discount - d.%4$s
-                                          - COALESCE((SELECT SUM(a.paid - a.purchase)
+                                    ROUND(COALESCE(d.total_foreign, d.total)
+                                          - COALESCE(d.discount_foreign, d.discount)
+                                          - COALESCE(d.paid_foreign, d.%4$s)
+                                          - COALESCE((SELECT SUM(COALESCE(a.paid_foreign, a.paid)
+                                                                 - COALESCE(a.purchase_foreign, a.purchase))
                                                       FROM %5$s a
                                                       WHERE a.%8$s = d.%3$s
                                                         AND a.numberInv = d.%2$s
-                                                        AND a.account_date <= ?), 0), 2) AS remaining
+                                                        AND a.account_date <= ?), 0), 3) AS remaining,
+                                    d.exchange_rate                                  AS exchange_rate
                              FROM %1$s d
                                   JOIN %9$s op ON op.%10$s = d.%3$s
                              WHERE d.%6$s <= ?
                              GROUP BY d.%2$s, d.%3$s, d.%6$s, d.total, d.discount, d.%4$s,
+                                      d.total_foreign, d.discount_foreign, d.paid_foreign, d.exchange_rate,
                                       op.payment_terms_days
                              HAVING remaining > 0) open
                        GROUP BY open.party_id"""
@@ -265,8 +321,10 @@ public final class PartyAgeingQuery {
                     .append("balance >= ?");
         }
         if (!filter.includeSettled()) {
+            // Settled in the party's own currency: a dollar account at zero is settled, whatever its book
+            // value says about the rates it was paid at.
             having.append(having.length() == 0 ? "\nHAVING " : "\n   AND ")
-                    .append("(balance <> 0 OR ").append(agedTotalExpression()).append(" <> 0)");
+                    .append("(balance_own <> 0 OR ").append(agedTotalExpression()).append(" <> 0)");
         }
         return having.toString();
     }

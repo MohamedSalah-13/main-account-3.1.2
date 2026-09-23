@@ -125,7 +125,7 @@ class PartyStatementViewAcceptanceTest {
             insertPayment(transaction, customer, INSIDE_TWO, 300);
 
             PartyStatementFilter march = period(customer);
-            PartyStatementSummary summary = REPOSITORY.summarize(march);
+            PartyStatementSummary summary = REPOSITORY.summarize(march).base();
 
             assertEquals(0, new BigDecimal("500.00").compareTo(summary.openingBalance()),
                     "the balance carried into the period is wrong. This is the figure the old "
@@ -139,7 +139,8 @@ class PartyStatementViewAcceptanceTest {
 
             // Oldest first, the order the balance was accumulated in.
             List<PartyStatementRow> ordered =
-                    new PartyStatementPrintData(rows, summary, false).rowsOldestFirst();
+                    new PartyStatementPrintData(rows, PartyStatementTotals.inBase(summary), false,
+                            PartyStatementCurrency.BASE).rowsOldestFirst();
             assertEquals(0, new BigDecimal("1500.00").compareTo(ordered.get(0).runningBalance()),
                     "after the invoice the customer owes 500 + 1000");
             assertEquals(0, new BigDecimal("1200.00").compareTo(ordered.get(1).runningBalance()),
@@ -175,7 +176,7 @@ class PartyStatementViewAcceptanceTest {
             insertSalesReturn(transaction, customer, INSIDE_TWO, 400, 0, 0);
 
             PartyStatementFilter march = period(customer);
-            PartyStatementSummary summary = REPOSITORY.summarize(march);
+            PartyStatementSummary summary = REPOSITORY.summarize(march).base();
             assertEquals(0, new BigDecimal("600.00").compareTo(summary.closingBalance()),
                     "1000 bought on account less 400 returned on account is 600. A closing "
                             + "balance of 1000 is the old defect: the return contributed nothing. "
@@ -218,7 +219,7 @@ class PartyStatementViewAcceptanceTest {
             insertPayment(transaction, customer, INSIDE_TWO, 200);
 
             PartyStatementFilter march = period(customer);
-            PartyStatementSummary summary = REPOSITORY.summarize(march);
+            PartyStatementSummary summary = REPOSITORY.summarize(march).base();
             List<PartyStatementRow> rows = REPOSITORY.search(march);
             assertEquals(4, rows.size(), "the fixture's four movements are all in the period");
 
@@ -264,11 +265,11 @@ class PartyStatementViewAcceptanceTest {
             insertSalesInvoice(transaction, customer, INSIDE_ONE, 1000, 0, 0);
             insertPayment(transaction, customer, INSIDE_TWO, 300);
 
-            PartyStatementSummary all = REPOSITORY.summarize(period(customer));
+            PartyStatementSummary all = REPOSITORY.summarize(period(customer)).base();
             PartyStatementFilter paymentsOnly = new PartyStatementFilter(PartyKind.CUSTOMER,
                     customer, PERIOD_FROM, PERIOD_TO, Set.of(PartyMovementKind.PAYMENT),
                     null, null, null, null, "", false, 0, 100);
-            PartyStatementSummary filtered = REPOSITORY.summarize(paymentsOnly);
+            PartyStatementSummary filtered = REPOSITORY.summarize(paymentsOnly).base();
 
             assertEquals(0, all.openingBalance().compareTo(filtered.openingBalance()),
                     "the opening balance must not change when rows are filtered");

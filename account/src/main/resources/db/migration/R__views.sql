@@ -458,6 +458,12 @@ FROM total_sales_re tsr
 -- the format sorts, and a reader could not tell that it was not a date.
 -- user_id is who entered the row, and exists on all four sources. Nothing could filter a
 -- statement by the person who entered a movement before it was selected here.
+--
+-- purchase_own, discount_own and paid_own are the same three figures in the customer's own
+-- currency (V82, docs/currency-plan.md §14): the foreign column where the row carries one, the
+-- base column where it does not - so for a customer in the base they are the base figures
+-- themselves, and every row of a customer in a foreign currency carries one, since the currency
+-- is fixed before the first movement. The three base columns did not change meaning.
 DROP VIEW IF EXISTS account_customer_table;
 CREATE VIEW account_customer_table AS
 SELECT 0                 AS account_num,
@@ -472,7 +478,10 @@ SELECT 0                 AS account_num,
        c.created_at      AS created_at,
        0                 AS treasury_id,
        0                 AS numberInv,
-       c.user_id         AS user_id
+       c.user_id         AS user_id,
+       COALESCE(c.opening_foreign, c.first_balance) AS purchase_own,
+       0                 AS discount_own,
+       0                 AS paid_own
 FROM custom c
 UNION ALL
 SELECT account_num,
@@ -487,7 +496,10 @@ SELECT account_num,
        created_at,
        treasury_id,
        numberInv,
-       user_id
+       user_id,
+       COALESCE(purchase_foreign, purchase),
+       0,
+       COALESCE(paid_foreign, paid)
 FROM customers_accounts
 UNION ALL
 SELECT invoice_number,
@@ -502,7 +514,10 @@ SELECT invoice_number,
        date_insert,
        treasury_id,
        0           AS numberInv,
-       user_id
+       user_id,
+       COALESCE(total_foreign, total),
+       COALESCE(discount_foreign, discount),
+       COALESCE(paid_foreign, paid_up)
 FROM total_sales
 UNION ALL
 -- مرتجع المبيعات: عكس فاتورة البيع بالضبط، بإشارة سالبة على الأعمدة الثلاثة.
@@ -527,13 +542,17 @@ SELECT tsr.id,
        tsr.date_insert,
        tsr.treasury_id,
        0                    AS numberInv,
-       tsr.user_id
+       tsr.user_id,
+       -COALESCE(tsr.total_foreign, tsr.total),
+       -COALESCE(tsr.discount_foreign, tsr.discount),
+       -COALESCE(tsr.paid_foreign, tsr.paid_from_treasury)
 FROM total_sales_re tsr
 ORDER BY created_at;
 
 -- --------------------------------------account_suppliers_table------------------------------------
 
--- Same two changes as on the customer side: a real DATE, and the user who entered the row.
+-- Same changes as on the customer side: a real DATE, the user who entered the row, and the
+-- three figures again in the supplier's own currency (V82).
 DROP VIEW IF EXISTS account_suppliers_table;
 CREATE VIEW account_suppliers_table AS
 SELECT 0                 AS account_num,
@@ -548,7 +567,10 @@ SELECT 0                 AS account_num,
        c.created_at      AS created_at,
        0                 AS treasury_id,
        0                 AS numberInv,
-       c.user_id         AS user_id
+       c.user_id         AS user_id,
+       COALESCE(c.opening_foreign, c.first_balance) AS purchase_own,
+       0                 AS discount_own,
+       0                 AS paid_own
 FROM suppliers c
 UNION ALL
 SELECT account_num,
@@ -563,7 +585,10 @@ SELECT account_num,
        created_at,
        treasury_id,
        numberInv,
-       user_id
+       user_id,
+       COALESCE(purchase_foreign, purchase),
+       0,
+       COALESCE(paid_foreign, paid)
 FROM suppliers_accounts
 UNION ALL
 SELECT invoice_number,
@@ -578,7 +603,10 @@ SELECT invoice_number,
        date_insert,
        treasury_id,
        0            AS numberInv,
-       user_id
+       user_id,
+       COALESCE(total_foreign, total),
+       COALESCE(discount_foreign, discount),
+       COALESCE(paid_foreign, paid_up)
 FROM total_buy
 UNION ALL
 -- مرتجع المشتريات: نفس قاعدة مرتجع المبيعات معكوسة الطرف - ما قبضته الخزينة هو
@@ -596,7 +624,10 @@ SELECT tbr.id,
        tbr.date_insert,
        tbr.treasury_id,
        0                AS numberInv,
-       tbr.user_id
+       tbr.user_id,
+       -COALESCE(tbr.total_foreign, tbr.total),
+       -COALESCE(tbr.discount_foreign, tbr.discount),
+       -COALESCE(tbr.paid_foreign, tbr.paid_to_treasury)
 FROM total_buy_re tbr
 ORDER BY created_at;
 
@@ -948,8 +979,9 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                shift_id,
                                1               AS source_type,
                                'المشتريات'    AS information,
-                               -- بعملة الخزينة (V81). الفواتير والتحصيل والمصروفات لا تقع إلا على
-                               -- خزينة بالأساسية (ق-ب٦)، فمبلغها بعملة خزينتها هو مبلغها نفسه.
+                               -- بعملة الخزينة (V81). الفواتير والمصروفات لا تقع إلا على خزينة
+                               -- بالأساسية (ق-ب٦)، فمبلغها بعملة خزينتها هو مبلغها نفسه. أما حركات
+                               -- حسابات الأطراف فقد تقع على خزينة بعملة الطرف (V82) - فرعاها أدناه.
                                0               AS income_own,
                                paid_up         AS output_own
                         FROM total_buy
@@ -1002,33 +1034,38 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                paid_from_treasury
                         FROM total_sales_re
                         UNION ALL
-                        SELECT account_num,
-                               account_date,
-                               paid,
+                        -- حركة طرف في خزينة بعملته تحمل مبلغها بها في paid_foreign، وحركة طرف
+                        -- أجنبي في خزينة بالأساسية تحمل هناك مقابلها بعملة الطرف لا بعملة
+                        -- الخزينة (V82، ق-ج٤). فالمبلغ بعملة الخزينة يُسأل عنه الخزينة نفسها.
+                        SELECT ca.account_num,
+                               ca.account_date,
+                               ca.paid,
                                0,
-                               treasury_id,
-                               created_at,
-                               user_id,
-                               shift_id,
+                               ca.treasury_id,
+                               ca.created_at,
+                               ca.user_id,
+                               ca.shift_id,
                                5,
                                'حسابات العملاء',
-                               paid,
+                               IF(tc.currency_id IS NULL, ca.paid, ca.paid_foreign),
                                0
-                        FROM customers_accounts
+                        FROM customers_accounts ca
+                                 LEFT JOIN treasury tc ON tc.id = ca.treasury_id
                         UNION ALL
-                        SELECT account_num,
-                               account_date,
+                        SELECT sa.account_num,
+                               sa.account_date,
                                0,
-                               paid,
-                               treasury_id,
-                               created_at AS date_insert,
-                               user_id,
-                               shift_id,
+                               sa.paid,
+                               sa.treasury_id,
+                               sa.created_at AS date_insert,
+                               sa.user_id,
+                               sa.shift_id,
                                6,
                                'حسابات الموردين',
                                0,
-                               paid
-                        FROM suppliers_accounts
+                               IF(ts.currency_id IS NULL, sa.paid, sa.paid_foreign)
+                        FROM suppliers_accounts sa
+                                 LEFT JOIN treasury ts ON ts.id = sa.treasury_id
                         UNION ALL
                         SELECT id,
                                date,
@@ -1198,7 +1235,11 @@ SELECT act.account_code,
        ROUND(SUM(act.purchase) - SUM(act.discount) - SUM(act.paid), 2) AS amount,
        MAX(act.account_date)                                       AS account_date,
        ta.id                                                       AS area_id,
-       ta.area_name                                                AS area_name
+       ta.area_name                                                AS area_name,
+       -- What the customer owes in their own currency (V82), and which currency that is:
+       -- NULL for the base, where amount_own is amount.
+       ROUND(SUM(act.purchase_own) - SUM(act.discount_own) - SUM(act.paid_own), 3) AS amount_own,
+       c.currency_id                                               AS currency_id
 FROM account_customer_table act
          JOIN custom     c  ON act.account_code = c.id
          -- LEFT, as in PartyLedgerSpec.totalsBetweenDatesSql() and in the customer
@@ -1206,7 +1247,7 @@ FROM account_customer_table act
          -- a customer whose area row had been deleted out of the receivables summary
          -- entirely - they owe what they owe with or without an area.
          LEFT JOIN table_area ta ON ta.id = c.area_id
-GROUP BY act.account_code, c.name, ta.id, ta.area_name;
+GROUP BY act.account_code, c.name, ta.id, ta.area_name, c.currency_id;
 
 -- --------------------------------------account_suppliers_totals-----------------------------------
 
@@ -1218,10 +1259,12 @@ SELECT ast.account_code,
        ROUND(SUM(ast.discount), 2)                                       AS discount,
        ROUND(SUM(ast.paid), 2)                                           AS paid,
        ROUND(SUM(ast.purchase) - SUM(ast.discount) - SUM(ast.paid), 2)   AS amount,
-       MAX(ast.account_date)                                             AS account_date
+       MAX(ast.account_date)                                             AS account_date,
+       ROUND(SUM(ast.purchase_own) - SUM(ast.discount_own) - SUM(ast.paid_own), 3) AS amount_own,
+       c.currency_id                                                     AS currency_id
 FROM account_suppliers_table ast
          JOIN suppliers c ON ast.account_code = c.id
-GROUP BY ast.account_code, c.name;
+GROUP BY ast.account_code, c.name, c.currency_id;
 
 -- --------------------------------------earnings_reports-------------------------------------------
 
@@ -1664,7 +1707,11 @@ SELECT act.account_code                                       AS customer_id,
        ROUND(c.first_balance, 2)                              AS opening_balance,
        ROUND(act.purchase - act.discount - c.first_balance, 2) AS total_invoices_debt,
        ROUND(act.paid, 2)                                     AS total_payments,
-       ROUND(act.amount, 2)                                   AS final_balance
+       ROUND(act.amount, 2)                                   AS final_balance,
+       -- In the customer's own currency (V82): what the credit limit is compared with, since
+       -- the limit is written in that currency. NULL currency is the base.
+       act.amount_own                                         AS final_balance_own,
+       act.currency_id                                        AS currency_id
 FROM account_customer_totals act
          JOIN custom c ON c.id = act.account_code
 WHERE act.purchase <> 0

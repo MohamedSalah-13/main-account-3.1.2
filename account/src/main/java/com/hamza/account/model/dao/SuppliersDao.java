@@ -135,7 +135,10 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getEmail()
                 , model.getTax_number()
                 , model.getPayment_terms_days()
-                , model.isActive()};
+                , model.isActive()
+                , model.getCurrency_id()
+                , model.getOpening_foreign()
+                , model.getOpening_rate()};
 
         return executeUpdate(insertSql(), objects);
     }
@@ -186,6 +189,9 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getTax_number()
                 , model.getPayment_terms_days()
                 , model.isActive()
+                , model.getCurrency_id()
+                , model.getOpening_foreign()
+                , model.getOpening_rate()
                 , model.getId()};
     }
 
@@ -223,6 +229,10 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             java.sql.Date openingDate = resultSet.getDate(OPENING_DATE);
             suppliers.setOpening_balance_date(openingDate == null ? null : openingDate.toLocalDate());
             suppliers.setActive(resultSet.getBoolean(IS_ACTIVE));
+            int currencyId = resultSet.getInt(PartyTableSpec.CURRENCY);
+            suppliers.setCurrency_id(resultSet.wasNull() ? null : currencyId);
+            suppliers.setOpening_foreign(resultSet.getBigDecimal(PartyTableSpec.OPENING_FOREIGN));
+            suppliers.setOpening_rate(resultSet.getBigDecimal(PartyTableSpec.OPENING_RATE));
             suppliers.setCreated_at(resultSet.getTimestamp(DATE_INSERT).toLocalDateTime());
             suppliers.setUpdated_at(resultSet.getTimestamp("updated_at").toLocalDateTime());
         } catch (SQLException e) {

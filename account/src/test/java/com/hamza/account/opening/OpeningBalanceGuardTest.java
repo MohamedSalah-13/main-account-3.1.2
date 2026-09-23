@@ -321,15 +321,23 @@ class OpeningBalanceGuardTest {
             assertArrayEquals(all, OpeningBalanceGuard.withoutAll(all, List.of()));
         }
 
-        /** What the two specs actually ask for, rather than a hand-written pair. */
+        /**
+         * What the two specs actually ask for, rather than a hand-written list: the amount, its date,
+         * and since V82 the party's currency with the opening in it and its rate - five columns, highest
+         * index first, so removing them one at a time never shifts one still to be removed.
+         */
         @Test
-        void theSpecsAskForTheirTwoColumnsHighestFirst() {
+        void theSpecsAskForTheirOpeningColumnsHighestFirst() {
             for (var spec : new PartyTableSpec[]{PartyTableSpec.CUSTOMER, PartyTableSpec.SUPPLIER}) {
                 List<Integer> indexes = spec.openingColumnIndexes();
-                assertEquals(2, indexes.size(), spec.table());
-                assertTrue(indexes.get(0) > indexes.get(1), spec.table() + " must be highest first");
-                assertEquals(spec.updateColumns().indexOf("first_balance"), indexes.get(1));
-                assertEquals(spec.updateColumns().indexOf("opening_balance_date"), indexes.get(0));
+                assertEquals(5, indexes.size(), spec.table());
+                for (int i = 1; i < indexes.size(); i++) {
+                    assertTrue(indexes.get(i - 1) > indexes.get(i), spec.table() + " must be highest first");
+                }
+                assertEquals(List.of("first_balance", "opening_balance_date", "currency_id", "opening_foreign",
+                                "opening_rate").stream().map(spec.updateColumns()::indexOf).sorted(
+                                java.util.Comparator.reverseOrder()).toList(),
+                        indexes);
             }
         }
     }

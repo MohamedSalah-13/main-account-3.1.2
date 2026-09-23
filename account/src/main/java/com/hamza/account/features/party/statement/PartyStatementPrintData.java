@@ -14,14 +14,23 @@ import java.util.List;
  * does today: tick nothing and it writes an empty file and says it saved.
  *
  * @param rows      every row the filter matches, up to {@link PartyStatementService#PRINT_LIMIT}
- * @param summary   the period's figures
+ * @param totals    the period's figures, in the base and in the party's own currency (V82)
  * @param truncated whether the limit cut the extract short, which the caller must say out loud
+ * @param currency  which of the two sets of figures the statement shows
  */
 public record PartyStatementPrintData(List<PartyStatementRow> rows,
-                                      PartyStatementSummary summary,
-                                      boolean truncated) {
+                                      PartyStatementTotals totals,
+                                      boolean truncated,
+                                      PartyStatementCurrency currency) {
     public PartyStatementPrintData {
         rows = List.copyOf(rows);
+        totals = totals == null ? PartyStatementTotals.EMPTY : totals;
+        currency = currency == null ? PartyStatementCurrency.BASE : currency;
+    }
+
+    /** The figures at the foot of the statement, in the currency it is shown in. */
+    public PartyStatementSummary summary() {
+        return currency.summary(totals);
     }
 
     /**

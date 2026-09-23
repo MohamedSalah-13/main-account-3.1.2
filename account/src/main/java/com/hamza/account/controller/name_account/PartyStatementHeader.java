@@ -11,6 +11,7 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
+import java.util.function.Function;
 import java.math.RoundingMode;
 
 /**
@@ -60,13 +61,17 @@ final class PartyStatementHeader extends FlowPane {
                 limitBox);
     }
 
-    /** Every figure on the header comes from one summary, so no two of them can disagree. */
-    void show(PartyStatementSummary summary) {
-        opening.setText(Columns.money(summary.openingBalance()));
-        debit.setText(Columns.money(summary.totalDebit()));
-        credit.setText(Columns.money(summary.totalCredit()));
-        net.setText(Columns.money(summary.netMovement()));
-        closing.setText(Columns.money(summary.closingBalance()));
+    /**
+     * Every figure on the header comes from one summary, so no two of them can disagree - written by
+     * {@code format}, which is the party's own currency's places for a party dealing in a foreign one
+     * (docs/currency-plan.md §14 ق-ج٨).
+     */
+    void show(PartyStatementSummary summary, Function<BigDecimal, String> format) {
+        opening.setText(format.apply(summary.openingBalance()));
+        debit.setText(format.apply(summary.totalDebit()));
+        credit.setText(format.apply(summary.totalCredit()));
+        net.setText(format.apply(summary.netMovement()));
+        closing.setText(format.apply(summary.closingBalance()));
         net.pseudoClassStateChanged(Columns.NEGATIVE, summary.netMovement().signum() < 0);
         closing.pseudoClassStateChanged(Columns.NEGATIVE, summary.closingBalance().signum() < 0);
     }
@@ -78,8 +83,10 @@ final class PartyStatementHeader extends FlowPane {
      * supplier has none at all, so the whole box leaves the layout rather than showing a permanent
      * zero. A field that is always zero is one every user learns to ignore, including on the day it
      * is not.
+     * <p>
+     * The limit is written in the party's own currency, and so is the balance it is held against.
      */
-    void showCreditLimit(BigDecimal limit, BigDecimal balance) {
+    void showCreditLimit(BigDecimal limit, BigDecimal balance, Function<BigDecimal, String> format) {
         boolean shown = limit != null && limit.signum() > 0;
         limitBox.setVisible(shown);
         limitBox.setManaged(shown);
@@ -87,7 +94,7 @@ final class PartyStatementHeader extends FlowPane {
             return;
         }
         BigDecimal used = balance == null ? BigDecimal.ZERO : balance;
-        limitValue.setText(Columns.money(used) + " / " + Columns.money(limit));
+        limitValue.setText(format.apply(used) + " / " + format.apply(limit));
         double fraction = used.signum() <= 0 ? 0
                 : used.divide(limit, 4, RoundingMode.HALF_UP).doubleValue();
         limitBar.setProgress(Math.min(fraction, 1));

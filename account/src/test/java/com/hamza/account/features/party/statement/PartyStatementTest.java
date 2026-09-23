@@ -162,12 +162,17 @@ class PartyStatementTest {
             assertFalse(summary.rowsExplainTheBalance());
         }
 
+        /**
+         * At least two places, and never rounded to two: a statement of a party in a foreign currency
+         * (V82) is written in that currency's places, and a Kuwaiti dinar has three. Every figure comes
+         * from a {@code DECIMAL} column, so it already has the places it should.
+         */
         @Test
-        void everyFigureRoundsToTwoPlaces() {
+        void everyFigureKeepsItsPlacesAndHasAtLeastTwo() {
             PartyStatementSummary summary = new PartyStatementSummary(
-                    new BigDecimal("10.005"), new BigDecimal("1.111"), null, null);
-            assertEquals(2, summary.openingBalance().scale());
-            assertEquals(2, summary.totalDebit().scale());
+                    new BigDecimal("10.005"), new BigDecimal("1.1"), null, null);
+            assertEquals(new BigDecimal("10.005"), summary.openingBalance());
+            assertEquals(new BigDecimal("1.10"), summary.totalDebit());
             assertEquals(new BigDecimal("0.00"), summary.closingBalance());
         }
     }

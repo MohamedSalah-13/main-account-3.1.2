@@ -19,6 +19,16 @@ public class CustomerReceivableDao extends AbstractDao<CustomerReceivable> {
         return queryForObjects(query, this::map);
     }
 
+    /**
+     * The customers who owe something in their own currency (V82) - what the credit-limit warning reads,
+     * since a limit is written in the customer's currency. For a customer in the base it is the same
+     * question {@link #getReceivablesReport} asks.
+     */
+    public List<CustomerReceivable> getOwedInOwnCurrency() throws DaoException {
+        String query = "SELECT * FROM view_customer_receivables WHERE final_balance_own > 0 ORDER BY customer_name";
+        return queryForObjects(query, this::map);
+    }
+
     @Override
     public CustomerReceivable map(ResultSet rs) throws DaoException {
         CustomerReceivable model = new CustomerReceivable();
@@ -30,6 +40,7 @@ public class CustomerReceivableDao extends AbstractDao<CustomerReceivable> {
             model.setOpeningBalance(rs.getDouble("opening_balance"));
             model.setTotalPayments(rs.getDouble("total_payments"));
             model.setTotalReceivable(rs.getDouble("final_balance"));
+            model.setTotalReceivableOwn(rs.getDouble("final_balance_own"));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

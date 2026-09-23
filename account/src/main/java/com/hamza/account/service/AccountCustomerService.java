@@ -17,6 +17,8 @@ import com.hamza.controlsfx.database.TransactionTemplate;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
+import com.hamza.account.features.party.currency.PartyMovementCurrency;
+import com.hamza.account.features.party.currency.PartyMovementFigures;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,14 +103,19 @@ public record AccountCustomerService(DaoFactory daoFactory) {
     public int save(CustomerAccount account, BigDecimal walletFee, String correctionReason) throws DaoException {
         boolean isNew = isNew(account);
         requireMovementPermissions(account, isNew);
-        // A movement's cash column holds one amount, in the base: a treasury in a foreign currency cannot
-        // take it until a party's movements carry a foreign amount (docs/currency-plan.md §11 ق-ب٦).
-        // A note moves no cash and names a treasury only because the form has one.
-        if (account.getPaid() != 0 && account.getTreasury() != null) {
-            com.hamza.account.features.treasury.TreasuryCurrencyGuard.jdbc()
-                    .requireBaseCurrency(account.getTreasury().getId());
-        }
-        requireAllocationFits(account, isNew);
+        // The party's currency (V82, docs/currency-plan.md §14 ق-ج٤ and ق-ج٥): what was typed becomes the
+        // base figures the movement's own columns hold - so the shift journal, the wallet fee and the
+        // treasury go on reading the base - and the party's own figures are written beside them. Cash
+        // through a treasury in neither the party's currency nor the base is refused here.
+        PartyMovementCurrency currency = PartyMovementCurrency.jdbc();
+        PartyMovementFigures figures = currency.figures(PartyKind.CUSTOMER, account.getCustomers().getId(),
+                account.getTreasury() == null ? null : account.getTreasury().getId(),
+                account.getTreasury() == null ? null : account.getTreasury().getName(),
+                BigDecimal.valueOf(account.getPaid()), BigDecimal.valueOf(account.getPurchase()),
+                LocalDate.parse(account.getDate()), walletFee);
+        account.setPaid(figures.paid().doubleValue());
+        account.setPurchase(figures.purchase().doubleValue());
+        requireAllocationFits(account, isNew, figures.paidOwn());
         if (!isNew) {
             return TransactionTemplate.execute(() -> {
                 var reader = new JdbcShiftCashEffectReader();
@@ -121,6 +128,7 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                         BigDecimal.valueOf(account.getPaid()), old.originalShiftId());
                 int rows = accountDao().update(account);
                 if (rows == 1) {
+                    currency.write(PartyKind.CUSTOMER, account.getId(), figures, true);
                     ShiftCashEffect current = ShiftCashEffect.incoming(ShiftCashSource.CUSTOMER_ACCOUNT,
                             account.getId(), account.getTreasury().getId(), null,
                             BigDecimal.valueOf(account.getPaid()));
@@ -145,6 +153,9 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                             BigDecimal.valueOf(account.getPaid()))
                     : java.util.OptionalInt.empty();
             int rows = accountDao().insert(account);
+            if (rows == 1) {
+                currency.write(PartyKind.CUSTOMER, account.getId(), figures, false);
+            }
             if (rows == 1 && movesCash) {
                 // Whose collection this is, written now and never derived later: read off the
                 // customer at report time, moving a customer between delegates would rewrite
@@ -216,11 +227,14 @@ public record AccountCustomerService(DaoFactory daoFactory) {
      * holding: a dialog can stay open while another till settles the same invoice. An
      * unallocated payment ({@code numberInv = 0}) is the ordinary case and is not checked - it
      * is "on account", which is what every payment in every existing install is.
+     * <p>
+     * Measured in the customer's own currency (V82, ق-ج٦): a thousand dollars settles a thousand-dollar
+     * invoice whatever the rate on either day, so {@code paidOwn} is the dollars, not their value.
      */
-    private void requireAllocationFits(CustomerAccount account, boolean isNew) throws DaoException {
+    private void requireAllocationFits(CustomerAccount account, boolean isNew, BigDecimal paidOwn) throws DaoException {
         new PartyPaymentAllocationService().requireAllocationFits(
                 PartyKind.CUSTOMER, account.getCustomers().getId(), account.getInvoice_number(),
-                BigDecimal.valueOf(account.getPaid()), isNew ? 0 : account.getId());
+                paidOwn, isNew ? 0 : account.getId());
     }
 
     private boolean isNew(CustomerAccount account) throws DaoException {

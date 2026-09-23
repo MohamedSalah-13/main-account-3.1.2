@@ -35,15 +35,28 @@ public record PartyStatementSummary(
     public static final PartyStatementSummary EMPTY = new PartyStatementSummary(null, null, null, null);
 
     public PartyStatementSummary {
-        openingBalance = MoneyMath.money(openingBalance == null ? BigDecimal.ZERO : openingBalance);
-        totalDebit = MoneyMath.money(totalDebit == null ? BigDecimal.ZERO : totalDebit);
-        totalCredit = MoneyMath.money(totalCredit == null ? BigDecimal.ZERO : totalCredit);
-        closingBalance = MoneyMath.money(closingBalance == null ? BigDecimal.ZERO : closingBalance);
+        openingBalance = amount(openingBalance);
+        totalDebit = amount(totalDebit);
+        totalCredit = amount(totalCredit);
+        closingBalance = amount(closingBalance);
+    }
+
+    /**
+     * An amount as a statement holds it: nothing is zero, and at least two places - but never rounded to
+     * two, because a statement of a party in a foreign currency (V82) is written in that currency's own
+     * places, and a Kuwaiti dinar has three. Every figure arrives from a {@code DECIMAL} column or a sum
+     * of them, so it already has the places it should.
+     */
+    static BigDecimal amount(BigDecimal value) {
+        if (value == null) {
+            return MoneyMath.ZERO;
+        }
+        return value.scale() < MoneyMath.ZERO.scale() ? value.setScale(MoneyMath.ZERO.scale()) : value;
     }
 
     /** What the shown rows came to. Equals {@code closing - opening} only when nothing is filtered out. */
     public BigDecimal netMovement() {
-        return MoneyMath.subtract(totalDebit, totalCredit);
+        return amount(totalDebit.subtract(totalCredit));
     }
 
     /**
@@ -53,6 +66,6 @@ public record PartyStatementSummary(
      * letting a reader subtract two numbers that do not meet.
      */
     public boolean rowsExplainTheBalance() {
-        return MoneyMath.add(openingBalance, netMovement()).compareTo(closingBalance) == 0;
+        return openingBalance.add(netMovement()).compareTo(closingBalance) == 0;
     }
 }

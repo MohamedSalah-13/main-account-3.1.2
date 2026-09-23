@@ -69,13 +69,15 @@ public final class JdbcPartyAgeingRepository extends AbstractDao<PartyAgeingRow>
     private void bindFilter(List<Object> values, PartyAgeingFilter filter) {
         Date asOf = Date.valueOf(filter.asOf());
 
-        // Five, in the statement's textual order, and the count is not obvious - which is why
-        // PartyAgeingQueryTest pins it. The balance expression appears TWICE in the select: once
-        // as `balance`, and once inside the `unallocated` derivation, because MySQL will not let
-        // one select-list expression refer to another's alias. Then the aged sub-select takes
-        // three of its own.
+        // Seven, in the statement's textual order, and the count is not obvious - which is why
+        // PartyAgeingQueryTest pins it. Each balance expression appears TWICE in the select: once
+        // as itself, and once inside its unallocated derivation, because MySQL will not let one
+        // select-list expression refer to another's alias - and there are two balances since V82,
+        // the books' and the party's own. Then the aged sub-select takes three of its own.
         values.add(asOf);   // balance
-        values.add(asOf);   // the same balance, inside unallocated
+        values.add(asOf);   // the same balance, inside book_unallocated
+        values.add(asOf);   // the balance in the party's own currency (V82)
+        values.add(asOf);   // the same, inside unallocated
         values.add(asOf);   // DATEDIFF - the day every band is measured from
         values.add(asOf);   // allocations counted up to asOf
         values.add(asOf);   // invoices written up to asOf
@@ -109,9 +111,16 @@ public final class JdbcPartyAgeingRepository extends AbstractDao<PartyAgeingRow>
                     rs.getInt("payment_terms_days"),
                     buckets,
                     rs.getBigDecimal("unallocated"),
+                    rs.getBigDecimal("balance_own"),
+                    currencyId(rs),
                     rs.getBigDecimal("balance"));
         } catch (SQLException e) {
             throw new DaoException(e);
         }
+    }
+
+    private static Integer currencyId(ResultSet rs) throws SQLException {
+        int id = rs.getInt("currency_id");
+        return rs.wasNull() ? null : id;
     }
 }

@@ -65,6 +65,7 @@ public final class InvoiceSaveService<
     private final ChangeAnnouncer changeAnnouncer;
     private final InvoiceWalletFee walletFee;
     private final DelegateDiscountGuard discountGuard;
+    private final InvoicePartyCurrency partyCurrency;
 
     /**
      * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
@@ -91,7 +92,8 @@ public final class InvoiceSaveService<
                 new ReturnCostResolver(new JdbcReturnableRepository()),
                 treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
                 ShiftAttributionWriter.jdbc(), ShiftCashLedger.jdbc(), new JdbcShiftCashEffectReader(),
-                ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc(), DelegateDiscountGuard.jdbc());
+                ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc(), DelegateDiscountGuard.jdbc(),
+                InvoicePartyCurrency.jdbc());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -258,6 +260,32 @@ public final class InvoiceSaveService<
                        ChangeAnnouncer changeAnnouncer,
                        InvoiceWalletFee walletFee,
                        DelegateDiscountGuard discountGuard) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver, treasuryLookup,
+                delegateLookup, stockMovementDao, shiftGate, shiftAttribution, shiftCashLedger,
+                shiftEffectReader, changeAnnouncer, walletFee, discountGuard, InvoicePartyCurrency.none());
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution,
+                       ShiftCashLedger shiftCashLedger,
+                       JdbcShiftCashEffectReader shiftEffectReader,
+                       ChangeAnnouncer changeAnnouncer,
+                       InvoiceWalletFee walletFee,
+                       DelegateDiscountGuard discountGuard,
+                       InvoicePartyCurrency partyCurrency) {
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -278,6 +306,7 @@ public final class InvoiceSaveService<
         this.changeAnnouncer = changeAnnouncer;
         this.walletFee = walletFee;
         this.discountGuard = discountGuard;
+        this.partyCurrency = partyCurrency;
     }
 
     /**
@@ -354,6 +383,12 @@ public final class InvoiceSaveService<
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
                     com.hamza.account.features.treasury.TreasuryCurrencyGuard.refusal(treasury.getName()));
         }
+        // A party in a foreign currency has the document translated into it at the day's rate (V82,
+        // docs/currency-plan.md §14 ق-ج٣). The rate is chosen here, before the number: no rate is a
+        // refusal, and the counter does not roll back.
+        InvoicePartyCurrency.Rate translation = partyCurrency.rateFor(documentType, command.partyId(),
+                command.invoiceDate(), command.updating() ? command.existingInvoiceId() : 0,
+                command.sourceInvoiceNumber());
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);
@@ -397,6 +432,7 @@ public final class InvoiceSaveService<
         if (affected != 1) {
             throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
         }
+        partyCurrency.write(documentType, invoiceNumber, translation);
         if (!command.updating()) {
             shiftAttribution.assignDocument(documentType, invoiceNumber, shiftId);
         }
