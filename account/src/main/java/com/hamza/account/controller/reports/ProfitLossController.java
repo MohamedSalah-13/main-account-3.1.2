@@ -3,6 +3,8 @@ package com.hamza.account.controller.reports;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.currency.difference.ExchangeDifferenceService;
+import com.hamza.account.features.currency.difference.ExchangeFigures;
 import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.features.export.StatementPdfLayout;
 import com.hamza.account.features.party.statement.StatementPeriod;
@@ -29,6 +31,7 @@ import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.RowsExcelWriter;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.view.ExchangeDifferencesApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExportData;
@@ -41,6 +44,7 @@ import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -59,6 +63,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
 import java.io.File;
@@ -132,6 +137,11 @@ public class ProfitLossController {
     private final Label statOutside = statValue("pl-stat-outside");
     private final FigureLine statOutsideStock = new FigureLine();
     private final FigureLine statOutsideTill = new FigureLine();
+    private final FigureLine statOutsideExchange = new FigureLine();
+    /** Opens the exchange differences report; shown only to a shop holding something in a foreign currency. */
+    private final Button exchangeButton = ListToolbar.button("currency.difference.open", AppIcon.CURRENCY,
+            ProfitLossController::openExchangeDifferences);
+    private final Label exchangeNote = new Label();
 
     private final TableView<StatementLine> statementTable = new TableView<>();
     private final TableColumn<StatementLine, BigDecimal> previousColumn =
@@ -160,8 +170,17 @@ public class ProfitLossController {
     /** The report over the application's own profit and loss statement, which asks the permission. */
     public static ProfitLossController standard() {
         ProfitLossService statement = ServiceRegistry.get(ProfitLossService.class);
+        ExchangeDifferenceService exchange = new ExchangeDifferenceService();
         return new ProfitLossController(new ProfitLossReportService(statement::load,
-                new JdbcProfitLossStatementRepository()));
+                new JdbcProfitLossStatementRepository(), exchange::figures));
+    }
+
+    private static void openExchangeDifferences() {
+        try {
+            new ExchangeDifferencesApplication().start(new Stage());
+        } catch (Exception e) {
+            report("currency.difference.error.load", e);
+        }
     }
 
     // ---- the screen ------------------------------------------------------------------
@@ -237,7 +256,10 @@ public class ProfitLossController {
                 .refresh(ListToolbar.refreshButton(this::reload))
                 .print(ListToolbar.printButton(this::print))
                 .export(ListToolbar.button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel))
-                .view(viewMenu);
+                .view(viewMenu)
+                .extra(exchangeButton);
+        exchangeButton.setId("pl-exchange");
+        showExchangeControls(false);
         // A row rather than a FlowPane: beside the title a FlowPane asks for its whole wrap length and
         // leaves the title a sliver.
         HBox row = toolbar.installIn(new HBox(8));
@@ -257,7 +279,8 @@ public class ProfitLossController {
                 card("profitloss.gross.profit", statGrossProfit, statGrossMargin),
                 card("profitloss.expenses", statExpenses, statExpensesPrevious),
                 card("profitloss.net.profit", statNetProfit, statNetMargin, statNetProfitPrevious),
-                card("profitloss.section.outside", statOutside, statOutsideStock, statOutsideTill));
+                card("profitloss.section.outside", statOutside, statOutsideStock, statOutsideTill,
+                        statOutsideExchange));
         return cards;
     }
 
@@ -299,7 +322,11 @@ public class ProfitLossController {
         // A wrapping label in a VBox is offered one line's height and cut with an ellipsis otherwise.
         note.setMinHeight(Region.USE_PREF_SIZE);
 
-        VBox card = new VBox(8, head, statementTable, note);
+        exchangeNote.getStyleClass().add("form-hint");
+        exchangeNote.setWrapText(true);
+        exchangeNote.setMinHeight(Region.USE_PREF_SIZE);
+        exchangeNote.setId("pl-exchange-note");
+        VBox card = new VBox(8, head, statementTable, note, exchangeNote);
         VBox.setVgrow(statementTable, Priority.ALWAYS);
         card.getStyleClass().add("app-card");
         card.setMinWidth(380);
@@ -542,6 +569,25 @@ public class ProfitLossController {
         BigDecimal till = outside.tillSurplus().subtract(outside.tillShortage());
         statOutsideStock.show("profitloss.stat.stock", Columns.money(stock), stock.signum() < 0, null);
         statOutsideTill.show("profitloss.stat.till", Columns.money(till), till.signum() < 0, null);
+        ExchangeFigures exchange = outside.exchange();
+        showExchangeControls(exchange.applies());
+        if (exchange.applies()) {
+            statOutsideExchange.show("profitloss.stat.exchange", Columns.money(exchange.result()),
+                    exchange.result().signum() < 0, null);
+            exchangeNote.setText(exchange.withoutRate() == 0 ? text("profitloss.exchange.note")
+                    : text("profitloss.exchange.note") + "\n" + LanguageManager.getInstance()
+                    .getString("profitloss.exchange.note.no.rate", exchange.withoutRate()));
+        } else {
+            statOutsideExchange.hide();
+        }
+    }
+
+    /** The exchange line, its note and its report's button belong to a shop holding a foreign currency alone. */
+    private void showExchangeControls(boolean applies) {
+        for (javafx.scene.Node node : List.of(exchangeButton, exchangeNote)) {
+            node.setVisible(applies);
+            node.setManaged(applies);
+        }
     }
 
     private void openMovements(ProfitLossPeriodRow row) {

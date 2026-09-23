@@ -67,6 +67,14 @@ public final class ProfitLossStatement {
         lines.add(item("profitloss.line.till.shortage", current, previous,
                 side -> side.outside().tillShortage().negate()));
         lines.add(item("profitloss.line.till.surplus", current, previous, side -> side.outside().tillSurplus()));
+        // Only for a shop holding something in a foreign currency: two lines of zeros everywhere else would say
+        // the shop has exchange differences to think about (docs/currency-plan.md §16 ق-هـ٣).
+        if (current.outside().exchange().applies() || previous.outside().exchange().applies()) {
+            lines.add(item("profitloss.line.exchange.realized", current, previous,
+                    side -> side.outside().exchange().realized()));
+            lines.add(item("profitloss.line.exchange.unrealized", current, previous,
+                    side -> side.outside().exchange().unrealizedChange()));
+        }
         lines.add(StatementLine.subtotal("profitloss.line.outside.net",
                 current.outside().net(), previous.outside().net()));
         return List.copyOf(lines);

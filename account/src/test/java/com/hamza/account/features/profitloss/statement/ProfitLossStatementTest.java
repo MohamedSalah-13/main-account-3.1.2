@@ -1,5 +1,6 @@
 package com.hamza.account.features.profitloss.statement;
 
+import com.hamza.account.features.currency.difference.ExchangeFigures;
 import com.hamza.account.features.profitloss.ProfitLossFigures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -141,5 +142,26 @@ class ProfitLossStatementTest {
 
     private static StatementLine line(List<StatementLine> lines, String key) {
         return lines.stream().filter(line -> key.equals(line.messageKey())).findFirst().orElseThrow();
+    }
+
+    @Test
+    @DisplayName("a shop holding a foreign currency has two exchange lines, counted in what is outside and not in the profit")
+    void exchangeLines() {
+        ProfitLossStatement.Side withExchange = side(totals("900", "600", "120"), CURRENT.sales(), CURRENT.expenses(),
+                CURRENT.outside().withExchange(new ExchangeFigures(1, money("200"), money("-50"), 0)));
+        List<StatementLine> lines = ProfitLossStatement.lines(withExchange, PREVIOUS);
+
+        assertTrue(captions(lines).endsWith(String.join("\n",
+                "profitloss.line.till.shortage", "profitloss.line.till.surplus",
+                "profitloss.line.exchange.realized", "profitloss.line.exchange.unrealized",
+                "profitloss.line.outside.net")));
+        StatementLine net = lines.get(lines.size() - 1);
+        // 5 surplus - 30 shortage - 10 till + 200 realized - 50 unrealized.
+        assertEquals(0, money("115").compareTo(net.current()));
+        StatementLine netProfit = lines.stream().filter(line -> "profitloss.net.profit".equals(line.messageKey()))
+                .findFirst().orElseThrow();
+        assertEquals(0, money("180").compareTo(netProfit.current()), "the net profit does not move");
+        // Nobody holding a currency on either side: no line, as before.
+        assertFalse(captions(ProfitLossStatement.lines(CURRENT, PREVIOUS)).contains("exchange"));
     }
 }

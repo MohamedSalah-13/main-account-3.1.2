@@ -3,6 +3,7 @@ package com.hamza.account.features.profitloss.statement;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.currency.difference.ExchangeFigures;
 import com.hamza.account.features.profitloss.ProfitLossFigures;
 import com.hamza.account.features.profitloss.ProfitLossRow;
 import com.hamza.account.features.rbac.UserSessionContext;
@@ -178,5 +179,28 @@ class ProfitLossReportServiceTest {
         signIn(AppPermissions.REPORTS_SHOW_PROFIT);
         service.movements(row);
         assertEquals(List.of("movements 2026-09-01..2026-09-01"), repository.calls);
+    }
+
+    @Test
+    @DisplayName("the exchange differences are their report's totals for each period, under the net profit")
+    void exchangeDifferencesFromTheirReport() throws Exception {
+        List<String> asked = new ArrayList<>();
+        ProfitLossReportService service = new ProfitLossReportService((from, to) -> List.of(
+                day(LocalDate.of(2026, 9, 2), "300", "200", "50")), new Recording(), (from, to) -> {
+            asked.add(from + ".." + to);
+            return from.equals(SEP_1) ? new ExchangeFigures(2, new BigDecimal("120"), new BigDecimal("-20"), 0)
+                    : ExchangeFigures.NONE;
+        });
+
+        ProfitLossReport report = service.report(new ProfitLossPeriod(SEP_1, LocalDate.of(2026, 9, 30)),
+                ComparisonBasis.PREVIOUS_PERIOD, ProfitLossGrouping.DAY);
+
+        assertEquals(List.of("2026-09-01..2026-09-30", "2026-08-01..2026-08-31"), asked);
+        assertEquals(new BigDecimal("100"), report.outside().exchange().result());
+        assertEquals(new BigDecimal("100"), report.outside().net());
+        assertEquals(new BigDecimal("50"), report.current().netProfit(), "the net profit does not count it");
+        assertTrue(report.statement().stream().anyMatch(line ->
+                "profitloss.line.exchange.realized".equals(line.messageKey())
+                        && new BigDecimal("120").equals(line.current())));
     }
 }
