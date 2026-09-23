@@ -146,7 +146,7 @@ public class ExchangeDifferencesController {
         AnchorPane.setLeftAnchor(layout, 0.0);
         drawer = RowDetailDrawer.installIn(host);
         drawer.setContent(linesPane());
-        drawer.setPreferredWidth(820);
+        drawer.setPreferredWidth(900);
 
         progress.setMaxSize(48, 48);
         progress.setVisible(false);
@@ -288,17 +288,19 @@ public class ExchangeDifferencesController {
         for (TableColumn<ExchangeMovementLine, String> column : List.of(own, after, rate, average)) {
             column.setStyle(Columns.AMOUNT_ALIGNMENT);
         }
+        // What the movement realized straight after what it moved: the drawer is narrower than the table, and
+        // drawn first with the realized figure last it sat behind the scroll bar - the one column it opens for.
         linesTable.getColumns().setAll(List.of(
                 Columns.date("currency.difference.column.date", ExchangeMovementLine::date),
                 Columns.text("currency.difference.column.movement", line -> text(line.labelKey())),
-                Columns.text("currency.difference.column.number",
-                        line -> line.reference() == 0 ? "" : String.valueOf(line.reference())),
                 own,
                 Columns.money("currency.difference.column.movement.book", ExchangeMovementLine::book),
                 rate,
+                Columns.money("currency.difference.column.movement.realized", ExchangeMovementLine::realized),
                 after,
                 average,
-                Columns.money("currency.difference.column.movement.realized", ExchangeMovementLine::realized)));
+                Columns.text("currency.difference.column.number",
+                        line -> line.reference() == 0 ? "" : String.valueOf(line.reference()))));
         linesSizing.install(linesTable);
         VBox pane = new VBox(linesTable);
         VBox.setVgrow(linesTable, Priority.ALWAYS);
@@ -380,8 +382,21 @@ public class ExchangeDifferencesController {
             return;
         }
         TablePdfLayout layout = TablePdfLayout.from(table, shown.rows(), Set.of(ACTIONS), TOTALLED, text("total"));
-        TablePdfReport.write(target, text("currency.difference.title"),
-                periodSentence(shown) + "\n" + noteText(shown.summary()), layout, () -> { });
+        TablePdfReport.write(target, text("currency.difference.title"), printSubtitle(shown), layout, () -> { });
+    }
+
+    /**
+     * Which period, then what the figures are, each on a line of its own: a subtitle is shaped before it is
+     * wrapped, and a wrapped Arabic line prints its end first - so the paper's note is the short one.
+     */
+    private static String printSubtitle(ExchangeDifferenceReport report) {
+        String subtitle = periodSentence(report) + "\n" + text("currency.difference.print.note");
+        ExchangeDifferenceSummary summary = report.summary();
+        if (summary.accountsWithoutRate() > 0) {
+            subtitle += "\n" + LanguageManager.getInstance().getString("currency.difference.note.no.rate",
+                    summary.accountsWithoutRate(), String.join(", ", summary.currenciesWithoutRate()));
+        }
+        return subtitle;
     }
 
     private void exportExcel() {
