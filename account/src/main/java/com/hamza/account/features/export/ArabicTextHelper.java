@@ -19,7 +19,9 @@ import java.util.regex.Pattern;
  * the application printed its dates backwards inside a sentence and its negatives with the sign
  * trailing. Each number, date, time and percentage is now wrapped in a left-to-right isolate
  * (LRI ... PDI) and the controls are removed from the output, so it reads the way it was written.
- * {@code ArabicTextHelperTest} pins the cases.
+ * After an Arabic letter, numbers joined by hyphens are the exception and are isolated one by one
+ * ({@link #HYPHEN_BETWEEN_DIGITS}): that is how every screen draws a name, and the paper follows the
+ * screen. {@code ArabicTextHelperTest} pins the cases.
  */
 public final class ArabicTextHelper {
 
@@ -39,6 +41,27 @@ public final class ArabicTextHelper {
     // isolating the front part of a number that runs into letters.
     private static final Pattern NUMBER =
             Pattern.compile("(?<![A-Za-z\\d])[-+]?\\d(?:[\\d,.:/\\-]*\\d)?%?(?![A-Za-z\\d])");
+
+    /**
+     * A hyphen between two digits. After an Arabic letter it is not part of either number: the Unicode
+     * bidi rules make those digits Arabic numbers, and only a common separator - a comma, a full stop, a
+     * colon, a slash - joins Arabic numbers. So every screen draws the pan set "طقم مقلاية 3ق 20-24-28"
+     * with 20 on the right and 28 on the left, a list read in the line's direction, while this class
+     * isolated "20-24-28" as one left-to-right piece and every PDF printed the sizes the other way round.
+     * Each number between the hyphens is isolated on its own now. With no Arabic letter before them the
+     * digits are European numbers, which a hyphen does join, and the run stays one piece, as on screen.
+     */
+    private static final Pattern HYPHEN_BETWEEN_DIGITS = Pattern.compile("(?<=\\d)-(?=\\d)");
+
+    /**
+     * A date the application writes into a sentence - a report's period, the date it was printed, the
+     * month the delegate reports carry - stays whole after an Arabic word and reads as written. No screen
+     * draws those sentences; printed the way the bidi rules would draw them, "من 2025-10-01" came out as
+     * {@code 01-10-2025}, the defect the isolation was first written for. Only a real year and month, with
+     * or without a day, qualify, so that a name typed with hyphens between its sizes still follows the screen.
+     */
+    private static final Pattern DATE =
+            Pattern.compile("(?:19|20)\\d{2}-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\\d|3[01]))?");
 
     /**
      * Where a left-to-right run begins: a Latin letter. From there the run takes everything up to the
@@ -139,10 +162,49 @@ public final class ArabicTextHelper {
         Matcher number = NUMBER.matcher(text).region(start, end).useTransparentBounds(true);
         int last = start;
         while (number.find()) {
-            out.append(text, last, number.start())
-                    .append(LEFT_TO_RIGHT_ISOLATE).append(number.group()).append(POP_DIRECTIONAL_ISOLATE);
+            out.append(text, last, number.start());
+            String found = number.group();
+            if (arabicLetterBefore(text, number.start()) && !DATE.matcher(found).matches()) {
+                isolateBetweenHyphens(found, out);
+            } else {
+                isolate(found, out);
+            }
             last = number.end();
         }
         out.append(text, last, end);
+    }
+
+    /** Each number of a hyphenated run isolated alone, the hyphens left to the line between them. */
+    private static void isolateBetweenHyphens(String run, StringBuilder out) {
+        Matcher hyphen = HYPHEN_BETWEEN_DIGITS.matcher(run);
+        int last = 0;
+        while (hyphen.find()) {
+            isolate(run.substring(last, hyphen.start()), out);
+            out.append('-');
+            last = hyphen.end();
+        }
+        isolate(run.substring(last), out);
+    }
+
+    private static void isolate(String number, StringBuilder out) {
+        out.append(LEFT_TO_RIGHT_ISOLATE).append(number).append(POP_DIRECTIONAL_ISOLATE);
+    }
+
+    /**
+     * Whether the first letter before {@code index} is Arabic - the condition under which the bidi rules
+     * turn the digits that follow into Arabic numbers, which a hyphen does not join.
+     */
+    private static boolean arabicLetterBefore(String text, int index) {
+        for (int i = index - 1; i >= 0; i--) {
+            byte direction = Character.getDirectionality(text.charAt(i));
+            if (direction == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC) {
+                return true;
+            }
+            if (direction == Character.DIRECTIONALITY_LEFT_TO_RIGHT
+                    || direction == Character.DIRECTIONALITY_RIGHT_TO_LEFT) {
+                return false;
+            }
+        }
+        return false;
     }
 }
