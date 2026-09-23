@@ -176,6 +176,20 @@
     -fx-background-color: transparent;
 }
 
+/* What a combo shows is a .list-cell inside it, and a menu button's caption is a .label inside it. Modena
+   colours both with -fx-text-base-color, worked out from its own light -fx-base - so on the dark theme they
+   were dark text on a dark input: the period preset of every report bar and the «العرض» menu, near
+   invisible. The text colour the rules above give the control never reached the child that draws it.
+   A combo's value takes the input's text colour; a menu button's caption inherits its button's, so one
+   styled app-neutral-button reads like the buttons beside it and a plain one keeps Modena's. */
+.combo-box > .list-cell {
+    -fx-text-fill: -app-text-strong;
+}
+
+.menu-button > .label {
+    -fx-text-fill: inherit;
+}
+
 .text-field:focused,
 .password-field:focused,
 .text-area:focused,
