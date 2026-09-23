@@ -66,4 +66,17 @@ class MonthlyTotalsQueryTest {
                     "the DROP for " + view + " is gone, so an install that ran an older copy keeps it");
         }
     }
+
+    @Test
+    @DisplayName("the bounded days are the same statement with the period on each side, four parameters")
+    void theBoundedDaysAreTheSameStatement() {
+        for (MonthlySide side : MonthlySide.values()) {
+            String bounded = MonthlyTotalsQuery.daysBetweenSql(side);
+            assertEquals(MonthlyTotalsQuery.daysSql(side),
+                    bounded.replace("\n                      WHERE d.invoice_date BETWEEN ? AND ?", "")
+                            .replace("\n                      WHERE r.invoice_date BETWEEN ? AND ?", ""),
+                    "one definition of a day's figures, with and without a period");
+            assertEquals(4, bounded.chars().filter(character -> character == '?').count());
+        }
+    }
 }

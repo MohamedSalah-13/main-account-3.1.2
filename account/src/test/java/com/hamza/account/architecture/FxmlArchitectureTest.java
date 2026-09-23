@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * is absent from the bundle it was given. Five screens were dead for exactly the
  * first reason - {@code MonthlySalesView} (since rebuilt in code), {@code customer-purchased-items-view},
  * {@code CustomerReceivableView}, {@code ItemSalesRankView} and
- * {@code DailyItemSalesView} - and nothing in the build noticed.
+ * {@code DailyItemSalesView} (the last three since gone) - and nothing in the build noticed.
  * <p>
  * The third check, {@code fx:controller}, is a ratchet: 42 of the original 46
  * files have been given the declaration. {@code OpenFxmlApplication.bindController}

@@ -38,7 +38,6 @@ class LocalizationArchitectureTest {
             "company/CompanyService.java",
             "export/ExcelExportService.java",
             "export/PdfExportService.java",
-            "export/ReportExportService.java",
             "inventory/InventoryColumns.java",
             "inventory/StockFilter.java",
             "invoice/InvoiceLineAssembler.java",
@@ -104,5 +103,5 @@ class LocalizationArchitectureTest {
     }
 
     /** Literals under {@code features/} when the rule was written. Only ever lower this. */
-    private static final int ARABIC_LITERAL_BASELINE = 264;
+    private static final int ARABIC_LITERAL_BASELINE = 89;
 }
