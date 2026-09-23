@@ -37,8 +37,11 @@ class TableColumnArchitectureTest {
 
     private static final String[] DELETED_CLASSES = {"ColumnData.java", "TableColumnAnnotation.java"};
 
-    /** Call sites when this rule was tightened after §12.4. Only ever lower this. */
-    private static final int DIRECT_PROPERTY_VALUE_FACTORY_BASELINE = 33;
+    /**
+     * Call sites when this rule was tightened after §12.4 were 33; ten are left since the monthly totals
+     * were built in code (2026-09-23), all in the two item sales reports. Only ever lower this.
+     */
+    private static final int DIRECT_PROPERTY_VALUE_FACTORY_BASELINE = 10;
 
     private static final Pattern DIRECT_PROPERTY_VALUE_FACTORY =
             Pattern.compile("new\\s+PropertyValueFactory\\s*<>\\s*\\(");

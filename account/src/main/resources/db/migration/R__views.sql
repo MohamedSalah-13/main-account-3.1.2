@@ -1496,59 +1496,12 @@ SELECT
 -- summed quantities across units and ignored returns. The DROP stays for the installs that have it.
 DROP VIEW IF EXISTS top_selling_items_current_month;
 
+-- view_monthly_sales and view_monthly_purchase are gone: the monthly totals screen reads the headers itself
+-- (features/report/monthly), and the two views summed every invoice before its discount with nothing
+-- returned taken off - a second definition of a month's sales beside the profit and loss's. The DROPs
+-- stay for the installs that have them.
 DROP VIEW IF EXISTS view_monthly_sales;
-CREATE VIEW view_monthly_sales AS
-SELECT
-    YEAR(invoice_date) AS sales_year,
-
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2) AS January,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2) AS February,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2) AS March,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2) AS April,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2) AS May,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2) AS June,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2) AS July,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2) AS August,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2) AS September,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
-
-    -- إجمالي مبيعات السنة بالكامل
-    ROUND(SUM(total), 2) AS total_yearly_sales
-
-FROM
-    total_sales
-GROUP BY
-    YEAR(invoice_date);
-
-
-
 DROP VIEW IF EXISTS view_monthly_purchase;
-CREATE VIEW view_monthly_purchase AS
-SELECT
-    YEAR(invoice_date) AS sales_year,
-
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2) AS January,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2) AS February,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2) AS March,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2) AS April,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2) AS May,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2) AS June,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2) AS July,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2) AS August,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2) AS September,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
-
-    -- إجمالي مبيعات السنة بالكامل
-    ROUND(SUM(total), 2) AS total_yearly_sales
-
-FROM
-    total_buy
-GROUP BY
-    YEAR(invoice_date);
 
 
 -- view_customer_purchased_items and view_suppliers_sales_items are gone: they listed raw lines

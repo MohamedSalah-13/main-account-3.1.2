@@ -94,6 +94,16 @@ public final class TrendChart {
      */
     public <P> void addSeries(String name, List<P> points, Function<P, String> label,
                               Function<P, BigDecimal> value, List<String> classes) {
+        addSeries(name, points, label, value, classes, Columns::money);
+    }
+
+    /**
+     * The same, with the hover written by {@code format} - for a line that is not an amount, such as a
+     * number of invoices, which written as money reads "12.00" invoices.
+     */
+    public <P> void addSeries(String name, List<P> points, Function<P, String> label,
+                              Function<P, BigDecimal> value, List<String> classes,
+                              Function<BigDecimal, String> format) {
         XYChart.Series<String, Number> series = new XYChart.Series<>();
         series.setName(name);
         for (P point : points) {
@@ -107,7 +117,7 @@ public final class TrendChart {
             if (symbol != null) {
                 P point = points.get(index);
                 Tooltip.install(symbol, new Tooltip(name + "\n" + label.apply(point) + ": "
-                        + Columns.money(value.apply(point))));
+                        + format.apply(value.apply(point))));
             }
         }
     }
