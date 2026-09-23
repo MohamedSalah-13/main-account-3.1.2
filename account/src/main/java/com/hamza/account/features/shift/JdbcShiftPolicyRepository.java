@@ -49,10 +49,15 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
         });
     }
 
+    /**
+     * The treasuries a shift may run on. One in a foreign currency is left out (V81): it runs no shift
+     * (docs/currency-plan.md §11 ق-ب٣), so offering its row would offer a choice the service refuses.
+     */
     @Override
     public List<TreasuryShiftPolicy> loadTreasuries() throws DaoException {
         String sql = "SELECT t.id, t.t_name, COALESCE(stp.tracking_mode, 'NONE') tracking_mode "
                 + "FROM treasury t LEFT JOIN shift_treasury_policy stp ON stp.treasury_id = t.id "
+                + "WHERE t.currency_id IS NULL "
                 + "ORDER BY t.id";
         return withConnection(connection -> {
             List<TreasuryShiftPolicy> result = new ArrayList<>();

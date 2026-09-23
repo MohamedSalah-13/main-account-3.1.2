@@ -69,11 +69,11 @@ public final class CurrencyService {
 
     /**
      * Whether {@link #setBase} would still take a new base: true while no exchange rate is recorded
-     * (docs/currency-plan.md ق-٦). A hint for the settings tab, read outside any lock - {@code setBase}
-     * asks the same question again, under one.
+     * (docs/currency-plan.md ق-٦) and no treasury holds another currency (ق-ب٨). A hint for the settings
+     * tab, read outside any lock - {@code setBase} asks the same question again, under one.
      */
     public boolean baseMayChange() throws DaoException {
-        return repository.rateCount() == 0;
+        return repository.rateCount() == 0 && repository.foreignTreasuryCount() == 0;
     }
 
     // ---- rates -----------------------------------------------------------------------------
@@ -137,6 +137,10 @@ public final class CurrencyService {
     public int save(CurrencyDraft draft) throws DaoException {
         AuthorizationGuard.require(AppPermissions.CURRENCY_UPDATE);
         CurrencyRules.requireValid(draft, repository.all());
+        if (!draft.isNew() && !draft.active()) {
+            CurrencyRules.requireCanStop(repository.find(draft.id()), draft,
+                    repository.activeTreasuryCount(draft.id()));
+        }
         try {
             if (draft.isNew()) {
                 return repository.insert(draft, currentUserId());
@@ -157,7 +161,9 @@ public final class CurrencyService {
 
     /**
      * Makes this currency the one the books are in - allowed only while no exchange rate is recorded
-     * (docs/currency-plan.md ق-٦), and only for an active currency.
+     * (docs/currency-plan.md ق-٦) and no treasury holds another currency (ق-ب٨), and only for an active
+     * currency. A treasury put in a currency takes a shared lock on its row through the foreign key, as
+     * a rate does, so the same lock keeps both counts true until the flag has moved.
      * <p>
      * Every currency row is locked first. A rate's insert needs a shared lock on its currency's row for
      * the foreign key, so from that moment no rate can be written until this commits, and the count read
@@ -172,7 +178,8 @@ public final class CurrencyService {
             if (currency != null && currency.base()) {
                 return null;
             }
-            CurrencyRules.requireCanBecomeBase(currency, repository.rateCount());
+            CurrencyRules.requireCanBecomeBase(currency, repository.rateCount(),
+                    repository.foreignTreasuryCount());
             repository.clearBase();
             if (repository.markBase(currencyId) != 1) {
                 throw new UserValidationException("currency.error.base.inactive");

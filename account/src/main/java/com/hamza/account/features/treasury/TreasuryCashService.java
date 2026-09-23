@@ -38,16 +38,27 @@ public final class TreasuryCashService {
 
     private final DaoFactory daoFactory;
     private final ShiftGate shiftGate;
+    private final TreasuryCurrencies currencies;
 
     public TreasuryCashService(DaoFactory daoFactory) {
-        this(daoFactory, daoFactory == null ? ShiftGate.disabled() : ShiftGate.jdbc(daoFactory.userShiftDao()));
+        this(daoFactory, daoFactory == null ? ShiftGate.disabled() : ShiftGate.jdbc(daoFactory.userShiftDao()),
+                TreasuryCurrencies.jdbc());
     }
 
-    TreasuryCashService(DaoFactory daoFactory, ShiftGate shiftGate) {
+    TreasuryCashService(DaoFactory daoFactory, ShiftGate shiftGate, TreasuryCurrencies currencies) {
         this.daoFactory = daoFactory;
         this.shiftGate = shiftGate;
+        this.currencies = currencies;
     }
 
+    /**
+     * Records a deposit or a withdrawal.
+     * <p>
+     * On a treasury in a foreign currency {@code command.amount()} is in that currency (V81,
+     * docs/currency-plan.md §11): it is valued at the rate in force on the movement's day, copied onto
+     * the row, and the books move that value (ق-ب٤). No rate recorded for the day is a refusal. A
+     * withdrawal is checked against what the treasury holds in its own currency (ق-ب٧).
+     */
     public int record(CashMovementCommand command) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_DEPOSIT);
         // The owner's own money needs the owner's own permission, on top of the
@@ -79,16 +90,17 @@ public final class TreasuryCashService {
             if (command.direction().leavesTheTreasury()) {
                 TreasuryTransferService.requireEnough(treasury, command.amount());
             }
-            CashMovementCommand stored = withCategory(command);
-            int id = daoFactory.cashMovementDao().insertReturningId(stored,
-                    shiftId.isPresent() ? shiftId.getAsInt() : null);
+            ForeignValue value = valueOf(treasury, command);
+            CashMovementCommand stored = withAmount(withCategory(command), value.baseAmount());
+            int id = daoFactory.cashMovementDao().insertReturningId(stored, value.foreignAmount(),
+                    value.rate(), shiftId.isPresent() ? shiftId.getAsInt() : null);
             ShiftCashSource sourceType = command.direction() == CashDirection.DEPOSIT
                     ? ShiftCashSource.CASH_DEPOSIT : ShiftCashSource.CASH_WITHDRAWAL;
             ShiftCashEffect effect = command.direction() == CashDirection.DEPOSIT
                     ? ShiftCashEffect.incoming(sourceType, id, command.treasuryId(),
-                        shiftId.isPresent() ? shiftId.getAsInt() : null, command.amount())
+                        shiftId.isPresent() ? shiftId.getAsInt() : null, stored.amount())
                     : ShiftCashEffect.outgoing(sourceType, id, command.treasuryId(),
-                        shiftId.isPresent() ? shiftId.getAsInt() : null, command.amount());
+                        shiftId.isPresent() ? shiftId.getAsInt() : null, stored.amount());
             ShiftCashLedger.jdbc().created(shiftId, command.userId(), effect);
             ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
             return 1;
@@ -104,6 +116,34 @@ public final class TreasuryCashService {
     public List<CashMovement> capitalMovements(LocalDate from, LocalDate to) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_CAPITAL);
         return daoFactory.cashMovementDao().capitalBetween(from, to);
+    }
+
+    /**
+     * What a movement stores: its value in the base, and - on a treasury in a foreign currency - the
+     * amount in that currency and the rate that valued it.
+     */
+    record ForeignValue(java.math.BigDecimal baseAmount, java.math.BigDecimal foreignAmount,
+                        java.math.BigDecimal rate) {
+    }
+
+    ForeignValue valueOf(TreasuryBalanceSummary treasury, CashMovementCommand command) throws DaoException {
+        if (!treasury.isForeign()) {
+            return new ForeignValue(command.amount(), null, null);
+        }
+        var currency = currencies.find(treasury.currencyId());
+        TreasuryExchange.requirePlaces(command.amount(), currency);
+        var rate = currencies.requireRate(treasury.currencyId(), command.date());
+        var base = TreasuryExchange.baseOf(command.amount(), rate);
+        if (base.signum() <= 0) {
+            // A few units of a very weak currency can be worth nothing in the books' two places.
+            throw new BusinessRuleException(message("treasury.cash.error.amount"));
+        }
+        return new ForeignValue(base, command.amount(), rate);
+    }
+
+    private static CashMovementCommand withAmount(CashMovementCommand command, java.math.BigDecimal amount) {
+        return new CashMovementCommand(command.treasuryId(), command.direction(), command.category(),
+                amount, command.date(), command.statement(), command.description(), command.userId());
     }
 
     /** A command built before this column existed - or by a screen that does not offer it - is ordinary cash. */

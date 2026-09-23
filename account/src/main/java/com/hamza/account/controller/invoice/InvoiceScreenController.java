@@ -1193,7 +1193,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
 
     private void reloadTreasuryItems() {
         try {
-            List<Treasury> treasuries = treasuryService.getActiveTreasuryModelList();
+            List<Treasury> treasuries = treasuryService.getActiveBaseCurrencyTreasuries();
             Map<String, Integer> ids = new LinkedHashMap<>();
             for (Treasury treasury : treasuries) {
                 ids.put(treasury.getName(), treasury.getId());

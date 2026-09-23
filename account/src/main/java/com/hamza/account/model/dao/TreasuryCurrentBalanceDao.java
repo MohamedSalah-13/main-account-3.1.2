@@ -86,7 +86,10 @@ public class TreasuryCurrentBalanceDao extends AbstractDao<TreasuryBalanceSummar
                     amount(rs, "opening"),
                     amount(rs, "total_in"),
                     amount(rs, "total_out"),
-                    amount(rs, "balance"));
+                    amount(rs, "balance"),
+                    rs.getObject("currency_id", Integer.class),
+                    amount(rs, "opening_own"),
+                    amount(rs, "balance_own"));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

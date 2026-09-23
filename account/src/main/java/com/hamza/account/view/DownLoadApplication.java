@@ -333,7 +333,8 @@ public class DownLoadApplication extends Application {
         JdbcCashierTreasuryAssignmentRepository cashierTreasuryRepository =
                 new JdbcCashierTreasuryAssignmentRepository();
         ShiftPolicyService shiftPolicies = new ShiftPolicyService(
-                new JdbcShiftPolicyRepository(), eventBus, cashierTreasuryRepository);
+                new JdbcShiftPolicyRepository(), eventBus, cashierTreasuryRepository,
+                com.hamza.account.features.treasury.TreasuryCurrencyGuard.jdbc());
         CashierTreasuryAssignmentService cashierTreasuries = new CashierTreasuryAssignmentService(
                 cashierTreasuryRepository, shiftPolicies, userSession);
         var varianceSettlementRepository = new JdbcShiftVarianceSettlementRepository();

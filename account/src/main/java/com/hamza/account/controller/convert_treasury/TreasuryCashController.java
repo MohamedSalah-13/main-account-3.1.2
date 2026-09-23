@@ -1,6 +1,9 @@
 package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyFormat;
+import com.hamza.account.features.currency.CurrencyService;
 import com.hamza.account.features.events.TreasuryMovementRecorded;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.treasury.CashCategory;
@@ -24,6 +27,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -37,6 +41,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
+
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
 /**
  * Puts cash into a treasury and takes it out.
@@ -84,6 +90,9 @@ public class TreasuryCashController {
     private Label availableLabel;
 
     @FXML
+    private Button saveButton;
+
+    @FXML
     private TableView<CashMovement> movementsTable;
 
     @FXML
@@ -94,6 +103,9 @@ public class TreasuryCashController {
 
     private TreasuryHistoryBar history;
     private TreasuryHistoryTable<CashMovement> historyTable;
+
+    /** Every currency by its code, read with the treasuries - so a history cell is not a query. */
+    private java.util.Map<String, Currency> currenciesByCode = java.util.Map.of();
 
     private final TreasuryCashService cashService;
     private final TreasuryBalanceService balanceService;
@@ -159,6 +171,10 @@ public class TreasuryCashController {
                         movement -> text(movement.category().labelKey()))),
                 TreasuryHistoryTable.withId(AMOUNT_COLUMN,
                         Columns.money("treasury.cash.column.amount", CashMovement::amount)),
+                // A movement on a treasury in a foreign currency (V81): what moved in it, and the rate
+                // copied onto the row. The amount beside it is its value in the base.
+                TreasuryHistoryTable.withId("cashForeign",
+                        Columns.text("treasury.cash.column.foreign", this::foreignText)),
                 TreasuryHistoryTable.withId("cashStatement",
                         Columns.text("treasury.cash.column.statement", CashMovement::statement))),
                 AppPermissions.TREASURY_DEPOSIT, this::deleteMovement, this::printVoucher);
@@ -166,7 +182,14 @@ public class TreasuryCashController {
         history.installIn(historyBar, historyFooter);
 
         treasuryCombo.getSelectionModel().selectedItemProperty().addListener(
-                (obs, was, now) -> availableLabel.setText(TreasuryCombo.availableText(now)));
+                (obs, was, now) -> showAvailable());
+        // The form's order as it reads, down to the save button. The direction is out of it while a
+        // capital category fixes it, and Enter passes over it then.
+        whenEnterPressed(treasuryCombo, directionCombo, amountField, datePicker, statementField,
+                descriptionField, categoryCombo, saveButton);
+        TreasuryCombo.onEnter(treasuryCombo, directionCombo, amountField);
+        // A foreign treasury's movement is valued at the rate of its own day, so the line follows the date.
+        datePicker.valueProperty().addListener((obs, was, now) -> showAvailable());
 
         reload();
     }
@@ -175,7 +198,9 @@ public class TreasuryCashController {
     private void reload() {
         try {
             TreasuryCombo.fill(treasuryCombo, balanceService.getActiveTreasuryBalances());
-            availableLabel.setText(TreasuryCombo.availableText(treasuryCombo.getValue()));
+            currenciesByCode = TreasuryCombo.currencies().values().stream()
+                    .collect(java.util.stream.Collectors.toMap(Currency::code, currency -> currency));
+            showAvailable();
             // Every treasury, closed ones included: an old deposit is found under the till it was made on.
             history.setTreasuries(balanceService.getTreasuryBalanceSummary());
             history.load();
@@ -213,6 +238,42 @@ public class TreasuryCashController {
                     ? "treasury.cash.error.deposit"
                     : direction.failureKey()), e);
         }
+    }
+
+    /**
+     * What the picked treasury holds, and - for one in a foreign currency - the rate the movement will be
+     * valued at on the chosen day, or that there is none: the service refuses then, and saying so before
+     * the save spares the person typing a movement nobody can record (V81, docs/currency-plan.md §11).
+     */
+    private void showAvailable() {
+        String available = TreasuryCombo.availableText(treasuryCombo);
+        Currency currency = TreasuryCombo.currencyOf(treasuryCombo, treasuryCombo.getValue());
+        amountField.setPromptText(currency == null ? "" : currency.code());
+        CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+        if (currency == null || currencies == null || datePicker.getValue() == null) {
+            availableLabel.setText(available);
+            return;
+        }
+        try {
+            String rate = currencies.rateOn(currency.id(), datePicker.getValue())
+                    .map(inForce -> LanguageManager.getInstance().getString("treasury.cash.rate.day",
+                            currency.code(), CurrencyFormat.rate(inForce.rate())))
+                    .orElse(text("treasury.cash.rate.none"));
+            availableLabel.setText(available + "  |  " + rate);
+        } catch (DaoException e) {
+            availableLabel.setText(available);
+        }
+    }
+
+    /** "50.00 USD @ 48.5" - the amount to its currency's places, and the rate copied onto the row. */
+    private String foreignText(CashMovement movement) {
+        if (!movement.isForeign()) {
+            return "";
+        }
+        Currency currency = currenciesByCode.get(movement.currencyCode());
+        String amount = currency == null ? Columns.quantity(movement.foreignAmount())
+                : CurrencyFormat.amount(movement.foreignAmount(), currency);
+        return amount + " " + movement.currencyCode() + " @ " + CurrencyFormat.rate(movement.exchangeRate());
     }
 
     /** The row's own button: there is no "choose a movement first" to get wrong. */

@@ -36,15 +36,15 @@ class TreasuryBelowMinimumTest {
     }
 
     @Test
-    @DisplayName("the statement states the same rule: active, a minimum set, strictly under it")
+    @DisplayName("the statement states the same rule: active, a minimum set, strictly under it - in its own currency")
     void theStatementSaysTheSame() {
         assertEquals("""
-                SELECT b.id, b.t_name, b.balance, t.min_balance
+                SELECT b.id, b.t_name, b.balance_own AS balance, t.min_balance
                 FROM treasury_current_balance b
                          JOIN treasury t ON t.id = b.id
                 WHERE b.is_active = 1
                   AND t.min_balance > 0
-                  AND b.balance < t.min_balance
+                  AND b.balance_own < t.min_balance
                 ORDER BY b.sort_order, b.id
                 """, TreasuryStatements.SELECT_BELOW_MINIMUM);
     }

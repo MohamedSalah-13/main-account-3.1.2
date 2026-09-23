@@ -202,6 +202,8 @@ public final class DeleteRegistry {
     public static final DeleteRule CURRENCIES = DeleteRule.forEntity("delete.entity.currency")
             .requirePermission(AppPermissions.CURRENCY_UPDATE)
             .referencedBy("currency_rate", "currency_id", "delete.ref.currency.rate")
+            // V81: a treasury in the currency. Not cascading - a treasury's history is in its currency.
+            .referencedBy("treasury", "currency_id", "delete.ref.currency.treasury")
             .build();
 
     /**

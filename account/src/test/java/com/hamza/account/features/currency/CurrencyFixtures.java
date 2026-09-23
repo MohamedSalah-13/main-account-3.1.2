@@ -131,6 +131,19 @@ final class CurrencyFixtures {
             return rates.size();
         }
 
+        /** Treasuries per currency id, and whether each is active - V81's two counts. */
+        final List<int[]> treasuries = new ArrayList<>();
+
+        @Override
+        public int foreignTreasuryCount() {
+            return treasuries.size();
+        }
+
+        @Override
+        public int activeTreasuryCount(int currencyId) {
+            return (int) treasuries.stream().filter(t -> t[0] == currencyId && t[1] == 1).count();
+        }
+
         @Override
         public Currency lockForRate(int id) {
             calls.add("lockForRate:" + id);

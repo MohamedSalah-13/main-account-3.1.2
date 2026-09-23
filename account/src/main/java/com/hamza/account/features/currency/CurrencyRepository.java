@@ -38,6 +38,12 @@ public interface CurrencyRepository {
     /** How many rates exist, for every currency together. */
     int rateCount() throws DaoException;
 
+    /** How many treasuries are in a currency other than the base (V81). */
+    int foreignTreasuryCount() throws DaoException;
+
+    /** How many active treasuries are in this currency (V81). */
+    int activeTreasuryCount(int currencyId) throws DaoException;
+
     /** The currency, read under a shared lock for a rate about to be written - or {@code null}. */
     Currency lockForRate(int id) throws DaoException;
 

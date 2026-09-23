@@ -21,9 +21,14 @@ public final class TreasuryStatements {
 
     // ---- balances --------------------------------------------------------------
 
+    /**
+     * {@code balance} is in the base - for a treasury in a foreign currency, its book value. What it
+     * holds in its own currency is {@code balance_own} (V81, docs/currency-plan.md §11), which for a
+     * treasury in the base is the same figure; {@code currency_id} is NULL for the base.
+     */
     private static final String BALANCE_COLUMNS = """
             id, t_name, treasury_type, is_active, sort_order, fee_percent,
-                   opening, total_in, total_out, balance""";
+                   opening, total_in, total_out, balance, currency_id, opening_own, balance_own""";
 
     /** Every treasury, active or not, in the order the pickers and screens use. */
     public static final String SELECT_ALL_BALANCES = """
@@ -66,14 +71,16 @@ public final class TreasuryStatements {
      * Active treasuries under the minimum set for them (V69). The view is joined to the table
      * rather than given the column: what a balance is has one definition and a warning level is
      * not part of it. {@code > 0} is "a minimum was set" - zero means none, not "always low".
+     * The minimum is in the treasury's own currency, so it is compared with {@code balance_own}
+     * (docs/currency-plan.md §11 ق-ب٧): a hundred dollars is not below a minimum of two hundred.
      */
     public static final String SELECT_BELOW_MINIMUM = """
-            SELECT b.id, b.t_name, b.balance, t.min_balance
+            SELECT b.id, b.t_name, b.balance_own AS balance, t.min_balance
             FROM treasury_current_balance b
                      JOIN treasury t ON t.id = b.id
             WHERE b.is_active = 1
               AND t.min_balance > 0
-              AND b.balance < t.min_balance
+              AND b.balance_own < t.min_balance
             ORDER BY b.sort_order, b.id
             """;
 
@@ -86,12 +93,16 @@ public final class TreasuryStatements {
                 (?, ?, ?, ?, ?, ?)
             """;
 
+    /**
+     * {@code amount} is what the books move, in the base; {@code amount_from}/{@code amount_to} what
+     * each side gave or received in its own currency, NULL for a side in the base (V81).
+     */
     public static final String INSERT_TRANSFER_WITH_SHIFTS = """
             INSERT INTO treasury_transfers
                 (treasury_from, treasury_to, amount, transfer_date, notes, user_id,
-                 source_shift_id, destination_shift_id)
+                 source_shift_id, destination_shift_id, amount_from, amount_to)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     /**
@@ -101,7 +112,7 @@ public final class TreasuryStatements {
      */
     public static final String SELECT_RECENT_TRANSFERS = """
             SELECT id, treasury_from, treasury_to, amount, transfer_date, notes,
-                   treasury_name_from, treasury_name_to,
+                   treasury_name_from, treasury_name_to, amount_from, amount_to, currency_from, currency_to,
                    (SELECT d.amount FROM expenses_details d
                      WHERE d.fee_source_type = 11 AND d.fee_source_id = treasury_transfers_and_names.id) AS fee
             FROM treasury_transfers_and_names
@@ -124,19 +135,25 @@ public final class TreasuryStatements {
                 (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
+    /**
+     * {@code amount} is in the base; for a treasury in a foreign currency {@code foreign_amount} is what
+     * moved in its own currency and {@code exchange_rate} the day's rate it was valued at, copied (V81).
+     */
     public static final String INSERT_CASH_MOVEMENT_WITH_SHIFT = """
             INSERT INTO treasury_deposit_expenses
                 (statement, date_inter, amount, description_data, deposit_or_expenses,
-                 category, treasury_id, user_id, shift_id)
+                 category, treasury_id, user_id, shift_id, foreign_amount, exchange_rate)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     public static final String SELECT_RECENT_CASH_MOVEMENTS = """
             SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
-                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name
+                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name,
+                   d.foreign_amount, d.exchange_rate, c.code AS currency_code
             FROM treasury_deposit_expenses d
                      JOIN treasury t ON t.id = d.treasury_id
+                     LEFT JOIN currency c ON c.id = t.currency_id
             ORDER BY d.date_inter DESC, d.id DESC
             LIMIT ?
             """;
@@ -149,9 +166,11 @@ public final class TreasuryStatements {
      */
     public static final String SELECT_CAPITAL_MOVEMENTS = """
             SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
-                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name
+                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name,
+                   d.foreign_amount, d.exchange_rate, c.code AS currency_code
             FROM treasury_deposit_expenses d
                      JOIN treasury t ON t.id = d.treasury_id
+                     LEFT JOIN currency c ON c.id = t.currency_id
             WHERE d.category <> 'NORMAL'
               AND d.date_inter BETWEEN ? AND ?
             ORDER BY d.date_inter, d.id
@@ -247,7 +266,7 @@ public final class TreasuryStatements {
 
     public static final String SELECT_TRANSFERS_PAGE = """
             SELECT id, treasury_from, treasury_to, amount, transfer_date, notes,
-                   treasury_name_from, treasury_name_to,
+                   treasury_name_from, treasury_name_to, amount_from, amount_to, currency_from, currency_to,
                    %s AS fee
             FROM treasury_transfers_and_names
             %s
@@ -269,9 +288,11 @@ public final class TreasuryStatements {
 
     public static final String SELECT_CASH_MOVEMENTS_PAGE = """
             SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
-                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name
+                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name,
+                   d.foreign_amount, d.exchange_rate, c.code AS currency_code
             FROM treasury_deposit_expenses d
                      JOIN treasury t ON t.id = d.treasury_id
+                     LEFT JOIN currency c ON c.id = t.currency_id
             %s
             ORDER BY d.date_inter DESC, d.id DESC
             LIMIT ? OFFSET ?
@@ -317,6 +338,8 @@ public final class TreasuryStatements {
                    treasury_transfers_and_names.treasury_to, treasury_transfers_and_names.amount,
                    treasury_transfers_and_names.transfer_date, treasury_transfers_and_names.notes,
                    treasury_name_from, treasury_name_to,
+                   treasury_transfers_and_names.amount_from, treasury_transfers_and_names.amount_to,
+                   currency_from, currency_to,
                    %s AS fee,
                    u.user_name
             FROM treasury_transfers_and_names
@@ -327,9 +350,11 @@ public final class TreasuryStatements {
 
     public static final String SELECT_CASH_MOVEMENT_FOR_VOUCHER = """
             SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
-                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name, u.user_name
+                   d.deposit_or_expenses, d.category, d.treasury_id, t.t_name, u.user_name,
+                   d.foreign_amount, d.exchange_rate, c.code AS currency_code
             FROM treasury_deposit_expenses d
                      JOIN treasury t ON t.id = d.treasury_id
+                     LEFT JOIN currency c ON c.id = t.currency_id
                      LEFT JOIN users u ON u.id = d.user_id
             WHERE d.id = ?
             """;

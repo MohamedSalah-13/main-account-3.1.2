@@ -48,13 +48,20 @@
                     <Label styleClass="form-label" text="%treasury.transfer.field.date" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                     <DatePicker fx:id="datePicker" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                    <Label styleClass="form-label" text="%treasury.transfer.field.fee" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                    <TextField fx:id="feeField" promptText="%treasury.transfer.fee.prompt" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                    <Label styleClass="page-subtitle" text="%treasury.transfer.fee.hint" wrapText="true" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2" />
+                    <!-- Between two currencies (V81): what reached the destination, in its currency, and the
+                         rate the two amounts imply. Hidden, and out of the layout, between one currency. -->
+                    <Label fx:id="receivedCaption" styleClass="form-label" text="%treasury.exchange.field.received" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <TextField fx:id="receivedField" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                    <Label fx:id="exchangeRateLabel" styleClass="page-subtitle" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2" />
 
-                    <Label styleClass="form-label" text="%treasury.transfer.field.notes" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                    <TextField fx:id="notesField" styleClass="modern-input" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="3" />
+                    <Label styleClass="form-label" text="%treasury.transfer.field.fee" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                    <TextField fx:id="feeField" promptText="%treasury.transfer.fee.prompt" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    <Label styleClass="page-subtitle" text="%treasury.transfer.fee.hint" wrapText="true" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="3" />
+
+                    <Label styleClass="form-label" text="%treasury.transfer.field.notes" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                    <TextField fx:id="notesField" styleClass="modern-input" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="4" />
                <rowConstraints>
+                  <RowConstraints />
                   <RowConstraints />
                   <RowConstraints />
                   <RowConstraints />
@@ -65,7 +72,7 @@
                 <Label fx:id="availableLabel" styleClass="page-subtitle" />
 
                 <HBox alignment="CENTER_LEFT" spacing="12">
-                    <Button onAction="#saveTransfer" styleClass="primary-button" text="%treasury.transfer.btn.save" />
+                    <Button fx:id="saveButton" onAction="#saveTransfer" styleClass="primary-button" text="%treasury.transfer.btn.save" />
                     <Button onAction="#reload" styleClass="neutral-button" text="%common.refresh" />
                 </HBox>
             </VBox>

@@ -125,6 +125,18 @@ class ExpenseServiceTest {
         assertTrue(service.treasuries().stream().allMatch(treasury -> treasury.balance() != null));
     }
 
+    @Test
+    @DisplayName("a till in a foreign currency is not offered for an expense, and is refused if named (V81)")
+    void aForeignTillIsNotAnExpenseTill() throws Exception {
+        tills.put(9, new TreasuryBalanceSummary(9, "درج الدولار", null, true, 0, null, BigDecimal.ZERO,
+                BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("4800"), 3, BigDecimal.ZERO, new BigDecimal("100")));
+        signInWith(AppPermissions.EXPENSES_CREATE, AppPermissions.TREASURY_SHOW);
+        assertTrue(service.treasuries().stream().noneMatch(TreasuryBalanceSummary::isForeign));
+        assertThrows(BusinessRuleException.class,
+                () -> service.create(ExpenseFixtures.entry(ELECTRICITY.id(), 9, "10.00")));
+        assertTrue(repository.inserts.isEmpty(), "nothing was written");
+    }
+
     // ---- the balance warning (م-١) -------------------------------------------------------
 
     @Test

@@ -76,6 +76,24 @@ class TreasuryVoucherLayoutTest {
     }
 
     @Test
+    @DisplayName("on a dollar drawer the paper says what moved in dollars and at what rate, beside the base value")
+    void aForeignMovementSaysItsCurrency() {
+        CashMovement dollars = new CashMovement(12, 3, "درج الدولار", CashDirection.DEPOSIT, CashCategory.NORMAL,
+                new BigDecimal("2400.00"), DAY, "deposit", "", new BigDecimal("50.000"),
+                new BigDecimal("48.0000000000"), "USD");
+        DocumentPdfPage page = TreasuryVoucherLayout.of(new CashVoucher(dollars, null), null, key -> key, "");
+        assertTrue(labels(page.details()).contains("treasury.voucher.foreign"));
+        assertTrue(values(page.details()).contains("50.00 USD @ 48"));
+        assertEquals("2,400.00", page.summary().get(0).value(), "the amount is still the books' figure");
+
+        TreasuryTransfer exchange = new TreasuryTransfer(7, 1, "main", 3, "درج الدولار", new BigDecimal("4900"),
+                DAY, "", BigDecimal.ZERO, null, new BigDecimal("100.000"), null, "USD");
+        DocumentPdfPage slip = TreasuryVoucherLayout.of(new TransferVoucher(exchange, null), null, key -> key, "");
+        assertTrue(values(slip.details()).contains("100.00 USD"));
+        assertFalse(labels(slip.details()).contains("treasury.voucher.sent.foreign"), "the source is in the base");
+    }
+
+    @Test
     @DisplayName("a transfer that cost nothing has no fee line, and what left is what arrived")
     void aFreeTransferHasNoFeeLine() {
         DocumentPdfPage page = TreasuryVoucherLayout.of(new TransferVoucher(transfer("200", null), null),

@@ -411,6 +411,13 @@ class DelegateActivityDatabaseAcceptanceTest {
                 if (name.matches("V(\\d+)__.*") && Integer.parseInt(name.substring(1, name.indexOf("__"))) >= 71) {
                     continue;
                 }
+                // No views on the older schema: R__views.sql names columns later migrations add (V81's
+                // on the treasuries), and a view cannot be built over a column that is not there yet.
+                // Versioned migrations never read a view - a fresh install runs every one of them before
+                // any repeatable - so the upgrade below builds them all at once, as it would in the field.
+                if (name.equals("R__views.sql")) {
+                    continue;
+                }
                 String sql = Files.readString(file, StandardCharsets.UTF_8);
                 if (name.equals("R__triggers.sql")) {
                     // A trigger cannot be created on a table that does not exist yet, and the V72

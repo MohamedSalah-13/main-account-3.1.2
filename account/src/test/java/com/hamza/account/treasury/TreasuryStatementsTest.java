@@ -31,7 +31,7 @@ class TreasuryStatementsTest {
     void selectAllBalances() {
         assertEquals("""
                 SELECT id, t_name, treasury_type, is_active, sort_order, fee_percent,
-                       opening, total_in, total_out, balance
+                       opening, total_in, total_out, balance, currency_id, opening_own, balance_own
                 FROM treasury_current_balance
                 ORDER BY sort_order, id
                 """, TreasuryStatements.SELECT_ALL_BALANCES);
@@ -42,7 +42,7 @@ class TreasuryStatementsTest {
     void selectActiveBalances() {
         assertEquals("""
                 SELECT id, t_name, treasury_type, is_active, sort_order, fee_percent,
-                       opening, total_in, total_out, balance
+                       opening, total_in, total_out, balance, currency_id, opening_own, balance_own
                 FROM treasury_current_balance
                 WHERE is_active = 1
                 ORDER BY sort_order, id
@@ -54,7 +54,7 @@ class TreasuryStatementsTest {
     void selectBalanceById() {
         assertEquals("""
                 SELECT id, t_name, treasury_type, is_active, sort_order, fee_percent,
-                       opening, total_in, total_out, balance
+                       opening, total_in, total_out, balance, currency_id, opening_own, balance_own
                 FROM treasury_current_balance
                 WHERE id = ?
                 """, TreasuryStatements.SELECT_BALANCE_BY_ID);
@@ -67,7 +67,8 @@ class TreasuryStatementsTest {
     void theViewProducesEveryColumnRead() {
         String view = viewBody();
         for (String column : List.of("id", "t_name", "treasury_type", "is_active",
-                "sort_order", "fee_percent", "opening", "total_in", "total_out", "balance")) {
+                "sort_order", "fee_percent", "opening", "total_in", "total_out", "balance",
+                "currency_id", "opening_own", "balance_own")) {
             assertTrue(view.contains(column),
                     "treasury_current_balance does not produce '" + column
                             + "', which TreasuryStatements selects");
@@ -118,6 +119,38 @@ class TreasuryStatementsTest {
         assertEquals(6, parameters(TreasuryStatements.INSERT_TRANSFER),
                 "the parameter count and TreasuryTransferDao.insert must agree, or the "
                         + "amount is written into a date");
+    }
+
+    @Test
+    @DisplayName("the inserts that carry a foreign amount beside the base one (V81), and their counts")
+    void insertsWithForeignAmounts() {
+        assertEquals("""
+                INSERT INTO treasury_transfers
+                    (treasury_from, treasury_to, amount, transfer_date, notes, user_id,
+                     source_shift_id, destination_shift_id, amount_from, amount_to)
+                VALUES
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, TreasuryStatements.INSERT_TRANSFER_WITH_SHIFTS);
+        assertEquals(10, parameters(TreasuryStatements.INSERT_TRANSFER_WITH_SHIFTS),
+                "TreasuryTransferDao.insertReturningId binds ten values");
+        assertEquals("""
+                INSERT INTO treasury_deposit_expenses
+                    (statement, date_inter, amount, description_data, deposit_or_expenses,
+                     category, treasury_id, user_id, shift_id, foreign_amount, exchange_rate)
+                VALUES
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, TreasuryStatements.INSERT_CASH_MOVEMENT_WITH_SHIFT);
+        assertEquals(11, parameters(TreasuryStatements.INSERT_CASH_MOVEMENT_WITH_SHIFT),
+                "CashMovementDao.insertReturningId binds eleven values");
+        // Every list a mapper reads carries the foreign columns, or a dollar movement reads as pounds.
+        for (String sql : List.of(TreasuryStatements.SELECT_RECENT_CASH_MOVEMENTS,
+                TreasuryStatements.SELECT_CAPITAL_MOVEMENTS, TreasuryStatements.SELECT_CASH_MOVEMENTS_PAGE)) {
+            assertTrue(sql.contains("d.foreign_amount, d.exchange_rate, c.code AS currency_code"), sql);
+        }
+        for (String sql : List.of(TreasuryStatements.SELECT_RECENT_TRANSFERS,
+                TreasuryStatements.SELECT_TRANSFERS_PAGE, TreasuryStatements.SELECT_TRANSFER_FOR_VOUCHER)) {
+            assertTrue(sql.contains("amount_from") && sql.contains("currency_to"), sql);
+        }
     }
 
     @Test
@@ -235,9 +268,11 @@ class TreasuryStatementsTest {
     void voucherStatementsReadOneRow() {
         assertEquals("""
                 SELECT d.id, d.statement, d.date_inter, d.amount, d.description_data,
-                       d.deposit_or_expenses, d.category, d.treasury_id, t.t_name, u.user_name
+                       d.deposit_or_expenses, d.category, d.treasury_id, t.t_name, u.user_name,
+                       d.foreign_amount, d.exchange_rate, c.code AS currency_code
                 FROM treasury_deposit_expenses d
                          JOIN treasury t ON t.id = d.treasury_id
+                         LEFT JOIN currency c ON c.id = t.currency_id
                          LEFT JOIN users u ON u.id = d.user_id
                 WHERE d.id = ?
                 """, TreasuryStatements.SELECT_CASH_MOVEMENT_FOR_VOUCHER);
@@ -308,7 +343,7 @@ class TreasuryStatementsTest {
     void theTransferListReadsItsFee() {
         assertEquals("""
                 SELECT id, treasury_from, treasury_to, amount, transfer_date, notes,
-                       treasury_name_from, treasury_name_to,
+                       treasury_name_from, treasury_name_to, amount_from, amount_to, currency_from, currency_to,
                        (SELECT d.amount FROM expenses_details d
                          WHERE d.fee_source_type = 11 AND d.fee_source_id = treasury_transfers_and_names.id) AS fee
                 FROM treasury_transfers_and_names

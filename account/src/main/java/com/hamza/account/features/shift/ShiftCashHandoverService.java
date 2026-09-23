@@ -72,6 +72,14 @@ public final class ShiftCashHandoverService {
             if (source == null || target == null) {
                 throw new UserValidationException(message("user.shift.handover.error.treasury"));
             }
+            // A handover moves a shift's cash, in the base, as a transfer with no foreign side
+            // (docs/currency-plan.md §11 ق-ب٣).
+            for (var treasury : List.of(source, target)) {
+                if (treasury.isForeign()) {
+                    throw new UserValidationException(LanguageManager.getInstance().getString(
+                            "user.shift.error.treasury.foreign", treasury.name()));
+                }
+            }
             repository.savePolicy(sourceTreasuryId, targetTreasuryId, normalizedFloat, enabled, actor);
             return null;
         });

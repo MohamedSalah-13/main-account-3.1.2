@@ -64,6 +64,13 @@ public final class CurrencyQuery {
 
     public static final String RATE_COUNT_SQL = "SELECT COUNT(*) FROM currency_rate";
 
+    /** Treasuries in a currency other than the base (V81): while any exists, the base does not move. */
+    public static final String FOREIGN_TREASURY_COUNT_SQL = "SELECT COUNT(*) FROM treasury WHERE currency_id IS NOT NULL";
+
+    /** Active treasuries in one currency: while any exists, the currency is not stopped. */
+    public static final String ACTIVE_TREASURY_COUNT_SQL =
+            "SELECT COUNT(*) FROM treasury WHERE currency_id = ? AND is_active = 1";
+
     /**
      * The currency a rate is being written for, read under a shared lock: a base moving at the same
      * moment holds every currency row exclusively, so the two cannot interleave (see

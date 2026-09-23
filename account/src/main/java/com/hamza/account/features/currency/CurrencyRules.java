@@ -104,6 +104,17 @@ public final class CurrencyRules {
      *                      transaction that moves the flag, with every currency row locked
      */
     public static void requireCanBecomeBase(Currency currency, int recordedRates) throws UserValidationException {
+        requireCanBecomeBase(currency, recordedRates, 0);
+    }
+
+    /**
+     * @param foreignTreasuries how many treasuries are in a currency other than the base (V81). An
+     *                          exchange into one needs no recorded rate, so a dollar drawer can hold
+     *                          dollars bought with pounds while no rate exists - and every amount in it
+     *                          is valued against the base as it stands (docs/currency-plan.md §11 ق-ب٨).
+     */
+    public static void requireCanBecomeBase(Currency currency, int recordedRates, int foreignTreasuries)
+            throws UserValidationException {
         if (currency == null) {
             throw new UserValidationException("currency.error.not.found");
         }
@@ -112,6 +123,23 @@ public final class CurrencyRules {
         }
         if (recordedRates > 0) {
             throw new UserValidationException("currency.error.base.locked");
+        }
+        if (foreignTreasuries > 0) {
+            throw new UserValidationException("currency.error.base.foreign.treasury");
+        }
+    }
+
+    /**
+     * Refuses to stop a currency an active treasury is in: a stopped currency leaves the pickers and the
+     * rates screen's list of the active, and the treasury would go on holding it (ق-ب٨). The treasury is
+     * stopped first.
+     *
+     * @param activeTreasuries how many active treasuries are in the currency
+     */
+    public static void requireCanStop(Currency stored, CurrencyDraft draft, int activeTreasuries)
+            throws UserValidationException {
+        if (stored != null && stored.active() && !draft.active() && activeTreasuries > 0) {
+            throw new UserValidationException("currency.error.stop.treasury");
         }
     }
 

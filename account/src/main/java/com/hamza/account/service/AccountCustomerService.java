@@ -101,6 +101,13 @@ public record AccountCustomerService(DaoFactory daoFactory) {
     public int save(CustomerAccount account, BigDecimal walletFee, String correctionReason) throws DaoException {
         boolean isNew = isNew(account);
         requireMovementPermissions(account, isNew);
+        // A movement's cash column holds one amount, in the base: a treasury in a foreign currency cannot
+        // take it until a party's movements carry a foreign amount (docs/currency-plan.md §11 ق-ب٦).
+        // A note moves no cash and names a treasury only because the form has one.
+        if (account.getPaid() != 0 && account.getTreasury() != null) {
+            com.hamza.account.features.treasury.TreasuryCurrencyGuard.jdbc()
+                    .requireBaseCurrency(account.getTreasury().getId());
+        }
         requireAllocationFits(account, isNew);
         if (!isNew) {
             return TransactionTemplate.execute(() -> {
