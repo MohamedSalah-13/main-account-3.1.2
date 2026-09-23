@@ -2,11 +2,16 @@ package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyFormat;
+import com.hamza.account.features.currency.CurrencyService;
+import com.hamza.account.features.currency.RateInForce;
 import com.hamza.account.features.events.TreasuriesChanged;
 import com.hamza.account.features.events.TreasuryMovementRecorded;
 import com.hamza.account.features.events.TreasuryBalancesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.treasury.TreasuryExchange;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.model.domain.Users;
@@ -29,6 +34,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -37,7 +43,9 @@ import javafx.util.StringConverter;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
@@ -92,6 +100,17 @@ public class TreasuryController {
     @FXML
     private TextField sortField;
 
+    /**
+     * The treasury's currency (V81): the base for every treasury until somebody chooses otherwise. A
+     * treasury in a foreign currency takes its opening balance in that currency, valued at the rate of
+     * its opening day; the service refuses a change of currency once anything has moved through it.
+     */
+    @FXML
+    private ComboBox<Currency> currencyCombo;
+
+    @FXML
+    private Label openingHint;
+
     @FXML
     private TableView<TreasuryBalanceSummary> treasuryTable;
 
@@ -116,7 +135,11 @@ public class TreasuryController {
     private final TreasuryService treasuryService;
     private final TreasuryBalanceService balanceService;
     private final EventBus eventBus;
+    private final CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
     private final Subscriptions subscriptions = new Subscriptions();
+    /** Read with the rows, so every cell of one load is valued at one day's rates. */
+    private Map<Integer, Currency> currencyById = Map.of();
+    private Map<Integer, RateInForce> ratesToday = Map.of();
 
     private Treasury selectedTreasury;
 
@@ -143,9 +166,10 @@ public class TreasuryController {
         typeCombo.getSelectionModel().select(TreasuryType.CASH);
 
         setTextFormatter(amountField, feeField, minimumField);
+        configureCurrencyCombo();
         configureButtons();
         whenEnterPressed(nameField, amountField, typeCombo, activeCheck, accountField, minimumField,
-                sortField, feeField);
+                sortField, currencyCombo, feeField);
         // The last field lands on the button that matches the form: editing a selected
         // treasury must not put focus on "save", which would insert a copy of it.
         feeField.setOnKeyPressed(event -> {
@@ -186,8 +210,88 @@ public class TreasuryController {
                 Columns.money("treasury.column.in", TreasuryBalanceSummary::totalIn),
                 Columns.money("treasury.column.out", TreasuryBalanceSummary::totalOut),
                 Columns.money("treasury.column.balance", TreasuryBalanceSummary::balance),
+                // A treasury in a foreign currency (V81): what it holds in it, what that is worth at
+                // today's rate, and how far that is from the book value above - shown, never posted
+                // (docs/currency-plan.md §11 ق-ب٢). Blank for a treasury in the base, where the three
+                // would only repeat the balance.
+                Columns.text("treasury.column.currency", this::currencyCode),
+                Columns.text("treasury.column.balance.own", this::ownBalance),
+                Columns.money("treasury.column.value.today", this::valueToday),
+                Columns.money("treasury.column.valuation", this::valuationDifference),
                 // A percentage, not an amount: no money formatting, no red for a negative.
                 Columns.number("treasury.column.fee", TreasuryBalanceSummary::feePercent));
+    }
+
+    private void configureCurrencyCombo() {
+        currencyCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Currency currency) {
+                return currency == null ? "" : currency.label();
+            }
+
+            @Override
+            public Currency fromString(String value) {
+                return currencyCombo.getValue();
+            }
+        });
+        currencyCombo.valueProperty().addListener((obs, oldValue, currency) -> showOpeningHint(currency));
+        if (currencies == null) {
+            currencyCombo.setDisable(true);
+            return;
+        }
+        try {
+            currencyCombo.setItems(FXCollections.observableArrayList(currencies.active()));
+            selectCurrency(null);
+        } catch (DaoException e) {
+            AllAlerts.handleError(text("treasury.error.load.title"), e);
+        }
+    }
+
+    /** {@code null} is the base - the first of the list the service answers. */
+    private void selectCurrency(Integer currencyId) {
+        currencyCombo.getItems().stream()
+                .filter(currency -> currencyId == null ? currency.base() : currency.id() == currencyId)
+                .findFirst()
+                .ifPresentOrElse(currencyCombo::setValue, () -> {
+                    // A treasury in a currency stopped since: shown, so the form does not turn it into the base.
+                    Currency stopped = currencyById.get(currencyId);
+                    if (stopped != null) {
+                        currencyCombo.getItems().add(stopped);
+                        currencyCombo.setValue(stopped);
+                    }
+                });
+    }
+
+    private void showOpeningHint(Currency currency) {
+        boolean foreign = currency != null && !currency.base();
+        openingHint.setText(foreign ? text("treasury.hint.opening.foreign", currency.code())
+                : text("treasury.hint.opening"));
+    }
+
+    private boolean isForeign() {
+        Currency currency = currencyCombo.getValue();
+        return currency != null && !currency.base();
+    }
+
+    private String currencyCode(TreasuryBalanceSummary row) {
+        Currency currency = row.isForeign() ? currencyById.get(row.currencyId()) : null;
+        return currency == null ? "" : currency.code();
+    }
+
+    private String ownBalance(TreasuryBalanceSummary row) {
+        Currency currency = row.isForeign() ? currencyById.get(row.currencyId()) : null;
+        return currency == null ? "" : CurrencyFormat.amount(row.balanceOwn(), currency) + " " + currency.code();
+    }
+
+    /** What the treasury's own balance is worth at today's rate; blank without a rate - never a guess. */
+    private BigDecimal valueToday(TreasuryBalanceSummary row) {
+        RateInForce rate = row.isForeign() ? ratesToday.get(row.currencyId()) : null;
+        return rate == null ? null : TreasuryExchange.baseOf(row.balanceOwn(), rate.rate());
+    }
+
+    private BigDecimal valuationDifference(TreasuryBalanceSummary row) {
+        BigDecimal value = valueToday(row);
+        return value == null ? null : value.subtract(row.balance());
     }
 
     /** The list uses the same PDF path as customers, so the visible columns are the printed columns. */
@@ -202,6 +306,11 @@ public class TreasuryController {
     @FXML
     private void loadTreasuries() {
         try {
+            if (currencies != null) {
+                currencyById = currencies.all().stream()
+                        .collect(java.util.stream.Collectors.toMap(Currency::id, currency -> currency));
+                ratesToday = currencies.ratesInForce(LocalDate.now());
+            }
             treasuryTable.setItems(FXCollections.observableArrayList(balanceService.getTreasuryBalanceSummary()));
         } catch (DaoException e) {
             AllAlerts.handleError(text("treasury.error.load.title"), e);
@@ -219,6 +328,7 @@ public class TreasuryController {
         accountField.clear();
         minimumField.clear();
         sortField.clear();
+        selectCurrency(null);
         treasuryTable.getSelectionModel().clearSelection();
     }
 
@@ -291,7 +401,13 @@ public class TreasuryController {
 
     private void readForm(Treasury treasury) throws UserValidationException {
         treasury.setName(nameField.getText() == null ? "" : nameField.getText().trim());
-        treasury.setAmount(parseAmount(amountField.getText()));
+        // In a foreign currency the box holds the opening in that currency, and the service values it
+        // in the base at the opening day's rate (V81); in the base it is the opening itself.
+        BigDecimal opening = parseAmount(amountField.getText());
+        Currency currency = currencyCombo.getValue();
+        treasury.setCurrencyId(isForeign() ? currency.id() : null);
+        treasury.setOpeningForeign(isForeign() ? opening : null);
+        treasury.setAmount(isForeign() ? BigDecimal.ZERO : opening);
         treasury.setType(typeCombo.getValue());
         treasury.setActive(activeCheck.isSelected());
         treasury.setFeePercent(parseAmount(feeField.getText()));
@@ -327,7 +443,9 @@ public class TreasuryController {
         }
 
         nameField.setText(selectedTreasury.getName());
-        amountField.setText(String.valueOf(selectedTreasury.getAmount()));
+        selectCurrency(selectedTreasury.getCurrencyId());
+        amountField.setText(String.valueOf(selectedTreasury.getCurrencyId() == null
+                ? selectedTreasury.getAmount() : selectedTreasury.getOpeningForeign()));
         typeCombo.getSelectionModel().select(selectedTreasury.getType());
         activeCheck.setSelected(selectedTreasury.isActive());
         feeField.setText(String.valueOf(selectedTreasury.getFeePercent()));
@@ -370,7 +488,8 @@ public class TreasuryController {
         if (treasury.getType() == null) {
             throw new UserValidationException(text("treasury.error.type.required"));
         }
-        if (treasury.getAmount() == null || treasury.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+        if (treasury.getAmount() == null || treasury.getAmount().compareTo(BigDecimal.ZERO) < 0
+                || (treasury.getOpeningForeign() != null && treasury.getOpeningForeign().signum() < 0)) {
             throw new UserValidationException(text("treasury.error.balance.negative"));
         }
         BigDecimal fee = treasury.getFeePercent();
@@ -381,5 +500,9 @@ public class TreasuryController {
 
     private String text(String key) {
         return LanguageManager.getInstance().getString(key);
+    }
+
+    private String text(String key, Object... args) {
+        return LanguageManager.getInstance().getString(key, args);
     }
 }

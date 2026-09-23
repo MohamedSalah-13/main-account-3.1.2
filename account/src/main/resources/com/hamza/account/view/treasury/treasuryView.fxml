@@ -69,6 +69,10 @@
                     <Label styleClass="form-label" text="%treasury.field.sort" GridPane.columnIndex="0" GridPane.rowIndex="4" />
 
                     <TextField fx:id="sortField" promptText="%treasury.field.sort.prompt" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+                    <Label styleClass="form-label" text="%treasury.field.currency" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+
+                    <ComboBox fx:id="currencyCombo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="4" />
                <rowConstraints>
                   <RowConstraints />
                   <RowConstraints />

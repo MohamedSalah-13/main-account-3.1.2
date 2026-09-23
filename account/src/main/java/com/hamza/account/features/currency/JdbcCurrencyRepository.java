@@ -85,6 +85,27 @@ public final class JdbcCurrencyRepository extends AbstractDao<Currency> implemen
     }
 
     @Override
+    public int foreignTreasuryCount() throws DaoException {
+        return count(CurrencyQuery.FOREIGN_TREASURY_COUNT_SQL);
+    }
+
+    @Override
+    public int activeTreasuryCount(int currencyId) throws DaoException {
+        return count(CurrencyQuery.ACTIVE_TREASURY_COUNT_SQL, currencyId);
+    }
+
+    private int count(String sql, Object... values) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (int i = 0; i < values.length; i++) statement.setObject(i + 1, values[i]);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : 0;
+                }
+            }
+        });
+    }
+
+    @Override
     public Currency lockForRate(int id) throws DaoException {
         return queryForObject(CurrencyQuery.LOCK_FOR_RATE_SQL, this::map, id);
     }

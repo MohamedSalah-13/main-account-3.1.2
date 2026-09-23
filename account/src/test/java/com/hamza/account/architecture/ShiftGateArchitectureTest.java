@@ -58,7 +58,12 @@ class ShiftGateArchitectureTest {
             // Fine: everything it writes happens after the close snapshot is stored, and is
             // deliberately attributed to no shift. Attributing the settlement or the handover
             // transfer would append to a drawer that has already been answered for.
-            "ShiftCashHandoverService");
+            "ShiftCashHandoverService",
+
+            // Fine: it writes currencies and exchange rates, and only counts the treasuries that name
+            // a currency - the base does not move and a currency is not stopped while one does (V81).
+            // No row it writes is money in a drawer.
+            "CurrencyService");
 
     @Test
     void everyServiceThatMovesTreasuryCashPassesThroughTheShiftGate() throws IOException {

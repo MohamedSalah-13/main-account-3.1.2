@@ -39,7 +39,8 @@ public class TreasuryDao extends AbstractDao<Treasury> {
      */
     private static final String COLUMNS = """
             id, t_name, amount, treasury_type, is_active, sort_order, fee_percent,
-                   opening_date, date_insert, updated_at, user_id, account_number, min_balance""";
+                   opening_date, date_insert, updated_at, user_id, account_number, min_balance,
+                   currency_id, opening_foreign, opening_rate""";
 
     public TreasuryDao() {
         super();
@@ -60,9 +61,10 @@ public class TreasuryDao extends AbstractDao<Treasury> {
         String query = """
                 INSERT INTO treasury
                     (t_name, amount, treasury_type, is_active, sort_order, fee_percent,
-                     opening_date, user_id, account_number, min_balance)
+                     opening_date, user_id, account_number, min_balance,
+                     currency_id, opening_foreign, opening_rate)
                 VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         return executeUpdate(
                 query,
@@ -75,7 +77,10 @@ public class TreasuryDao extends AbstractDao<Treasury> {
                 openingDate(treasury),
                 treasury.getUserId(),
                 accountNumber(treasury),
-                minBalance(treasury)
+                minBalance(treasury),
+                treasury.getCurrencyId(),
+                treasury.getOpeningForeign(),
+                treasury.getOpeningRate()
         );
     }
 
@@ -92,7 +97,10 @@ public class TreasuryDao extends AbstractDao<Treasury> {
                     opening_date = ?,
                     user_id = ?,
                     account_number = ?,
-                    min_balance = ?
+                    min_balance = ?,
+                    currency_id = ?,
+                    opening_foreign = ?,
+                    opening_rate = ?
                 WHERE id = ?
                 """;
         return executeUpdate(
@@ -107,6 +115,9 @@ public class TreasuryDao extends AbstractDao<Treasury> {
                 treasury.getUserId(),
                 accountNumber(treasury),
                 minBalance(treasury),
+                treasury.getCurrencyId(),
+                treasury.getOpeningForeign(),
+                treasury.getOpeningRate(),
                 treasury.getId()
         );
     }
@@ -182,12 +193,33 @@ public class TreasuryDao extends AbstractDao<Treasury> {
             treasury.setAccountNumber(rs.getString("account_number"));
             BigDecimal minBalance = rs.getBigDecimal("min_balance");
             treasury.setMinBalance(minBalance == null ? BigDecimal.ZERO : minBalance);
+            treasury.setCurrencyId(rs.getObject("currency_id", Integer.class));
+            treasury.setOpeningForeign(rs.getBigDecimal("opening_foreign"));
+            treasury.setOpeningRate(rs.getBigDecimal("opening_rate"));
             return treasury;
         } catch (Exception e) {
             throw new DaoException(e);
         }
     }
 
+
+    /**
+     * How many movements a treasury has had - every row {@code treasury_balance} lists for it but its
+     * opening line (source type 0). Its currency is fixed from the first (V81).
+     */
+    public int movementCount(int treasuryId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    "SELECT COUNT(*) FROM treasury_balance WHERE treasury_id = ? AND source_type <> 0")) {
+                statement.setInt(1, treasuryId);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : 0;
+                }
+            } catch (java.sql.SQLException e) {
+                throw new DaoException(e);
+            }
+        });
+    }
 
     private TreasuryType type(Treasury treasury) {
         return treasury.getType() == null ? TreasuryType.CASH : treasury.getType();

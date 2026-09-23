@@ -15,20 +15,29 @@ public final class ShiftPolicyService {
     private final ShiftPolicyRepository repository;
     private final EventBus events;
     private final CashierTreasuryAssignmentRepository assignments;
+    /** Absent unless given - the application gives it - and then the check it answers is skipped. */
+    private final com.hamza.account.features.treasury.TreasuryCurrencyGuard currencies;
 
     public ShiftPolicyService(ShiftPolicyRepository repository) {
-        this(repository, null, null);
+        this(repository, null, null, null);
     }
 
     public ShiftPolicyService(ShiftPolicyRepository repository, EventBus events) {
-        this(repository, events, null);
+        this(repository, events, null, null);
     }
 
     public ShiftPolicyService(ShiftPolicyRepository repository, EventBus events,
                               CashierTreasuryAssignmentRepository assignments) {
+        this(repository, events, assignments, null);
+    }
+
+    public ShiftPolicyService(ShiftPolicyRepository repository, EventBus events,
+                              CashierTreasuryAssignmentRepository assignments,
+                              com.hamza.account.features.treasury.TreasuryCurrencyGuard currencies) {
         this.repository = repository;
         this.events = events;
         this.assignments = assignments;
+        this.currencies = currencies;
     }
 
     public ShiftPolicy current() throws DaoException {
@@ -58,6 +67,7 @@ public final class ShiftPolicyService {
 
     public void saveTreasury(TreasuryShiftPolicy policy) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
+        requireBaseCurrencyWhereTracked(policy);
         TransactionTemplate.execute(() -> {
             repository.lockConfiguration();
             repository.saveTreasury(policy);
@@ -68,6 +78,7 @@ public final class ShiftPolicyService {
     public void saveConfiguration(ShiftPolicy policy, List<TreasuryShiftPolicy> treasuries) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
         List<TreasuryShiftPolicy> safeTreasuries = treasuries == null ? List.of() : List.copyOf(treasuries);
+        for (TreasuryShiftPolicy treasury : safeTreasuries) requireBaseCurrencyWhereTracked(treasury);
         validate(policy, safeTreasuries);
         TransactionTemplate.execute(() -> {
             repository.lockConfiguration();
@@ -90,6 +101,17 @@ public final class ShiftPolicyService {
         if (policy.enforceTreasuryAssignments() && assignments != null
                 && !assignments.hasActiveAssignments()) {
             throw new BusinessRuleException(message("user.shift.assignment.error.enable.empty"));
+        }
+    }
+
+    /**
+     * A treasury in a foreign currency runs no shift (docs/currency-plan.md §11 ق-ب٣): a shift counts its
+     * drawer in the shift journal, which holds one amount in the base, and a cashier would square dollars
+     * against pounds. NONE is always allowed - it is what every such treasury already is.
+     */
+    private void requireBaseCurrencyWhereTracked(TreasuryShiftPolicy policy) throws DaoException {
+        if (currencies != null && policy.trackingMode() != ShiftTrackingMode.NONE) {
+            currencies.requireBaseCurrency(policy.treasuryId(), "user.shift.error.treasury.foreign");
         }
     }
 

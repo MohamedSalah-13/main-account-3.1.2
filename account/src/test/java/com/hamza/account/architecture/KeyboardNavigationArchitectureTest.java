@@ -56,8 +56,6 @@ class KeyboardNavigationArchitectureTest {
      * party screen was rebuilt in code for V56.
      */
     private static final Set<String> SCREENS_WITHOUT_AN_ENTER_ORDER = Set.of(
-            "com/hamza/account/controller/convert_treasury/TreasuryCashController.java",
-            "com/hamza/account/controller/convert_treasury/TreasuryTransferController.java",
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/UpdateSomeItems.java",
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",

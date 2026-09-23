@@ -37,13 +37,24 @@ public class CashMovementDao extends AbstractDao<CashMovement> {
         return 1;
     }
 
+    /** A movement on a treasury in the base: {@code command.amount()} is the whole of it. */
     public int insertReturningId(CashMovementCommand command, Integer shiftId) throws DaoException {
+        return insertReturningId(command, null, null, shiftId);
+    }
+
+    /**
+     * {@code command.amount()} is in the base; on a treasury in a foreign currency
+     * {@code foreignAmount} is what moved in its own currency and {@code exchangeRate} the rate that
+     * valued it (V81) - both {@code null} otherwise, which is what the CHECK on the table accepts.
+     */
+    public int insertReturningId(CashMovementCommand command, java.math.BigDecimal foreignAmount,
+                                 java.math.BigDecimal exchangeRate, Integer shiftId) throws DaoException {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(
                     TreasuryStatements.INSERT_CASH_MOVEMENT_WITH_SHIFT, Statement.RETURN_GENERATED_KEYS)) {
                 Object[] data = {command.statement(), Date.valueOf(command.date()), command.amount(),
                         command.description(), command.direction().code(), command.category().code(),
-                        command.treasuryId(), command.userId(), shiftId};
+                        command.treasuryId(), command.userId(), shiftId, foreignAmount, exchangeRate};
                 for (int i = 0; i < data.length; i++) statement.setObject(i + 1, data[i]);
                 if (statement.executeUpdate() != 1) throw new DaoException("Cash movement was not inserted");
                 try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -140,7 +151,10 @@ public class CashMovementDao extends AbstractDao<CashMovement> {
                     rs.getBigDecimal("amount"),
                     rs.getDate("date_inter").toLocalDate(),
                     rs.getString("statement"),
-                    rs.getString("description_data"));
+                    rs.getString("description_data"),
+                    rs.getBigDecimal("foreign_amount"),
+                    rs.getBigDecimal("exchange_rate"),
+                    rs.getString("currency_code"));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

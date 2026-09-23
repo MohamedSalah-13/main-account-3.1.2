@@ -56,7 +56,9 @@ public final class SchemaForeignKeys {
             // a cascading key and the rule that declares it fails as "not in the schema".
             "V75__stock_count_lines_keep_history.sql",
             // A currency's rates point at it without cascading, which DeleteRegistry.CURRENCIES declares.
-            "V80__currencies.sql");
+            "V80__currencies.sql",
+            // A treasury in a foreign currency points at it without cascading (DeleteRegistry.CURRENCIES).
+            "V81__foreign_currency_treasury.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

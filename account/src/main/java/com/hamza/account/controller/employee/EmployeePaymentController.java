@@ -197,7 +197,7 @@ public class EmployeePaymentController implements AddInterface {
     private void loadPickers() {
         try {
             comboTreasury.setItems(FXCollections.observableArrayList(
-                    treasuryService.getActiveTreasuryModelList()));
+                    treasuryService.getActiveBaseCurrencyTreasuries()));
             comboTreasury.getSelectionModel().selectFirst();
             comboHeading.setItems(FXCollections.observableArrayList(headingService.forEmployeePayments()));
             if (comboHeading.getItems().isEmpty()) {

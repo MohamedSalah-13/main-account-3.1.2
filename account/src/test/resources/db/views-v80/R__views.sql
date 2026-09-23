@@ -1,3 +1,7 @@
+-- A frozen copy of R__views.sql as the V80 build shipped it (origin/main at 35898d0), read only by
+-- ExpenseDatabaseAcceptanceTest to build the views on its V63 schema: today's views read columns V81 adds,
+-- and cannot be built there. Never edit it - it is what an upgrading customer's views were.
+
 -- =====================================================================
 -- Repeatable - reporting views.
 --
@@ -947,11 +951,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                1               AS source_type,
-                               'المشتريات'    AS information,
-                               -- بعملة الخزينة (V81). الفواتير والتحصيل والمصروفات لا تقع إلا على
-                               -- خزينة بالأساسية (ق-ب٦)، فمبلغها بعملة خزينتها هو مبلغها نفسه.
-                               0               AS income_own,
-                               paid_up         AS output_own
+                               'المشتريات'    AS information
                         FROM total_buy
                         UNION ALL
                         -- ما دخل الخزينة فعلا هو العمود النقدي وحده، في المرتجع كما في
@@ -967,9 +967,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                2,
-                               'مرتجع المشتريات',
-                               paid_to_treasury,
-                               0
+                               'مرتجع المشتريات'
                         FROM total_buy_re
                         UNION ALL
                         SELECT invoice_number,
@@ -981,9 +979,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                3,
-                               'المبيعات',
-                               paid_up,
-                               0
+                               'المبيعات'
                         FROM total_sales
                         UNION ALL
                         -- وكذلك ما خرج منها: paid_from_treasury وحده. المبلغ الآجل يخص
@@ -997,9 +993,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                4,
-                               'مرتجع المبيعات',
-                               0,
-                               paid_from_treasury
+                               'مرتجع المبيعات'
                         FROM total_sales_re
                         UNION ALL
                         SELECT account_num,
@@ -1011,9 +1005,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                5,
-                               'حسابات العملاء',
-                               paid,
-                               0
+                               'حسابات العملاء'
                         FROM customers_accounts
                         UNION ALL
                         SELECT account_num,
@@ -1025,9 +1017,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                6,
-                               'حسابات الموردين',
-                               0,
-                               paid
+                               'حسابات الموردين'
                         FROM suppliers_accounts
                         UNION ALL
                         SELECT id,
@@ -1039,9 +1029,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                7,
-                               'المصروفات',
-                               0,
-                               amount
+                               'المصروفات'
                         FROM expenses_details
                         UNION ALL
                         SELECT id,
@@ -1053,9 +1041,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                shift_id,
                                IF(deposit_or_expenses = 1, 8, 9),
-                               IF(deposit_or_expenses = 1, 'إيداع', 'صرف'),
-                               IF(deposit_or_expenses = 1, COALESCE(foreign_amount, amount), 0),
-                               IF(deposit_or_expenses = 2, COALESCE(foreign_amount, amount), 0)
+                               IF(deposit_or_expenses = 1, 'إيداع', 'صرف')
                         FROM treasury_deposit_expenses
                         UNION ALL
                         -- الرصيد الافتتاحي: ما كان في الوعاء قبل أن يعرفه النظام. سطر واحد
@@ -1070,13 +1056,9 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                NULL                                      AS shift_id,
                                0,
-                               'رصيد افتتاحي',
-                               IF(COALESCE(opening_foreign, amount) > 0, COALESCE(opening_foreign, amount), 0),
-                               IF(COALESCE(opening_foreign, amount) < 0, -COALESCE(opening_foreign, amount), 0)
+                               'رصيد افتتاحي'
                         FROM treasury
-                        -- رصيد بالدولار صغير قد تقرّب قيمته بالأساسية إلى صفر، فيبقى سطره.
                         WHERE amount <> 0
-                           OR COALESCE(opening_foreign, 0) <> 0
                         UNION ALL
                         -- التحويل بين خزينتين صف واحد يظهر مرتين: صادرا من المصدر وواردا
                         -- إلى الهدف. بدونهما كان مجموع الخزائن صحيحا وكل خزينة على حدة غلط.
@@ -1089,9 +1071,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                source_shift_id,
                                11,
-                               'تحويل صادر',
-                               0,
-                               COALESCE(amount_from, amount)
+                               'تحويل صادر'
                         FROM treasury_transfers
                         UNION ALL
                         SELECT id,
@@ -1103,9 +1083,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                user_id,
                                destination_shift_id,
                                10,
-                               'تحويل وارد',
-                               COALESCE(amount_to, amount),
-                               0
+                               'تحويل وارد'
                         FROM treasury_transfers)
 SELECT c.id_no,
        c.date_val,
@@ -1118,9 +1096,7 @@ SELECT c.id_no,
        c.source_type,
        c.information,
        t.t_name    AS treasury_name,
-       u.user_name AS user_name,
-       c.income_own,
-       c.output_own
+       u.user_name AS user_name
 FROM cte_union_data c
          JOIN treasury t ON t.id = c.treasury_id
          JOIN users    u ON u.id = c.user_id
@@ -1137,17 +1113,10 @@ SELECT tt.id,
        tt.transfer_date,
        tt.notes,
        tFrom.t_name AS treasury_name_from,
-       tTo.t_name   AS treasury_name_to,
-       -- ما خرج وما دخل كلٌّ بعملة خزينته، وعملتاهما؛ NULL لجانب بالأساسية (V81).
-       tt.amount_from,
-       tt.amount_to,
-       cFrom.code   AS currency_from,
-       cTo.code     AS currency_to
+       tTo.t_name   AS treasury_name_to
 FROM treasury_transfers tt
          JOIN treasury tFrom ON tFrom.id = tt.treasury_from
-         JOIN treasury tTo   ON tTo.id   = tt.treasury_to
-         LEFT JOIN currency cFrom ON cFrom.id = tFrom.currency_id
-         LEFT JOIN currency cTo   ON cTo.id   = tTo.currency_id;
+         JOIN treasury tTo   ON tTo.id   = tt.treasury_to;
 
 -- --------------------------------------treasury_current_balance-----------------------------------
 
@@ -1167,19 +1136,11 @@ SELECT t.id,
        t.amount                                                            AS opening,
        COALESCE(m.total_in, 0)                                             AS total_in,
        COALESCE(m.total_out, 0)                                            AS total_out,
-       ROUND(t.amount + COALESCE(m.total_in, 0) - COALESCE(m.total_out, 0), 2) AS balance,
-       -- بعملة الخزينة (V81): لخزينة الأساسية هو الرصيد نفسه، ولخزينة الدولار رصيدها بالدولار.
-       -- balance فوقه قيمتها الدفترية بالأساسية - تعريف الرصيد لم يتغير، أُضيف بجانبه.
-       t.currency_id,
-       COALESCE(t.opening_foreign, t.amount)                               AS opening_own,
-       ROUND(COALESCE(t.opening_foreign, t.amount) + COALESCE(m.total_in_own, 0)
-                 - COALESCE(m.total_out_own, 0), 3)                        AS balance_own
+       ROUND(t.amount + COALESCE(m.total_in, 0) - COALESCE(m.total_out, 0), 2) AS balance
 FROM treasury t
          LEFT JOIN (SELECT treasury_id,
-                           SUM(income)     AS total_in,
-                           SUM(output)     AS total_out,
-                           SUM(income_own) AS total_in_own,
-                           SUM(output_own) AS total_out_own
+                           SUM(income) AS total_in,
+                           SUM(output) AS total_out
                     FROM treasury_balance
                     -- الافتتاحي معروض في عموده الخاص، فلا يُجمع مرتين. الحرفية العربية هي
                     -- نفسها التي يكتبها الفرع أعلاه، وتقابلها MovementLabel.OPENING في Java.

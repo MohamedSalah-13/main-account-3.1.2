@@ -168,6 +168,30 @@ class CurrencyServiceTest {
         }
 
         @Test
+        @DisplayName("is refused while a treasury is in a foreign currency, and the settings hint says so")
+        void lockedByAForeignTreasury() throws Exception {
+            signInWith(AppPermissions.CURRENCY_UPDATE);
+            repository.treasuries.add(new int[]{USD.id(), 1});
+            assertEquals(false, service.baseMayChange());
+            assertEquals("currency.error.base.foreign.treasury", assertThrows(UserValidationException.class,
+                    () -> service.setBase(SAR.id())).getMessage());
+            assertEquals(List.of("lockAll"), repository.calls, "nothing moved");
+        }
+
+        @Test
+        @DisplayName("stopping a currency an active treasury is in is refused")
+        void notStoppedUnderATreasury() throws Exception {
+            signInWith(AppPermissions.CURRENCY_UPDATE);
+            repository.treasuries.add(new int[]{USD.id(), 1});
+            assertEquals("currency.error.stop.treasury", assertThrows(UserValidationException.class,
+                    () -> service.save(CurrencyDraft.switching(USD, false))).getMessage());
+            repository.treasuries.clear();
+            repository.treasuries.add(new int[]{USD.id(), 0});
+            assertEquals(USD.id(), service.save(CurrencyDraft.switching(USD, false)),
+                    "a stopped treasury holds nobody back");
+        }
+
+        @Test
         @DisplayName("is refused for a stopped currency")
         void notToAStoppedOne() {
             signInWith(AppPermissions.CURRENCY_UPDATE);

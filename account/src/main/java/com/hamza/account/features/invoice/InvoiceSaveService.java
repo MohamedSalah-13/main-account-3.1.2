@@ -342,6 +342,18 @@ public final class InvoiceSaveService<
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.DISCOUNT,
                     DelegateDiscountGuard.REFUSAL_KEY);
         }
+        // Before the number is allocated - the counter does not roll back - as the discount above is.
+        Treasury treasury = treasuryLookup.find(command.treasuryName());
+        if (treasury == null) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
+                    "الخزينة المحددة غير موجودة");
+        }
+        // A document's cash column holds one amount, in the base: a treasury in a foreign currency
+        // cannot take it until documents carry a foreign amount (docs/currency-plan.md §11 ق-ب٦).
+        if (treasury.getCurrencyId() != null) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
+                    com.hamza.account.features.treasury.TreasuryCurrencyGuard.refusal(treasury.getName()));
+        }
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);
@@ -351,11 +363,6 @@ public final class InvoiceSaveService<
                 command.updating() ? command.existingInvoiceId() : 0,
                 command.lines(), persistedLines);
         T3 party = invoiceFactory.objectName(command.partyId(), command.partyName());
-        Treasury treasury = treasuryLookup.find(command.treasuryName());
-        if (treasury == null) {
-            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
-                    "الخزينة المحددة غير موجودة");
-        }
         if (documentType.hasDelegate() && delegate == null) {
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.DELEGATE,
                     "المندوب المحدد غير موجود");

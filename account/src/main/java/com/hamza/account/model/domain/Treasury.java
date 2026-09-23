@@ -39,8 +39,21 @@ public class Treasury extends DForColumnTable {
     private int userId;
     /** The wallet's number or the bank account's (V69); {@code null} for a cash drawer. */
     private String accountNumber;
-    /** What the treasury is warned under (V69). Zero is "none set" - never "always low". */
+    /** What the treasury is warned under (V69), in its own currency. Zero is "none set" - never "always low". */
     private BigDecimal minBalance = BigDecimal.ZERO;
+    /**
+     * The treasury's currency (V81); {@code null} is the base - every treasury that predates it, and
+     * any treasury in the base, which never names it explicitly. Fixed once anything has moved through
+     * it: every amount in it is written in it (docs/currency-plan.md §11).
+     */
+    private Integer currencyId;
+    /**
+     * For a treasury in a foreign currency, the opening balance in that currency; {@code amount} is its
+     * value in the base at {@link #openingRate}. Both {@code null} for a treasury in the base.
+     */
+    private BigDecimal openingForeign;
+    /** The rate {@code amount} was worked out at, copied from the day's rate; {@code null} for a zero opening. */
+    private BigDecimal openingRate;
 
     public Treasury(int id) {
         this.id = id;

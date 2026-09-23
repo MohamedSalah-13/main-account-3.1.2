@@ -64,6 +64,14 @@ public final class TreasuryVoucherLayout {
         // the point of the category is that the two are never mistaken for income or an expense.
         details.add(DocumentPdfPage.Field.of(labels.text("treasury.voucher.category"),
                 labels.text(movement.category().labelKey())));
+        // On a treasury in a foreign currency (V81) the amount below is its value in the base; what moved
+        // is said in the treasury's currency, with the rate copied onto the row - or the paper for a
+        // deposit of fifty dollars would read as 2,400 of nothing in particular.
+        if (movement.isForeign()) {
+            details.add(DocumentPdfPage.Field.of(labels.text("treasury.voucher.foreign"),
+                    foreign(movement.foreignAmount(), movement.currencyCode()) + " @ "
+                            + movement.exchangeRate().stripTrailingZeros().toPlainString()));
+        }
         addIfPresent(details, labels.text("treasury.voucher.entered.by"), voucher.enteredBy());
 
         String[] headers = {labels.text("treasury.voucher.column.statement"), labels.text("treasury.voucher.column.amount")};
@@ -96,6 +104,16 @@ public final class TreasuryVoucherLayout {
         List<DocumentPdfPage.Field> details = new ArrayList<>();
         details.add(DocumentPdfPage.Field.of(labels.text("treasury.voucher.from"), value(transfer.fromTreasuryName())));
         details.add(DocumentPdfPage.Field.of(labels.text("treasury.voucher.to"), value(transfer.toTreasuryName())));
+        // An exchange (V81): each side in a foreign currency says what it gave or received in it. The
+        // figures below are the one amount the books moved, in the base.
+        if (transfer.amountFrom() != null) {
+            details.add(DocumentPdfPage.Field.of(labels.text("treasury.voucher.sent.foreign"),
+                    foreign(transfer.amountFrom(), transfer.currencyFrom())));
+        }
+        if (transfer.amountTo() != null) {
+            details.add(DocumentPdfPage.Field.of(labels.text("treasury.voucher.received.foreign"),
+                    foreign(transfer.amountTo(), transfer.currencyTo())));
+        }
         addIfPresent(details, labels.text("treasury.voucher.entered.by"), voucher.enteredBy());
 
         String[] headers = {labels.text("treasury.voucher.column.statement"), labels.text("treasury.voucher.column.amount")};
@@ -158,6 +176,13 @@ public final class TreasuryVoucherLayout {
         if (value != null && !value.isBlank()) {
             fields.add(DocumentPdfPage.Field.of(label, value));
         }
+    }
+
+    /** "50.00 USD": two places as money is written, three only for a currency that has them. */
+    private static String foreign(BigDecimal amount, String code) {
+        BigDecimal figure = amount.stripTrailingZeros();
+        String written = figure.scale() > 2 ? String.format("%,.3f", figure) : Columns.money(amount);
+        return written + " " + value(code);
     }
 
     private static String value(String text) {

@@ -39,14 +39,25 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
         return 1;
     }
 
+    /** A transfer between two treasuries in the base: {@code command.amount()} is the whole of it. */
     public int insertReturningId(TreasuryTransferCommand command, Integer sourceShiftId,
+                                 Integer destinationShiftId) throws DaoException {
+        return insertReturningId(command, null, null, sourceShiftId, destinationShiftId);
+    }
+
+    /**
+     * {@code command.amount()} is what the books move, in the base; {@code amountFrom}/{@code amountTo}
+     * what each side gave or received in its own currency, {@code null} for a side in the base (V81).
+     */
+    public int insertReturningId(TreasuryTransferCommand command, java.math.BigDecimal amountFrom,
+                                 java.math.BigDecimal amountTo, Integer sourceShiftId,
                                  Integer destinationShiftId) throws DaoException {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(
                     TreasuryStatements.INSERT_TRANSFER_WITH_SHIFTS, Statement.RETURN_GENERATED_KEYS)) {
                 Object[] data = {command.fromTreasuryId(), command.toTreasuryId(), command.amount(),
                         Date.valueOf(command.transferDate()), command.notes(), command.userId(),
-                        sourceShiftId, destinationShiftId};
+                        sourceShiftId, destinationShiftId, amountFrom, amountTo};
                 for (int i = 0; i < data.length; i++) statement.setObject(i + 1, data[i]);
                 if (statement.executeUpdate() != 1) throw new DaoException("Transfer was not inserted");
                 try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -136,7 +147,11 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
                     rs.getBigDecimal("amount"),
                     rs.getDate("transfer_date").toLocalDate(),
                     rs.getString("notes"),
-                    rs.getBigDecimal("fee"));
+                    rs.getBigDecimal("fee"),
+                    rs.getBigDecimal("amount_from"),
+                    rs.getBigDecimal("amount_to"),
+                    rs.getString("currency_from"),
+                    rs.getString("currency_to"));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

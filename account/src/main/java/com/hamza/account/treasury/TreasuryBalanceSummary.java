@@ -21,6 +21,12 @@ import java.math.BigDecimal;
  * <p>
  * A plain record with no JavaFX and no {@code DForColumnTable}, per
  * {@code docs/new-code-rules.md}.
+ * <p>
+ * <b>A treasury in a foreign currency has two figures</b> (V81, docs/currency-plan.md §11).
+ * {@code balance} is its book value in the base - what the books moved in and out of it, which is
+ * what every total over treasuries adds up. {@code balanceOwn} is what it holds in its own currency,
+ * the figure a withdrawal is checked against and a person counts. For a treasury in the base the two
+ * are the same number, and {@code currencyId} is {@code null}.
  */
 public record TreasuryBalanceSummary(int id,
                                      String name,
@@ -31,7 +37,28 @@ public record TreasuryBalanceSummary(int id,
                                      BigDecimal opening,
                                      BigDecimal totalIn,
                                      BigDecimal totalOut,
-                                     BigDecimal balance) {
+                                     BigDecimal balance,
+                                     Integer currencyId,
+                                     BigDecimal openingOwn,
+                                     BigDecimal balanceOwn) {
+
+    public TreasuryBalanceSummary {
+        openingOwn = openingOwn == null ? opening : openingOwn;
+        balanceOwn = balanceOwn == null ? balance : balanceOwn;
+    }
+
+    /** A treasury in the base - every caller that predates V81 builds one. */
+    public TreasuryBalanceSummary(int id, String name, TreasuryType type, boolean active, int sortOrder,
+                                  BigDecimal feePercent, BigDecimal opening, BigDecimal totalIn,
+                                  BigDecimal totalOut, BigDecimal balance) {
+        this(id, name, type, active, sortOrder, feePercent, opening, totalIn, totalOut, balance,
+                null, opening, balance);
+    }
+
+    /** In a currency other than the base (V81). */
+    public boolean isForeign() {
+        return currencyId != null;
+    }
 
     public boolean isEmpty() {
         return balance.signum() == 0;

@@ -41,16 +41,33 @@ public final class TreasuryTransferService {
 
     private final DaoFactory daoFactory;
     private final ShiftGate shiftGate;
+    private final TreasuryCurrencies currencies;
 
     public TreasuryTransferService(DaoFactory daoFactory) {
-        this(daoFactory, daoFactory == null ? ShiftGate.disabled() : ShiftGate.jdbc(daoFactory.userShiftDao()));
+        this(daoFactory, daoFactory == null ? ShiftGate.disabled() : ShiftGate.jdbc(daoFactory.userShiftDao()),
+                TreasuryCurrencies.jdbc());
     }
 
     TreasuryTransferService(DaoFactory daoFactory, ShiftGate shiftGate) {
-        this.daoFactory = daoFactory;
-        this.shiftGate = shiftGate;
+        this(daoFactory, shiftGate, TreasuryCurrencies.jdbc());
     }
 
+    TreasuryTransferService(DaoFactory daoFactory, ShiftGate shiftGate, TreasuryCurrencies currencies) {
+        this.daoFactory = daoFactory;
+        this.shiftGate = shiftGate;
+        this.currencies = currencies;
+    }
+
+    /**
+     * Records a transfer.
+     * <p>
+     * Between treasuries in two currencies it is an exchange (V81, docs/currency-plan.md §11):
+     * {@code command.amount()} is what left the source in its own currency and
+     * {@code command.received()} what reached the destination in its own - the two amounts the money
+     * changer counted. {@link TreasuryExchange} decides the one figure the books move; the source is
+     * checked against what it holds in its own currency, and a fee is refused from a treasury in a
+     * foreign currency, being an expense (ق-ب٦).
+     */
     public int transfer(TreasuryTransferCommand command) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_TRANSFER);
         PeriodLock.require(command.transferDate(), PeriodLockRegistry.TREASURY_TRANSFER.label());
@@ -69,10 +86,6 @@ public final class TreasuryTransferService {
         }
 
         return TransactionTemplate.execute(() -> {
-            var sourceShift = shiftGate.requireCashAction(
-                    command.userId(), command.fromTreasuryId(), command.amount());
-            var destinationShift = shiftGate.requireTreasuryAction(
-                    command.toTreasuryId(), command.amount());
             // Locked and re-read inside the transaction: the balance is derived, so a
             // check taken before it would be a number nothing was holding still.
             TreasuryBalanceSummary source =
@@ -80,32 +93,39 @@ public final class TreasuryTransferService {
             if (source == null) {
                 throw new BusinessRuleException(message("treasury.error.not.found"));
             }
-            // The source gives up the transfer and what it was charged for it.
-            requireEnough(source, command.amount().add(command.fee()));
-
             TreasuryBalanceSummary destination =
                     daoFactory.treasuryCurrentBalanceDao().getDataById(command.toTreasuryId());
             if (destination == null) {
                 throw new BusinessRuleException(message("treasury.error.not.found"));
             }
+            TreasuryExchange.Figures figures = figures(source, destination, command);
+            BigDecimal booked = figures.baseAmount();
 
-            int id = daoFactory.treasuryTransferDao().insertReturningId(command,
-                    sourceShift.isPresent() ? sourceShift.getAsInt() : null,
+            var sourceShift = shiftGate.requireCashAction(command.userId(), command.fromTreasuryId(), booked);
+            var destinationShift = shiftGate.requireTreasuryAction(command.toTreasuryId(), booked);
+            // The source gives up the transfer and what it was charged for it, in its own currency.
+            requireEnough(source, figures.sent().add(command.fee()));
+
+            TreasuryTransferCommand stored = new TreasuryTransferCommand(command.fromTreasuryId(),
+                    command.toTreasuryId(), booked, command.transferDate(), command.notes(), command.userId(),
+                    command.fee());
+            int id = daoFactory.treasuryTransferDao().insertReturningId(stored, figures.amountFrom(),
+                    figures.amountTo(), sourceShift.isPresent() ? sourceShift.getAsInt() : null,
                     destinationShift.isPresent() ? destinationShift.getAsInt() : null);
             ShiftCashLedger ledger = ShiftCashLedger.jdbc();
             ledger.created(sourceShift, command.userId(),
                     ShiftCashEffect.outgoing(ShiftCashSource.TRANSFER_OUT, id,
                             command.fromTreasuryId(), sourceShift.isPresent() ? sourceShift.getAsInt() : null,
-                            command.amount()));
+                            booked));
             ledger.created(destinationShift, command.userId(),
                     ShiftCashEffect.incoming(ShiftCashSource.TRANSFER_IN, id,
                             command.toTreasuryId(), destinationShift.isPresent() ? destinationShift.getAsInt() : null,
-                            command.amount()));
+                            booked));
             if (command.fee().signum() > 0) {
                 // An expense on the sending treasury, tied to this transfer (V68) so deleting the
                 // transfer takes it - the rule a collection's wallet fee follows, for its reasons.
                 new WalletFeeService().post(WalletFeeSource.transfer(id), command.fromTreasuryId(),
-                        command.transferDate(), command.amount(), command.fee(), command.notes(), sourceShift);
+                        command.transferDate(), booked, command.fee(), command.notes(), sourceShift);
             }
             ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
             return 1;
@@ -177,11 +197,33 @@ public final class TreasuryTransferService {
         return daoFactory.treasuryTransferDao().recent(limit);
     }
 
+    /**
+     * What the transfer stores, once both treasuries' currencies are known. A fee is refused from a
+     * treasury in a foreign currency: it is an expense, and an expense row carries no foreign amount
+     * until a later phase (ق-ب٦).
+     */
+    TreasuryExchange.Figures figures(TreasuryBalanceSummary source, TreasuryBalanceSummary destination,
+                                     TreasuryTransferCommand command) throws DaoException {
+        if (source.isForeign() && command.fee().signum() > 0) {
+            throw new BusinessRuleException(message("treasury.exchange.error.fee.foreign"));
+        }
+        var from = currencies.find(source.currencyId());
+        var to = currencies.find(destination.currencyId());
+        BigDecimal sourceRate = source.isForeign() && destination.isForeign()
+                ? currencies.rateOn(source.currencyId(), command.transferDate()) : null;
+        return TreasuryExchange.transfer(from, to, command.amount(), command.received(), sourceRate);
+    }
+
+    /**
+     * Refuses to take out more than a treasury holds - in its own currency: a dollar drawer is checked
+     * in dollars, not against its book value (docs/currency-plan.md §11 ق-ب٧). For a treasury in the
+     * base the two are the same figure.
+     */
     public static void requireEnough(TreasuryBalanceSummary treasury, BigDecimal amount)
             throws BusinessRuleException {
-        if (treasury.balance().compareTo(amount) < 0) {
+        if (treasury.balanceOwn().compareTo(amount) < 0) {
             throw new BusinessRuleException(LanguageManager.getInstance().getString(
-                    "treasury.error.insufficient", treasury.name(), treasury.balance().toPlainString()));
+                    "treasury.error.insufficient", treasury.name(), treasury.balanceOwn().toPlainString()));
         }
     }
 

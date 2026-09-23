@@ -135,6 +135,26 @@ class CurrencyRulesTest {
         }
 
         @Test
+        @DisplayName("moves only while no treasury holds another currency (V81)")
+        void lockedByAForeignTreasury() {
+            assertDoesNotThrow(() -> CurrencyRules.requireCanBecomeBase(SAR, 0, 0));
+            assertEquals("currency.error.base.foreign.treasury", assertThrows(UserValidationException.class,
+                    () -> CurrencyRules.requireCanBecomeBase(SAR, 0, 1)).getMessage());
+        }
+
+        @Test
+        @DisplayName("a currency an active treasury uses is not stopped; restarting or editing one is")
+        void stoppingOneInUse() {
+            CurrencyDraft stop = CurrencyDraft.switching(USD, false);
+            assertEquals("currency.error.stop.treasury", assertThrows(UserValidationException.class,
+                    () -> CurrencyRules.requireCanStop(USD, stop, 1)).getMessage());
+            assertDoesNotThrow(() -> CurrencyRules.requireCanStop(USD, stop, 0));
+            assertDoesNotThrow(() -> CurrencyRules.requireCanStop(USD, CurrencyDraft.switching(USD, true), 3));
+            assertDoesNotThrow(() -> CurrencyRules.requireCanStop(OLD_LIRA, CurrencyDraft.switching(OLD_LIRA, false), 3),
+                    "already stopped: saving it again stops nothing");
+        }
+
+        @Test
         @DisplayName("a stopped currency or none at all cannot become it")
         void onlyAnActiveOne() {
             assertEquals("currency.error.base.inactive", assertThrows(UserValidationException.class,

@@ -642,7 +642,7 @@ public class AdminShiftsController {
                         assignments.listAll(),
                         assignments.listHistory(),
                         users.getUsersList().stream().filter(Users::isActive).toList(),
-                        treasuries.getActiveTreasuryModelList().stream()
+                        treasuries.getActiveBaseCurrencyTreasuries().stream()
                                 .filter(item -> trackedIds.contains(item.getId())).toList());
             } catch (DaoException e) {
                 throw new CompletionException(e);
@@ -794,7 +794,7 @@ public class AdminShiftsController {
                 List<ShiftCashHandoverPolicy> policyRows = mayManageHandovers
                         ? handovers.policies() : List.of();
                 List<Treasury> treasuryRows = mayManageHandovers
-                        ? treasuries.getActiveTreasuryModelList() : List.of();
+                        ? treasuries.getActiveBaseCurrencyTreasuries() : List.of();
                 List<ShiftCashHandover> pendingRows = mayReceiveHandovers
                         ? handovers.pending() : List.of();
                 return new HandoverEditorData(policyRows, treasuryRows, pendingRows);

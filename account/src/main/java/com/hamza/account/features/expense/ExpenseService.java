@@ -18,6 +18,7 @@ import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.treasury.TreasuryBalanceSummary;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserFacingException;
 import com.hamza.controlsfx.error.UserValidationException;
 
@@ -165,7 +166,11 @@ public final class ExpenseService {
      * them - it answers "short or not", which the cashier holding the drawer already knows.
      */
     public List<TreasuryBalanceSummary> treasuries() throws DaoException {
-        List<TreasuryBalanceSummary> active = treasuries.active();
+        // An expense is paid in the base, so a till in a foreign currency is not offered for one
+        // (docs/currency-plan.md §11 ق-ب٦) - and is refused below if it is named anyway.
+        List<TreasuryBalanceSummary> active = treasuries.active().stream()
+                .filter(treasury -> !treasury.isForeign())
+                .toList();
         if (AuthorizationGuard.isGranted(AppPermissions.TREASURY_SHOW)) {
             return active;
         }
@@ -286,6 +291,7 @@ public final class ExpenseService {
                 throw new UserValidationException("expense.error.not.found");
             }
             requireHeadingFor(entry, stored);
+            requireBaseCurrency(entry.treasuryId());
 
             ShiftCashEffect old = cashEffects.lockAndRead(entry.id());
             if (old == null) {
@@ -344,6 +350,7 @@ public final class ExpenseService {
             ExpenseHeadingRules.requireUsableForEmployee(heading);
         }
         PeriodLock.require(entry.date(), PeriodLockRegistry.EXPENSE.label());
+        requireBaseCurrency(entry.treasuryId());
 
         int actor = currentUserId();
         OptionalInt shift = shiftGate.requireCashAction(actor, entry.treasuryId(), entry.amount());
@@ -404,6 +411,18 @@ public final class ExpenseService {
                 return daoFactory.treasuryCurrentBalanceDao().getDataById(treasuryId);
             }
         };
+    }
+
+    /**
+     * An expense row holds one amount, in the base: paid out of a till in a foreign currency it would
+     * move that till's book value and not its dollars (docs/currency-plan.md §11 ق-ب٦).
+     */
+    private void requireBaseCurrency(int treasuryId) throws DaoException {
+        TreasuryBalanceSummary treasury = treasuries.find(treasuryId);
+        if (treasury != null && treasury.isForeign()) {
+            throw new BusinessRuleException(
+                    com.hamza.account.features.treasury.TreasuryCurrencyGuard.refusal(treasury.name()));
+        }
     }
 
     private static int currentUserId() {

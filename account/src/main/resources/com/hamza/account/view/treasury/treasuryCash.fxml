@@ -69,7 +69,7 @@
                 <Label fx:id="availableLabel" styleClass="page-subtitle" />
 
                 <HBox alignment="CENTER_LEFT" spacing="12">
-                    <Button onAction="#saveMovement" styleClass="primary-button" text="%treasury.cash.btn.save" />
+                    <Button fx:id="saveButton" onAction="#saveMovement" styleClass="primary-button" text="%treasury.cash.btn.save" />
                     <Button onAction="#reload" styleClass="neutral-button" text="%common.refresh" />
                 </HBox>
             </VBox>

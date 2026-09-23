@@ -92,8 +92,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <b>Why the upgrade path is migrated from a folder.</b> V64 cannot be left out of a classpath run, and
  * {@code Flyway.target} does not hold the repeatables back - they run whatever the target, and this
  * change's {@code R__triggers.sql} names columns V64 adds. So the V63 schema is migrated from a copy of
- * the migrations without V64, with the triggers file cut where the V64 section begins, then migrated
- * again from the classpath - which applies V64 and re-runs only the repeatable whose checksum moved.
+ * the migrations without V64, with the triggers file cut where the V64 section begins and the views as
+ * the V80 build shipped them (today's read V81's columns), then migrated again from the classpath - which
+ * applies V64 onwards and re-runs the two repeatables whose checksum moved.
  * <p>
  * <b>The session is never user 1</b>: {@code isSystemAdministrator()} bypasses every permission.
  */
@@ -102,6 +103,7 @@ class ExpenseDatabaseAcceptanceTest {
 
     private static final String SCHEMA_PREFIX = "account_expense_acceptance_";
     private static final String TRIGGERS_V64_MARKER = "-- expenses_details and expenses (V64)";
+    private static final String VIEWS_BEFORE_V81 = "/db/views-v80/R__views.sql";
     private static final int OPERATOR = 4242;
     private static final String STAMP = "EXP-" + System.nanoTime();
 
@@ -751,8 +753,8 @@ class ExpenseDatabaseAcceptanceTest {
     // ---- fixtures -----------------------------------------------------------------------
 
     /**
-     * The migrations as they stood before this change: every versioned file but V64, and the triggers
-     * file cut where its V64 section begins.
+     * The migrations as they stood before this change: every versioned file but V64, the triggers
+     * file cut where its V64 section begins, and the views as the last build before V81 shipped them.
      */
     private static Path migrationsWithoutV64() throws Exception {
         Path source = Paths.get(ExpenseDatabaseAcceptanceTest.class.getResource("/db/migration").toURI());
@@ -767,6 +769,14 @@ class ExpenseDatabaseAcceptanceTest {
                     continue;
                 }
                 String sql = Files.readString(file, StandardCharsets.UTF_8);
+                // The views as the V80 build shipped them: today's read columns V81 adds to the treasuries,
+                // and a view cannot be built over a column that is not there yet. The figures read before
+                // V64 are this copy's, those read after it today's - so the comparison also says that
+                // V81's views moved no figure in the base.
+                if (name.equals("R__views.sql")) {
+                    sql = Files.readString(Paths.get(ExpenseDatabaseAcceptanceTest.class
+                            .getResource(VIEWS_BEFORE_V81).toURI()), StandardCharsets.UTF_8);
+                }
                 if (name.equals("R__triggers.sql")) {
                     int cut = sql.indexOf(TRIGGERS_V64_MARKER);
                     assertTrue(cut > 0, "the V64 section of R__triggers.sql is where this test expects it");
