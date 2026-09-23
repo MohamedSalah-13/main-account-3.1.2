@@ -1418,78 +1418,11 @@ SELECT * FROM treasury_deposit_query
 UNION ALL
 SELECT * FROM treasury_expenses_query;
 
+-- daily_dashboard_report is gone: nothing had read it since the summary took a period of its own, and it
+-- counted today's sales before their discounts with nothing returned taken off - a third answer to what a
+-- day sold. The summary reads the monthly totals' days and treasury_balance (features/report/summary).
+-- The DROP stays for the installs that have it.
 DROP VIEW IF EXISTS daily_dashboard_report;
-CREATE VIEW daily_dashboard_report AS
-SELECT
-    -- ==========================================
-    -- 1. المبيعات (اليوم، أمس، الأسبوع، الشهر)
-    -- ==========================================
-    (SELECT COUNT(invoice_number) FROM total_sales WHERE invoice_date = CURDATE()) AS sales_count_today,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE()), 0) AS sales_total_today,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE() - INTERVAL 1 DAY), 0) AS sales_total_yesterday,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEARWEEK(invoice_date, 1) = YEARWEEK(CURDATE(), 1)), 0) AS sales_total_week,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEAR(invoice_date) = YEAR(CURDATE()) AND MONTH(invoice_date) = MONTH(CURDATE())), 0) AS sales_total_month,
-
-    -- ==========================================
-    -- 2. المشتريات (اليوم)
-    -- ==========================================
-    (SELECT COUNT(invoice_number) FROM total_buy WHERE invoice_date = CURDATE()) AS purchases_count_today,
-    COALESCE((SELECT SUM(total) FROM total_buy WHERE invoice_date = CURDATE()), 0) AS purchases_total_today,
-
-    -- ==========================================
-    -- 3. مرتجعات المبيعات (اليوم)
-    -- ==========================================
-    (SELECT COUNT(id) FROM total_sales_re WHERE invoice_date = CURDATE()) AS sales_returns_count_today,
-    COALESCE((SELECT SUM(total) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) AS sales_returns_total_today,
-
-    -- ==========================================
-    -- 4. مرتجعات المشتريات (اليوم)
-    -- ==========================================
-    (SELECT COUNT(id) FROM total_buy_re WHERE invoice_date = CURDATE()) AS purchases_returns_count_today,
-    COALESCE((SELECT SUM(total) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) AS purchases_returns_total_today,
-
-    -- ==========================================
-    -- 5. المقبوضات (النقدية الداخلة للخزينة اليوم)
-    -- ==========================================
-    -- تحصيلات العملاء منها، وإلا اختلفت اللوحة عن كشف الخزينة بمقدار كل تحصيل.
-    -- customers_accounts.paid is here because treasury_balance counts it as income, and
-    -- these two numbers describe the same day's till. Without it the dashboard was short
-    -- by every collection made against a customer's account - which in a shop that sells
-    -- on credit is most of the money that came in.
-    (
-        COALESCE((SELECT SUM(paid_up) FROM total_sales WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(paid_to_treasury) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(paid) FROM customers_accounts WHERE account_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 1), 0)
-        ) AS total_receipts_today,
-
-    -- ==========================================
-    -- 6. المدفوعات والمصروفات (النقدية الخارجة اليوم)
-    -- ==========================================
-    -- ومدفوعات الموردين هنا، للسبب نفسه.
-    -- suppliers_accounts.paid, for the same reason: treasury_balance counts it as money
-    -- out. Transfers between the business's own tills are deliberately in neither column
-    -- - they net to zero across a company-wide figure, which is what this is. That is a
-    -- different question from the shift summary, where the missing treasury filter is
-    -- itself the defect.
-    (
-        COALESCE((SELECT SUM(paid_up) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(paid_from_treasury) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(paid) FROM suppliers_accounts WHERE account_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 2), 0) +
-        COALESCE((SELECT SUM(amount) FROM expenses_details WHERE date = CURDATE()), 0)
-        ) AS total_payments_and_expenses_today,
-
-    -- ==========================================
-    -- 7. الخصومات (إجمالي خصومات اليوم الممنوحة والمكتسبة)
-    -- ==========================================
-    (
-        COALESCE((SELECT SUM(discount) FROM total_sales WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(discount) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(discount) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(discount) FROM total_buy_re WHERE invoice_date = CURDATE()), 0)
-        ) AS total_discounts_today
-;
 
 
 -- top_selling_items_current_month is gone: its only reader was the old summary screen, and it

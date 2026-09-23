@@ -4,8 +4,6 @@ import com.hamza.account.features.inventory.ColumnKind;
 import com.hamza.account.features.inventory.InventoryColumn;
 import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.features.inventory.InventorySummary;
-import com.hamza.account.model.domain.DailyItemSales;
-import com.hamza.account.model.domain.ItemSalesRank;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
@@ -116,78 +114,6 @@ public class ExcelExportService {
                 case "purchaseValueTotal" -> cell.setCellValue(summary.valueAtCost());
                 case "salesValueTotal" -> cell.setCellValue(summary.valueAtSale());
                 default -> cell.setBlank();
-            }
-        }
-    }
-
-    // أضف هذه الدالة داخل كلاس ExcelExportService.java
-
-    public void exportItemSalesToExcel(List<ItemSalesRank> data, String filePath) throws IOException {
-        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
-            XSSFSheet sheet = workbook.createSheet("الأصناف الأكثر مبيعاً");
-            sheet.setRightToLeft(true);
-
-            // تنسيق الرأس
-            XSSFCellStyle headerStyle = workbook.createCellStyle();
-            headerStyle.setFillForegroundColor(IndexedColors.TEAL.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            XSSFFont font = workbook.createFont();
-            font.setColor(IndexedColors.WHITE.getIndex());
-            font.setBold(true);
-            headerStyle.setFont(font);
-
-            String[] headers = {"اسم الصنف", "الكمية المباعة", "إجمالي المبيعات", "صافي الربح"};
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
-            }
-
-            int rowNum = 1;
-            for (ItemSalesRank item : data) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(item.getItemName());
-                row.createCell(1).setCellValue(item.getTotalQty());
-                row.createCell(2).setCellValue(item.getTotalAmount());
-                row.createCell(3).setCellValue(item.getTotalProfit());
-            }
-
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
-
-            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
-                workbook.write(fileOut);
-            }
-        }
-    }
-
-    // إضافة في كلاس ExcelExportService.java
-    public void exportDailySalesToExcel(List<DailyItemSales> data, String filePath) throws IOException {
-        try (org.apache.poi.xssf.usermodel.XSSFWorkbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
-            org.apache.poi.xssf.usermodel.XSSFSheet sheet = workbook.createSheet("مبيعات اليوم");
-            sheet.setRightToLeft(true);
-
-            org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
-            String[] headers = {"اسم الصنف", "السعر", "الكمية", "الإجمالي", "رقم الفاتورة", "الوقت"};
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
-
-            int rowNum = 1;
-            for (DailyItemSales item : data) {
-                org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(item.getItemName());
-                row.createCell(1).setCellValue(item.getPrice());
-                row.createCell(2).setCellValue(item.getQuantity());
-                row.createCell(3).setCellValue(item.getTotal());
-                row.createCell(4).setCellValue(item.getInvoiceNumber());
-                row.createCell(5).setCellValue(item.getInvoiceTime());
-            }
-
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
-
-            try (java.io.FileOutputStream fileOut = new java.io.FileOutputStream(filePath)) {
-                workbook.write(fileOut);
             }
         }
     }

@@ -855,6 +855,7 @@
 .return-reasons .party-stat-card .stat-value,
 .party-payments .party-stat-card .stat-value,
 .monthly-totals .party-stat-card .stat-value,
+.item-sales .party-stat-card .stat-value,
 .exchange-differences .party-stat-card .stat-value {
     -fx-text-fill: -app-text-strong;
 }
@@ -865,6 +866,7 @@
 .return-reasons .party-stat-card .stat-value:negative-amount,
 .party-payments .party-stat-card .stat-value:negative-amount,
 .monthly-totals .party-stat-card .stat-value:negative-amount,
+.item-sales .party-stat-card .stat-value:negative-amount,
 .exchange-differences .party-stat-card .stat-value:negative-amount,
 .party-stat-card .stat-subtitle:negative-amount,
 .party-summary-bar .stat-value:negative-amount {
@@ -894,7 +896,8 @@
    card. */
 .profit-loss .section-title,
 .return-reasons .section-title,
-.monthly-totals .section-title {
+.monthly-totals .section-title,
+.item-sales .section-title {
     -fx-text-fill: -app-text-strong;
 }
 
@@ -928,6 +931,17 @@
 
 .profit-loss .pl-statement .table-row-cell:pl-result .table-cell:negative-amount {
     -fx-text-fill: -app-danger;
+}
+
+/* The item sales: the ten that sold most by value, one bar each in one colour - a ranking, where a colour
+   per item would say nothing its bar's length does not. */
+.item-sales-chart .chart-bar {
+    -fx-bar-fill: -app-primary;
+    -fx-background-radius: 3;
+}
+
+.item-sales-chart .chart-plot-background {
+    -fx-background-color: transparent;
 }
 
 /* The chart at the moment it is photographed for a PDF: dark on white whatever the theme,

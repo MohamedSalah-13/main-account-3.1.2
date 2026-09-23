@@ -35,10 +35,14 @@ public final class SidebarShortcutManager {
     /** The sales and the purchases by year became one screen of monthly totals with one button. */
     private static final String[] RETIRED_MONTHLY = {"REPORT_SALES_YEAR", "REPORT_PURCHASE_YEAR"};
 
+    /** The item movement ranking and the daily item sales became one screen of item sales with one button. */
+    private static final String[] RETIRED_ITEM_SALES = {"REPORT_ITEMS", "REPORT_ITEMS_DAILY"};
+
     static {
         adoptRetiredShortcuts(PREFS, RETIRED, SidebarShortcut.MASTER_DATA);
         adoptRetiredShortcuts(PREFS, RETIRED_PAYMENTS, SidebarShortcut.REPORT_PARTY_PAYMENTS);
         adoptRetiredShortcuts(PREFS, RETIRED_MONTHLY, SidebarShortcut.REPORT_MONTHLY_TOTALS);
+        adoptRetiredShortcuts(PREFS, RETIRED_ITEM_SALES, SidebarShortcut.REPORT_ITEM_SALES);
     }
 
     private SidebarShortcutManager() { }

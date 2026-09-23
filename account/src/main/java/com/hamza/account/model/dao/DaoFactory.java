@@ -181,33 +181,16 @@ public enum DaoFactory {
         return new UserShiftDao();
     }
 
-    public DailyDashboardReportDao dailyDashboardReportDao() {
-        return new DailyDashboardReportDao();
-    }
 
     public TopSellingItemDao topSellingItemDao() {
         return new TopSellingItemDao();
-    }
-
-    public ItemSalesRankDao itemSalesRankDao() {
-        return new ItemSalesRankDao();
-    }
-
-    public DailyItemSalesDao dailyItemSalesDao() {
-        return new DailyItemSalesDao();
     }
 
     public CustomerReceivableDao customerReceivableDao() {
         return new CustomerReceivableDao();
     }
 
-    public DailySalesPointDao dailySalesPointDao() {
-        return new DailySalesPointDao();
-    }
 
-    public DashboardPeriodDao dashboardPeriodDao() {
-        return new DashboardPeriodDao();
-    }
 
 }
 

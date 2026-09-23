@@ -38,7 +38,6 @@ class LocalizationArchitectureTest {
             "company/CompanyService.java",
             "export/ExcelExportService.java",
             "export/PdfExportService.java",
-            "export/ReportExportService.java",
             "inventory/InventoryColumns.java",
             "inventory/StockFilter.java",
             "invoice/InvoiceLineAssembler.java",

@@ -16,6 +16,13 @@ public final class JdbcMonthlyTotalsRepository extends AbstractDao<DayFigures> i
         return queryForObjects(MonthlyTotalsQuery.daysSql(side), this::map);
     }
 
+    /** The days of the side between two dates, both included - {@link MonthlyTotalsQuery#daysBetweenSql}. */
+    public List<DayFigures> daysBetween(MonthlySide side, LocalDate from, LocalDate to) throws DaoException {
+        java.sql.Date start = java.sql.Date.valueOf(from);
+        java.sql.Date end = java.sql.Date.valueOf(to);
+        return queryForObjects(MonthlyTotalsQuery.daysBetweenSql(side), this::map, start, end, start, end);
+    }
+
     @Override
     public DayFigures map(ResultSet rs) throws DaoException {
         try {
