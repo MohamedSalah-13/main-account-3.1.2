@@ -105,8 +105,8 @@ public final class PartyStatementService {
      *
      * @return the balance, or null when the document is not in the party's ledger
      */
-    public BigDecimal balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
-                                           long number) throws DaoException {
+    public MovementBalance balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
+                                                long number) throws DaoException {
         requireShow(kind);
         return repository.balanceAfterMovement(kind, partyId, movement, number);
     }

@@ -54,6 +54,9 @@ public record InvoiceReceiptLayout(List<Line> lines, String linesTotalLabel, Str
         List<Row> summary = new ArrayList<>();
         summary.add(new Row(labels.text("invoice.pdf.payment.type"),
                 document.deferred() ? labels.text("defer") : labels.text("cash"), false));
+        if (document.currency() != null) {
+            summary.add(new Row(labels.text("invoice.pdf.currency"), document.currency().figuresIn().code(), false));
+        }
         summary.add(new Row(labels.text("invoice.pdf.summary.total"), Columns.money(document.total()), false));
         if (document.discount().signum() != 0) {
             summary.add(new Row(labels.text("invoice.pdf.summary.discount"),
@@ -70,6 +73,9 @@ public record InvoiceReceiptLayout(List<Line> lines, String linesTotalLabel, Str
                     Columns.money(document.balance().before()), false));
             summary.add(new Row(labels.text("invoice.pdf.balance.after"),
                     Columns.money(document.balance().after()), true));
+        }
+        for (String[] row : InvoicePdfLayout.currencyRows(document.currency(), labels)) {
+            summary.add(new Row(row[0], row[1], false));
         }
         return new InvoiceReceiptLayout(lines, linesLabel, Columns.money(net), summary);
     }

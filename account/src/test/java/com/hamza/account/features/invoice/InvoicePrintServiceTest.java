@@ -67,6 +67,31 @@ class InvoicePrintServiceTest {
         verify(reports).printInvoice(standard.document());
     }
 
+    /** A stored line of a dollar invoice prints what was typed on it, not the base it was stored at. */
+    @Test
+    void aStoredLinePrintsWhatWasTypedOnIt() throws Exception {
+        InvoicePrintService service = new InvoicePrintService(() -> mock(Print_Reports.class));
+        Sales typed = line();
+        typed.setPrice(100.13);
+        typed.setTotal(200.26);
+        typed.setDiscount(4.84);
+        typed.setPriceForeign(new BigDecimal("2.07"));
+        typed.setDiscountForeign(new BigDecimal("0.10"));
+
+        var printed = service.prepareStored(List.of(typed, line()), "now", false, lines -> document())
+                .lines();
+
+        assertEquals(2.07, printed.getFirst().getPrice(), 0.0);
+        assertEquals(4.14, printed.getFirst().getTotal(), 0.0001);
+        assertEquals(0.10, printed.getFirst().getDiscount(), 0.0);
+        assertEquals(4.04, printed.getFirst().getTotal_amount(), 0.0001);
+        assertEquals(10, printed.get(1).getPrice(), 0.0, "a line with nothing typed prints as it is");
+        assertEquals(18, printed.get(1).getTotal_amount(), 0.0);
+
+        assertEquals(100.13, service.prepare(List.of(typed), "now", false, lines -> document())
+                .lines().getFirst().getPrice(), 0.0, "an invoice screen's lines print as they are shown");
+    }
+
     private static InvoicePrintDocument document() {
         return new InvoicePrintDocument(InvoicePrintDocument.Letterhead.EMPTY, DocumentType.SALES, 42,
                 "2026-08-13", "عميل", InvoiceType.CASH, "", "", 0, "", "", List.of(),

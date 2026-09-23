@@ -8,6 +8,7 @@ import com.hamza.account.features.currency.ExchangeRateDraft;
 import com.hamza.account.features.currency.JdbcCurrencyRepository;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.invoice.InvoicePartyCurrency;
+import com.hamza.account.features.invoice.InvoicePaymentTerms;
 import com.hamza.account.features.party.ageing.AgeingBucket;
 import com.hamza.account.features.party.ageing.PartyAgeingFilter;
 import com.hamza.account.features.party.ageing.PartyAgeingPage;
@@ -37,6 +38,7 @@ import com.hamza.account.service.CustomerService;
 import com.hamza.account.service.SuppliersService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.treasury.TreasuryType;
+import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -248,34 +250,44 @@ class PartyCurrencyDatabaseAcceptanceTest {
 
     @Test
     @Order(3)
-    @DisplayName("invoices are translated at their day's rate; an edit keeps its rate; a cash sale leaves nothing")
+    @DisplayName("invoices carry their day's rate and their dollars; an edit keeps its rate; a cash sale leaves nothing")
     void theInvoices() throws Exception {
+        // Since V83 a dollar customer's invoice is typed in dollars (docs/currency-plan.md §15): its
+        // figures in dollars are what was typed, and the header names the currency. The base rows are
+        // written here by hand; InvoiceSaveService's own conversion is DocumentCurrencyDatabaseAcceptanceTest's.
         InvoicePartyCurrency translator = InvoicePartyCurrency.jdbc();
         insertSale(9001, TODAY.minusDays(5), "9600", "0", 2);
         translator.write(DocumentType.SALES, 9001,
-                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(5), 0, 0));
+                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(5), 0, 0, usd),
+                typed("200", "0"));
         insertSale(9002, TODAY.minusDays(3), "4800", "0", 2);
         translator.write(DocumentType.SALES, 9002,
-                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(3), 0, 0));
+                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(3), 0, 0, usd),
+                typed("100", "0"));
         insertSale(9003, TODAY, "1000", "1000", 1);
         translator.write(DocumentType.SALES, 9003,
-                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY, 0, 0));
+                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY, 0, 0, usd), typed("20", "20"));
 
         assertEquals("48.0000000000|200.000|0.000|0.000", translation("total_sales", "invoice_number", 9001));
         assertEquals("48.0000000000|100.000|0.000|0.000", translation("total_sales", "invoice_number", 9002));
         assertEquals("50.0000000000|20.000|0.000|20.000", translation("total_sales", "invoice_number", 9003));
+        assertEquals(usd, scalar("SELECT currency_id FROM total_sales WHERE invoice_number = 9001"));
 
-        // A rate recorded later for the invoice's day does not translate it again on an edit.
+        // A rate recorded later for the invoice's day does not value it again on an edit.
         int later = currencies.saveRate(new ExchangeRateDraft(0, usd, TODAY.minusDays(5), new BigDecimal("49"), null));
         assertEquals(0, new BigDecimal("48").compareTo(
-                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(5), 9001, 0).rate()));
+                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(5), 9001, 0, usd).rate()));
         assertEquals(0, new BigDecimal("49").compareTo(
-                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(5), 0, 0).rate()));
+                translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(5), 0, 0, usd).rate()));
         currencies.deleteRate(later);
 
-        // No rate on the day is a refusal, and a party in the base is not translated at all.
+        // No rate on the day is a refusal, a screen in the base is refused for a dollar customer, and a
+        // party in the base is not translated at all.
+        UserValidationException noRate = assertThrows(UserValidationException.class,
+                () -> translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(20), 0, 0, usd));
+        assertTrue(noRate.getMessage().contains(String.valueOf(TODAY.minusDays(20))), noRate.getMessage());
         assertThrows(UserValidationException.class,
-                () -> translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY.minusDays(20), 0, 0));
+                () -> translator.rateFor(DocumentType.SALES, dollarCustomer, TODAY, 0, 0));
         assertFalse(translator.rateFor(DocumentType.SALES, poundCustomer, TODAY.minusDays(20), 0, 0).isForeign());
     }
 
@@ -288,7 +300,8 @@ class PartyCurrencyDatabaseAcceptanceTest {
                 + dollarCustomer + ", CURDATE(), 2, 960, 0, 0, 1, 1, 1, '" + STAMP + "', " + OPERATOR + ")");
         InvoicePartyCurrency translator = InvoicePartyCurrency.jdbc();
         translator.write(DocumentType.SALES_RETURN, 5001,
-                translator.rateFor(DocumentType.SALES_RETURN, dollarCustomer, TODAY, 0, 9001));
+                translator.rateFor(DocumentType.SALES_RETURN, dollarCustomer, TODAY, 0, 9001, usd),
+                typed("20", "0"));
         assertEquals("48.0000000000|20.000|0.000|0.000", translation("total_sales_re", "id", 5001));
     }
 
@@ -482,6 +495,14 @@ class PartyCurrencyDatabaseAcceptanceTest {
                 + " paid_up, stock_id, delegate_id, treasury_id, notes, user_id) VALUES (" + number + ", "
                 + dollarCustomer + ", " + type + ", '" + day + "', " + total + ", 0, " + paid + ", 1, 1, "
                 + MAIN + ", '" + STAMP + "', " + OPERATOR + ")");
+    }
+
+    /** A header as a screen typed it in dollars, with no discount. */
+    private static InvoicePaymentTerms typed(String total, String paid) {
+        BigDecimal net = new BigDecimal(total);
+        BigDecimal cash = new BigDecimal(paid);
+        return new InvoicePaymentTerms(cash.compareTo(net) == 0 ? InvoiceType.CASH : InvoiceType.DEFER, net,
+                BigDecimal.ZERO, net, cash, net.subtract(cash));
     }
 
     private static String translation(String table, String key, int number) throws Exception {

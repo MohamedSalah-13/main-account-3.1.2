@@ -142,8 +142,8 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
     }
 
     @Override
-    public BigDecimal balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
-                                           long number) throws DaoException {
+    public MovementBalance balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
+                                                long number) throws DaoException {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(
                     PartyStatementQuery.balanceAfterMovementSql(kind))) {
@@ -151,7 +151,10 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
                 statement.setInt(2, movement.code());
                 statement.setLong(3, number);
                 try (ResultSet rs = statement.executeQuery()) {
-                    return rs.next() ? rs.getBigDecimal("running_balance") : null;
+                    return rs.next()
+                            ? new MovementBalance(rs.getBigDecimal("running_balance"),
+                                    rs.getBigDecimal("running_balance_own"))
+                            : null;
                 }
             }
         });

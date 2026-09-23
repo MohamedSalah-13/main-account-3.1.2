@@ -130,4 +130,26 @@ class InvoiceReceiptLayoutTest {
             }
         }
     }
+
+    /** A dinar document written in the base says so, and gives its net to the dinar's three places. */
+    @Test
+    void aTranslatedReceiptSaysItsNetInThePartysCurrency() {
+        InvoicePrintDocument base = document(DocumentType.SALES, InvoiceType.CASH, "0", "1307.50", null);
+        InvoicePrintDocument dinars = new InvoicePrintDocument(base.letterhead(), base.type(), base.number(),
+                base.date(), base.partyName(), base.invoiceType(), base.stockName(), base.delegateName(),
+                base.sourceInvoiceNumber(), base.returnReason(), base.notes(), base.lines(), base.total(),
+                base.discount(), base.paid(), base.printedAt(), null,
+                new InvoicePrintDocument.DocumentCurrency(
+                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.KWD,
+                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.EGP,
+                        new BigDecimal("158.2"), false, new BigDecimal("8.265")));
+
+        Map<String, String> rows = rows(InvoiceReceiptLayout.of(dinars,
+                key -> key.equals("invoice.pdf.currency.net.other") ? "net in %s" : key));
+
+        assertEquals("EGP", rows.get("invoice.pdf.currency"), "its figures are in the base");
+        assertEquals("1 KWD = 158.2 EGP", rows.get("invoice.pdf.currency.rate"));
+        assertEquals("8.265", rows.get("net in KWD"));
+        assertEquals("net in KWD", new ArrayList<>(rows.keySet()).getLast(), "the currency rows close the summary");
+    }
 }

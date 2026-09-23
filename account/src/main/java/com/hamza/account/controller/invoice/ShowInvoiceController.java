@@ -440,7 +440,7 @@ public final class ShowInvoiceController<T3 extends BaseNames, T4 extends BaseAc
         Task<InvoicePrintRequest> task = new Task<>() {
             @Override
             protected InvoicePrintRequest call() throws Exception {
-                return printService.prepare(printedLines, enteredAt,
+                return printService.prepareStored(printedLines, enteredAt,
                         PropertiesName.getPrintPaperReceiptInvoice(),
                         lines -> ShowInvoiceDetails.printDocument(printedHeader, documentType, lines, printedAt));
             }
