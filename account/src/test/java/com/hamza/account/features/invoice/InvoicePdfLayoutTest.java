@@ -171,4 +171,28 @@ class InvoicePdfLayoutTest {
             }
         }
     }
+
+    /** A dollar invoice names its currency, and says its rate and its net in the base (§15 ق-د٩). */
+    @Test
+    void aDocumentInAForeignCurrencyNamesItAndSaysItsRateAndItsNetInTheOther() {
+        InvoicePrintDocument base = document(DocumentType.SALES, InvoiceType.DEFER, "4", "5", null);
+        InvoicePrintDocument dollars = new InvoicePrintDocument(base.letterhead(), base.type(), base.number(),
+                base.date(), base.partyName(), base.invoiceType(), base.stockName(), base.delegateName(),
+                base.sourceInvoiceNumber(), base.returnReason(), base.notes(), base.lines(), base.total(),
+                base.discount(), base.paid(), base.printedAt(), null,
+                new InvoicePrintDocument.DocumentCurrency(
+                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD,
+                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.EGP,
+                        new BigDecimal("48.3700000000"), true, new BigDecimal("967.40")));
+
+        DocumentPdfPage page = InvoicePdfLayout.of(dollars, key -> key.equals("invoice.pdf.currency.net.other")
+                ? "net in %s" : key);
+
+        assertEquals("USD", fields(page.details()).get("invoice.pdf.currency"));
+        Map<String, String> summary = fields(page.summary());
+        assertEquals("1 USD = 48.37 EGP", summary.get("invoice.pdf.currency.rate"));
+        assertEquals("967.40", summary.get("net in EGP"));
+        assertFalse(fields(InvoicePdfLayout.of(base, key -> key).details()).containsKey("invoice.pdf.currency"),
+                "a document in the base says nothing of currencies");
+    }
 }

@@ -81,7 +81,7 @@ public class PurchaseDao extends DocumentLineDao<Purchase> {
     public Object[] getData(Purchase purchase) throws DaoException {
         return new Object[]{purchase.getInvoiceNumber(), purchase.getItems().getId(), purchase.getUnitsType().getUnit_id()
                 , purchase.getQuantity(), purchase.getPrice(), purchase.getDiscount(), purchase.getUnitsType().getValue()
-                , purchase.getExpiration_date()};
+                , purchase.getExpiration_date(), purchase.getPriceForeign(), purchase.getDiscountForeign()};
     }
 
     @Override
@@ -126,6 +126,8 @@ public class PurchaseDao extends DocumentLineDao<Purchase> {
             if (date != null) {
                 purchase.setExpiration_date(date.toLocalDate());
             }
+            purchase.setPriceForeign(rs.getBigDecimal(ForeignLineColumns.PRICE));
+            purchase.setDiscountForeign(rs.getBigDecimal(ForeignLineColumns.DISCOUNT));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

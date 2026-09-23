@@ -44,6 +44,32 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
      */
     private int sourceLineId;
 
+    /**
+     * The unit price and the line discount as they were typed, in the document's currency, beside
+     * the base figures in {@link #price} and {@link #discount} (V83, docs/currency-plan.md §15 ق-د٣).
+     * Null on a line of a document written in the base - every line before V83, and every line of a
+     * party in the base - which is why these are plain values and not properties: nothing binds to
+     * them, the save writes them and the reopen and the paper read them.
+     */
+    private java.math.BigDecimal priceForeign;
+    private java.math.BigDecimal discountForeign;
+
+    public java.math.BigDecimal getPriceForeign() {
+        return priceForeign;
+    }
+
+    public void setPriceForeign(java.math.BigDecimal priceForeign) {
+        this.priceForeign = priceForeign;
+    }
+
+    public java.math.BigDecimal getDiscountForeign() {
+        return discountForeign;
+    }
+
+    public void setDiscountForeign(java.math.BigDecimal discountForeign) {
+        this.discountForeign = discountForeign;
+    }
+
     public int getId() {
         return id.get();
     }

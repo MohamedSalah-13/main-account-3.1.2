@@ -243,20 +243,25 @@ public final class PartyStatementQuery {
      * movement since. It is the same window over the same {@link #MOVEMENT_ORDER} as
      * {@link #pageSql}, so the figure on the paper is the figure on that row of the statement.
      * <p>
+     * Both readings of the row come from one window (V82): the balance in the base, and in the party's
+     * own currency - which is the one a document typed in that currency prints (V83, §15 ق-د٩). For a
+     * party in the base they are the same figure.
+     * <p>
      * Parameters in order: the party, the movement's {@code information} code, its number.
      * No row means the document is not in the ledger.
      */
     public static String balanceAfterMovementSql(PartyKind kind) {
         return """
-                SELECT r.running_balance
+                SELECT r.running_balance,
+                       r.running_balance_own
                 FROM (SELECT m.information,
                              m.account_num,
-                             SUM(m.purchase - m.discount - m.paid) OVER (
-                                 ORDER BY %2$s
-                                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                             ) AS running_balance
+                             SUM(m.purchase - m.discount - m.paid) OVER running AS running_balance,
+                             SUM(m.purchase_own - m.discount_own - m.paid_own) OVER running
+                                 AS running_balance_own
                       FROM %1$s m
-                      WHERE m.account_code = ?) r
+                      WHERE m.account_code = ?
+                      WINDOW running AS (ORDER BY %2$s ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)) r
                 WHERE r.information = ?
                   AND r.account_num = ?"""
                 .formatted(PartyLedgerSpec.of(kind).view(), MOVEMENT_ORDER);

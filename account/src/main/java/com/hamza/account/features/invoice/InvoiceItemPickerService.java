@@ -10,6 +10,7 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /** Resolves a catalog choice in the current invoice and warehouse context. */
 public final class InvoiceItemPickerService {
@@ -17,16 +18,33 @@ public final class InvoiceItemPickerService {
     private final DocumentType documentType;
     private final ItemLookup itemLookup;
     private final InvoiceItemSelectionService.ItemPriceResolver priceResolver;
+    private final Supplier<DocumentPricing> pricing;
 
     public InvoiceItemPickerService(DocumentType documentType,
                                     ItemsService itemsService,
                                     InvoiceItemSelectionService.ItemPriceResolver priceResolver) {
-        this(documentType, itemsService::getItemByItemIdAndStockId, priceResolver);
+        this(documentType, itemsService, priceResolver, () -> DocumentPricing.BASE);
+    }
+
+    /** @param pricing the currency the screen's figures are typed in (V83, docs/currency-plan.md §15 ق-د٧) */
+    public InvoiceItemPickerService(DocumentType documentType,
+                                    ItemsService itemsService,
+                                    InvoiceItemSelectionService.ItemPriceResolver priceResolver,
+                                    Supplier<DocumentPricing> pricing) {
+        this(documentType, itemsService::getItemByItemIdAndStockId, priceResolver, pricing);
     }
 
     InvoiceItemPickerService(DocumentType documentType,
                              ItemLookup itemLookup,
                              InvoiceItemSelectionService.ItemPriceResolver priceResolver) {
+        this(documentType, itemLookup, priceResolver, () -> DocumentPricing.BASE);
+    }
+
+    InvoiceItemPickerService(DocumentType documentType,
+                             ItemLookup itemLookup,
+                             InvoiceItemSelectionService.ItemPriceResolver priceResolver,
+                             Supplier<DocumentPricing> pricing) {
+        this.pricing = Objects.requireNonNull(pricing, "pricing");
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.itemLookup = Objects.requireNonNull(itemLookup, "itemLookup");
         this.priceResolver = Objects.requireNonNull(priceResolver, "priceResolver");
@@ -49,7 +67,7 @@ public final class InvoiceItemPickerService {
                 ? ItemUnits.buyPrice(item, unit, item.getBuyPrice())
                 : ItemUnits.sellPrice(item, unit, priceTier, itemPrice);
         return Optional.of(new InvoiceLineDraft(
-                item, unit, request.quantity(), price, 0, null));
+                item, unit, request.quantity(), pricing.get().fromBase(price), 0, null));
     }
 
     @FunctionalInterface

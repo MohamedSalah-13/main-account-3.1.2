@@ -3,8 +3,14 @@ package com.hamza.account.controller.invoice;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.company.CompanyService;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyService;
+import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.invoice.InvoicePrintCurrency;
 import com.hamza.account.features.invoice.InvoicePrintDocument;
 import com.hamza.account.features.invoice.InvoicePrintDocumentBuilder;
+import com.hamza.account.features.party.currency.PartyCurrencies;
+import com.hamza.account.features.party.statement.MovementBalance;
 import com.hamza.account.features.party.statement.PartyMovementKind;
 import com.hamza.account.features.party.statement.PartyStatementService;
 import com.hamza.account.finance.MoneyMath;
@@ -63,11 +69,40 @@ public class ShowInvoiceDetails {
         PartyStatementService statements = new PartyStatementService();
         InvoicePrintDocumentBuilder builder = new InvoicePrintDocumentBuilder(
                 ShowInvoiceDetails::letterhead,
-                (kind, partyId, isReturn, number) -> statements.balanceAfterMovement(kind, partyId,
-                        isReturn ? PartyMovementKind.RETURN : PartyMovementKind.INVOICE, number));
+                (kind, partyId, isReturn, number) -> {
+                    MovementBalance balance = balanceAfter(statements, kind, partyId, isReturn, number);
+                    return balance == null ? null : balance.base();
+                },
+                (kind, partyId, isReturn, number) -> {
+                    MovementBalance balance = balanceAfter(statements, kind, partyId, isReturn, number);
+                    return balance == null ? null : balance.own();
+                },
+                (documentType, number, partyId) -> InvoicePrintCurrency.read(PartyCurrencies.jdbc(),
+                        currencyCatalogue(), documentType, number, partyId));
         return builder.build(type, header.totals(), header.partyName(), header.partyId(),
                 header.delegateName(), header.sourceInvoiceNumber(), header.returnReason(),
                 lines, printedAt);
+    }
+
+    private static MovementBalance balanceAfter(PartyStatementService statements, PartyKind kind, int partyId,
+                                                boolean isReturn, int number) throws DaoException {
+        return statements.balanceAfterMovement(kind, partyId,
+                isReturn ? PartyMovementKind.RETURN : PartyMovementKind.INVOICE, number);
+    }
+
+    private static InvoicePrintCurrency.Catalogue currencyCatalogue() {
+        CurrencyService currencies = new CurrencyService();
+        return new InvoicePrintCurrency.Catalogue() {
+            @Override
+            public Currency find(int currencyId) throws DaoException {
+                return currencies.find(currencyId);
+            }
+
+            @Override
+            public Currency base() throws DaoException {
+                return currencies.base();
+            }
+        };
     }
 
     private static InvoicePrintDocument.Letterhead letterhead() throws DaoException {

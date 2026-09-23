@@ -37,10 +37,11 @@ public interface PartyStatementRepository {
     com.hamza.account.features.currency.Currency currencyOf(PartyKind kind, int partyId) throws DaoException;
 
     /**
-     * The party's running balance on one movement's row of the statement.
+     * The party's running balance on one movement's row of the statement, in the base and in its own
+     * currency.
      *
      * @return the balance straight after that movement, or null when it is not in the ledger
      */
-    java.math.BigDecimal balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
-                                              long number) throws DaoException;
+    MovementBalance balanceAfterMovement(PartyKind kind, int partyId, PartyMovementKind movement,
+                                         long number) throws DaoException;
 }

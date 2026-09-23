@@ -59,12 +59,52 @@ final class JdbcPartyCurrencies extends AbstractDao<Object> implements PartyCurr
                 try (ResultSet rs = statement.executeQuery()) {
                     return rs.next()
                             ? new StoredDocument(rs.getInt("party_id"),
-                                    rs.getDate("document_date").toLocalDate(), rs.getBigDecimal("exchange_rate"))
+                                    rs.getDate("document_date").toLocalDate(), rs.getBigDecimal("exchange_rate"),
+                                    (Integer) rs.getObject("currency_id", Integer.class))
                             : null;
                 }
             } catch (SQLException e) {
                 throw new DaoException("Could not read a document's translation", e);
             }
+        });
+    }
+
+    @Override
+    public ForeignHeader foreignHeader(DocumentType type, long number) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    PartyCurrencyQuery.foreignHeaderSql(type))) {
+                statement.setLong(1, number);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next()
+                            ? new ForeignHeader((Integer) rs.getObject("currency_id", Integer.class),
+                                    rs.getBigDecimal("exchange_rate"), rs.getBigDecimal("total_foreign"),
+                                    rs.getBigDecimal("discount_foreign"), rs.getBigDecimal("paid_foreign"))
+                            : null;
+                }
+            } catch (SQLException e) {
+                throw new DaoException("Could not read a document's figures in its party's currency", e);
+            }
+        });
+    }
+
+    @Override
+    public java.util.Map<Integer, WrittenLine> writtenLines(DocumentType type, long number) throws DaoException {
+        return withConnection(connection -> {
+            java.util.Map<Integer, WrittenLine> lines = new java.util.LinkedHashMap<>();
+            try (PreparedStatement statement = connection.prepareStatement(
+                    PartyCurrencyQuery.writtenLinesSql(type))) {
+                statement.setLong(1, number);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        lines.put(rs.getInt(1), new WrittenLine(rs.getBigDecimal("price_foreign"),
+                                rs.getBigDecimal("discount_foreign")));
+                    }
+                }
+            } catch (SQLException e) {
+                throw new DaoException("Could not read how a document's lines were typed", e);
+            }
+            return lines;
         });
     }
 
@@ -88,9 +128,10 @@ final class JdbcPartyCurrencies extends AbstractDao<Object> implements PartyCurr
     }
 
     @Override
-    public void writeDocument(DocumentType type, long number, DocumentTranslation translation)
-            throws DaoException {
+    public void writeDocument(DocumentType type, long number, Integer currencyId,
+                              DocumentTranslation translation) throws DaoException {
         executeUpdate(PartyCurrencyQuery.writeDocumentSql(type),
+                translation == null ? null : currencyId,
                 translation == null ? null : translation.rate(),
                 translation == null ? null : translation.total(),
                 translation == null ? null : translation.discount(),

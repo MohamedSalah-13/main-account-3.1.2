@@ -39,16 +39,46 @@ public final class InvoicePrintService {
             String printedAt,
             boolean receipt,
             DocumentSource document) throws DaoException {
-        List<ModelPrintInvoice> lines = source.stream()
-                .map(line -> new ModelPrintInvoice(
-                        line.getItems().getNameItem(), line.getItems().getBarcode(),
-                        line.getUnitsType().getUnit_name(), line.getPrice(), line.getQuantity(),
-                        line.getTotal(), line.getDiscount(),
-                        MoneyMath.asDouble(MoneyMath.subtract(
-                                MoneyMath.decimal(line.getTotal()),
-                                MoneyMath.decimal(line.getDiscount())))))
-                .toList();
+        List<ModelPrintInvoice> lines = source.stream().map(InvoicePrintService::asShown).toList();
         return new InvoicePrintRequest(lines, printedAt, receipt, document.build(lines));
+    }
+
+    /**
+     * The same, for lines read back from the database rather than off an invoice screen: a line of a
+     * document typed in its party's currency prints what was typed on it, not the base it was stored at -
+     * the header prints what was typed too (V83, docs/currency-plan.md §15 ق-د٩). A line with nothing typed
+     * on it prints as it is.
+     */
+    public <T extends BasePurchasesAndSales> InvoicePrintRequest prepareStored(
+            List<T> source,
+            String printedAt,
+            boolean receipt,
+            DocumentSource document) throws DaoException {
+        List<ModelPrintInvoice> lines = source.stream().map(InvoicePrintService::asTyped).toList();
+        return new InvoicePrintRequest(lines, printedAt, receipt, document.build(lines));
+    }
+
+    private static ModelPrintInvoice asShown(BasePurchasesAndSales line) {
+        return printed(line, line.getPrice(), line.getTotal(), line.getDiscount());
+    }
+
+    static ModelPrintInvoice asTyped(BasePurchasesAndSales line) {
+        if (line.getPriceForeign() == null) {
+            return asShown(line);
+        }
+        double discount = line.getDiscountForeign() == null ? 0 : line.getDiscountForeign().doubleValue();
+        return printed(line, line.getPriceForeign().doubleValue(),
+                MoneyMath.asDouble(MoneyMath.multiply(line.getQuantity(), line.getPriceForeign().doubleValue())),
+                discount);
+    }
+
+    private static ModelPrintInvoice printed(BasePurchasesAndSales line, double price, double total,
+                                             double discount) {
+        return new ModelPrintInvoice(
+                line.getItems().getNameItem(), line.getItems().getBarcode(),
+                line.getUnitsType().getUnit_name(), price, line.getQuantity(),
+                total, discount,
+                MoneyMath.asDouble(MoneyMath.subtract(MoneyMath.decimal(total), MoneyMath.decimal(discount))));
     }
 
     /**

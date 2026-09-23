@@ -115,6 +115,8 @@ public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
             if (date != null) {
                 salesReturn.setExpiration_date(date.toLocalDate());
             }
+            salesReturn.setPriceForeign(resultSet.getBigDecimal(ForeignLineColumns.PRICE));
+            salesReturn.setDiscountForeign(resultSet.getBigDecimal(ForeignLineColumns.DISCOUNT));
 
 
         } catch (SQLException e) {
@@ -150,7 +152,8 @@ public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
                 , salesReturn.getTotal_buy_price(), salesReturn.getTotal_profit()
                 , salesReturn.getDiscount()
                 , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()
-                , sourceLineIdOrNull(salesReturn)};
+                , sourceLineIdOrNull(salesReturn)
+                , salesReturn.getPriceForeign(), salesReturn.getDiscountForeign()};
     }
 
     private void setData(PreparedStatement statement, Sales_Return salesReturn) throws SQLException {

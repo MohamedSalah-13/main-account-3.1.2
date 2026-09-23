@@ -48,7 +48,22 @@ public final class PartyCurrencyQuery {
     public static String storedDocumentSql(DocumentType type) {
         DocumentTableSpec spec = DocumentTableSpec.of(type);
         return "SELECT d." + spec.party() + " AS party_id, d." + spec.dateColumn()
-                + " AS document_date, d.exchange_rate FROM " + spec.table() + " d WHERE d." + spec.key() + " = ?";
+                + " AS document_date, d.exchange_rate, d.currency_id FROM " + spec.table()
+                + " d WHERE d." + spec.key() + " = ?";
+    }
+
+    /** A document's header in its party's currency - typed (V83) or translated (V82); nothing for the base. */
+    public static String foreignHeaderSql(DocumentType type) {
+        DocumentTableSpec spec = DocumentTableSpec.of(type);
+        return "SELECT d.currency_id, d.exchange_rate, d.total_foreign, d.discount_foreign, d.paid_foreign FROM "
+                + spec.table() + " d WHERE d." + spec.key() + " = ? AND d.exchange_rate IS NOT NULL";
+    }
+
+    /** The lines of a document typed in its party's currency, each with what was typed on it (V83). */
+    public static String writtenLinesSql(DocumentType type) {
+        DocumentTableSpec spec = DocumentTableSpec.of(type);
+        return "SELECT " + DocumentTableSpec.LINE_KEY + ", price_foreign, discount_foreign FROM " + spec.lineTable()
+                + " WHERE " + DocumentTableSpec.LINE_DOCUMENT + " = ? AND price_foreign IS NOT NULL";
     }
 
     /** The three base figures a document's header was just written with, to translate. */
@@ -58,10 +73,13 @@ public final class PartyCurrencyQuery {
                 + " d WHERE d." + spec.key() + " = ?";
     }
 
-    /** A document's translation - all four, or four {@code NULL}s. */
+    /**
+     * A document's figures in its party's currency - the currency it was written in (V83, NULL for one
+     * translated from the base), the rate and the three amounts, or five {@code NULL}s.
+     */
     public static String writeDocumentSql(DocumentType type) {
         DocumentTableSpec spec = DocumentTableSpec.of(type);
-        return "UPDATE " + spec.table() + " SET exchange_rate = ?, total_foreign = ?, discount_foreign = ?,"
-                + " paid_foreign = ? WHERE " + spec.key() + " = ?";
+        return "UPDATE " + spec.table() + " SET currency_id = ?, exchange_rate = ?, total_foreign = ?,"
+                + " discount_foreign = ?, paid_foreign = ? WHERE " + spec.key() + " = ?";
     }
 }

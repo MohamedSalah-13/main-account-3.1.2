@@ -42,7 +42,13 @@ public record InvoiceSaveCommand(
         /** Required audit explanation when an existing shift-owned invoice is changed. */
         String correctionReason,
         /** Database version read when an existing invoice was opened for editing. */
-        LocalDateTime expectedUpdatedAt) {
+        LocalDateTime expectedUpdatedAt,
+        /**
+         * The currency the lines, the discount and the cash were typed in (V83), or {@code null} for the
+         * base. The save refuses one that is not the document's own rather than converting it -
+         * {@code InvoicePartyCurrency.rateFor}.
+         */
+        Integer documentCurrencyId) {
 
     public InvoiceSaveCommand {
         invoiceDiscount = MoneyMath.money(invoiceDiscount);
@@ -161,6 +167,18 @@ public record InvoiceSaveCommand(
                 enteredPaid, notes, partyId, partyName, treasuryName, delegateName,
                 allowInsufficientStock, sourceInvoiceNumber, returnReason, lines,
                 stockId, correctionReason, null);
+    }
+
+    /** Every caller before V83: figures typed in the base. */
+    public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate, InvoiceType invoiceType,
+                              BigDecimal invoiceDiscount, DiscountType discountType, BigDecimal enteredPaid,
+                              String notes, int partyId, String partyName, String treasuryName,
+                              String delegateName, boolean allowInsufficientStock, int sourceInvoiceNumber,
+                              ReturnReason returnReason, List<? extends BasePurchasesAndSales> lines,
+                              int stockId, String correctionReason, LocalDateTime expectedUpdatedAt) {
+        this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount, discountType, enteredPaid,
+                notes, partyId, partyName, treasuryName, delegateName, allowInsufficientStock,
+                sourceInvoiceNumber, returnReason, lines, stockId, correctionReason, expectedUpdatedAt, null);
     }
 
     public boolean updating() {

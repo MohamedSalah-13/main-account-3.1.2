@@ -35,17 +35,26 @@ class PartyCurrencyQueryTest {
     @Test
     @DisplayName("a document's translation, each table with its own key, party and cash column")
     void aDocument() {
-        assertEquals("SELECT d.sup_code AS party_id, d.invoice_date AS document_date, d.exchange_rate"
-                + " FROM total_sales d WHERE d.invoice_number = ?", PartyCurrencyQuery.storedDocumentSql(DocumentType.SALES));
-        assertEquals("SELECT d.sup_id AS party_id, d.invoice_date AS document_date, d.exchange_rate"
-                + " FROM total_buy_re d WHERE d.id = ?", PartyCurrencyQuery.storedDocumentSql(DocumentType.PURCHASE_RETURN));
+        assertEquals("SELECT d.sup_code AS party_id, d.invoice_date AS document_date, d.exchange_rate,"
+                + " d.currency_id FROM total_sales d WHERE d.invoice_number = ?",
+                PartyCurrencyQuery.storedDocumentSql(DocumentType.SALES));
+        assertEquals("SELECT d.sup_id AS party_id, d.invoice_date AS document_date, d.exchange_rate,"
+                + " d.currency_id FROM total_buy_re d WHERE d.id = ?",
+                PartyCurrencyQuery.storedDocumentSql(DocumentType.PURCHASE_RETURN));
+        assertEquals("SELECT d.currency_id, d.exchange_rate, d.total_foreign, d.discount_foreign, d.paid_foreign"
+                + " FROM total_buy d WHERE d.invoice_number = ? AND d.exchange_rate IS NOT NULL",
+                PartyCurrencyQuery.foreignHeaderSql(DocumentType.PURCHASE));
+        assertEquals("SELECT id, price_foreign, discount_foreign FROM sales_re WHERE invoice_number = ?"
+                + " AND price_foreign IS NOT NULL", PartyCurrencyQuery.writtenLinesSql(DocumentType.SALES_RETURN));
         assertEquals("SELECT d.total, d.discount, d.paid_from_treasury AS paid FROM total_sales_re d WHERE d.id = ?",
                 PartyCurrencyQuery.documentAmountsSql(DocumentType.SALES_RETURN));
         assertEquals("SELECT d.total, d.discount, d.paid_up AS paid FROM total_buy d WHERE d.invoice_number = ?",
                 PartyCurrencyQuery.documentAmountsSql(DocumentType.PURCHASE));
-        assertEquals("UPDATE total_sales SET exchange_rate = ?, total_foreign = ?, discount_foreign = ?,"
-                + " paid_foreign = ? WHERE invoice_number = ?", PartyCurrencyQuery.writeDocumentSql(DocumentType.SALES));
-        assertEquals("UPDATE total_buy_re SET exchange_rate = ?, total_foreign = ?, discount_foreign = ?,"
-                + " paid_foreign = ? WHERE id = ?", PartyCurrencyQuery.writeDocumentSql(DocumentType.PURCHASE_RETURN));
+        assertEquals("UPDATE total_sales SET currency_id = ?, exchange_rate = ?, total_foreign = ?,"
+                + " discount_foreign = ?, paid_foreign = ? WHERE invoice_number = ?",
+                PartyCurrencyQuery.writeDocumentSql(DocumentType.SALES));
+        assertEquals("UPDATE total_buy_re SET currency_id = ?, exchange_rate = ?, total_foreign = ?,"
+                + " discount_foreign = ?, paid_foreign = ? WHERE id = ?",
+                PartyCurrencyQuery.writeDocumentSql(DocumentType.PURCHASE_RETURN));
     }
 }

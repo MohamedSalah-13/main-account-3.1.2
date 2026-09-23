@@ -112,6 +112,8 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
             if (date != null) {
                 purchaseReturn.setExpiration_date(date.toLocalDate());
             }
+            purchaseReturn.setPriceForeign(resultSet.getBigDecimal(ForeignLineColumns.PRICE));
+            purchaseReturn.setDiscountForeign(resultSet.getBigDecimal(ForeignLineColumns.DISCOUNT));
 
         } catch (SQLException e) {
             throw new DaoException(e);
@@ -142,7 +144,8 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
         return new Object[]{purchaseReturn.getInvoiceNumber(), purchaseReturn.getItems().getId()
                 , purchaseReturn.getUnitsType().getUnit_id(), purchaseReturn.getQuantity(), purchaseReturn.getPrice(), purchaseReturn.getDiscount()
                 , purchaseReturn.getUnitsType().getValue(), purchaseReturn.getExpiration_date()
-                , sourceLineIdOrNull(purchaseReturn)};
+                , sourceLineIdOrNull(purchaseReturn)
+                , purchaseReturn.getPriceForeign(), purchaseReturn.getDiscountForeign()};
     }
 
     private void setData(PreparedStatement statement, Purchase_Return purchaseReturn) throws SQLException {

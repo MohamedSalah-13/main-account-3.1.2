@@ -39,6 +39,7 @@ public final class InvoiceLineAssembler {
                     row.getExpiration_date());
             preserveHistoricalCost(row, detached);
             preserveSourceLine(row, detached);
+            preserveForeignFigures(row, detached);
             result.add(detached);
         }
         return List.copyOf(result);
@@ -85,6 +86,17 @@ public final class InvoiceLineAssembler {
     static void preserveSourceLine(BasePurchasesAndSales source,
                                    BasePurchasesAndSales target) {
         target.setSourceLineId(source.getSourceLineId());
+    }
+
+    /**
+     * Carries a line's price and discount as typed in the document's currency (V83) onto the detached
+     * row, for the reason {@link #preserveSourceLine} carries the source line: {@link LineFactory} is
+     * the seam all four families share, and only a document in a foreign currency has these.
+     */
+    static void preserveForeignFigures(BasePurchasesAndSales source,
+                                       BasePurchasesAndSales target) {
+        target.setPriceForeign(source.getPriceForeign());
+        target.setDiscountForeign(source.getDiscountForeign());
     }
 
     @FunctionalInterface

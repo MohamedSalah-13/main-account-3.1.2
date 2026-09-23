@@ -1,6 +1,7 @@
 package com.hamza.account.features.invoice;
 
 import com.hamza.account.controller.model.ModelPrintInvoice;
+import com.hamza.account.document.DocumentLedgerEffect;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.finance.MoneyMath;
@@ -46,17 +47,43 @@ public final class InvoicePrintDocumentBuilder {
         BigDecimal balanceAfter(PartyKind kind, int partyId, boolean isReturn, int number) throws DaoException;
     }
 
+    /**
+     * How the document stands in its party's currency, or null for a document in the base - see
+     * {@link InvoicePrintCurrency}.
+     */
+    @FunctionalInterface
+    public interface CurrencySource {
+        CurrencySource NONE = (type, number, partyId) -> null;
+
+        InvoicePrintCurrency.Figures load(DocumentType type, int number, int partyId) throws DaoException;
+    }
+
     private final LetterheadSource letterhead;
     private final BalanceSource balance;
+    private final BalanceSource ownBalance;
+    private final CurrencySource currency;
 
     public InvoicePrintDocumentBuilder(LetterheadSource letterhead, BalanceSource balance) {
+        this(letterhead, balance, balance, CurrencySource.NONE);
+    }
+
+    /**
+     * @param balance    the party's running balance in the base
+     * @param ownBalance the same in the party's own currency - what a document typed in it prints
+     *                   (V83, docs/currency-plan.md §15 ق-د٩)
+     */
+    public InvoicePrintDocumentBuilder(LetterheadSource letterhead, BalanceSource balance, BalanceSource ownBalance,
+                                       CurrencySource currency) {
         this.letterhead = Objects.requireNonNull(letterhead, "letterhead");
         this.balance = Objects.requireNonNull(balance, "balance");
+        this.ownBalance = Objects.requireNonNull(ownBalance, "ownBalance");
+        this.currency = Objects.requireNonNull(currency, "currency");
     }
 
     /**
      * @param totals the saved header, read back after the save - never the screen's fields
-     * @param lines  the document's lines, already captured for printing
+     * @param lines  the document's lines, already captured for printing - in the currency the document
+     *               was typed in
      */
     public InvoicePrintDocument build(DocumentType type, BaseTotals totals, String partyName, int partyId,
                                       String delegateName, int sourceInvoiceNumber, String returnReason,
@@ -64,15 +91,38 @@ public final class InvoicePrintDocumentBuilder {
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(totals, "totals");
         String stockName = totals.getStockData() == null ? "" : totals.getStockData().getName();
+        BigDecimal total = MoneyMath.decimal(totals.getTotal());
+        BigDecimal discount = MoneyMath.decimal(totals.getDiscount());
+        BigDecimal paid = MoneyMath.decimal(totals.getPaid());
+
+        // A document typed in its party's currency prints what was typed, and says what it came to in the
+        // base; one translated prints the base, and says what it came to in the party's currency.
+        InvoicePrintCurrency.Figures foreign = currency.load(type, totals.getId(), partyId);
+        InvoicePrintDocument.DocumentCurrency documentCurrency = null;
+        if (foreign != null) {
+            BigDecimal baseNet = new DocumentLedgerEffect(type, total, discount, paid).net();
+            if (foreign.written()) {
+                documentCurrency = new InvoicePrintDocument.DocumentCurrency(foreign.currency(), foreign.base(),
+                        foreign.rate(), true, baseNet);
+                total = MoneyMath.money(foreign.total());
+                discount = MoneyMath.money(foreign.discount());
+                paid = MoneyMath.money(foreign.paid());
+            } else {
+                // The translation is to the party's currency's own places - three for a dinar - so its net
+                // is not put through the base's two-place money arithmetic.
+                documentCurrency = new InvoicePrintDocument.DocumentCurrency(foreign.currency(), foreign.base(),
+                        foreign.rate(), false, foreign.total().subtract(foreign.discount()));
+            }
+        }
+
         InvoicePrintDocument withoutBalance = new InvoicePrintDocument(letterhead.load(), type,
                 totals.getId(), totals.getDate(), partyName, totals.getInvoiceType(), stockName,
                 type.hasDelegate() ? delegateName : "",
                 type.isReturn() ? sourceInvoiceNumber : 0,
                 type.isReturn() ? returnReason : "",
-                totals.getNotes(), lines,
-                MoneyMath.decimal(totals.getTotal()), MoneyMath.decimal(totals.getDiscount()),
-                MoneyMath.decimal(totals.getPaid()), printedAt, null);
-        InvoicePrintDocument.Balance partyBalance = balanceOf(withoutBalance, partyId);
+                totals.getNotes(), lines, total, discount, paid, printedAt, null, documentCurrency);
+        BalanceSource source = documentCurrency != null && documentCurrency.written() ? ownBalance : balance;
+        InvoicePrintDocument.Balance partyBalance = balanceOf(withoutBalance, partyId, source);
         return partyBalance == null ? withoutBalance : withBalance(withoutBalance, partyBalance);
     }
 
@@ -80,13 +130,14 @@ public final class InvoicePrintDocumentBuilder {
      * Only a deferred document prints a balance: a cash one moves nothing on the account, and a
      * balance on every till receipt is a customer's debt read out to the queue behind them.
      */
-    private InvoicePrintDocument.Balance balanceOf(InvoicePrintDocument document, int partyId) throws DaoException {
+    private InvoicePrintDocument.Balance balanceOf(InvoicePrintDocument document, int partyId, BalanceSource source)
+            throws DaoException {
         if (!document.deferred() || partyId <= 0) {
             return null;
         }
         BigDecimal after;
         try {
-            after = balance.balanceAfter(document.type().partyKind(), partyId,
+            after = source.balanceAfter(document.type().partyKind(), partyId,
                     document.type().isReturn(), document.number());
         } catch (BusinessRuleException refused) {
             log.info("Invoice {} printed without the party balance: the reader may not see the account",
@@ -104,6 +155,6 @@ public final class InvoicePrintDocumentBuilder {
     private static InvoicePrintDocument withBalance(InvoicePrintDocument d, InvoicePrintDocument.Balance b) {
         return new InvoicePrintDocument(d.letterhead(), d.type(), d.number(), d.date(), d.partyName(),
                 d.invoiceType(), d.stockName(), d.delegateName(), d.sourceInvoiceNumber(), d.returnReason(),
-                d.notes(), d.lines(), d.total(), d.discount(), d.paid(), d.printedAt(), b);
+                d.notes(), d.lines(), d.total(), d.discount(), d.paid(), d.printedAt(), b, d.currency());
     }
 }

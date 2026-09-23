@@ -2,6 +2,7 @@ package com.hamza.account.features.invoice;
 
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.currency.CurrencyFormat;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.export.DocumentPdfPage;
 import com.hamza.account.finance.MoneyMath;
@@ -27,6 +28,9 @@ import java.util.List;
  *   <li><b>What it comes to</b> - the total, the additional discount when there is one, the net,
  *       what was paid (refunded, on a return) and what is left; and on a deferred document the
  *       party's balance before and after it.</li>
+ *   <li><b>Its currency</b>, for a party in a foreign one (V83): the figures are in the currency the
+ *       document was typed in, and the paper names it, the rate it was written at, and what it came to
+ *       in the base - or, for one written in the base and translated, in the party's currency.</li>
  * </ul>
  */
 public final class InvoicePdfLayout {
@@ -133,6 +137,10 @@ public final class InvoicePdfLayout {
         if (!document.returnReason().isBlank()) {
             details.add(DocumentPdfPage.Field.of(labels.text("invoice.pdf.return.reason"), document.returnReason()));
         }
+        if (document.currency() != null) {
+            details.add(DocumentPdfPage.Field.of(labels.text("invoice.pdf.currency"),
+                    document.currency().figuresIn().code()));
+        }
         return details;
     }
 
@@ -157,7 +165,27 @@ public final class InvoicePdfLayout {
             summary.add(DocumentPdfPage.Field.emphasised(labels.text("invoice.pdf.balance.after"),
                     Columns.money(document.balance().after())));
         }
+        for (String[] row : currencyRows(document.currency(), labels)) {
+            summary.add(DocumentPdfPage.Field.of(row[0], row[1]));
+        }
         return summary;
+    }
+
+    /**
+     * The rate a document of a party in a foreign currency was written at, and what it came to in the
+     * currency its figures are not in (V83, docs/currency-plan.md §15 ق-د٩) - label and value, shared with
+     * the receipt. None for a document in the base.
+     */
+    static List<String[]> currencyRows(InvoicePrintDocument.DocumentCurrency currency, Labels labels) {
+        if (currency == null) {
+            return List.of();
+        }
+        return List.of(
+                new String[]{labels.text("invoice.pdf.currency.rate"),
+                        "1 " + currency.currency().code() + " = " + CurrencyFormat.rate(currency.rate())
+                                + " " + currency.base().code()},
+                new String[]{String.format(labels.text("invoice.pdf.currency.net.other"), currency.other().code()),
+                        CurrencyFormat.amount(currency.otherNet(), currency.other())});
     }
 
     private static String value(String value) {

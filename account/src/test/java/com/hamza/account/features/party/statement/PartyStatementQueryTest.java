@@ -186,15 +186,16 @@ class PartyStatementQueryTest {
     @EnumSource(PartyKind.class)
     void theBalanceAfterAMovementStatement(PartyKind kind) {
         assertEquals("""
-                        SELECT r.running_balance
+                        SELECT r.running_balance,
+                               r.running_balance_own
                         FROM (SELECT m.information,
                                      m.account_num,
-                                     SUM(m.purchase - m.discount - m.paid) OVER (
-                                         ORDER BY m.account_date, m.created_at, m.information, m.account_num
-                                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                                     ) AS running_balance
+                                     SUM(m.purchase - m.discount - m.paid) OVER running AS running_balance,
+                                     SUM(m.purchase_own - m.discount_own - m.paid_own) OVER running
+                                         AS running_balance_own
                               FROM %s m
-                              WHERE m.account_code = ?) r
+                              WHERE m.account_code = ?
+                              WINDOW running AS (ORDER BY m.account_date, m.created_at, m.information, m.account_num ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)) r
                         WHERE r.information = ?
                           AND r.account_num = ?""".formatted(PartyLedgerSpec.of(kind).view()),
                 PartyStatementQuery.balanceAfterMovementSql(kind));

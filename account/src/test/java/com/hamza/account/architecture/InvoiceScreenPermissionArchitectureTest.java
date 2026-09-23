@@ -79,7 +79,7 @@ class InvoiceScreenPermissionArchitectureTest {
 
         // A scan that resolves nothing passes everything; these three are the combos.
         assertTrue(resolved.containsAll(List.of("StockService.stocksForPicker",
-                        "TreasuryService.getActiveBaseCurrencyTreasuries", "EmployeeService.delegates")),
+                        "TreasuryService.getActiveTreasuriesTaking", "EmployeeService.delegates")),
                 "The scan no longer finds the invoice screen's three combo reads, so it is "
                         + "checking nothing. Resolved: " + resolved);
     }
