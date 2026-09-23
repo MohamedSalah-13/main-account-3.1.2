@@ -2534,6 +2534,45 @@ FXML screen, `TableDataReports`/`TableDataReportsDao` and its two fixed-column w
   holds the year to the statement's own figures. Seen on a demo schema at 1366x768 and 1920x1080, in
   Arabic and English, light and dark, the drawer, the full view and both PDFs.
 
+### The profit and loss statement
+
+`features/profitloss/statement` and `ProfitLossController` (the sidebar's «الأرباح والخسائر»), built in
+code; `profit-loss.fxml` and `ReportExportService.exportProfitLossReport` are gone. Rebuilt 2026-09-23.
+
+- **Every figure is the statement's own days, summed.** `ProfitLossReportService` reads
+  `ProfitLossService.load` once over both periods - which asks `reports.show.profit` before anything
+  else is read - and splits the days between them. The cards, the table's rows and the statement's
+  subtotals and results are those sums, so they cannot disagree with each other or with the yearly
+  report. `ProfitLossFigures` and `DailyProfitSource` moved up from `yearly` for both to share.
+- **The statement's lines explain the figures and never replace them** (`ProfitLossStatement`). Sales,
+  invoice discounts and returns come from the headers, the cost of what was sold and what came back from
+  the lines, the expenses by main heading (sub-headings rolled in) - all through
+  `ProfitLossStatementQuery`, whose arithmetic is `document_profit`'s and whose bounds sit inside each
+  branch (not the view: it groups the whole `sales` table first). **Every deduction is written negative**,
+  so a section adds up to its subtotal by addition; where lines and figure disagree, a line
+  ("فرق لا تفسره البنود") says by how much. A deduction is compared by its size (more spent is a rise)
+  and a result by its sign.
+- **The period before is counted in months when the period starts on the 1st** (`ProfitLossPeriod`):
+  1-23 September is set against 1-23 August, a whole month against the whole month before; otherwise the
+  same number of days straight before. "The same period last year" goes back whole years until it no
+  longer overlaps itself - a period longer than a year did, which the test found.
+- **Stock count and till differences are shown under the net profit and not counted in it** - the
+  owner's decision (`OutsideProfitFigures`). A posted count's lines (`StockCountHistoryQuery.DIFFERENCE`,
+  now public) are valued at the item's buy price **today**, since a count line keeps no cost; a till's is
+  its close snapshot's `difference_amount` (counted less expected), dated by `close_time`. No screen's
+  profit moved. Counting them in the profit is a decision for every profit screen at once.
+- **A row opens what it is made of** - its invoices, returns and expenses - in a `RowDetailDrawer`
+  (`ProfitLossReportService.movements`, which asks the permission itself). The movements of a row add up
+  to it; a return is signed against the sales.
+- **The paper is the statement above the table** (`PdfExportService.exportStatementReport` over a new
+  `StatementPdfLayout`: headings across the page, lines indented, subtotals ruled, results on the band);
+  the spreadsheet is one sheet with both (`ProfitLossExcelWriter`).
+- `ProfitLossStatementDatabaseAcceptanceTest` (gated, scratch schema, five cases, green twice) works
+  September 2025 out by hand, holds the rows and cards to the statement's days for every grouping and
+  the movements to their row. Seen on a demo schema at 1366x768 in Arabic and English, light and dark,
+  with the drawer open, and its PDF rendered. **Not seen:** the direct print, the Excel file opened, and
+  a reader without the key on screen.
+
 ### Printed reports
 
 The `.jrxml` templates live in **`reports/` at the repository root**, and `Configs.FILE_REPORTS`

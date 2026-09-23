@@ -1,5 +1,6 @@
 package com.hamza.account.features.profitloss.yearly;
 
+import com.hamza.account.features.profitloss.ProfitLossFigures;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -16,13 +17,13 @@ import java.util.Optional;
  * with nothing in it is not the worst month, it is a month with nothing in it. With fewer than two such
  * months there is nothing to compare, and "the worst month" is absent rather than the best one twice.</p>
  */
-public record YearlySummary(MonthFigures current, MonthFigures previous, MonthBreakdown breakdown,
+public record YearlySummary(ProfitLossFigures current, ProfitLossFigures previous, MonthBreakdown breakdown,
                             Optional<YearlyReportRow> best, Optional<YearlyReportRow> worst,
                             int activeMonths, BigDecimal unexplainedSales) {
 
     static YearlySummary of(List<YearlyReportRow> rows) {
-        MonthFigures current = MonthFigures.ZERO;
-        MonthFigures previous = MonthFigures.ZERO;
+        ProfitLossFigures current = ProfitLossFigures.ZERO;
+        ProfitLossFigures previous = ProfitLossFigures.ZERO;
         MonthBreakdown breakdown = MonthBreakdown.empty(1);
         BigDecimal unexplained = BigDecimal.ZERO;
         for (YearlyReportRow row : rows) {
@@ -39,11 +40,11 @@ public record YearlySummary(MonthFigures current, MonthFigures previous, MonthBr
     }
 
     public Optional<BigDecimal> netSalesChange() {
-        return MonthFigures.change(current.netSales(), previous.netSales());
+        return ProfitLossFigures.change(current.netSales(), previous.netSales());
     }
 
     public Optional<BigDecimal> netProfitChange() {
-        return MonthFigures.change(current.netProfit(), previous.netProfit());
+        return ProfitLossFigures.change(current.netProfit(), previous.netProfit());
     }
 
     /** Whether the year before traded at all over the same dates - a comparison with nothing is not one. */

@@ -754,14 +754,73 @@
 
 /* Its cards stand on no party palette, and a stat value with no colour of its own came out dark on the
    dark theme's dark card. */
-.yearly-report .party-stat-card .stat-value {
+.yearly-report .party-stat-card .stat-value,
+.profit-loss .party-stat-card .stat-value {
     -fx-text-fill: -app-text-strong;
 }
 
 .party-stat-card .stat-value:negative-amount,
 .yearly-report .party-stat-card .stat-value:negative-amount,
+.profit-loss .party-stat-card .stat-value:negative-amount,
 .party-stat-card .stat-subtitle:negative-amount,
 .party-summary-bar .stat-value:negative-amount {
+    -fx-text-fill: -app-danger;
+}
+
+/* The profit and loss statement, read down the page: a section's heading on a tinted band, its lines
+   indented under it, the figure it adds up to ruled off, and a result - the gross and the net profit - on a
+   band of its own. A deduction is written negative so the page adds up, and is not a loss: only a result
+   below zero is red. */
+/* A page to read down, not a list to act on: tighter than a table of rows with buttons, so the whole
+   statement - its net profit included - is on a 768 screen with less scrolling. */
+.profit-loss .pl-statement .table-cell {
+    -fx-padding: 0.2em 0.545em;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-heading {
+    -fx-background-color: -app-primary-soft;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-heading .pl-caption {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-primary;
+}
+
+/* The two card titles over the statement and the table: the shared title's dark blue is lost on the dark
+   theme's dark card. */
+.profit-loss .section-title {
+    -fx-text-fill: -app-text-strong;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-subtotal .table-cell,
+.profit-loss .pl-statement .table-row-cell:pl-subtotal .pl-caption {
+    -fx-font-weight: bold;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-subtotal {
+    -fx-border-color: -app-border transparent transparent transparent;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-result {
+    -fx-background-color: -app-surface-2;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-result .table-cell,
+.profit-loss .pl-statement .table-row-cell:pl-result .pl-caption {
+    -fx-font-weight: bold;
+    -fx-font-size: 1.08em;
+    -fx-text-fill: -app-text-strong;
+}
+
+.profit-loss .pl-statement .table-row-cell .pl-caption {
+    -fx-text-fill: -app-text;
+}
+
+.profit-loss .pl-statement .table-row-cell .table-cell:negative-amount {
+    -fx-text-fill: -app-text;
+}
+
+.profit-loss .pl-statement .table-row-cell:pl-result .table-cell:negative-amount {
     -fx-text-fill: -app-danger;
 }
 

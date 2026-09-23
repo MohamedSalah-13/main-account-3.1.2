@@ -120,6 +120,52 @@ class PdfExportServiceLayoutTest {
     }
 
     /**
+     * A statement above its table: a section's heading, its lines and subtotal, a result on the band,
+     * each line of cells right to left - then the table of rows below all of it.
+     */
+    @Test
+    void aStatementPrintsItsLinesInOrderAndItsTableUnderneath() throws Exception {
+        String pdf = dir.resolve("statement.pdf").toString();
+        StatementPdfLayout statement = new StatementPdfLayout(new String[]{"101", "202", "303"},
+                new float[]{2, 1, 1}, List.of(
+                new StatementPdfLayout.Line(StatementPdfLayout.Style.HEADING, new String[]{"7001"}),
+                new StatementPdfLayout.Line(StatementPdfLayout.Style.ROW, new String[]{"111", "222", "333"}),
+                new StatementPdfLayout.Line(StatementPdfLayout.Style.SUBTOTAL, new String[]{"511", "522", "533"}),
+                new StatementPdfLayout.Line(StatementPdfLayout.Style.RESULT, new String[]{"611", "622", "633"})));
+        assertTrue(new PdfExportService().exportStatementReport(pdf, "1", "", statement,
+                new String[]{"801", "802"}, new float[]{1, 1}, List.<String[]>of(new String[]{"811", "812"}),
+                new String[]{"911", "912"}, PageSize.A4));
+
+        Set<String> wanted = Set.of("101", "202", "303", "7001", "111", "222", "333", "511", "522", "533",
+                "611", "622", "633", "801", "802", "811", "812", "911", "912");
+        Map<String, Float> x = textPositions(pdf, wanted);
+        Map<String, Float> y = textPositions(pdf, wanted, 1);
+
+        assertOrderedRightToLeft(x, "101", "202", "303");
+        assertOrderedRightToLeft(x, "111", "222", "333");
+        assertOrderedRightToLeft(x, "511", "522", "533");
+        assertOrderedRightToLeft(x, "611", "622", "633");
+        assertTrue(x.get("811") > x.get("812") && x.get("911") > x.get("912"), "the table too: " + x);
+
+        String[] topToBottom = {"101", "7001", "111", "511", "611", "801", "811", "911"};
+        for (int i = 1; i < topToBottom.length; i++) {
+            assertNotNull(y.get(topToBottom[i]), topToBottom[i] + " was not found on the page: " + y);
+            assertTrue(y.get(topToBottom[i - 1]) > y.get(topToBottom[i]),
+                    topToBottom[i - 1] + " should print above " + topToBottom[i] + ": " + y);
+        }
+    }
+
+    @Test
+    void aStatementLineOfTheWrongWidthIsRefused() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> new StatementPdfLayout(
+                new String[]{"1", "2"}, new float[]{1, 1},
+                List.of(new StatementPdfLayout.Line(StatementPdfLayout.Style.ROW, new String[]{"1"}))));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> new StatementPdfLayout(
+                new String[]{"1", "2"}, new float[]{1, 1},
+                List.of(new StatementPdfLayout.Line(StatementPdfLayout.Style.HEADING, new String[]{"1", "2"}))));
+    }
+
+    /**
      * An invoice: an upright page whatever it holds - the report path turned an eight-column
      * table sideways - with its lines right to left, and the summary box on the left half under
      * them.

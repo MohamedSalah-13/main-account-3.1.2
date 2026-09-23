@@ -1,5 +1,7 @@
 package com.hamza.account.features.profitloss.yearly;
 
+import com.hamza.account.features.profitloss.DailyProfitSource;
+import com.hamza.account.features.profitloss.ProfitLossFigures;
 import com.hamza.account.features.profitloss.ProfitLossRow;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -41,18 +43,18 @@ public final class YearlyReportService {
         YearlyReportPeriod period = YearlyReportPeriod.of(year, LocalDate.now(clock));
         List<ProfitLossRow> days = profits.load(period.previousFrom(), period.to());
 
-        Map<YearMonth, MonthFigures> current = new HashMap<>();
-        Map<YearMonth, MonthFigures> previous = new HashMap<>();
+        Map<YearMonth, ProfitLossFigures> current = new HashMap<>();
+        Map<YearMonth, ProfitLossFigures> previous = new HashMap<>();
         Map<YearMonth, List<ProfitLossRow>> daysByMonth = new HashMap<>();
         for (ProfitLossRow day : days) {
             LocalDate date = day.date();
             YearMonth month = YearMonth.from(date);
             if (!date.isBefore(period.from()) && !date.isAfter(period.to())) {
-                current.merge(month, MonthFigures.ZERO.plus(day), MonthFigures::plus);
+                current.merge(month, ProfitLossFigures.ZERO.plus(day), ProfitLossFigures::plus);
                 daysByMonth.computeIfAbsent(month, ignored -> new ArrayList<>()).add(day);
             } else if (!date.isBefore(period.previousFrom()) && !date.isAfter(period.previousTo())) {
                 // Filed under this year's month, so each row carries its own month a year back.
-                previous.merge(month.plusYears(1), MonthFigures.ZERO.plus(day), MonthFigures::plus);
+                previous.merge(month.plusYears(1), ProfitLossFigures.ZERO.plus(day), ProfitLossFigures::plus);
             }
         }
 
@@ -66,8 +68,8 @@ public final class YearlyReportService {
             List<ProfitLossRow> monthDays = new ArrayList<>(daysByMonth.getOrDefault(month, List.of()));
             monthDays.sort(Comparator.comparing(ProfitLossRow::date));
             rows.add(new YearlyReportRow(month,
-                    current.getOrDefault(month, MonthFigures.ZERO),
-                    previous.getOrDefault(month, MonthFigures.ZERO),
+                    current.getOrDefault(month, ProfitLossFigures.ZERO),
+                    previous.getOrDefault(month, ProfitLossFigures.ZERO),
                     breakdownByMonth.getOrDefault(month.getMonthValue(), MonthBreakdown.empty(month.getMonthValue())),
                     monthDays));
         }
