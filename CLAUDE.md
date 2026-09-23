@@ -27,9 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,795 tests** with 298 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after a customer and a supplier learned to deal in their own currency
-and the yearly report became the profit and loss by the month. What is
+**3,865 tests** with 311 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the profit and loss became a statement, the returns reasons a
+report of their own and the two payments reports one screen. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -2628,7 +2628,7 @@ code; `profit-loss.fxml` and `ReportExportService.exportProfitLossReport` are go
   to it; a return is signed against the sales.
 - **The paper is the statement above the table** (`PdfExportService.exportStatementReport` over a new
   `StatementPdfLayout`: headings across the page, lines indented, subtotals ruled, results on the band);
-  the spreadsheet is one sheet with both (`ProfitLossExcelWriter`).
+  the spreadsheet is one sheet with both (`RowsExcelWriter`).
 - `ProfitLossStatementDatabaseAcceptanceTest` (gated, scratch schema, five cases, green twice) works
   September 2025 out by hand, holds the rows and cards to the statement's days for every grouping and
   the movements to their row. Seen on a demo schema at 1366x768 in Arabic and English, light and dark,
