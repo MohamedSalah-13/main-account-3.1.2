@@ -59,11 +59,23 @@ public final class PartyStatementQuery {
      * Parameters in order: the party and {@code from} for the opening seed, the party
      * again, {@code from} and {@code to} for the period, then the fifteen of
      * {@link #rowFilterSql(String)}, then the limit and the offset.
+     * <p>
+     * <b>Every figure comes twice</b> (V82, docs/currency-plan.md §14 ق-ج٨): in the base, and in
+     * the party's own currency - the view's {@code *_own} columns, which for a party in the base
+     * are the base figures themselves. The seed is read once for both, in {@code prior}, and the
+     * two running balances share one named window, so they cannot accumulate in two orders.
      */
     public static String pageSql(PartyKind kind) {
         String view = PartyLedgerSpec.of(kind).view();
         return """
-                WITH period AS (
+                WITH prior AS (
+                    SELECT COALESCE(SUM(p.purchase - p.discount - p.paid), 0) AS balance,
+                           COALESCE(SUM(p.purchase_own - p.discount_own - p.paid_own), 0) AS balance_own
+                    FROM %1$s p
+                    WHERE p.account_code = ?
+                      AND p.account_date < ?
+                ),
+                period AS (
                     SELECT m.account_num,
                            m.account_code,
                            m.account_date,
@@ -77,17 +89,18 @@ public final class PartyStatementQuery {
                            m.user_id,
                            m.numberInv,
                            m.notes,
-                           COALESCE((SELECT SUM(p.purchase - p.discount - p.paid)
-                                     FROM %1$s p
-                                     WHERE p.account_code = ?
-                                       AND p.account_date < ?), 0)
-                           + SUM(m.purchase - m.discount - m.paid) OVER (
-                               ORDER BY %2$s
-                               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                             ) AS running_balance
+                           m.purchase_own,
+                           m.discount_own,
+                           m.paid_own,
+                           prior.balance + SUM(m.purchase - m.discount - m.paid) OVER running
+                               AS running_balance,
+                           prior.balance_own + SUM(m.purchase_own - m.discount_own - m.paid_own) OVER running
+                               AS running_balance_own
                     FROM %1$s m
+                             CROSS JOIN prior
                     WHERE m.account_code = ?
                       AND m.account_date BETWEEN ? AND ?
+                    WINDOW running AS (ORDER BY %2$s ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
                 )
                 SELECT m.account_num,
                        m.account_code,
@@ -104,7 +117,11 @@ public final class PartyStatementQuery {
                        COALESCE(u.user_name, '') AS user_name,
                        m.numberInv,
                        m.notes,
-                       m.running_balance
+                       m.running_balance,
+                       m.purchase_own,
+                       m.discount_own,
+                       m.paid_own,
+                       m.running_balance_own
                 FROM period m
                          LEFT JOIN treasury t ON t.id = m.treasury_id
                          LEFT JOIN users u ON u.id = m.user_id
@@ -116,7 +133,8 @@ public final class PartyStatementQuery {
     }
 
     /**
-     * The opening balance, the shown rows' totals, and the closing balance, in one row.
+     * The opening balance, the shown rows' totals, and the closing balance, in one row - each twice,
+     * in the base and in the party's own currency (V82).
      * <p>
      * <b>The two balances answer the dates and nothing else; the two totals answer every
      * filter.</b> A balance is the sum of everything up to a day: narrowed by movement kind
@@ -124,6 +142,11 @@ public final class PartyStatementQuery {
      * sign for. {@code TreasuryStatements.SELECT_STATEMENT_SUMMARY} draws the same line for
      * the same reason, and {@code PartyStatementTest} pins this one — it is the first thing
      * a later filter will get wrong.
+     * <p>
+     * <b>Each movement is classified once</b> - brought forward, listed, before the end - and then
+     * summed in both currencies, so the two sets cannot answer two different questions and the
+     * period and the row filters are bound once, not once per total. The treasury statement's summary
+     * was rewritten the same way for the same reason.
      * <p>
      * The totals are summed as the two columns a reader sees rather than as one signed
      * change: {@code debit} takes what the party was charged plus any cash handed back to
@@ -139,31 +162,39 @@ public final class PartyStatementQuery {
      * {@code -Daccount.db.acceptance=true}, so a green {@code mvn clean test} does not run it.
      * A gated test is not a passing test: run it after touching either side.
      * <p>
-     * Parameters in order: {@code from} for the opening sum, then {@code from} and
-     * {@code to} plus the fifteen row filters for the debit total, the same seventeen again
-     * for the credit total, {@code to} for the closing sum, and the party last - thirty-seven
-     * in all, which {@code PartyStatementQueryTest} counts against what the repository binds.
+     * Parameters in order: {@code from} for what is brought forward, {@code from} and {@code to}
+     * plus the fifteen row filters for what is listed, {@code to} for the closing balance, and the
+     * party last - twenty in all, which {@code PartyStatementQueryTest} counts against what the
+     * repository binds.
      */
     public static String summarySql(PartyKind kind) {
-        String shown = "m.account_date BETWEEN ? AND ? AND " + rowFilterSql("m");
         return """
-                SELECT COALESCE(SUM(CASE WHEN m.account_date < ?
-                                         THEN m.purchase - m.discount - m.paid ELSE 0 END), 0)
+                SELECT COALESCE(SUM(CASE WHEN c.brought_forward THEN c.change_base ELSE 0 END), 0)
                            AS opening_balance,
-                       COALESCE(SUM(CASE WHEN %2$s
-                                         THEN GREATEST(m.purchase - m.discount, 0)
-                                              + GREATEST(-m.paid, 0) ELSE 0 END), 0)
-                           AS total_debit,
-                       COALESCE(SUM(CASE WHEN %2$s
-                                         THEN GREATEST(m.paid, 0)
-                                              + GREATEST(-(m.purchase - m.discount), 0) ELSE 0 END), 0)
-                           AS total_credit,
-                       COALESCE(SUM(CASE WHEN m.account_date <= ?
-                                         THEN m.purchase - m.discount - m.paid ELSE 0 END), 0)
-                           AS closing_balance
-                FROM %1$s m
-                WHERE m.account_code = ?"""
-                .formatted(PartyLedgerSpec.of(kind).view(), shown);
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.debit_base ELSE 0 END), 0) AS total_debit,
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.credit_base ELSE 0 END), 0) AS total_credit,
+                       COALESCE(SUM(CASE WHEN c.closing THEN c.change_base ELSE 0 END), 0)
+                           AS closing_balance,
+                       COALESCE(SUM(CASE WHEN c.brought_forward THEN c.change_own ELSE 0 END), 0)
+                           AS opening_balance_own,
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.debit_own ELSE 0 END), 0) AS total_debit_own,
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.credit_own ELSE 0 END), 0) AS total_credit_own,
+                       COALESCE(SUM(CASE WHEN c.closing THEN c.change_own ELSE 0 END), 0)
+                           AS closing_balance_own
+                FROM (SELECT m.account_date < ? AS brought_forward,
+                             (m.account_date BETWEEN ? AND ? AND %2$s) AS listed,
+                             m.account_date <= ? AS closing,
+                             m.purchase - m.discount - m.paid AS change_base,
+                             GREATEST(m.purchase - m.discount, 0) + GREATEST(-m.paid, 0) AS debit_base,
+                             GREATEST(m.paid, 0) + GREATEST(-(m.purchase - m.discount), 0) AS credit_base,
+                             m.purchase_own - m.discount_own - m.paid_own AS change_own,
+                             GREATEST(m.purchase_own - m.discount_own, 0) + GREATEST(-m.paid_own, 0)
+                                 AS debit_own,
+                             GREATEST(m.paid_own, 0) + GREATEST(-(m.purchase_own - m.discount_own), 0)
+                                 AS credit_own
+                      FROM %1$s m
+                      WHERE m.account_code = ?) c"""
+                .formatted(PartyLedgerSpec.of(kind).view(), rowFilterSql("m"));
     }
 
     /**
@@ -190,6 +221,16 @@ public final class PartyStatementQuery {
      */
     public static String currentBalanceSql(PartyKind kind) {
         return "SELECT COALESCE(SUM(m.purchase - m.discount - m.paid), 0) AS balance FROM "
+                + PartyLedgerSpec.of(kind).view() + " m WHERE m.account_code = ?";
+    }
+
+    /**
+     * The same, in the party's own currency (V82) - what the collection screen shows a customer who
+     * deals in dollars, and what a payment against it is typed beside. For a party in the base it is
+     * {@link #currentBalanceSql}'s figure.
+     */
+    public static String currentBalanceOwnSql(PartyKind kind) {
+        return "SELECT COALESCE(SUM(m.purchase_own - m.discount_own - m.paid_own), 0) AS balance FROM "
                 + PartyLedgerSpec.of(kind).view() + " m WHERE m.account_code = ?";
     }
 
@@ -237,6 +278,10 @@ public final class PartyStatementQuery {
      * the movement number, because "find invoice 4312" and "find that note about the
      * cheque" are the same box to a user.
      * <p>
+     * The amount bounds compare the party's own figures (V82): a statement of a dollar customer is
+     * read in dollars, so the amount somebody types into its filter is in dollars. For a party in the
+     * base those are the base figures, and nothing changed.
+     * <p>
      * Fifteen parameters: kinds ×2, treasury ×2, user ×2, minimum ×2, maximum ×2, text ×4
      * (the null test, the pattern, and the two exact number comparisons), deferred ×1.
      *
@@ -247,8 +292,8 @@ public final class PartyStatementQuery {
                 (? IS NULL OR FIND_IN_SET(%1$s.information, ?))
                       AND (? IS NULL OR %1$s.treasury_id = ?)
                       AND (? IS NULL OR %1$s.user_id = ?)
-                      AND (? IS NULL OR ABS(%1$s.purchase - %1$s.discount - %1$s.paid) >= ?)
-                      AND (? IS NULL OR ABS(%1$s.purchase - %1$s.discount - %1$s.paid) <= ?)
+                      AND (? IS NULL OR ABS(%1$s.purchase_own - %1$s.discount_own - %1$s.paid_own) >= ?)
+                      AND (? IS NULL OR ABS(%1$s.purchase_own - %1$s.discount_own - %1$s.paid_own) <= ?)
                       AND (? IS NULL OR %1$s.notes LIKE ? ESCAPE '!'
                            OR CAST(%1$s.numberInv AS CHAR) = ?
                            OR CAST(%1$s.account_num AS CHAR) = ?)

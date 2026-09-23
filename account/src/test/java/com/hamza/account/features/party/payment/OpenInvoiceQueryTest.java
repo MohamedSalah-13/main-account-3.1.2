@@ -24,12 +24,12 @@ class OpenInvoiceQueryTest {
                 SELECT open.invoice_number, open.invoice_date, open.net, open.settled, open.notes
                 FROM (SELECT d.invoice_number                         AS invoice_number,
                              d.invoice_date                         AS invoice_date,
-                             ROUND(d.total - d.discount, 2) AS net,
-                             ROUND(d.paid_up + COALESCE((SELECT SUM(m.paid - m.purchase)
+                             ROUND(COALESCE(d.total_foreign, d.total) - COALESCE(d.discount_foreign, d.discount), 3)                AS net,
+                             ROUND(COALESCE(d.paid_foreign, d.paid_up) + COALESCE((SELECT SUM(COALESCE(m.paid_foreign, m.paid) - COALESCE(m.purchase_foreign, m.purchase))
                                              FROM customers_accounts m
                                              WHERE m.account_code = ?
                                                AND m.numberInv = d.invoice_number
-                                               AND m.account_num <> ?), 0), 2)        AS settled,
+                                               AND m.account_num <> ?), 0), 3)         AS settled,
                              d.notes                        AS notes
                       FROM total_sales d
                       WHERE d.sup_code = ?) open
@@ -42,11 +42,11 @@ class OpenInvoiceQueryTest {
     @DisplayName("what one invoice still owes, character for character")
     void theRemainingStatement() {
         assertEquals("""
-                SELECT ROUND(d.total - d.discount - d.paid_up - COALESCE((SELECT SUM(m.paid - m.purchase)
+                SELECT ROUND(COALESCE(d.total_foreign, d.total) - COALESCE(d.discount_foreign, d.discount) - COALESCE(d.paid_foreign, d.paid_up) - COALESCE((SELECT SUM(COALESCE(m.paid_foreign, m.paid) - COALESCE(m.purchase_foreign, m.purchase))
                                              FROM customers_accounts m
                                              WHERE m.account_code = ?
                                                AND m.numberInv = d.invoice_number
-                                               AND m.account_num <> ?), 0), 2) AS remaining
+                                               AND m.account_num <> ?), 0), 3) AS remaining
                 FROM total_sales d
                 WHERE d.sup_code = ? AND d.invoice_number = ?""",
                 OpenInvoiceQuery.remainingOnInvoiceSql(PartyKind.CUSTOMER));

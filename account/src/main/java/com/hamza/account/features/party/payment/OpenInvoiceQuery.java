@@ -74,8 +74,8 @@ public final class OpenInvoiceQuery {
                 SELECT open.invoice_number, open.invoice_date, open.net, open.settled, open.notes
                 FROM (SELECT d.%2$s                         AS invoice_number,
                              d.%6$s                         AS invoice_date,
-                             ROUND(d.total - d.discount, 2) AS net,
-                             ROUND(d.%4$s + %9$s, 2)        AS settled,
+                             ROUND(%11$s, 3)                AS net,
+                             ROUND(%12$s + %9$s, 3)         AS settled,
                              d.notes                        AS notes
                       FROM %1$s d
                       WHERE d.%3$s = ?) open
@@ -84,7 +84,8 @@ public final class OpenInvoiceQuery {
                 LIMIT %10$d"""
                 .formatted(invoice.table(), invoice.key(), invoice.party(), invoice.paid(),
                         ledger.table(), invoice.dateColumn(), PartyLedgerSpec.PARTY,
-                        PartyLedgerSpec.KEY, allocatedSql(kind, "d." + invoice.key()), LIMIT);
+                        PartyLedgerSpec.KEY, allocatedSql(kind, "d." + invoice.key()), LIMIT,
+                        netOwn("d"), paidOwn("d", invoice));
     }
 
     /**
@@ -99,11 +100,26 @@ public final class OpenInvoiceQuery {
     public static String remainingOnInvoiceSql(PartyKind kind) {
         DocumentTableSpec invoice = DocumentTableSpec.of(invoiceType(kind));
         return """
-                SELECT ROUND(d.total - d.discount - d.%4$s - %5$s, 2) AS remaining
+                SELECT ROUND(%4$s - %6$s - %5$s, 3) AS remaining
                 FROM %1$s d
                 WHERE d.%3$s = ? AND d.%2$s = ?"""
-                .formatted(invoice.table(), invoice.key(), invoice.party(), invoice.paid(),
-                        allocatedSql(kind, "d." + invoice.key()));
+                .formatted(invoice.table(), invoice.key(), invoice.party(), netOwn("d"),
+                        allocatedSql(kind, "d." + invoice.key()), paidOwn("d", invoice));
+    }
+
+    /**
+     * What an invoice comes to after its discount, in its party's own currency (V82, ق-ج٦): the
+     * translated figures where the header carries them, the base ones where it does not - which is
+     * every document of a party in the base, so for those nothing changed.
+     */
+    static String netOwn(String alias) {
+        return "COALESCE(%1$s.total_foreign, %1$s.total) - COALESCE(%1$s.discount_foreign, %1$s.discount)"
+                .formatted(alias);
+    }
+
+    /** The cash an invoice carried when it was written, in its party's own currency. */
+    static String paidOwn(String alias, DocumentTableSpec invoice) {
+        return "COALESCE(%1$s.paid_foreign, %1$s.%2$s)".formatted(alias, invoice.paid());
     }
 
     /**
@@ -116,9 +132,11 @@ public final class OpenInvoiceQuery {
      * ledger and both may name an invoice.
      */
     private static String allocatedSql(PartyKind kind, String invoiceColumn) {
+        // In the party's own currency (V82, docs/currency-plan.md §14 ق-ج٦): the foreign figure where
+        // the row carries one, the base where it does not - which is every row of a party in the base.
         PartyLedgerSpec ledger = PartyLedgerSpec.of(kind);
         return """
-                COALESCE((SELECT SUM(m.paid - m.purchase)
+                COALESCE((SELECT SUM(COALESCE(m.paid_foreign, m.paid) - COALESCE(m.purchase_foreign, m.purchase))
                                              FROM %1$s m
                                              WHERE m.%2$s = ?
                                                AND m.numberInv = %4$s

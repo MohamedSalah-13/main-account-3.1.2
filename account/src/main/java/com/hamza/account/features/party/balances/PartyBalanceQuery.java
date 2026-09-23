@@ -32,6 +32,14 @@ public final class PartyBalanceQuery {
     private static final String BALANCE =
             "ROUND(SUM(CASE WHEN m.account_date <= ? THEN m.purchase - m.discount - m.paid ELSE 0 END), 2)";
 
+    /**
+     * The same three figures in the party's own currency (V82, docs/currency-plan.md §14 ق-ج٨): the
+     * view's {@code *_own} columns, which for a party in the base are its base figures. Kept to three
+     * places, the most any currency has.
+     */
+    private static final String BALANCE_OWN =
+            "ROUND(SUM(CASE WHEN m.account_date <= ? THEN m.purchase_own - m.discount_own - m.paid_own ELSE 0 END), 3)";
+
     private PartyBalanceQuery() {
     }
 
@@ -40,12 +48,18 @@ public final class PartyBalanceQuery {
      * <p>
      * Parameters in order: {@code asOf} for the balance, the period's two bounds for each of the two
      * movement totals, {@code asOf} again to exclude the future from the last-movement date, then the
-     * row filters - area, price tier, text ×3, the delegate when one is chosen - then the credit-limit
+     * balance and the two movement totals again in the party's own currency (V82), then the row filters - area, price tier, text ×3, the delegate when one is chosen - then the credit-limit
      * condition, the balance range,
      * the idle-days cut-off, and finally the limit and the offset.
      * <p>
      * The balance-range and balance-state conditions are in the {@code HAVING}, which is where they
-     * belong: they compare against an aggregate. (Unlike {@code OpenInvoiceQuery}, where the filter
+     * belong: they compare against an aggregate.
+     * <p>
+     * <b>Which balance each reads is a decision</b> (docs/currency-plan.md §14 ق-ج٨). The state and the
+     * credit limit read the party's own figure: they are about this party's debt, and a dollar account
+     * at zero is settled even when its book value is negative. The range and the order read the book
+     * value, the one figure every row has in one currency - "who owes more than ten thousand" compares
+     * parties with each other. (Unlike {@code OpenInvoiceQuery}, where the filter
      * compares two plain columns and a {@code HAVING} would have been MySQL-specific sloppiness.)
      */
     public static String pageSql(PartyBalanceFilter filter) {
@@ -69,7 +83,7 @@ public final class PartyBalanceQuery {
                        COALESCE(SUM(GREATEST(grouped.balance, 0)), 0)   AS total_owed,
                        COALESCE(SUM(GREATEST(-grouped.balance, 0)), 0)  AS total_in_credit,
                        COALESCE(SUM(CASE WHEN grouped.credit_limit > 0
-                                          AND grouped.balance > grouped.credit_limit
+                                          AND grouped.balance_own > grouped.credit_limit
                                          THEN 1 ELSE 0 END), 0)         AS over_limit
                 FROM (%s%s) grouped"""
                 .formatted(select(filter), havingSql(filter));
@@ -108,17 +122,27 @@ public final class PartyBalanceQuery {
                        ROUND(SUM(CASE WHEN m.account_date BETWEEN ? AND ?
                                       THEN GREATEST(m.paid, 0)
                                            + GREATEST(-(m.purchase - m.discount), 0) ELSE 0 END), 2) AS period_credit,
-                       MAX(CASE WHEN m.account_date <= ? THEN m.account_date END) AS last_movement
+                       MAX(CASE WHEN m.account_date <= ? THEN m.account_date END) AS last_movement,
+                       %11$s                                         AS balance_own,
+                       ROUND(SUM(CASE WHEN m.account_date BETWEEN ? AND ?
+                                      THEN GREATEST(m.purchase_own - m.discount_own, 0)
+                                           + GREATEST(-m.paid_own, 0) ELSE 0 END), 3) AS period_debit_own,
+                       ROUND(SUM(CASE WHEN m.account_date BETWEEN ? AND ?
+                                      THEN GREATEST(m.paid_own, 0)
+                                           + GREATEST(-(m.purchase_own - m.discount_own), 0) ELSE 0 END), 3)
+                                                                     AS period_credit_own,
+                       p.currency_id                                 AS currency_id
                 FROM %2$s m
                          JOIN %3$s p ON p.%4$s = m.%7$s
                          LEFT JOIN table_area ta ON ta.id = p.area_id
                 WHERE (? IS NULL OR p.area_id = ?)
                   AND (? IS NULL OR %6$s = ?)
                   AND (? IS NULL OR p.%8$s LIKE ? ESCAPE '!' OR p.tel LIKE ? ESCAPE '!')%10$s
-                GROUP BY m.%7$s, p.%8$s, p.tel, ta.id, ta.area_name%9$s"""
+                GROUP BY m.%7$s, p.%8$s, p.tel, ta.id, ta.area_name, p.currency_id%9$s"""
                 .formatted(BALANCE, ledger.view(), party.table(), PartyTableSpec.KEY,
                         limitColumn, tierColumn, PartyLedgerSpec.PARTY, PartyTableSpec.NAME,
-                        groupedPartyColumns, CustomerDelegateCondition.sql(filter.delegateId()));
+                        groupedPartyColumns, CustomerDelegateCondition.sql(filter.delegateId()),
+                        BALANCE_OWN);
     }
 
     /**
@@ -131,7 +155,7 @@ public final class PartyBalanceQuery {
      */
     private static String havingSql(PartyBalanceFilter filter) {
         StringBuilder having = new StringBuilder();
-        String state = filter.state().havingSql("balance");
+        String state = filter.state().havingSql("balance_own");
         if (!state.isEmpty()) {
             append(having, state);
         }
@@ -142,7 +166,7 @@ public final class PartyBalanceQuery {
             append(having, "balance <= ?");
         }
         if (filter.overLimitOnly()) {
-            append(having, "credit_limit > 0 AND balance > credit_limit");
+            append(having, "credit_limit > 0 AND balance_own > credit_limit");
         }
         if (filter.idleDays() != null) {
             append(having, "(last_movement IS NULL OR last_movement <= ?)");

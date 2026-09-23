@@ -23,6 +23,9 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyFormat;
+import com.hamza.account.features.currency.CurrencyService;
 import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
@@ -162,6 +165,12 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final PageJumpBox pageJump = new PageJumpBox(this::search);
 
     private final ContentSizedColumns<PartyBalanceRow> columnSizing = new ContentSizedColumns<>();
+    /** The currencies by id, read once a page holds a party in a foreign currency (V82). */
+    private final java.util.Map<Integer, Currency> currencyById = new java.util.HashMap<>();
+    /** Under the cards, on a page that holds a party in a foreign currency: the cards are in the base. */
+    private final Label baseNote = new Label();
+    private TableColumn<PartyBalanceRow, String> currencyColumn;
+    private TableColumn<PartyBalanceRow, BigDecimal> bookColumn;
     private final MenuButton viewMenu = TableColumnViews.menuButton();
 
     private final Label countLabel = new Label();
@@ -194,8 +203,13 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         buildTable();
         columnViews().install(viewMenu, table);
+        baseNote.getStyleClass().add("page-subtitle");
+        baseNote.setWrapText(true);
+        baseNote.managedProperty().bind(baseNote.visibleProperty());
+        baseNote.setVisible(false);
+        baseNote.setText(text("party.balances.currency.note"));
         VBox top = new VBox(8, PartyIdentityHeader.of(identity.balancesProfile()),
-                statCards(), filterBar());
+                statCards(), baseNote, filterBar());
         StackPane tableArea = tableArea();
         box.setPadding(new Insets(8));
         box.setTop(top);
@@ -447,13 +461,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 named("balance-name", Columns.text("name", PartyBalanceRow::name)),
                 named("balance-phone", Columns.text("column.tel", PartyBalanceRow::phone)),
                 named("balance-area", Columns.text("party.column.area", PartyBalanceRow::areaName)),
-                named("balance-period-debit", Columns.money("party.balances.column.period.debit",
-                        PartyBalanceRow::periodDebit)),
-                named("balance-period-credit", Columns.money("party.balances.column.period.credit",
-                        PartyBalanceRow::periodCredit)),
-                named("balance-balance", Columns.money("party.balances.column.balance",
-                        PartyBalanceRow::balance)),
-                named("balance-limit", Columns.money("party.balances.column.limit",
+                // Each row in its party's own currency (V82, docs/currency-plan.md §14 ق-ج٨) - for a party
+                // in the base, the base figures themselves - written in that currency's places.
+                named("balance-period-debit", ownMoney("party.balances.column.period.debit",
+                        PartyBalanceRow::periodDebitOwn)),
+                named("balance-period-credit", ownMoney("party.balances.column.period.credit",
+                        PartyBalanceRow::periodCreditOwn)),
+                named("balance-balance", ownMoney("party.balances.column.balance",
+                        PartyBalanceRow::balanceOwn)),
+                named("balance-limit", ownMoney("party.balances.column.limit",
                         PartyBalanceRow::creditLimit)),
                 named("balance-last", Columns.date("party.balances.column.last",
                         PartyBalanceRow::lastMovement))));
@@ -483,6 +499,81 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private static <S, V> TableColumn<S, V> named(String id, TableColumn<S, V> column) {
         column.setId(id);
         return column;
+    }
+
+    /**
+     * A money column written in each row's own currency: two places for a party in the base, the
+     * currency's own for one in a foreign currency (a Kuwaiti dinar has three). Aligned and coloured
+     * when negative as {@code Columns.money} does.
+     */
+    private TableColumn<PartyBalanceRow, BigDecimal> ownMoney(String titleKey,
+                                                              java.util.function.Function<PartyBalanceRow, BigDecimal> value) {
+        TableColumn<PartyBalanceRow, BigDecimal> column = Columns.money(titleKey, value);
+        column.setCellFactory(ignored -> new javafx.scene.control.TableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal amount, boolean empty) {
+                super.updateItem(amount, empty);
+                PartyBalanceRow row = empty ? null : getTableRow().getItem();
+                Currency currency = row == null ? null : currencyOf(row);
+                setText(empty || amount == null ? null
+                        : currency == null ? Columns.money(amount) : CurrencyFormat.amount(amount, currency));
+                pseudoClassStateChanged(Columns.NEGATIVE, amount != null && amount.signum() < 0);
+            }
+        });
+        return column;
+    }
+
+    /** The row's currency, or {@code null} for the base. */
+    private Currency currencyOf(PartyBalanceRow row) {
+        return row.isForeign() ? currencyById.get(row.currencyId()) : null;
+    }
+
+    /**
+     * The currency and book-value columns, on a page that holds a party in a foreign currency and on no
+     * other - a shop that deals in one currency sees the table it always saw. Added after
+     * {@code TableSetting} read the table, so whether they are there follows the rows and is saved as
+     * nobody's choice.
+     */
+    private void showCurrencyColumns(List<PartyBalanceRow> rows) {
+        boolean foreign = rows.stream().anyMatch(PartyBalanceRow::isForeign);
+        if (foreign && currencyById.isEmpty()) {
+            readCurrencies();
+        }
+        if (currencyColumn == null) {
+            currencyColumn = named("balance-currency", Columns.text("party.currency",
+                    row -> row.isForeign() && currencyOf(row) != null ? currencyOf(row).code() : ""));
+            bookColumn = named("balance-book", Columns.money("treasury.statement.column.book",
+                    PartyBalanceRow::balance));
+        }
+        table.getColumns().removeAll(currencyColumn, bookColumn);
+        baseNote.setVisible(foreign);
+        if (foreign) {
+            // The code before the first figure in it, and the book value straight after the balance.
+            int balance = indexOf("balance-balance");
+            table.getColumns().add(balance + 1, bookColumn);
+            table.getColumns().add(indexOf("balance-period-debit"), currencyColumn);
+        }
+    }
+
+    private int indexOf(String columnId) {
+        for (int i = 0; i < table.getColumns().size(); i++) {
+            if (columnId.equals(table.getColumns().get(i).getId())) {
+                return i;
+            }
+        }
+        return table.getColumns().size();
+    }
+
+    private void readCurrencies() {
+        CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+        if (currencies == null) {
+            return;
+        }
+        try {
+            currencies.all().forEach(currency -> currencyById.put(currency.id(), currency));
+        } catch (Exception e) {
+            report(e);
+        }
     }
 
     // ---- loading ---------------------------------------------------------------------
@@ -575,6 +666,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void show(PartyBalancePage page) {
         summary = page.summary();
         toolbar.showActiveFilters(filter.panelConditionCount(LocalDate.now()));
+        showCurrencyColumns(page.rows());
         table.setItems(FXCollections.observableArrayList(page.rows()));
         columnSizing.layout(table);
 
@@ -714,8 +806,12 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 AllAlerts.alertError(text("party.error.no.data.print"));
                 return;
             }
+            // A page holding a party in a foreign currency totals the book value alone: a column in each
+            // row's own currency adds dollars to pounds (docs/currency-plan.md §14 ق-ج٨).
+            showCurrencyColumns(extract.rows());
+            boolean foreign = extract.rows().stream().anyMatch(PartyBalanceRow::isForeign);
             TablePdfLayout layout = TablePdfLayout.from(table, extract.rows(),
-                    Set.of(ACTIONS_COLUMN), TOTALLED_COLUMNS, text("total"));
+                    Set.of(ACTIONS_COLUMN), foreign ? Set.of("balance-book") : TOTALLED_COLUMNS, text("total"));
             TablePdfReport.write(target, title, printSubtitle(printed), layout,
                     () -> warnIfTruncated(extract));
         });

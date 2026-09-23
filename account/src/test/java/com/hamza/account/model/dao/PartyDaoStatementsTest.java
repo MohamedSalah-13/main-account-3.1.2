@@ -62,11 +62,12 @@ class PartyDaoStatementsTest {
         void statements() {
             assertEquals("INSERT INTO custom (name,tel,address,notes,limit_num,first_balance,"
                     + "opening_balance_date,price_id,user_id,area_id,email,tax_number,"
-                    + "payment_terms_days,default_delegate_id,is_active) "
-                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", dao.insertSql());
+                    + "payment_terms_days,default_delegate_id,is_active,currency_id,opening_foreign,opening_rate) "
+                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", dao.insertSql());
             assertEquals("UPDATE custom SET updated_at=CURRENT_TIMESTAMP(6),name=?,tel=?,address=?,notes=?,"
                     + "limit_num=?,first_balance=?,opening_balance_date=?,price_id=?,area_id=?,"
-                    + "email=?,tax_number=?,payment_terms_days=?,default_delegate_id=?,is_active=? "
+                    + "email=?,tax_number=?,payment_terms_days=?,default_delegate_id=?,is_active=?,"
+                    + "currency_id=?,opening_foreign=?,opening_rate=? "
                     + "WHERE id=? AND updated_at=?",
                     dao.updateSql());
             assertEquals("DELETE FROM custom WHERE id=?", dao.deleteSql());
@@ -86,7 +87,8 @@ class PartyDaoStatementsTest {
                     dao.updateWithoutOpeningSql());
             assertEquals(dao.updateSql()
                             .replace("first_balance=?,", "")
-                            .replace("opening_balance_date=?,", ""),
+                            .replace("opening_balance_date=?,", "")
+                            .replace(",currency_id=?,opening_foreign=?,opening_rate=?", ""),
                     dao.updateWithoutOpeningSql());
         }
 
@@ -158,7 +160,7 @@ class PartyDaoStatementsTest {
             Object[] data = dao.getData(customer());
             assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length + 1);
             assertArrayEquals(new Object[]{NAME, TEL, ADDRESS, NOTES, 5000.0, OPENING, OPENING_DAY, 2,
-                    AREA_ID, EMAIL, TAX_NUMBER, 30, 7, true, PARTY_ID}, data);
+                    AREA_ID, EMAIL, TAX_NUMBER, 30, 7, true, null, null, null, PARTY_ID}, data);
         }
 
         private Customers customer() {
@@ -191,11 +193,13 @@ class PartyDaoStatementsTest {
         @Test
         void statements() {
             assertEquals("INSERT INTO suppliers (name,tel,address,notes,first_balance,"
-                    + "opening_balance_date,user_id,area_id,email,tax_number,payment_terms_days,is_active) "
-                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", dao.insertSql());
+                    + "opening_balance_date,user_id,area_id,email,tax_number,payment_terms_days,is_active,"
+                    + "currency_id,opening_foreign,opening_rate) "
+                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", dao.insertSql());
             assertEquals("UPDATE suppliers SET updated_at=CURRENT_TIMESTAMP(6),name=?,tel=?,address=?,notes=?,"
                     + "first_balance=?,opening_balance_date=?,area_id=?,"
-                    + "email=?,tax_number=?,payment_terms_days=?,is_active=? "
+                    + "email=?,tax_number=?,payment_terms_days=?,is_active=?,"
+                    + "currency_id=?,opening_foreign=?,opening_rate=? "
                     + "WHERE id=? AND updated_at=?", dao.updateSql());
             assertEquals("DELETE FROM suppliers WHERE id=?", dao.deleteSql());
             assertEquals("SELECT COUNT(*) FROM suppliers", dao.countSql());
@@ -209,7 +213,8 @@ class PartyDaoStatementsTest {
                     dao.updateWithoutOpeningSql());
             assertEquals(dao.updateSql()
                             .replace("first_balance=?,", "")
-                            .replace("opening_balance_date=?,", ""),
+                            .replace("opening_balance_date=?,", "")
+                            .replace(",currency_id=?,opening_foreign=?,opening_rate=?", ""),
                     dao.updateWithoutOpeningSql());
         }
 
@@ -278,7 +283,7 @@ class PartyDaoStatementsTest {
             Object[] data = dao.getData(supplier());
             assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length + 1);
             assertArrayEquals(new Object[]{NAME, TEL, ADDRESS, NOTES, OPENING, OPENING_DAY, AREA_ID,
-                    EMAIL, TAX_NUMBER, 45, true, PARTY_ID}, data);
+                    EMAIL, TAX_NUMBER, 45, true, null, null, null, PARTY_ID}, data);
         }
 
         private Suppliers supplier() {
@@ -338,10 +343,16 @@ class PartyDaoStatementsTest {
                     {suppliers.updateSql(), suppliers.updateWithoutOpeningSql()}}) {
                 assertEquals(dao[0]
                                 .replace("first_balance=?,", "")
-                                .replace("opening_balance_date=?,", ""),
+                                .replace("opening_balance_date=?,", "")
+                                .replace(",currency_id=?,opening_foreign=?,opening_rate=?", ""),
                         dao[1]);
                 assertFalse(dao[1].contains("first_balance"));
                 assertFalse(dao[1].contains("opening_balance_date"));
+                // The currency is fixed by the first movement with the opening itself (V82,
+                // docs/currency-plan.md §14 ق-ج١): every amount on the account is written in it.
+                assertFalse(dao[1].contains("currency_id"));
+                assertFalse(dao[1].contains("opening_foreign"));
+                assertFalse(dao[1].contains("opening_rate"));
             }
         }
 

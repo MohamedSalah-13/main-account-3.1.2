@@ -6,6 +6,8 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyService;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -135,6 +137,15 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
     private final ComboBox<String> comboSelPrice = new ComboBox<>();
     private final ComboBox<String> comboArea = new ComboBox<>();
     private final ComboBox<Employees> comboDelegate = new ComboBox<>();
+    /**
+     * The currency the party deals in (V82, docs/currency-plan.md §14 ق-ج١) - the base by default.
+     * The opening balance and the credit limit are typed in it, and it is fixed, with the opening,
+     * by the party's first movement.
+     */
+    private final ComboBox<Currency> comboCurrency = new ComboBox<>();
+    private final CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+    private Label balanceCaption;
+    private Label limitCaption;
     private final CheckBox chkActive = new CheckBox();
 
     public AddNameController(DataInterface<?, ?, T3, T4> dataInterface,
@@ -179,6 +190,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         fillPriceTiers();
         fillAreas();
         fillDelegates();
+        fillCurrencies();
 
         // The credit limit, the price tier and the standing delegate are the customer's
         // three columns; a supplier's row has none of them - see PartyTableSpec.
@@ -221,10 +233,15 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
                 row("others", txtOther));
 
         List<Node[]> accountRows = new ArrayList<>();
-        accountRows.add(row("firstBalance", txtBalance));
+        accountRows.add(row("party.currency", comboCurrency));
+        Node[] balanceRow = row("firstBalance", txtBalance);
+        balanceCaption = (Label) balanceRow[0];
+        accountRows.add(balanceRow);
         accountRows.add(row("party.opening.date", openingDate));
         if (customer) {
-            accountRows.add(row("column.limit", txtLimit));
+            Node[] limitRow = row("column.limit", txtLimit);
+            limitCaption = (Label) limitRow[0];
+            accountRows.add(limitRow);
             accountRows.add(row("selPrice", comboSelPrice));
         }
         accountRows.add(row("party.payment.terms", txtTerms));
@@ -387,6 +404,11 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         party.setPayment_terms_days(intOrZero(txtTerms.getText()));
         party.setOpening_balance_date(openingDate.getValue());
         party.setActive(chkActive.isSelected());
+        // In a foreign currency the box holds the opening in that currency, and the service values it
+        // into first_balance at the opening day's rate (V82); in the base it is the opening itself.
+        Currency currency = foreignCurrency();
+        party.setCurrency_id(currency == null ? null : currency.id());
+        party.setOpening_foreign(currency == null ? null : java.math.BigDecimal.valueOf(number(txtBalance)));
         if (party instanceof Customers customer) {
             Employees delegate = comboDelegate.getSelectionModel().getSelectedItem();
             customer.setDefault_delegate_id(delegate == null ? 0 : delegate.getId());
@@ -470,7 +492,10 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         txtTel.setText(party.getTel());
         txtAddress.setText(party.getAddress());
         txtOther.setText(party.getNotes());
-        txtBalance.setText(String.valueOf(party.getFirst_balance()));
+        selectCurrency(party.getCurrency_id());
+        txtBalance.setText(party.getCurrency_id() != null && party.getOpening_foreign() != null
+                ? party.getOpening_foreign().stripTrailingZeros().toPlainString()
+                : String.valueOf(party.getFirst_balance()));
         txtLimit.setText(String.valueOf(nameData.limit(party)));
         txtEmail.setText(party.getEmail());
         txtTaxNumber.setText(party.getTax_number());
@@ -528,7 +553,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
                 return;
             }
             Tooltip why = new Tooltip(text("party.balance.locked.tooltip", rule.correction()));
-            for (Control locked : new Control[]{txtBalance, openingDate}) {
+            for (Control locked : new Control[]{txtBalance, openingDate, comboCurrency}) {
                 locked.setDisable(true);
                 locked.setTooltip(why);
             }
@@ -542,6 +567,8 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         txtBalance.setTooltip(null);
         openingDate.setDisable(false);
         openingDate.setTooltip(null);
+        comboCurrency.setDisable(currencies == null);
+        comboCurrency.setTooltip(new Tooltip(text("party.currency.tip")));
     }
 
     @Override
@@ -559,6 +586,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         openingDate.setValue(LocalDate.now());
         chkActive.setSelected(true);
         comboDelegate.getSelectionModel().select(NO_DELEGATE);
+        selectCurrency(null);
         unlockOpeningBalance();
     }
 
@@ -577,6 +605,77 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         }
         return Bindings.or(nameIsEmpty,
                 comboSelPrice.getSelectionModel().selectedItemProperty().isNull());
+    }
+
+    // ---- the party's currency ---------------------------------------------------------
+
+    /**
+     * The active currencies, the base first as the service answers them. A party in a currency stopped
+     * since is shown in it rather than turned into the base (see {@link #selectCurrency}).
+     */
+    private void fillCurrencies() {
+        comboCurrency.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Currency currency) {
+                return currency == null ? "" : currency.label();
+            }
+
+            @Override
+            public Currency fromString(String value) {
+                return comboCurrency.getValue();
+            }
+        });
+        comboCurrency.valueProperty().addListener((obs, was, currency) -> showCurrencyOnCaptions());
+        if (currencies == null) {
+            comboCurrency.setDisable(true);
+            return;
+        }
+        try {
+            comboCurrency.setItems(FXCollections.observableArrayList(currencies.active()));
+        } catch (DaoException e) {
+            log.error("Failed to read the currencies for the party form", e);
+            comboCurrency.setDisable(true);
+        }
+    }
+
+    /** {@code null} is the base. */
+    private void selectCurrency(Integer currencyId) {
+        comboCurrency.getItems().stream()
+                .filter(currency -> currencyId == null ? currency.base() : currency.id() == currencyId)
+                .findFirst()
+                .ifPresentOrElse(comboCurrency::setValue, () -> {
+                    if (currencyId == null || currencies == null) {
+                        comboCurrency.setValue(null);
+                        return;
+                    }
+                    try {
+                        Currency stopped = currencies.find(currencyId);
+                        if (stopped != null) {
+                            comboCurrency.getItems().add(stopped);
+                            comboCurrency.setValue(stopped);
+                        }
+                    } catch (DaoException e) {
+                        log.error("Failed to read currency {}", currencyId, e);
+                    }
+                });
+    }
+
+    /** The chosen currency when it is not the base; {@code null} for the base, as the row stores it. */
+    private Currency foreignCurrency() {
+        Currency currency = comboCurrency.getValue();
+        return currency == null || currency.base() ? null : currency;
+    }
+
+    /** The opening balance and the credit limit are written in the party's currency, and say so. */
+    private void showCurrencyOnCaptions() {
+        Currency currency = foreignCurrency();
+        String code = currency == null ? "" : " (" + currency.code() + ")";
+        if (balanceCaption != null) {
+            balanceCaption.setText(text("firstBalance") + code);
+        }
+        if (limitCaption != null) {
+            limitCaption.setText(text("column.limit") + code);
+        }
     }
 
     // ---- small helpers ---------------------------------------------------------------

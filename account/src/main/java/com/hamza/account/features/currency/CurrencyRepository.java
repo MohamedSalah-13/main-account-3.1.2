@@ -44,6 +44,12 @@ public interface CurrencyRepository {
     /** How many active treasuries are in this currency (V81). */
     int activeTreasuryCount(int currencyId) throws DaoException;
 
+    /** How many customers and suppliers deal in a currency other than the base (V82). */
+    int foreignPartyCount() throws DaoException;
+
+    /** How many active customers and suppliers deal in this currency (V82). */
+    int activePartyCount(int currencyId) throws DaoException;
+
     /** The currency, read under a shared lock for a rate about to be written - or {@code null}. */
     Currency lockForRate(int id) throws DaoException;
 

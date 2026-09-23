@@ -50,6 +50,10 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TableColumn;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyFormat;
+import com.hamza.account.features.currency.CurrencyService;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -134,6 +138,12 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
     private final StackPane content = new StackPane();
 
     private final ContentSizedColumns<PartyAgeingRow> columnSizing = new ContentSizedColumns<>();
+    /** The currencies by id, read once a page holds a party in a foreign currency (V82). */
+    private final java.util.Map<Integer, Currency> currencyById = new java.util.HashMap<>();
+    /** Under the cards, on a page that holds a party in a foreign currency: the cards are in the base. */
+    private final Label baseNote = new Label();
+    private TableColumn<PartyAgeingRow, String> currencyColumn;
+    private TableColumn<PartyAgeingRow, java.math.BigDecimal> bookColumn;
     private final MenuButton viewMenu = TableColumnViews.menuButton();
     private final ListToolbar toolbar = new ListToolbar();
 
@@ -158,7 +168,12 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
 
         BorderPane layout = new BorderPane();
         layout.getStyleClass().add("app-container");
-        layout.setTop(new VBox(8, PartyIdentityHeader.of(identity.ageingProfile()), statCards(),
+        baseNote.getStyleClass().add("page-subtitle");
+        baseNote.setWrapText(true);
+        baseNote.managedProperty().bind(baseNote.visibleProperty());
+        baseNote.setVisible(false);
+        baseNote.setText(text("party.balances.currency.note"));
+        layout.setTop(new VBox(8, PartyIdentityHeader.of(identity.ageingProfile()), statCards(), baseNote,
                 filterBar()));
         layout.setCenter(content);
         layout.setBottom(footer());
@@ -294,14 +309,16 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
                 named("ageing-name", Columns.text("name", PartyAgeingRow::name)),
                 named("ageing-area", Columns.text("party.column.area", PartyAgeingRow::areaName)),
                 named("ageing-terms", Columns.number("party.ageing.column.terms", PartyAgeingRow::paymentTerms))));
+        // A row is in its party's own currency (V82, docs/currency-plan.md §14 ق-ج٨) and written in its
+        // places; the footer is in the base.
         for (AgeingBucket bucket : AgeingBucket.inReadingOrder()) {
             columns.add(named(bucketColumn(bucket),
-                    Columns.money(bucket.messageKey(), row -> row.amount(bucket))));
+                    ownMoney(bucket.messageKey(), row -> row.amount(bucket))));
         }
         columns.add(named(UNALLOCATED_COLUMN,
-                Columns.money("party.ageing.column.unallocated", PartyAgeingRow::unallocated)));
+                ownMoney("party.ageing.column.unallocated", PartyAgeingRow::unallocated)));
         columns.add(named(BALANCE_COLUMN,
-                Columns.money("party.ageing.column.balance", PartyAgeingRow::balance)));
+                ownMoney("party.ageing.column.balance", PartyAgeingRow::balance)));
         table.getColumns().setAll(columns);
 
         columnSizing.install(table);
@@ -323,6 +340,63 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
         }
         return new TableColumnViews<>(preferences, "view.mode", TableColumnViews.Preset.FULL,
                 compact, Set.of());
+    }
+
+    /**
+     * A money column written in each row's own currency: two places for a party in the base, the
+     * currency's own for one in a foreign currency.
+     */
+    private TableColumn<PartyAgeingRow, java.math.BigDecimal> ownMoney(
+            String titleKey, java.util.function.Function<PartyAgeingRow, java.math.BigDecimal> value) {
+        TableColumn<PartyAgeingRow, java.math.BigDecimal> column = Columns.money(titleKey, value);
+        column.setCellFactory(ignored -> new javafx.scene.control.TableCell<>() {
+            @Override
+            protected void updateItem(java.math.BigDecimal amount, boolean empty) {
+                super.updateItem(amount, empty);
+                PartyAgeingRow row = empty ? null : getTableRow().getItem();
+                Currency currency = row == null ? null : currencyOf(row);
+                setText(empty || amount == null ? null
+                        : currency == null ? Columns.money(amount) : CurrencyFormat.amount(amount, currency));
+                pseudoClassStateChanged(Columns.NEGATIVE, amount != null && amount.signum() < 0);
+            }
+        });
+        return column;
+    }
+
+    private Currency currencyOf(PartyAgeingRow row) {
+        return row.isForeign() ? currencyById.get(row.currencyId()) : null;
+    }
+
+    /**
+     * The currency and book-value columns, on a page that holds a party in a foreign currency and on no
+     * other - added after {@code TableSetting} read the table, so they are saved as nobody's choice.
+     */
+    private void showCurrencyColumns(List<PartyAgeingRow> rows) {
+        boolean foreign = rows.stream().anyMatch(PartyAgeingRow::isForeign);
+        if (foreign && currencyById.isEmpty()) {
+            CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+            try {
+                if (currencies != null) {
+                    currencies.all().forEach(currency -> currencyById.put(currency.id(), currency));
+                }
+            } catch (Exception e) {
+                report(e);
+            }
+        }
+        if (currencyColumn == null) {
+            currencyColumn = named("ageing-currency", Columns.text("party.currency",
+                    row -> currencyOf(row) == null ? "" : currencyOf(row).code()));
+            bookColumn = named("ageing-book", Columns.money("treasury.statement.column.book",
+                    PartyAgeingRow::bookBalance));
+        }
+        table.getColumns().removeAll(currencyColumn, bookColumn);
+        baseNote.setVisible(foreign);
+        if (foreign) {
+            int balance = table.getColumns().indexOf(table.getColumns().stream()
+                    .filter(c -> BALANCE_COLUMN.equals(c.getId())).findFirst().orElse(null));
+            table.getColumns().add(balance + 1, bookColumn);
+            table.getColumns().add(4, currencyColumn);
+        }
     }
 
     /** The money columns - the bands, unallocated and the balance - which a printed total sums. */
@@ -449,6 +523,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
     private void show(PartyAgeingPage loaded) {
         summary = loaded.summary();
         toolbar.showActiveFilters(filter.panelConditionCount(LocalDate.now()));
+        showCurrencyColumns(loaded.rows());
         table.setItems(FXCollections.observableArrayList(loaded.rows()));
         columnSizing.layout(table);
 
@@ -492,10 +567,21 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
                 AllAlerts.alertError(text("party.error.no.data.print"));
                 return;
             }
+            // A page holding a party in a foreign currency adds no band up - a band in each row's own
+            // currency adds dollars to pounds - and says the base totals in its subtitle instead
+            // (docs/currency-plan.md §14 ق-ج٨).
+            showCurrencyColumns(extract.rows());
+            boolean foreign = extract.rows().stream().anyMatch(PartyAgeingRow::isForeign);
             TablePdfLayout layout = TablePdfLayout.from(table, extract.rows(), Set.of(),
-                    totalledColumns(), text("total"));
-            TablePdfReport.write(target, title,
-                    text("party.ageing.filter.as.of") + ": " + printed.asOf(), layout,
+                    foreign ? Set.of("ageing-book") : totalledColumns(), text("total"));
+            String subtitle = text("party.ageing.filter.as.of") + ": " + printed.asOf();
+            if (foreign) {
+                subtitle += "\n" + LanguageManager.getInstance().getString("party.ageing.print.base.totals",
+                        Columns.money(extract.summary().overdue()),
+                        Columns.money(extract.summary().unallocated()),
+                        Columns.money(extract.summary().balance()));
+            }
+            TablePdfReport.write(target, title, subtitle, layout,
                     () -> warnIfTruncated(extract));
         });
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);

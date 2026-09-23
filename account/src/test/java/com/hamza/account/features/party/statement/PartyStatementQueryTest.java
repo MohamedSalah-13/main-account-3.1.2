@@ -41,7 +41,14 @@ class PartyStatementQueryTest {
     @DisplayName("the customer page, character for character")
     void theCustomerPageStatement() {
         assertEquals("""
-                WITH period AS (
+                WITH prior AS (
+                    SELECT COALESCE(SUM(p.purchase - p.discount - p.paid), 0) AS balance,
+                           COALESCE(SUM(p.purchase_own - p.discount_own - p.paid_own), 0) AS balance_own
+                    FROM account_customer_table p
+                    WHERE p.account_code = ?
+                      AND p.account_date < ?
+                ),
+                period AS (
                     SELECT m.account_num,
                            m.account_code,
                            m.account_date,
@@ -55,17 +62,18 @@ class PartyStatementQueryTest {
                            m.user_id,
                            m.numberInv,
                            m.notes,
-                           COALESCE((SELECT SUM(p.purchase - p.discount - p.paid)
-                                     FROM account_customer_table p
-                                     WHERE p.account_code = ?
-                                       AND p.account_date < ?), 0)
-                           + SUM(m.purchase - m.discount - m.paid) OVER (
-                               ORDER BY m.account_date, m.created_at, m.information, m.account_num
-                               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                             ) AS running_balance
+                           m.purchase_own,
+                           m.discount_own,
+                           m.paid_own,
+                           prior.balance + SUM(m.purchase - m.discount - m.paid) OVER running
+                               AS running_balance,
+                           prior.balance_own + SUM(m.purchase_own - m.discount_own - m.paid_own) OVER running
+                               AS running_balance_own
                     FROM account_customer_table m
+                             CROSS JOIN prior
                     WHERE m.account_code = ?
                       AND m.account_date BETWEEN ? AND ?
+                    WINDOW running AS (ORDER BY m.account_date, m.created_at, m.information, m.account_num ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
                 )
                 SELECT m.account_num,
                        m.account_code,
@@ -82,15 +90,19 @@ class PartyStatementQueryTest {
                        COALESCE(u.user_name, '') AS user_name,
                        m.numberInv,
                        m.notes,
-                       m.running_balance
+                       m.running_balance,
+                       m.purchase_own,
+                       m.discount_own,
+                       m.paid_own,
+                       m.running_balance_own
                 FROM period m
                          LEFT JOIN treasury t ON t.id = m.treasury_id
                          LEFT JOIN users u ON u.id = m.user_id
                 WHERE (? IS NULL OR FIND_IN_SET(m.information, ?))
                       AND (? IS NULL OR m.treasury_id = ?)
                       AND (? IS NULL OR m.user_id = ?)
-                      AND (? IS NULL OR ABS(m.purchase - m.discount - m.paid) >= ?)
-                      AND (? IS NULL OR ABS(m.purchase - m.discount - m.paid) <= ?)
+                      AND (? IS NULL OR ABS(m.purchase_own - m.discount_own - m.paid_own) >= ?)
+                      AND (? IS NULL OR ABS(m.purchase_own - m.discount_own - m.paid_own) <= ?)
                       AND (? IS NULL OR m.notes LIKE ? ESCAPE '!'
                            OR CAST(m.numberInv AS CHAR) = ?
                            OR CAST(m.account_num AS CHAR) = ?)
@@ -104,38 +116,39 @@ class PartyStatementQueryTest {
     @DisplayName("the customer summary, character for character")
     void theCustomerSummaryStatement() {
         assertEquals("""
-                SELECT COALESCE(SUM(CASE WHEN m.account_date < ?
-                                         THEN m.purchase - m.discount - m.paid ELSE 0 END), 0)
+                SELECT COALESCE(SUM(CASE WHEN c.brought_forward THEN c.change_base ELSE 0 END), 0)
                            AS opening_balance,
-                       COALESCE(SUM(CASE WHEN m.account_date BETWEEN ? AND ? AND (? IS NULL OR FIND_IN_SET(m.information, ?))
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.debit_base ELSE 0 END), 0) AS total_debit,
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.credit_base ELSE 0 END), 0) AS total_credit,
+                       COALESCE(SUM(CASE WHEN c.closing THEN c.change_base ELSE 0 END), 0)
+                           AS closing_balance,
+                       COALESCE(SUM(CASE WHEN c.brought_forward THEN c.change_own ELSE 0 END), 0)
+                           AS opening_balance_own,
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.debit_own ELSE 0 END), 0) AS total_debit_own,
+                       COALESCE(SUM(CASE WHEN c.listed THEN c.credit_own ELSE 0 END), 0) AS total_credit_own,
+                       COALESCE(SUM(CASE WHEN c.closing THEN c.change_own ELSE 0 END), 0)
+                           AS closing_balance_own
+                FROM (SELECT m.account_date < ? AS brought_forward,
+                             (m.account_date BETWEEN ? AND ? AND (? IS NULL OR FIND_IN_SET(m.information, ?))
                       AND (? IS NULL OR m.treasury_id = ?)
                       AND (? IS NULL OR m.user_id = ?)
-                      AND (? IS NULL OR ABS(m.purchase - m.discount - m.paid) >= ?)
-                      AND (? IS NULL OR ABS(m.purchase - m.discount - m.paid) <= ?)
+                      AND (? IS NULL OR ABS(m.purchase_own - m.discount_own - m.paid_own) >= ?)
+                      AND (? IS NULL OR ABS(m.purchase_own - m.discount_own - m.paid_own) <= ?)
                       AND (? IS NULL OR m.notes LIKE ? ESCAPE '!'
                            OR CAST(m.numberInv AS CHAR) = ?
                            OR CAST(m.account_num AS CHAR) = ?)
-                      AND (? = FALSE OR m.type = 2)
-                                         THEN GREATEST(m.purchase - m.discount, 0)
-                                              + GREATEST(-m.paid, 0) ELSE 0 END), 0)
-                           AS total_debit,
-                       COALESCE(SUM(CASE WHEN m.account_date BETWEEN ? AND ? AND (? IS NULL OR FIND_IN_SET(m.information, ?))
-                      AND (? IS NULL OR m.treasury_id = ?)
-                      AND (? IS NULL OR m.user_id = ?)
-                      AND (? IS NULL OR ABS(m.purchase - m.discount - m.paid) >= ?)
-                      AND (? IS NULL OR ABS(m.purchase - m.discount - m.paid) <= ?)
-                      AND (? IS NULL OR m.notes LIKE ? ESCAPE '!'
-                           OR CAST(m.numberInv AS CHAR) = ?
-                           OR CAST(m.account_num AS CHAR) = ?)
-                      AND (? = FALSE OR m.type = 2)
-                                         THEN GREATEST(m.paid, 0)
-                                              + GREATEST(-(m.purchase - m.discount), 0) ELSE 0 END), 0)
-                           AS total_credit,
-                       COALESCE(SUM(CASE WHEN m.account_date <= ?
-                                         THEN m.purchase - m.discount - m.paid ELSE 0 END), 0)
-                           AS closing_balance
-                FROM account_customer_table m
-                WHERE m.account_code = ?""", PartyStatementQuery.summarySql(PartyKind.CUSTOMER));
+                      AND (? = FALSE OR m.type = 2)) AS listed,
+                             m.account_date <= ? AS closing,
+                             m.purchase - m.discount - m.paid AS change_base,
+                             GREATEST(m.purchase - m.discount, 0) + GREATEST(-m.paid, 0) AS debit_base,
+                             GREATEST(m.paid, 0) + GREATEST(-(m.purchase - m.discount), 0) AS credit_base,
+                             m.purchase_own - m.discount_own - m.paid_own AS change_own,
+                             GREATEST(m.purchase_own - m.discount_own, 0) + GREATEST(-m.paid_own, 0)
+                                 AS debit_own,
+                             GREATEST(m.paid_own, 0) + GREATEST(-(m.purchase_own - m.discount_own), 0)
+                                 AS credit_own
+                      FROM account_customer_table m
+                      WHERE m.account_code = ?) c""", PartyStatementQuery.summarySql(PartyKind.CUSTOMER));
     }
 
     /**
@@ -200,13 +213,14 @@ class PartyStatementQueryTest {
     }
 
     /**
-     * The summary binds: {@code from}, then the period and the fifteen filters twice over
-     * for the two conditional totals, then {@code to}, then the party.
+     * The summary binds: {@code from} for what is brought forward, then the period and the fifteen
+     * filters once for what is listed, then {@code to}, then the party. Each movement is classified
+     * once and summed in both currencies (V82), so the filter is not bound once per total any more.
      */
     @ParameterizedTest
     @EnumSource(PartyKind.class)
     void theSummaryBindsTheValuesTheRepositorySupplies(PartyKind kind) {
-        assertEquals(1 + 2 * (2 + ROW_FILTER_PARAMETERS) + 1 + 1,
+        assertEquals(1 + 2 + ROW_FILTER_PARAMETERS + 1 + 1,
                 placeholders(PartyStatementQuery.summarySql(kind)));
     }
 
@@ -223,8 +237,8 @@ class PartyStatementQueryTest {
         String filter = PartyStatementQuery.rowFilterSql("m");
         assertTrue(PartyStatementQuery.pageSql(kind).contains(filter),
                 "the page must use the shared row filter");
-        assertEquals(2, countOccurrences(PartyStatementQuery.summarySql(kind), filter),
-                "each of the summary's two period totals must use the same shared row filter");
+        assertEquals(1, countOccurrences(PartyStatementQuery.summarySql(kind), filter),
+                "the summary's listed rows must be chosen by the same shared row filter, once");
     }
 
     /**
@@ -239,16 +253,19 @@ class PartyStatementQueryTest {
     @EnumSource(PartyKind.class)
     void theTwoBalancesAnswerTheDatesAlone(PartyKind kind) {
         String sql = PartyStatementQuery.summarySql(kind);
-        assertTrue(sql.contains("""
-                COALESCE(SUM(CASE WHEN m.account_date < ?
-                                         THEN m.purchase - m.discount - m.paid ELSE 0 END), 0)
-                           AS opening_balance"""),
-                "the opening balance must be dates-only");
-        assertTrue(sql.contains("""
-                COALESCE(SUM(CASE WHEN m.account_date <= ?
-                                         THEN m.purchase - m.discount - m.paid ELSE 0 END), 0)
-                           AS closing_balance"""),
-                "the closing balance must be dates-only");
+        assertTrue(sql.contains("m.account_date < ? AS brought_forward,"),
+                "what is brought forward must be chosen by the date alone");
+        assertTrue(sql.contains("m.account_date <= ? AS closing,"),
+                "the closing balance must be chosen by the date alone");
+        for (String balance : new String[]{"opening_balance", "closing_balance"}) {
+            String flag = balance.startsWith("opening") ? "c.brought_forward" : "c.closing";
+            assertTrue(sql.contains("COALESCE(SUM(CASE WHEN " + flag + " THEN c.change_base ELSE 0 END), 0)\n"
+                            + "           AS " + balance),
+                    balance + " must sum what the date chose, and nothing a filter narrowed");
+            assertTrue(sql.contains("COALESCE(SUM(CASE WHEN " + flag + " THEN c.change_own ELSE 0 END), 0)\n"
+                            + "           AS " + balance + "_own"),
+                    balance + " in the party's own currency must answer the same question");
+        }
     }
 
     /** Only identifiers the specification owns reach the SQL; a filter is always bound. */

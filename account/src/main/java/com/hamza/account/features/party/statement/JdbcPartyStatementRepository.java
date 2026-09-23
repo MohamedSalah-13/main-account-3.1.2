@@ -4,6 +4,9 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.party.currency.PartyCurrencies;
+
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -40,16 +43,12 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
     }
 
     @Override
-    public PartyStatementSummary summarize(PartyStatementFilter filter) throws DaoException {
+    public PartyStatementTotals summarize(PartyStatementFilter filter) throws DaoException {
         List<Object> values = new ArrayList<>();
         values.add(Date.valueOf(filter.from()));
-        // The debit total and the credit total each repeat the period and every row filter:
-        // both are conditional sums over the one scan, so the condition is written twice.
-        for (int half = 0; half < 2; half++) {
-            values.add(Date.valueOf(filter.from()));
-            values.add(Date.valueOf(filter.to()));
-            addRowFilters(values, filter);
-        }
+        values.add(Date.valueOf(filter.from()));
+        values.add(Date.valueOf(filter.to()));
+        addRowFilters(values, filter);
         values.add(Date.valueOf(filter.to()));
         values.add(filter.partyId());
         return withConnection(connection -> {
@@ -58,13 +57,19 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
                 setData(statement, values.toArray());
                 try (ResultSet rs = statement.executeQuery()) {
                     if (!rs.next()) {
-                        return PartyStatementSummary.EMPTY;
+                        return PartyStatementTotals.EMPTY;
                     }
-                    return new PartyStatementSummary(
-                            rs.getBigDecimal("opening_balance"),
-                            rs.getBigDecimal("total_debit"),
-                            rs.getBigDecimal("total_credit"),
-                            rs.getBigDecimal("closing_balance"));
+                    return new PartyStatementTotals(
+                            new PartyStatementSummary(
+                                    rs.getBigDecimal("opening_balance"),
+                                    rs.getBigDecimal("total_debit"),
+                                    rs.getBigDecimal("total_credit"),
+                                    rs.getBigDecimal("closing_balance")),
+                            new PartyStatementSummary(
+                                    rs.getBigDecimal("opening_balance_own"),
+                                    rs.getBigDecimal("total_debit_own"),
+                                    rs.getBigDecimal("total_credit_own"),
+                                    rs.getBigDecimal("closing_balance_own")));
                 }
             }
         });
@@ -111,9 +116,22 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
 
     @Override
     public BigDecimal currentBalance(PartyKind kind, int partyId) throws DaoException {
+        return balance(PartyStatementQuery.currentBalanceSql(kind), partyId);
+    }
+
+    @Override
+    public BigDecimal currentBalanceOwn(PartyKind kind, int partyId) throws DaoException {
+        return balance(PartyStatementQuery.currentBalanceOwnSql(kind), partyId);
+    }
+
+    @Override
+    public Currency currencyOf(PartyKind kind, int partyId) throws DaoException {
+        return PartyCurrencies.jdbc().ofParty(kind, partyId);
+    }
+
+    private BigDecimal balance(String sql, int partyId) throws DaoException {
         return withConnection(connection -> {
-            try (var statement = connection.prepareStatement(
-                    PartyStatementQuery.currentBalanceSql(kind))) {
+            try (var statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, partyId);
                 try (ResultSet rs = statement.executeQuery()) {
                     BigDecimal balance = rs.next() ? rs.getBigDecimal("balance") : null;
@@ -184,7 +202,11 @@ public final class JdbcPartyStatementRepository extends AbstractDao<PartyStateme
                     rs.getString("treasury_name"),
                     rs.getInt("user_id"),
                     rs.getString("user_name"),
-                    rs.getString("notes"));
+                    rs.getString("notes"),
+                    rs.getBigDecimal("purchase_own"),
+                    rs.getBigDecimal("discount_own"),
+                    rs.getBigDecimal("paid_own"),
+                    rs.getBigDecimal("running_balance_own"));
         } catch (SQLException | IllegalArgumentException e) {
             throw new DaoException("Could not map party statement row", e);
         }

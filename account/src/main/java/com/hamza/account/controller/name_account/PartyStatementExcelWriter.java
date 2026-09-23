@@ -2,6 +2,7 @@ package com.hamza.account.controller.name_account;
 
 import com.hamza.account.features.party.statement.PartyStatementRow;
 import com.hamza.account.features.party.statement.PartyStatementSummary;
+import com.hamza.account.features.party.statement.PartyStatementCurrency;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 
@@ -19,38 +20,54 @@ import java.util.List;
  * final row rather than left for the reader to add up: a statement that does not say what it comes
  * to is a statement somebody has to check by hand.
  */
-public record PartyStatementExcelWriter(List<PartyStatementRow> rows, PartyStatementSummary summary)
+public record PartyStatementExcelWriter(List<PartyStatementRow> rows, PartyStatementSummary summary,
+                                        PartyStatementCurrency currency)
         implements WriteExcelInterface<PartyStatementRow> {
 
+    public PartyStatementExcelWriter {
+        currency = currency == null ? PartyStatementCurrency.BASE : currency;
+    }
+
+    /**
+     * The headings. A party dealing in a foreign currency has its code on the three amounts - the rows
+     * are in it - and a column more for each movement's book value (docs/currency-plan.md §14 ق-ج٨).
+     */
     @Override
     public Object[] columnHeader() {
         var lm = LanguageManager.getInstance();
-        return new Object[]{
+        String code = currency.isForeign() ? " (" + currency.code() + ")" : "";
+        List<Object> headers = new java.util.ArrayList<>(List.of(
                 lm.getString("date"),
                 lm.getString("party.statement.column.kind"),
                 lm.getString("party.statement.column.reference"),
-                lm.getString("common.debtor"),
-                lm.getString("common.creditor"),
-                lm.getString("party.statement.column.running"),
+                lm.getString("common.debtor") + code,
+                lm.getString("common.creditor") + code,
+                lm.getString("party.statement.column.running") + code));
+        if (currency.isForeign()) {
+            headers.add(lm.getString("treasury.statement.column.book"));
+        }
+        headers.addAll(List.of(
                 lm.getString("party.statement.column.treasury"),
                 lm.getString("party.statement.column.user"),
-                lm.getString("column.notes")
-        };
+                lm.getString("column.notes")));
+        return headers.toArray();
     }
 
     @Override
-    public Object[] dataRow(PartyStatementRow row) {
-        return new Object[]{
+    public Object[] dataRow(PartyStatementRow stored) {
+        PartyStatementRow row = currency.shown(stored);
+        List<Object> cells = new java.util.ArrayList<>(List.of(
                 row.date().toString(),
                 LanguageManager.getInstance().getString(row.kind().messageKey()),
                 row.reference(),
                 row.debit(),
                 row.credit(),
-                row.runningBalance(),
-                row.treasuryName(),
-                row.userName(),
-                row.notes()
-        };
+                row.runningBalance()));
+        if (currency.isForeign()) {
+            cells.add(currency.bookValue(stored));
+        }
+        cells.addAll(List.of(row.treasuryName(), row.userName(), row.notes()));
+        return cells.toArray();
     }
 
     @Override
