@@ -146,7 +146,9 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getPayment_terms_days()
                 , model.getDefault_delegate_id()
                 , model.isActive()
-        };
+                , model.getCurrency_id()
+                , model.getOpening_foreign()
+                , model.getOpening_rate()};
         return executeUpdate(insertSql(), objects);
     }
 
@@ -207,6 +209,9 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getPayment_terms_days()
                 , model.getDefault_delegate_id()
                 , model.isActive()
+                , model.getCurrency_id()
+                , model.getOpening_foreign()
+                , model.getOpening_rate()
                 , model.getId()};
     }
 
@@ -247,6 +252,10 @@ public class CustomerDao extends AbstractDao<Customers> {
             java.sql.Date openingDate = rs.getDate(OPENING_DATE);
             customers.setOpening_balance_date(openingDate == null ? null : openingDate.toLocalDate());
             customers.setActive(rs.getBoolean(IS_ACTIVE));
+            int currencyId = rs.getInt(PartyTableSpec.CURRENCY);
+            customers.setCurrency_id(rs.wasNull() ? null : currencyId);
+            customers.setOpening_foreign(rs.getBigDecimal(PartyTableSpec.OPENING_FOREIGN));
+            customers.setOpening_rate(rs.getBigDecimal(PartyTableSpec.OPENING_RATE));
             customers.setCreated_at(rs.getTimestamp(DATE_INSERT).toLocalDateTime());
             customers.setUpdated_at(rs.getTimestamp("updated_at").toLocalDateTime());
         } catch (SQLException e) {

@@ -61,10 +61,12 @@ public record PartyTableSpec(
             "created_at",
             List.of("name", "tel", "address", "notes", "limit_num", "first_balance",
                     "opening_balance_date", "price_id", "user_id", "area_id",
-                    "email", "tax_number", "payment_terms_days", "default_delegate_id", "is_active"),
+                    "email", "tax_number", "payment_terms_days", "default_delegate_id", "is_active",
+                    "currency_id", "opening_foreign", "opening_rate"),
             List.of("name", "tel", "address", "notes", "limit_num", "first_balance",
                     "opening_balance_date", "price_id", "area_id",
-                    "email", "tax_number", "payment_terms_days", "default_delegate_id", "is_active"),
+                    "email", "tax_number", "payment_terms_days", "default_delegate_id", "is_active",
+                    "currency_id", "opening_foreign", "opening_rate"),
             "first_balance", "opening_balance_date");
 
     public static final PartyTableSpec SUPPLIER = new PartyTableSpec(
@@ -72,10 +74,12 @@ public record PartyTableSpec(
             "created_at",
             List.of("name", "tel", "address", "notes", "first_balance", "opening_balance_date",
                     "user_id", "area_id",
-                    "email", "tax_number", "payment_terms_days", "is_active"),
+                    "email", "tax_number", "payment_terms_days", "is_active",
+                    "currency_id", "opening_foreign", "opening_rate"),
             List.of("name", "tel", "address", "notes", "first_balance", "opening_balance_date",
                     "area_id",
-                    "email", "tax_number", "payment_terms_days", "is_active"),
+                    "email", "tax_number", "payment_terms_days", "is_active",
+                    "currency_id", "opening_foreign", "opening_rate"),
             "first_balance", "opening_balance_date");
 
     public PartyTableSpec {
@@ -154,17 +158,28 @@ public record PartyTableSpec(
     }
 
     /**
-     * The columns the opening-balance lock takes out together: the amount and its date.
+     * The columns the opening-balance lock takes out together: the amount and its date, and
+     * the party's currency with the opening in it and its rate (V82).
      * <p>
      * They are one entry, not two fields that happen to be near each other. A statement
      * is {@code first_balance} placed at {@code opening_balance_date} plus the movements
      * after it, so moving the date moves the entry through the history precisely as
      * changing the amount would - it is the same edit said differently, and letting the
      * date through would leave the guard guarding half of what it names.
+     * <p>
+     * The currency joins them for the same reason (docs/currency-plan.md §14 ق-ج١): once the
+     * party has moved, every amount on the account is written in it, and the opening in that
+     * currency is the figure {@code first_balance} was valued from.
      */
     public List<String> openingColumns() {
-        return List.of(openingBalance, openingDate);
+        return List.of(openingBalance, openingDate, CURRENCY, OPENING_FOREIGN, OPENING_RATE);
     }
+
+    /** The party's currency (V82); {@code NULL} is the base. */
+    public static final String CURRENCY = "currency_id";
+    /** The opening in that currency, and the rate that valued it (V82). */
+    public static final String OPENING_FOREIGN = "opening_foreign";
+    public static final String OPENING_RATE = "opening_rate";
 
     private String optimisticUpdate(List<String> columns) {
         String assignments = columns.stream()

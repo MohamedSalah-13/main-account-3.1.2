@@ -144,6 +144,19 @@ final class CurrencyFixtures {
             return (int) treasuries.stream().filter(t -> t[0] == currencyId && t[1] == 1).count();
         }
 
+        /** Customers and suppliers per currency id, and whether each is active - V82's two counts. */
+        final List<int[]> parties = new ArrayList<>();
+
+        @Override
+        public int foreignPartyCount() {
+            return parties.size();
+        }
+
+        @Override
+        public int activePartyCount(int currencyId) {
+            return (int) parties.stream().filter(p -> p[0] == currencyId && p[1] == 1).count();
+        }
+
         @Override
         public Currency lockForRate(int id) {
             calls.add("lockForRate:" + id);

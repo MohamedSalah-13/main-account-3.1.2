@@ -11,6 +11,11 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.events.TreasuryBalancesChanged;
 import com.hamza.account.features.party.payment.OpenInvoice;
 import com.hamza.account.features.party.payment.PartyEntryKind;
+import com.hamza.account.features.party.payment.PartyEntryCurrency;
+import com.hamza.account.features.party.currency.PartyMovementCurrency;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyFormat;
+import com.hamza.account.features.currency.CurrencyService;
 import com.hamza.account.features.party.payment.PartyPaymentAllocationService;
 import com.hamza.account.features.party.statement.PartyStatementService;
 import com.hamza.account.finance.MoneyMath;
@@ -105,6 +110,17 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
      * whatever the display happened to survive.
      */
     private BigDecimal balanceBefore = BigDecimal.ZERO;
+    /**
+     * The chosen party's currency, or {@code null} for the base (V82, docs/currency-plan.md §14). The
+     * balance, the remainder and an invoice's remainder are in it; the amount is typed in the currency
+     * of the treasury the cash goes through, which is the party's or the base.
+     */
+    private Currency partyCurrency;
+    /** The party's currency's rate on the movement's day, or {@code null}; read with the party and the date. */
+    private BigDecimal partyRate;
+    /** Every active treasury by name, with its currency: the picker offers those the party may use. */
+    private final java.util.Map<String, Treasury> treasuries = new java.util.LinkedHashMap<>();
+    private final Label currencyNote = new Label();
 
     /** The movement being edited, or 0 for a new one. */
     private final int movementId;
@@ -195,6 +211,12 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
             display.getStyleClass().add("app-readonly-amount");
         }
 
+        currencyNote.getStyleClass().add("page-subtitle");
+        currencyNote.setWrapText(true);
+        currencyNote.managedProperty().bind(currencyNote.visibleProperty());
+        currencyNote.setVisible(false);
+        formRoot.getChildren().add(currencyNote);
+
         addPartyField();
         addKindCombo();
         addInvoiceCombo();
@@ -210,7 +232,14 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         whenEnterPressed(txtPaid, txtNotes);
 
         comboTreasury.getSelectionModel().selectedItemProperty()
-                .addListener((observable, was, now) -> refreshWalletFee());
+                .addListener((observable, was, now) -> {
+                    refreshWalletFee();
+                    showCurrency();
+                });
+        date.valueProperty().addListener((observable, was, now) -> {
+            readPartyRate();
+            showCurrency();
+        });
         showFeeRow(false);
 
         txtNotes.setOnMouseClicked(event -> {
@@ -299,6 +328,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         } else {
             refreshWalletFee();
         }
+        showCurrency();
         // The remainder is computed from the kind as much as from the amount - a debit note adds
         // where a collection subtracts - so changing the kind has to recompute it. It did not:
         // switching a 500 collection to a 500 debit note on a balance of 1,050 left the screen
@@ -324,7 +354,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
                     return LanguageManager.getInstance().getString("party.payment.on.account");
                 }
                 return invoice.invoiceNumber() + "  -  " + invoice.date()
-                        + "  -  " + moneyText(invoice.remaining());
+                        + "  -  " + ownText(invoice.remaining());
             }
 
             @Override
@@ -334,7 +364,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         });
         comboInvoice.getSelectionModel().selectedItemProperty()
                 .addListener((observable, was, invoice) -> txtAmountInv.setText(
-                        invoice == null ? "" : moneyText(invoice.remaining())));
+                        invoice == null ? "" : ownText(invoice.remaining())));
     }
 
     /** The balance and the open invoices of the party just chosen: two queries, not two scans. */
@@ -342,12 +372,23 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         code_id = party == null ? 0 : party.getId();
         txtAmountInv.clear();
         if (code_id <= 0) {
+            partyCurrency = null;
+            partyRate = null;
+            offerTreasuries();
             setBalanceBefore(BigDecimal.ZERO);
+            showCurrency();
             comboInvoice.setItems(FXCollections.observableArrayList());
             return;
         }
         try {
-            setBalanceBefore(statementService.currentBalance(partyKind(), code_id));
+            // The balance and the open invoices are in the party's own currency (V82): a dollar
+            // customer is told what they owe in dollars, and a collection is set against it.
+            Currency currency = statementService.currencyOf(partyKind(), code_id);
+            partyCurrency = currency == null || currency.base() ? null : currency;
+            readPartyRate();
+            offerTreasuries();
+            setBalanceBefore(statementService.currentBalanceOwn(partyKind(), code_id));
+            showCurrency();
             List<OpenInvoice> invoices = new ArrayList<>();
             invoices.add(ON_ACCOUNT);
             invoices.addAll(allocationService.openInvoices(partyKind(), code_id, movementId));
@@ -376,6 +417,12 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         }
         try {
             Treasury treasury = treasuryService.getTreasuryByName(treasuryName);
+            // A fee is an expense, and an expense is not recorded on a treasury in a foreign
+            // currency (docs/currency-plan.md §11 ق-ب٦) - the save refuses one, so the row is not offered.
+            if (treasury != null && treasury.getCurrencyId() != null) {
+                showFeeRow(false);
+                return;
+            }
             BigDecimal percent = treasury == null ? null : treasury.getFeePercent();
             if (percent == null || percent.signum() <= 0) {
                 showFeeRow(false);
@@ -552,7 +599,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
      */
     private void setBalanceBefore(BigDecimal balance) {
         balanceBefore = balance == null ? BigDecimal.ZERO : balance;
-        txtBalance.setText(moneyText(balanceBefore));
+        txtBalance.setText(ownText(balanceBefore));
         recomputeRest();
     }
 
@@ -566,10 +613,74 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
      */
     private void recomputeRest() {
         PartyEntryKind kind = kind();
-        BigDecimal change = kind.movesCash()
-                ? amount().negate()
-                : BigDecimal.valueOf(kind.purchaseColumn(amount().doubleValue()));
-        txtAmount.setText(moneyText(MoneyMath.add(balanceBefore, change)));
+        // In the party's own currency (V82): pounds from a dollar customer come off their dollars at
+        // the day's rate, and without a rate the screen says nothing rather than guess.
+        BigDecimal change = entryCurrency().ownChange(kind, amount());
+        txtAmount.setText(change == null ? "" : ownText(balanceBefore.add(change)));
+    }
+
+    /** The currencies in play: the party's, the chosen treasury's, and the day's rate. */
+    private PartyEntryCurrency entryCurrency() {
+        if (partyCurrency == null) {
+            return PartyEntryCurrency.BASE;
+        }
+        Treasury treasury = treasuries.get(comboTreasury.getSelectionModel().getSelectedItem());
+        Currency treasuryCurrency = treasury != null && treasury.getCurrencyId() != null ? partyCurrency : null;
+        return new PartyEntryCurrency(partyCurrency, treasuryCurrency, partyRate);
+    }
+
+    /** The party's currency's rate on the movement's day; {@code null} for a party in the base or no rate. */
+    private void readPartyRate() {
+        partyRate = null;
+        if (partyCurrency == null || date.getValue() == null) {
+            return;
+        }
+        try {
+            partyRate = PartyMovementCurrency.jdbc().rateOn(partyCurrency.id(), date.getValue());
+        } catch (DaoException e) {
+            logException(e);
+        }
+    }
+
+    /**
+     * The captions say which currency each figure is in, and a line under the form gives the day's rate
+     * - or says there is none, before a save is refused for it (docs/currency-plan.md §14 ق-ج٤).
+     */
+    private void showCurrency() {
+        var lm = LanguageManager.getInstance();
+        PartyEntryCurrency entry = entryCurrency();
+        String own = partyCurrency == null ? "" : " (" + partyCurrency.code() + ")";
+        Currency typed = entry.typedIn(kind());
+        String typedCode = partyCurrency == null ? ""
+                : " (" + (typed == null ? baseCode() : typed.code()) + ")";
+        labelBalance.setText(lm.getString("balance") + own);
+        labelAmount.setText(lm.getString("rest") + own);
+        lAmountInv.setText(lm.getString("party.payment.invoice.remaining") + own);
+        labelPaid.setText(lm.getString("party.payment.amount") + typedCode);
+        currencyNote.setVisible(partyCurrency != null);
+        if (partyCurrency != null) {
+            currencyNote.setText(partyRate == null
+                    ? lm.getString("party.payment.currency.no.rate", partyCurrency.name())
+                    : lm.getString("party.payment.currency.note", partyCurrency.name(),
+                    CurrencyFormat.rate(partyRate)));
+        }
+        recomputeRest();
+    }
+
+    /** The base's code, for the amount's caption when a dollar customer pays in pounds. */
+    private String baseCode() {
+        try {
+            CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+            Currency base = currencies == null ? null : currencies.base();
+            return base == null ? "" : base.code();
+        } catch (DaoException e) {
+            return "";
+        }
+    }
+
+    /** An amount in the party's own currency, in its places; two places for a party in the base. */
+    private String ownText(BigDecimal value) {
+        return partyCurrency == null ? moneyText(value) : CurrencyFormat.amount(value, partyCurrency);
     }
 
     /**
@@ -584,14 +695,33 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void addTreasurySetting() {
-        List<String> names = new ArrayList<>();
         try {
-            names = treasuryService.listTreasuryModelNames();
+            treasuries.clear();
+            treasuryService.getActiveTreasuryModelList().forEach(t -> treasuries.put(t.getName(), t));
         } catch (DaoException e) {
             logException(e);
         }
+        offerTreasuries();
+    }
+
+    /**
+     * The treasuries this party's cash may go through: those in the base, and those in the party's own
+     * currency (docs/currency-plan.md §14 ق-ج٤). A treasury in any other currency is not offered - the
+     * save would refuse it. The choice already made stays when it is still offered.
+     */
+    private void offerTreasuries() {
+        String chosen = comboTreasury.getSelectionModel().getSelectedItem();
+        List<String> names = treasuries.values().stream()
+                .filter(t -> t.getCurrencyId() == null
+                        || (partyCurrency != null && t.getCurrencyId() == partyCurrency.id()))
+                .map(Treasury::getName)
+                .toList();
         comboTreasury.setItems(FXCollections.observableArrayList(names));
-        comboTreasury.getSelectionModel().selectFirst();
+        if (chosen != null && names.contains(chosen)) {
+            comboTreasury.getSelectionModel().select(chosen);
+        } else {
+            comboTreasury.getSelectionModel().selectFirst();
+        }
     }
 
     /**

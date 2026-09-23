@@ -90,14 +90,24 @@ class PartyAgeingQueryTest {
         }
 
         @Test
-        @DisplayName("the plain page binds asOf five times, then the limit and the offset")
+        @DisplayName("the plain page binds asOf seven times, then the limit and the offset")
         void parameterCount() {
-            assertEquals(7, placeholders(PartyAgeingQuery.pageSql(plain(PartyKind.CUSTOMER))));
+            // Five before V82, and two more for the balance in the party's own currency - once as itself
+            // and once inside the unallocated it is reconciled through.
+            assertEquals(9, placeholders(PartyAgeingQuery.pageSql(plain(PartyKind.CUSTOMER))));
         }
 
         @Test
-        void theCountBindsTheSameFiveAndNoPaging() {
-            assertEquals(5, placeholders(PartyAgeingQuery.countSql(plain(PartyKind.CUSTOMER))));
+        void theCountBindsTheSameSevenAndNoPaging() {
+            assertEquals(7, placeholders(PartyAgeingQuery.countSql(plain(PartyKind.CUSTOMER))));
+        }
+
+        @Test
+        @DisplayName("the balance in the party's own currency stops at asOf too")
+        void theOwnBalanceStopsAtAsOf() {
+            String sql = PartyAgeingQuery.pageSql(plain(PartyKind.CUSTOMER));
+            assertTrue(sql.contains(PartyAgeingQuery.BALANCE_OWN + " AS balance_own"), sql);
+            assertTrue(PartyAgeingQuery.BALANCE_OWN.contains("m.account_date <= ?"));
         }
     }
 
@@ -160,7 +170,7 @@ class PartyAgeingQueryTest {
             PartyAgeingFilter byArea = new PartyAgeingFilter(PartyKind.CUSTOMER,
                     LocalDate.of(2026, 9, 10), 6, false, true, null, "", 0, 50);
 
-            assertEquals(8, placeholders(PartyAgeingQuery.pageSql(byArea)));
+            assertEquals(10, placeholders(PartyAgeingQuery.pageSql(byArea)));
             assertTrue(PartyAgeingQuery.pageSql(byArea).contains("p.area_id = ?"));
         }
 
@@ -170,7 +180,7 @@ class PartyAgeingQueryTest {
             PartyAgeingFilter byText = new PartyAgeingFilter(PartyKind.CUSTOMER,
                     LocalDate.of(2026, 9, 10), null, false, true, null, "50%", 0, 50);
 
-            assertEquals(10, placeholders(PartyAgeingQuery.pageSql(byText)));
+            assertEquals(12, placeholders(PartyAgeingQuery.pageSql(byText)));
             assertTrue(PartyAgeingQuery.pageSql(byText).contains("ESCAPE '!'"));
             assertEquals("%50!%%", byText.pattern());
         }
@@ -198,7 +208,9 @@ class PartyAgeingQueryTest {
             PartyAgeingFilter floor = new PartyAgeingFilter(PartyKind.CUSTOMER,
                     LocalDate.of(2026, 9, 10), null, false, true, new BigDecimal("100"), "", 0, 50);
 
-            assertEquals(8, placeholders(PartyAgeingQuery.pageSql(floor)));
+            assertEquals(10, placeholders(PartyAgeingQuery.pageSql(floor)));
+            // A floor compares parties with each other, so it reads the book value - the one figure
+            // every row has in one currency (V82, docs/currency-plan.md §14 ق-ج٨).
             assertTrue(PartyAgeingQuery.pageSql(floor).contains("balance >= ?"));
         }
 
@@ -214,7 +226,7 @@ class PartyAgeingQueryTest {
                     LocalDate.of(2026, 9, 10), null, 7, false, true, null, "", 0, 50);
             String sql = PartyAgeingQuery.pageSql(byDelegate);
 
-            assertEquals(8, placeholders(sql));
+            assertEquals(10, placeholders(sql));
             String where = sql.substring(sql.indexOf("WHERE 1 = 1"), sql.indexOf("GROUP BY p."));
             assertTrue(where.contains("AND p.default_delegate_id = ?"), where);
             assertEquals(1, sql.split("default_delegate_id", -1).length - 1,
@@ -227,7 +239,7 @@ class PartyAgeingQueryTest {
             PartyAgeingFilter nobody = new PartyAgeingFilter(PartyKind.CUSTOMER, LocalDate.of(2026, 9, 10),
                     null, CustomerDelegateCondition.NO_DELEGATE, false, true, null, "", 0, 50);
 
-            assertEquals(7, placeholders(PartyAgeingQuery.pageSql(nobody)));
+            assertEquals(9, placeholders(PartyAgeingQuery.pageSql(nobody)));
             assertTrue(PartyAgeingQuery.pageSql(nobody)
                     .contains("NOT EXISTS (SELECT 1 FROM employees e JOIN jobs j ON j.id = e.job WHERE e.id = p.default_delegate_id AND j.is_delegate = 1)"));
         }
@@ -247,8 +259,10 @@ class PartyAgeingQueryTest {
                     LocalDate.of(2026, 9, 10), null, false, false, null, "", 0, 50);
 
             assertFalse(withSettled.includeSettled() == withoutSettled.includeSettled());
-            assertFalse(PartyAgeingQuery.pageSql(withSettled).contains("balance <> 0"));
-            assertTrue(PartyAgeingQuery.pageSql(withoutSettled).contains("balance <> 0"));
+            // Settled in the party's own currency (V82): a dollar account at zero is settled whatever
+            // the rates did to its book value.
+            assertFalse(PartyAgeingQuery.pageSql(withSettled).contains("balance_own <> 0"));
+            assertTrue(PartyAgeingQuery.pageSql(withoutSettled).contains("balance_own <> 0"));
             assertTrue(PartyAgeingFilter.today(PartyKind.CUSTOMER).includeSettled() == false);
         }
     }
@@ -281,11 +295,23 @@ class PartyAgeingQueryTest {
         void theSummaryCoversEveryBand() {
             String summary = PartyAgeingQuery.summarySql(plain(PartyKind.CUSTOMER));
 
+            // In the base (V82, docs/currency-plan.md §14 ق-ج٨): the footer adds parties together, so it
+            // sums each band as the books hold it - every invoice's remainder at its own copied rate.
             for (AgeingBucket bucket : AgeingBucket.values()) {
-                assertTrue(summary.contains("SUM(aged." + PartyAgeingQuery.column(bucket) + ")"),
+                assertTrue(summary.contains("SUM(aged." + PartyAgeingQuery.bookColumn(bucket) + "), 0) AS "
+                                + PartyAgeingQuery.column(bucket)),
                         bucket.name() + " is not summed in the footer");
             }
+            assertTrue(summary.contains("SUM(aged.book_unallocated), 0) AS unallocated"));
             assertTrue(summary.contains("COUNT(*) AS parties"));
+        }
+
+        @Test
+        @DisplayName("a book band values each invoice's remainder at the rate copied onto it")
+        void aBookBandIsValuedAtTheInvoicesOwnRate() {
+            String sql = PartyAgeingQuery.pageSql(plain(PartyKind.CUSTOMER));
+            assertTrue(sql.contains("ROUND(open.remaining * COALESCE(open.exchange_rate, 1), 2)"), sql);
+            assertTrue(sql.contains("COALESCE(d.total_foreign, d.total)"), sql);
         }
     }
 

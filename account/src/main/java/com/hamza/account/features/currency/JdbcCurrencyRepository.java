@@ -94,6 +94,16 @@ public final class JdbcCurrencyRepository extends AbstractDao<Currency> implemen
         return count(CurrencyQuery.ACTIVE_TREASURY_COUNT_SQL, currencyId);
     }
 
+    @Override
+    public int foreignPartyCount() throws DaoException {
+        return count(CurrencyQuery.FOREIGN_PARTY_COUNT_SQL);
+    }
+
+    @Override
+    public int activePartyCount(int currencyId) throws DaoException {
+        return count(CurrencyQuery.ACTIVE_PARTY_COUNT_SQL, currencyId, currencyId);
+    }
+
     private int count(String sql, Object... values) throws DaoException {
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {

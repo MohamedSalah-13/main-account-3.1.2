@@ -51,7 +51,9 @@ class PartyBalanceQueryTest {
      * aggregate condition that is set.
      */
     private static int boundValues(PartyBalanceFilter f) {
-        int fixed = 6 + 2 + 2 + 3 + (f.delegateId() == null
+        // The balance, the two period totals and the last movement (6), the same three in the party's
+        // own currency (5, V82), then area, tier and text.
+        int fixed = 6 + 5 + 2 + 2 + 3 + (f.delegateId() == null
                 || f.delegateId() == CustomerDelegateCondition.NO_DELEGATE ? 0 : 1);
         int aggregates = (f.minBalance() == null ? 0 : 1)
                 + (f.maxBalance() == null ? 0 : 1)
@@ -139,9 +141,10 @@ class PartyBalanceQueryTest {
     void aSupplierGroupsByItsOwnColumnsOnly() {
         String sql = PartyBalanceQuery.pageSql(PartyBalanceFilter.allToday(PartyKind.SUPPLIER));
 
-        assertTrue(sql.contains("GROUP BY m.account_code, p.name, p.tel, ta.id, ta.area_name\n"), sql);
+        assertTrue(sql.contains("GROUP BY m.account_code, p.name, p.tel, ta.id, ta.area_name, p.currency_id\n"), sql);
         assertTrue(PartyBalanceQuery.pageSql(PartyBalanceFilter.allToday(PartyKind.CUSTOMER))
-                .contains("GROUP BY m.account_code, p.name, p.tel, ta.id, ta.area_name, p.limit_num, p.price_id\n"));
+                .contains("GROUP BY m.account_code, p.name, p.tel, ta.id, ta.area_name, p.currency_id, "
+                        + "p.limit_num, p.price_id\n"));
     }
 
     /** The three balance states, and that "all" adds no condition at all. */
@@ -154,8 +157,11 @@ class PartyBalanceQueryTest {
 
         assertFalse(PartyBalanceQuery.pageSql(filter(BalanceState.ALL, null, null, false, null, ""))
                 .contains("HAVING"), "an unfiltered list needs no HAVING at all");
+        // The state is about this party's debt, so it reads the balance in the party's own currency
+        // (V82, docs/currency-plan.md §14 ق-ج٨): a dollar account at zero is settled whatever its book
+        // value says. For a party in the base the two are one figure.
         assertTrue(PartyBalanceQuery.pageSql(filter(BalanceState.DEBTOR, null, null, false, null, ""))
-                .contains("HAVING balance > 0"));
+                .contains("HAVING balance_own > 0"));
     }
 
     /**
@@ -196,7 +202,8 @@ class PartyBalanceQueryTest {
         PartyBalanceFilter with = filter(BalanceState.ALL, null, null, true, null, "");
         assertEquals(placeholders(PartyBalanceQuery.pageSql(without)),
                 placeholders(PartyBalanceQuery.pageSql(with)));
-        assertTrue(PartyBalanceQuery.pageSql(with).contains("credit_limit > 0 AND balance > credit_limit"));
+        // The limit is written in the party's own currency, so it is held against the balance in it.
+        assertTrue(PartyBalanceQuery.pageSql(with).contains("credit_limit > 0 AND balance_own > credit_limit"));
     }
 
     @Test

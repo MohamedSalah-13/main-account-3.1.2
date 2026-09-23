@@ -115,6 +115,17 @@ public final class CurrencyRules {
      */
     public static void requireCanBecomeBase(Currency currency, int recordedRates, int foreignTreasuries)
             throws UserValidationException {
+        requireCanBecomeBase(currency, recordedRates, foreignTreasuries, 0);
+    }
+
+    /**
+     * @param foreignParties how many customers and suppliers deal in a currency other than the base (V82).
+     *                       Their opening balances and movements are valued against the base as it stands,
+     *                       and a party's opening in a foreign currency may have needed no rate at all
+     *                       (docs/currency-plan.md §14 ق-ج٩).
+     */
+    public static void requireCanBecomeBase(Currency currency, int recordedRates, int foreignTreasuries,
+                                            int foreignParties) throws UserValidationException {
         if (currency == null) {
             throw new UserValidationException("currency.error.not.found");
         }
@@ -127,6 +138,9 @@ public final class CurrencyRules {
         if (foreignTreasuries > 0) {
             throw new UserValidationException("currency.error.base.foreign.treasury");
         }
+        if (foreignParties > 0) {
+            throw new UserValidationException("currency.error.base.foreign.party");
+        }
     }
 
     /**
@@ -138,8 +152,25 @@ public final class CurrencyRules {
      */
     public static void requireCanStop(Currency stored, CurrencyDraft draft, int activeTreasuries)
             throws UserValidationException {
-        if (stored != null && stored.active() && !draft.active() && activeTreasuries > 0) {
+        requireCanStop(stored, draft, activeTreasuries, 0);
+    }
+
+    /**
+     * The same for a customer or a supplier dealing in the currency (V82, ق-ج٩): a stopped currency
+     * leaves the party form's list, and the party would go on dealing in it. The party is stopped first.
+     *
+     * @param activeParties how many active customers and suppliers deal in the currency
+     */
+    public static void requireCanStop(Currency stored, CurrencyDraft draft, int activeTreasuries,
+                                      int activeParties) throws UserValidationException {
+        if (stored == null || !stored.active() || draft.active()) {
+            return;
+        }
+        if (activeTreasuries > 0) {
             throw new UserValidationException("currency.error.stop.treasury");
+        }
+        if (activeParties > 0) {
+            throw new UserValidationException("currency.error.stop.party");
         }
     }
 

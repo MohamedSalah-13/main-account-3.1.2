@@ -155,6 +155,26 @@ class CurrencyRulesTest {
         }
 
         @Test
+        @DisplayName("moves only while no customer or supplier deals in another currency (V82)")
+        void lockedByAForeignParty() {
+            assertDoesNotThrow(() -> CurrencyRules.requireCanBecomeBase(SAR, 0, 0, 0));
+            assertEquals("currency.error.base.foreign.party", assertThrows(UserValidationException.class,
+                    () -> CurrencyRules.requireCanBecomeBase(SAR, 0, 0, 2)).getMessage());
+        }
+
+        @Test
+        @DisplayName("a currency an active customer or supplier deals in is not stopped (V82)")
+        void stoppingOneAPartyUses() {
+            CurrencyDraft stop = CurrencyDraft.switching(USD, false);
+            assertEquals("currency.error.stop.party", assertThrows(UserValidationException.class,
+                    () -> CurrencyRules.requireCanStop(USD, stop, 0, 1)).getMessage());
+            assertEquals("currency.error.stop.treasury", assertThrows(UserValidationException.class,
+                    () -> CurrencyRules.requireCanStop(USD, stop, 1, 1)).getMessage(), "the treasury is named first");
+            assertDoesNotThrow(() -> CurrencyRules.requireCanStop(USD, stop, 0, 0));
+            assertDoesNotThrow(() -> CurrencyRules.requireCanStop(USD, CurrencyDraft.switching(USD, true), 0, 4));
+        }
+
+        @Test
         @DisplayName("a stopped currency or none at all cannot become it")
         void onlyAnActiveOne() {
             assertEquals("currency.error.base.inactive", assertThrows(UserValidationException.class,

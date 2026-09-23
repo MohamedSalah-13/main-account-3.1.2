@@ -81,6 +81,11 @@ public final class JdbcPartyBalanceRepository extends AbstractDao<PartyBalanceRo
         values.add(from);                      // period credit
         values.add(asOf);
         values.add(asOf);                      // last movement, never in the future
+        values.add(asOf);                      // the balance in the party's own currency (V82)
+        values.add(from);                      // its period debit
+        values.add(asOf);
+        values.add(from);                      // its period credit
+        values.add(asOf);
 
         values.add(filter.areaId());
         values.add(filter.areaId());
@@ -118,10 +123,19 @@ public final class JdbcPartyBalanceRepository extends AbstractDao<PartyBalanceRo
                     rs.getBigDecimal("balance"),
                     rs.getBigDecimal("period_debit"),
                     rs.getBigDecimal("period_credit"),
-                    lastMovement == null ? null : lastMovement.toLocalDate());
+                    lastMovement == null ? null : lastMovement.toLocalDate(),
+                    rs.getBigDecimal("balance_own"),
+                    rs.getBigDecimal("period_debit_own"),
+                    rs.getBigDecimal("period_credit_own"),
+                    currencyId(rs));
         } catch (SQLException e) {
             throw new DaoException("Could not map a party balance row", e);
         }
+    }
+
+    private static Integer currencyId(ResultSet rs) throws SQLException {
+        int id = rs.getInt("currency_id");
+        return rs.wasNull() ? null : id;
     }
 
     @Override

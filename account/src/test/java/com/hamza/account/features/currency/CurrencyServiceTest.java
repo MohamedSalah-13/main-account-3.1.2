@@ -192,6 +192,30 @@ class CurrencyServiceTest {
         }
 
         @Test
+        @DisplayName("is refused while a customer or supplier deals in a foreign currency (V82)")
+        void lockedByAForeignParty() throws Exception {
+            signInWith(AppPermissions.CURRENCY_UPDATE);
+            repository.parties.add(new int[]{USD.id(), 1});
+            assertEquals(false, service.baseMayChange());
+            assertEquals("currency.error.base.foreign.party", assertThrows(UserValidationException.class,
+                    () -> service.setBase(SAR.id())).getMessage());
+            assertEquals(List.of("lockAll"), repository.calls, "nothing moved");
+        }
+
+        @Test
+        @DisplayName("stopping a currency an active customer or supplier deals in is refused (V82)")
+        void notStoppedUnderAParty() throws Exception {
+            signInWith(AppPermissions.CURRENCY_UPDATE);
+            repository.parties.add(new int[]{USD.id(), 1});
+            assertEquals("currency.error.stop.party", assertThrows(UserValidationException.class,
+                    () -> service.save(CurrencyDraft.switching(USD, false))).getMessage());
+            repository.parties.clear();
+            repository.parties.add(new int[]{USD.id(), 0});
+            assertEquals(USD.id(), service.save(CurrencyDraft.switching(USD, false)),
+                    "a stopped party holds nobody back");
+        }
+
+        @Test
         @DisplayName("is refused for a stopped currency")
         void notToAStoppedOne() {
             signInWith(AppPermissions.CURRENCY_UPDATE);

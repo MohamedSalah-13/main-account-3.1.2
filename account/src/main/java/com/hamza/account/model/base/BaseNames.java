@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Setter
@@ -64,6 +65,26 @@ public abstract class BaseNames extends DForColumnTable {
      * where every other spelling difference between these two tables lives too.
      */
     private boolean active = true;
+
+    // ---- V82 -------------------------------------------------------------------
+    // The party's currency, plain fields for the same reason as V56's. See
+    // docs/currency-plan.md §14.
+
+    /**
+     * The currency this party deals in; {@code null} is the base, and a party never names the base.
+     * Fixed after the party's first movement, with the opening balance - every amount on the account
+     * is written in it.
+     */
+    private Integer currency_id;
+
+    /**
+     * The opening balance in {@link #currency_id}, or {@code null} for a party in the base.
+     * {@link #first_balance} is its value in the base, which every balance reads.
+     */
+    private BigDecimal opening_foreign;
+
+    /** The rate that valued {@link #opening_foreign}, copied; {@code null} with it, or for an opening of zero. */
+    private BigDecimal opening_rate;
 
 
     public int getId() {

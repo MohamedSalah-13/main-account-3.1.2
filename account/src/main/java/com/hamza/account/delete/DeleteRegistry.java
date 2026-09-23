@@ -204,6 +204,9 @@ public final class DeleteRegistry {
             .referencedBy("currency_rate", "currency_id", "delete.ref.currency.rate")
             // V81: a treasury in the currency. Not cascading - a treasury's history is in its currency.
             .referencedBy("treasury", "currency_id", "delete.ref.currency.treasury")
+            // V82: a customer or a supplier dealing in it - every amount on their account is in it.
+            .referencedBy("custom", "currency_id", "delete.ref.currency.customer")
+            .referencedBy("suppliers", "currency_id", "delete.ref.currency.supplier")
             .build();
 
     /**

@@ -27,8 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,675 tests** with 281 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after a foreign treasury's statement learned to show its own currency. What is
+**3,795 tests** with 298 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after a customer and a supplier learned to deal in their own currency
+and the yearly report became the profit and loss by the month. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -90,8 +91,9 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - forty-three `*AcceptanceTest` files exist, and the later areas' own
-sections name theirs; the newest is `ForeignTreasuryDatabaseAcceptanceTest` (V81, see **Currencies**). The
+**That list is itself out of date** - forty-five `*AcceptanceTest` files exist, and the later areas' own
+sections name theirs; the newest are `PartyCurrencyDatabaseAcceptanceTest` (V82, see **Currencies**) and
+`YearlyReportDatabaseAcceptanceTest` (see **The yearly report**). The
 reports work added four, each building a scratch schema of its own from
 nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
 `PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest`,
@@ -342,12 +344,13 @@ Two documents govern work here and are kept current — read them before large c
   amount is recorded beside its base figure and never instead of it, so no view, balance or report
   moves in any phase; a rate is what one unit is worth in the base, dated, and the one in force on a
   day is the latest dated on it or before it - none is a refusal, never a zero; a movement copies its
-  rate onto its own row; the base changes only while no rate exists. **Phases A and B are built** (see
-  **Currencies** below) - B is a treasury in a foreign currency, its statement in its own currency
-  included (§13) - and so is fetching today's rates from the internet (ق-٩, §12); phases C-E - a party's currency, a document in a
-  foreign currency, exchange differences - wait on the decisions in §4. **Read it before touching
-  `features/currency`, `V80`, `V81`, or adding any column that holds an amount in a currency other than
-  the base.**
+  rate onto its own row; the base changes only while no rate exists. **Phases A, B and C are built**
+  (see **Currencies** below) - B is a treasury in a foreign currency, its statement in its own currency
+  included (§13), and C a customer or a supplier dealing in one (§14) - and so is fetching today's rates
+  from the internet (ق-٩, §12); phases D and E - a document in a foreign currency, exchange
+  differences - wait on the decisions in §4. **Read it before touching `features/currency`,
+  `features/party/currency`, `V80`-`V82`, or adding any column that holds an amount in a currency other
+  than the base.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -1305,9 +1308,10 @@ mutated the *opening* balance under a name suggesting the current one - is gone;
 ### Currencies
 
 `features/currency`, `CurrenciesController` (the treasury section's «العملات») and `V80`; the
-foreign treasury is `V81` and the classes named under **A treasury in a foreign currency** below.
-`docs/currency-plan.md` is the contract, §4 of it is what the owner still has to decide, and §11 is
-phase B.
+foreign treasury is `V81` and the classes named under **A treasury in a foreign currency** below, and a
+party's currency is `V82` and `features/party/currency` (**A party in a foreign currency**).
+`docs/currency-plan.md` is the contract, §4 of it is what the owner still has to decide, §11 is
+phase B and §14 phase C.
 
 **The books are in one currency, and `currency.is_base` says which.** Every amount column was
 written in it before V80 existed and still is: V80 *named* the currency the figures had always been
@@ -1410,11 +1414,13 @@ move in the base alone; what V81 adds is written **beside** the base figure.
   `income_own`/`output_own` and `treasury_current_balance` a `balance_own`, beside a `balance` whose
   definition did not change. A withdrawal, a transfer's source and the minimum balance all compare
   `balanceOwn` - 150 dollars are not in a drawer holding 100, whatever 4,800 pounds would say.
-- **It takes a deposit, a withdrawal and a transfer, and nothing else.** An invoice (checked before the
-  number is allocated), a party payment that moves cash, an expense - and so a wage - and a transfer
-  fee from it are refused through `TreasuryCurrencyGuard` with a sentence naming the treasury, because
-  their rows have no column for a foreign amount yet (phases C and D). Their pickers leave it out
-  (`TreasuryService.getActiveBaseCurrencyTreasuries`). **No shifts** (the owner's decision):
+- **It takes a deposit, a withdrawal, a transfer, and since V82 a party's cash in its own currency - and
+  nothing else.** An invoice (checked before the number is allocated), an expense - and so a wage - and a
+  transfer fee from it are refused through `TreasuryCurrencyGuard` with a sentence naming the treasury,
+  because their rows have no column for a foreign amount yet (phase D). Their pickers leave it out
+  (`TreasuryService.getActiveBaseCurrencyTreasuries`). A collection or a supplier payment goes through
+  one only for a party in the same currency (`PartyMovementFigures.cashCurrency`), and the collection
+  screen offers exactly those. **No shifts** (the owner's decision):
   `ShiftPolicyService` refuses tracking on one and `TreasuryService` refuses putting a tracked treasury
   in a currency - which is why `TreasuryService` must still not mention `ShiftGate`.
 - **The base cannot move while a foreign treasury exists**, as it cannot after the first rate - an
@@ -1438,6 +1444,62 @@ move in the base alone; what V81 adds is written **beside** the base figure.
   (`src/test/resources/db/views-v80/R__views.sql`), which is what an upgrading customer had - and its
   comparison now also says V81's views moved no base figure. **Never edit that copy.**
   `ForeignTreasuryDatabaseAcceptanceTest` works a dollar drawer out by hand on a scratch schema.
+
+**A party in a foreign currency** (phase C, `V82`, `docs/currency-plan.md` §14). A customer or a
+supplier may deal in a currency; the books still move in the base alone, and what V82 adds is written
+**beside** the base figure.
+
+- **`custom.currency_id` and `suppliers.currency_id` are NULL for the base**, the opening is typed in the
+  party's currency (`opening_foreign`) and valued into `first_balance` at the rate of the opening's own
+  day (`opening_rate`, copied). **The currency is fixed by the first movement, with the opening** - the
+  same `OpeningBalanceRegistry` lock, and `PartyTableSpec.openingColumns()` is five columns now.
+  `PartyOpeningCurrency` settles all of it before the row is saved and refuses a changed currency with a
+  sentence of its own. The credit limit (`limit_num`) is written in the party's currency.
+- **A document is written in the base and translated** (the owner's decision): `InvoicePartyCurrency`
+  picks the rate in `persist` **before the number is allocated** and writes `exchange_rate`,
+  `total_foreign`, `discount_foreign`, `paid_foreign` after the header, from what was stored. An edit
+  keeps its rate while its day and party are unchanged; a return naming its invoice takes that invoice's
+  rate. `DocumentTranslation` rounds so that a cash invoice leaves exactly zero in the party's currency.
+  The treasury of a document must still be in the base.
+- **A movement's cash is typed in the treasury's currency, which must be the party's or the base; a
+  note in the party's** (`PartyMovementFigures`), at the day's rate, and `AccountCustomerService` /
+  `AccountSupplierService` put the base figures on the movement before anything else reads it - so the
+  shift journal, the wallet fee and `treasury_balance`'s base columns see what they always saw. No wallet
+  fee on a foreign treasury. `treasury_balance`'s own-currency column reads a party payment through
+  `paid_foreign` when the **treasury** is foreign, `paid` when it is in the base.
+- **The foreign figures are a statement of their own after the row's insert or update**, in the same
+  transaction, because the rows' statements are pinned and bound from models that know no currency.
+  The price: `audit_total_sales_update` logs an update with unchanged values straight after a foreign
+  party's invoice is inserted.
+- **Everything a party is told is in its currency, and everything added across parties is in the
+  base.** The ledger views carry `purchase_own`/`discount_own`/`paid_own` (`COALESCE` of the foreign and
+  the base column), so every reader moved to them sees the base figures unchanged for a party in the
+  base. The statement shows the party's figures with each movement's book value (`PartyStatementCurrency`,
+  §13's pattern); allocation is in the party's currency (a thousand dollars settles a thousand-dollar
+  invoice at any rate); the balances list's state and over-limit filters and the credit-limit warning
+  read the own balance while its range, order and cards read the book value; the ageing report's rows are
+  in the party's currency and its foot is in the base, each invoice's remainder valued at **its own**
+  copied rate (`book_bucket_*`), the realized difference landing in the base `book_unallocated`. A printed
+  list never adds a column holding two currencies.
+- **The difference the rates make is shown, never posted** (ق-ج٧): a thousand dollars bought at 48 and
+  paid at 50 leaves the account at zero dollars and a book value of -2,000. Naming it is phase E.
+- **The base cannot move while a party deals in a foreign currency, and a currency an active party uses
+  cannot be stopped** (`CurrencyRules`, `foreignPartyCount`/`activePartyCount`); `DeleteRegistry.CURRENCIES`
+  declares both currency columns.
+- **Not in the phase, on purpose**: the printed invoice and its balance lines stay in the base (phase D),
+  and so does everything that reads sales rather than balances - the party profile, the trend, RFM, the
+  delegate reports - which is right by definition. The customer receivables report still shows book
+  values. `PartyCurrencyDatabaseAcceptanceTest` works a dollar customer and supplier out by hand on a
+  scratch schema: eleven cases.
+- **The five screens were photographed with a dollar customer entered through the services**, and two
+  things only the pictures showed: the balances list put its currency column *after* the dollar figures,
+  so they were read before anybody knew what they were in, and the cards above both lists are in the
+  base while a foreign row under them is not, with nothing saying so - both fixed. **Photograph a dialog
+  inside a real `Dialog`**: a `DialogPane` made a window's root by hand lays the collection form out at
+  two heights on alternate passes, and its fields overlapped in a picture of a screen that is fine.
+  **Not seen**: English, the dark theme, Windows, the statement's paper and spreadsheet opened, and the
+  credit-limit notification firing. The invoice screen gives no hint that its party deals in dollars -
+  it shows neither the rate nor the translated figure, only the refusal when there is no rate.
 
 ### Shifts
 
@@ -3323,10 +3385,13 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V81`, a treasury in a
-  foreign currency: `treasury.currency_id` (NULL for the base), the opening in that currency with the
-  rate that valued it, and the foreign amounts beside the base figure on a deposit and on each side of
-  a transfer (see **Currencies**). Before it `V80` is the currencies:
+  new database executes it and continues with `V2`, `V3`, … The current head is `V82`, a party's
+  currency: `custom.currency_id` and `suppliers.currency_id` (NULL for the base) with the opening in that
+  currency and its rate, and the party's own figures with the rate beside the base ones on every
+  movement on its account and on every document header (see **Currencies**). Before it `V81` is a
+  treasury in a foreign currency: `treasury.currency_id` (NULL for the base), the opening in that
+  currency with the rate that valued it, and the foreign amounts beside the base figure on a deposit and
+  on each side of a transfer. Before it `V80` is the currencies:
   `currency` with exactly one base and `currency_rate` with one dated rate per currency per day, the
   base chosen from the old `setting.currency`. Before it `V79` gives
   the quick invoice its own two keys, `sales.quick` and `purchase.quick`, granted to every role and

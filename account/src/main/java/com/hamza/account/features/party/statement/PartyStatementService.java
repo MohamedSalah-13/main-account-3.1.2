@@ -5,6 +5,8 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.controlsfx.database.DaoException;
 
+import com.hamza.account.features.currency.Currency;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -81,6 +83,22 @@ public final class PartyStatementService {
     }
 
     /**
+     * What the party owes today in its own currency (V82, docs/currency-plan.md §14) - the figure a
+     * customer who deals in dollars is told, and what a collection from them is typed against. For a
+     * party in the base it is {@link #currentBalance}.
+     */
+    public BigDecimal currentBalanceOwn(PartyKind kind, int partyId) throws DaoException {
+        requireShow(kind);
+        return repository.currentBalanceOwn(kind, partyId);
+    }
+
+    /** The currency the party deals in, or {@code null} for the base. */
+    public Currency currencyOf(PartyKind kind, int partyId) throws DaoException {
+        requireShow(kind);
+        return repository.currencyOf(kind, partyId);
+    }
+
+    /**
      * What the party owed straight after one of its documents: the running balance on that
      * document's row. The printed invoice reads this rather than {@link #currentBalance}, so a
      * reprint shows the balance as it stood then, not as it stands today.
@@ -108,7 +126,7 @@ public final class PartyStatementService {
                 ? List.copyOf(fetched.subList(0, filter.pageSize()))
                 : List.copyOf(fetched);
         return new PartyStatementPage(rows, repository.summarize(filter), filter.page(),
-                filter.page() > 0, hasNext);
+                filter.page() > 0, hasNext, currency(filter));
     }
 
     /**
@@ -128,7 +146,17 @@ public final class PartyStatementService {
         List<PartyStatementRow> rows = truncated
                 ? List.copyOf(fetched.subList(0, PRINT_LIMIT))
                 : List.copyOf(fetched);
-        return new PartyStatementPrintData(rows, repository.summarize(printable), truncated);
+        return new PartyStatementPrintData(rows, repository.summarize(printable), truncated, currency(filter));
+    }
+
+    /**
+     * Which set of figures the statement shows: the party's own currency when it deals in a foreign one
+     * (docs/currency-plan.md §14 ق-ج٨). Read with the rows rather than taken from the screen, so the figures
+     * and the name of their currency come from one moment.
+     */
+    private PartyStatementCurrency currency(PartyStatementFilter filter) throws DaoException {
+        Currency foreign = repository.currencyOf(filter.partyKind(), filter.partyId());
+        return foreign == null || foreign.base() ? PartyStatementCurrency.BASE : new PartyStatementCurrency(foreign);
     }
 
     private static void requireShow(PartyKind kind) throws DaoException {

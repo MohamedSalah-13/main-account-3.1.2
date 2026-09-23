@@ -14,6 +14,9 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
 
+import com.hamza.account.features.party.currency.PartyOpeningCurrency;
+
+import java.time.LocalDate;
 import java.util.List;
 
 public record CustomerService(DaoFactory daoFactory) {
@@ -34,6 +37,10 @@ public record CustomerService(DaoFactory daoFactory) {
         AuthorizationGuard.require(customer.getId() == 0
                 ? AppPermissions.CUSTOMER_CREATE : AppPermissions.CUSTOMER_UPDATE);
         return TransactionTemplate.execute(() -> {
+            // The party's currency and its opening in it (V82, docs/currency-plan.md §14 ق-ج١ and ق-ج٢):
+            // valued into first_balance here, and refused once the party has moved.
+            PartyOpeningCurrency.jdbc().prepare(PartyKind.CUSTOMER, customer,
+                    customer.getId() == 0 ? null : nameDao().getDataById(customer.getId()), LocalDate.now());
             int rows = customer.getId() == 0 ? nameDao().insert(customer) : nameDao().update(customer);
             if (rows > 0) {
                 ChangeAnnouncer announcer = ChangeAnnouncer.jdbc();

@@ -71,6 +71,16 @@ public final class CurrencyQuery {
     public static final String ACTIVE_TREASURY_COUNT_SQL =
             "SELECT COUNT(*) FROM treasury WHERE currency_id = ? AND is_active = 1";
 
+    /** Customers and suppliers in a currency other than the base (V82): while any exists, the base holds. */
+    public static final String FOREIGN_PARTY_COUNT_SQL = """
+            SELECT (SELECT COUNT(*) FROM custom WHERE currency_id IS NOT NULL)
+                   + (SELECT COUNT(*) FROM suppliers WHERE currency_id IS NOT NULL)""";
+
+    /** Active customers and suppliers in one currency (V82): while any exists, it is not stopped. */
+    public static final String ACTIVE_PARTY_COUNT_SQL = """
+            SELECT (SELECT COUNT(*) FROM custom WHERE currency_id = ? AND is_active = 1)
+                   + (SELECT COUNT(*) FROM suppliers WHERE currency_id = ? AND is_active = 1)""";
+
     /**
      * The currency a rate is being written for, read under a shared lock: a base moving at the same
      * moment holds every currency row exclusively, so the two cannot interleave (see

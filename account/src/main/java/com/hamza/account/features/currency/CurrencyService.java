@@ -74,7 +74,8 @@ public final class CurrencyService {
      * tab, read outside any lock - {@code setBase} asks the same question again, under one.
      */
     public boolean baseMayChange() throws DaoException {
-        return repository.rateCount() == 0 && repository.foreignTreasuryCount() == 0;
+        return repository.rateCount() == 0 && repository.foreignTreasuryCount() == 0
+                && repository.foreignPartyCount() == 0;
     }
 
     // ---- rates -----------------------------------------------------------------------------
@@ -140,7 +141,7 @@ public final class CurrencyService {
         CurrencyRules.requireValid(draft, repository.all());
         if (!draft.isNew() && !draft.active()) {
             CurrencyRules.requireCanStop(repository.find(draft.id()), draft,
-                    repository.activeTreasuryCount(draft.id()));
+                    repository.activeTreasuryCount(draft.id()), repository.activePartyCount(draft.id()));
         }
         try {
             if (draft.isNew()) {
@@ -180,7 +181,7 @@ public final class CurrencyService {
                 return null;
             }
             CurrencyRules.requireCanBecomeBase(currency, repository.rateCount(),
-                    repository.foreignTreasuryCount());
+                    repository.foreignTreasuryCount(), repository.foreignPartyCount());
             repository.clearBase();
             if (repository.markBase(currencyId) != 1) {
                 throw new UserValidationException("currency.error.base.inactive");
