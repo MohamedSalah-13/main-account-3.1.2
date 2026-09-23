@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,865 tests** with 311 skipped (below) — the figure `mvn clean test`
+**3,866 tests** with 311 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-23 after the profit and loss became a statement, the returns reasons a
 report of their own and the two payments reports one screen. What is
 genuinely covered:
@@ -2672,6 +2672,11 @@ tab). Rebuilt 2026-09-23; `DialogReturnReasonsReport`, `ReturnReasonReportServic
   The reports index keeps its two cards, each opening the screen on its own side.
 - **The shortcut is `REPORT_PARTY_PAYMENTS`**, and `SidebarShortcutManager` carries a key saved under
   `REPORT_CUSTOMER_PAID` or `REPORT_SUPPLIER_PAID` onto it, the retirement the master-data screens had.
+- **The sidebar opens it asking for no side**, and `PartyPaymentsService.openingSide` answers that with
+  the first side offered. The screen used to ask `sides.contains(preferred)` of a `List.copyOf`, which
+  throws on a null rather than answering false - so the button failed on its first press in the field
+  while every picture had been taken through the hub's road, which names a side. Open a screen by the
+  road the sidebar takes before calling it seen.
 - The filter is `PartyPaymentsFilter` - a text that is a name by part or, as a number (٠-٩ included),
   a party's code or an allocated invoice, and a treasury - built into the statement and its binder in
   one place. The cards split what came in from what went back; the table shows who entered each row.
