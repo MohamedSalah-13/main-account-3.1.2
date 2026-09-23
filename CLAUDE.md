@@ -376,6 +376,20 @@ initialise the Hikari pool, verify the database is reachable, run Flyway, run th
 load and verify the signed product profile, then register every service in `ServiceRegistry`.
 `LogApplication` (login) opens from `start()`.
 
+**The loading screen is `StartupWindow`, and it says each step as it runs** (2026-09-23). It used to be
+a spinner over one sentence that did not change for the whole start - a minute of it on a first install
+of eighty migrations, and a server that never answered looked exactly like one that was working.
+`bootstrap(StartupProgress)` announces each `StartupStep` (`features/startup`, no JavaFX, a test per
+class); `DatabaseMigrationService` announces the database check, the backup and each migration through
+a Flyway callback (`MigrationProgressCallback`); a step the start does not need is passed over and
+counted as done. The lines are message keys resolved in the window, so the step keys are checked
+against the three bundles by `StartupTrackerTest`, not by `MessageKeyArchitectureTest`. "Technical
+details" shows what this start appended to `logs/app.log` (`StartupLogTail`, stack frames left out) -
+the file support reads, read rather than hooked, so `module-info` needs no `log4j.core`. A failure
+marks the step it stopped on, says `ErrorReporter`'s sentence and reference in the window in place of
+a dialog, opens the log, and offers to copy it all. Its look is `css/startup.css`, added to that scene
+alone. **Add a step by adding a constant and a `begin` call** - never by writing a sentence.
+
 `ServiceRegistry` is a static `Map<Class<?>, Object>` service locator — there is no DI framework.
 Controllers pull collaborators with `ServiceRegistry.get(SomeService.class)`, which returns null if
 registration order ever changes.
