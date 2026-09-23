@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,657 tests** with 280 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after the currencies screen learned to fetch rates from the internet. What is
+**3,663 tests** with 280 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the shared alert learned to break an Arabic message into lines itself. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -1365,12 +1365,10 @@ one, and only what somebody ticks is recorded - the internet suggests, the shop 
 - **This build cannot reach either source** (the environment's policy refuses both), so the real client
   was driven end to end against a local server impersonating the three hosts over TLS - see §12.4. The
   first press on a connected machine is the first real fetch.
-- **The shared error window does not wrap Arabic.** `AlertSetting` draws an Arabic sentence that needs
-  two lines wider than its 360 points and clips both ends; English wraps. Older messages fit on one line
-  and never showed it; seven currency messages did and were shortened (all 43 now fit). Keep a new
-  Arabic refusal to one line - measure it - until the window itself is fixed, which is a change of its
-  own. And **a full stop between a Latin run and an Arabic word lands on the wrong side** ("L.E." drew
-  ".L.E"); a left-to-right mark there did not help, so the examples say `SAR`.
+- **Seven currency messages were shortened to fit one line** while the shared error window could not
+  wrap Arabic. It can now (see **Localization**), and they stay as they are. And **a full stop between a
+  Latin run and an Arabic word lands on the wrong side** ("L.E." drew ".L.E"); a left-to-right mark
+  there did not help, so the examples say `SAR`.
 - **`CurrenciesController.reload` calls `table.refresh()`**: a `Currency` is a record, an unchanged one
   is equal to itself, and JavaFX redraws a cell only when its item changes by `equals` - while the rate
   columns read `ratesToday` beside it. Since phase A a rate recorded in the drawer or at another till
@@ -3463,6 +3461,21 @@ there because the match is qualified by `Columns.` and all of those take `titleK
 accepts only a whole literal, since `NamesTables.SEL_PRICE + "2"` is a key nothing static can
 resolve. That rule immediately found twelve **raw Arabic strings** passed as column titles in
 `ReportTotalByYearController`, which rendered correctly by accident and could never be translated.
+
+**The shared alert breaks an Arabic message into lines itself, because JavaFX on Linux cannot.**
+`PangoGlyphLayout` caches a run's text against the `TextRun` object, and `PrismTextLayout` shortens
+that object when it splits a line - so the first line is reshaped from the whole sentence: drawn up to
+777 points wide in a 342-point label, clipped at both ends, with its tail repeated on the line below.
+Latin text is not shaped and wraps correctly. `AlertSetting` therefore measures the message in the
+content label's own font and puts a `\n` where each line ends (`controlsfx.alert.MessageLines`), since
+a line ended by `\n` is a run that is never split. Windows shapes through `DWGlyphLayout`, which keeps
+no such cache, so the defect is very likely Linux's alone - **read in the JavaFX bytecode, never seen on
+Windows** - and there the only change is that the lines are broken before the label sees them. It is what
+`AddItemController.review.md` item 24 was: "only the first line shows" was this, not the dialog's
+height, which grows with its lines before and after the change. **Every other wrapped Arabic label
+still has it on Linux** - a note under a form, the sixteen `new Alert(` that bypass `AlertSetting` - so
+a screenshot taken on Linux that shows an Arabic paragraph clipped at both ends is showing this defect,
+not the screen's layout.
 
 **The default font is El Messiri, because Cairo drops a space.** JavaFX draws Cairo without the space
 before «في», wherever the word falls and in every screen and dialog, so "مستخدم في" read
