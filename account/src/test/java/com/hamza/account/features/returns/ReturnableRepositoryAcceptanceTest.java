@@ -1,6 +1,9 @@
 package com.hamza.account.features.returns;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.returns.reasons.JdbcReturnReasonsRepository;
+import com.hamza.account.features.returns.reasons.ReasonTotal;
+import com.hamza.account.features.returns.reasons.ReturnSide;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -89,9 +92,6 @@ class ReturnableRepositoryAcceptanceTest {
         assertTrue(REPOSITORY.sourceExpiryBatches(
                 DocumentType.SALES, noSuchInvoice, 1).isEmpty());
         assertTrue(REPOSITORY.sourceDelegateId(noSuchInvoice).isEmpty());
-        // Not asserted empty: the database under test may hold real returns in range.
-        assertNotNull(REPOSITORY.reasonCounts(DocumentType.SALES_RETURN,
-                LocalDate.now().minusYears(50), LocalDate.now().plusYears(50)));
 
         assertFalse(ConnectionManager.inTransaction(),
                 "reading must not leave a transaction bound to this thread");
@@ -323,16 +323,17 @@ class ReturnableRepositoryAcceptanceTest {
             var damagedReason = readReturnReason(transaction, damaged);
             assertEquals("DAMAGED", damagedReason);
 
-            List<ReturnableRepository.ReasonCount> counts = REPOSITORY.reasonCounts(
-                    DocumentType.SALES_RETURN, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+            // The reasons report's own repository, joining this uncommitted transaction.
+            List<ReasonTotal> counts = new JdbcReturnReasonsRepository().reasons(
+                    ReturnSide.SALES, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
 
-            var byReason = new java.util.HashMap<ReturnReason, ReturnableRepository.ReasonCount>();
+            var byReason = new java.util.HashMap<ReturnReason, ReasonTotal>();
             int nullReasonCount = 0;
             for (var count : counts) {
-                if (count.reason() == null) {
+                if (count.isWithoutReason()) {
                     nullReasonCount += count.count();
                 } else {
-                    byReason.put(count.reason(), count);
+                    byReason.put(count.reason().orElseThrow(), count);
                 }
             }
             assertEquals(1, byReason.get(ReturnReason.DAMAGED).count());

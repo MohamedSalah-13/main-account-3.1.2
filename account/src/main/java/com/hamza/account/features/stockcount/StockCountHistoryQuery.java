@@ -18,7 +18,7 @@ import java.sql.Date;
 public final class StockCountHistoryQuery {
 
     /** What one line moved a balance by, in base units - the view's own expression. */
-    static final String DIFFERENCE = "scl.counted_qty * scl.type_value - scl.system_qty";
+    public static final String DIFFERENCE = "scl.counted_qty * scl.type_value - scl.system_qty";
 
     static final String WHERE = """
             WHERE c.count_date BETWEEN ? AND ?

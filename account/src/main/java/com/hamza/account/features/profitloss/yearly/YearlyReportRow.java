@@ -1,5 +1,6 @@
 package com.hamza.account.features.profitloss.yearly;
 
+import com.hamza.account.features.profitloss.ProfitLossFigures;
 import com.hamza.account.features.profitloss.ProfitLossRow;
 
 import java.math.BigDecimal;
@@ -13,7 +14,7 @@ import java.util.Optional;
  *
  * @param days the statement's own days in this month, oldest first - what the row opens into
  */
-public record YearlyReportRow(YearMonth month, MonthFigures current, MonthFigures previous,
+public record YearlyReportRow(YearMonth month, ProfitLossFigures current, ProfitLossFigures previous,
                               MonthBreakdown breakdown, List<ProfitLossRow> days) {
 
     public YearlyReportRow {
@@ -77,11 +78,11 @@ public record YearlyReportRow(YearMonth month, MonthFigures current, MonthFigure
     }
 
     public Optional<BigDecimal> netSalesChange() {
-        return MonthFigures.change(current.netSales(), previous.netSales());
+        return ProfitLossFigures.change(current.netSales(), previous.netSales());
     }
 
     public Optional<BigDecimal> netProfitChange() {
-        return MonthFigures.change(current.netProfit(), previous.netProfit());
+        return ProfitLossFigures.change(current.netProfit(), previous.netProfit());
     }
 
     public boolean hasActivity() {

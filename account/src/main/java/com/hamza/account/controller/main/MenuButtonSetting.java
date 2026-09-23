@@ -67,15 +67,30 @@ public final class MenuButtonSetting {
      * The button is visible in the FXML, which is what a present feature means anyway.
      */
     public void configureButton(Button button, ButtonWithPerm action, FeatureKey feature) {
+        configureButton(button, action, feature, null);
+    }
+
+    /**
+     * A button for one screen that either of two features opens - the payments report, which is the
+     * customers' feature and the suppliers' in one screen. It is hidden only when the edition carries
+     * neither, and opening it asks for the first only when the second is absent. Neither feature could
+     * be replaced by a new one: a key new to the catalogue is missing from every profile already signed.
+     */
+    public void configureButton(Button button, ButtonWithPerm action, FeatureKey feature, FeatureKey alternative) {
         setGraphicAndText(button, action);
         disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
-        setActionEvent(button, action, feature);
-        if (feature != null && (productFeatures == null || !productFeatures.isEnabled(feature))) {
+        setActionEvent(button, action, feature, alternative);
+        if (feature != null && (productFeatures == null
+                || (!productFeatures.isEnabled(feature) && !enabled(alternative)))) {
             button.setVisible(false);
             button.setManaged(false);
         }
         trackNavButton(button);
+    }
+
+    private boolean enabled(FeatureKey feature) {
+        return feature != null && productFeatures != null && productFeatures.isEnabled(feature);
     }
 
     /**
@@ -122,9 +137,13 @@ public final class MenuButtonSetting {
      *                or performing a custom action.
      */
     private void setActionEvent(Object control, ButtonWithPerm action, FeatureKey feature) {
+        setActionEvent(control, action, feature, null);
+    }
+
+    private void setActionEvent(Object control, ButtonWithPerm action, FeatureKey feature, FeatureKey alternative) {
         EventHandler<ActionEvent> eventHandler = (actionEvent) -> {
             try {
-                if (feature != null) productFeatures.require(feature);
+                if (feature != null && !enabled(alternative)) productFeatures.require(feature);
                 if (action.showOnTapPane()) {
                     action.actionAddPaneToTabPane(tabPane);
                 } else {

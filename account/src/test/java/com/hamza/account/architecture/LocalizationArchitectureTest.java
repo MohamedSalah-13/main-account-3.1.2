@@ -53,8 +53,7 @@ class LocalizationArchitectureTest {
             "notification/LowStockSource.java",
             "notification/StockLevelAlert.java",
             "notification/TreasuryBalanceSource.java",
-            "returns/ReturnLinkGuard.java",
-            "returns/ReturnReasonReportService.java");
+            "returns/ReturnLinkGuard.java");
 
     private static final String FEATURES_PREFIX = "com/hamza/account/features/";
 

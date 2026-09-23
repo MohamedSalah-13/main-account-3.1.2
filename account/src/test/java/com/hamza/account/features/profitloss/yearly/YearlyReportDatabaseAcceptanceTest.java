@@ -1,5 +1,6 @@
 package com.hamza.account.features.profitloss.yearly;
 
+import com.hamza.account.features.profitloss.ProfitLossFigures;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -146,7 +147,7 @@ class YearlyReportDatabaseAcceptanceTest {
         List<ProfitLossRow> statement = new ProfitLossService(new ProfitLossDao())
                 .load(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 12, 31));
 
-        MonthFigures year = MonthFigures.ZERO;
+        ProfitLossFigures year = ProfitLossFigures.ZERO;
         for (ProfitLossRow day : statement) {
             year = year.plus(day);
         }
