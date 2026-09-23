@@ -10,6 +10,9 @@ module com.hamza.account {
     requires annotations;
     requires org.apache.logging.log4j;
     requires java.sql;
+    // The currencies screen's "update from the internet" (features/currency/online) - the one outbound
+    // connection this program makes, over HTTPS, carrying the base currency's code and nothing else.
+    requires java.net.http;
     requires javafx.fxml;
     requires org.controlsfx.controls;
     requires de.jensd.fx.glyphs.fontawesome;

@@ -3600,3 +3600,15 @@
 .table-row-cell:base-currency > .table-cell {
     -fx-font-weight: bold;
 }
+
+/* "Update from the internet" on the currencies screen (docs/currency-plan.md §12). A currency that
+   cannot be ticked - its day already has a rate, or the source does not quote it - is muted, not
+   struck through: it is not stopped, it is simply not on offer today. */
+.table-row-cell:online-unavailable > .table-cell {
+    -fx-text-fill: -app-text-muted;
+}
+
+/* A move beyond ten percent, offered unticked: a devaluation overnight or a source gone wrong. */
+.table-row-cell:online-large-move > .table-cell {
+    -fx-text-fill: -app-warning;
+}

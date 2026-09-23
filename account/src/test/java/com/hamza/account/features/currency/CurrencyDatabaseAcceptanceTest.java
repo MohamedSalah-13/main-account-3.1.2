@@ -376,6 +376,42 @@ class CurrencyDatabaseAcceptanceTest {
         assertEquals(errorCode, refused.getErrorCode(), sql + " -> " + refused.getMessage());
     }
 
+    @Test
+    @Order(12)
+    @DisplayName("rates from the internet: a day with a rate keeps it, the rest go in, in one transaction (§12)")
+    void fetchedRatesFillEmptyDaysOnly() throws Exception {
+        int usd = idOf("USD");
+        int sar = idOf("SAR");
+        LocalDate day = LocalDate.of(2026, 10, 5);
+        // The dollar was typed by hand that morning; the riyal has no rate that day.
+        SERVICE.saveRate(new ExchangeRateDraft(0, usd, day, new BigDecimal("51.25"), "typed"));
+        RecordedRates result = SERVICE.recordFetched(List.of(
+                new ExchangeRateDraft(0, usd, day, new BigDecimal("50.9876"), "ExchangeRate-API 2026-10-05"),
+                new ExchangeRateDraft(0, sar, day, new BigDecimal("13.5961"), "ExchangeRate-API 2026-10-05")));
+        assertEquals(List.of(sar), result.recorded());
+        assertEquals(List.of(usd), result.kept());
+        assertEquals(0, new BigDecimal("51.25").compareTo(SERVICE.rateOn(usd, day).orElseThrow().rate()),
+                "the hand-typed rate is never replaced");
+        assertEquals(1, scalar("SELECT COUNT(*) FROM currency_rate WHERE currency_id = " + usd
+                + " AND effective_date = '2026-10-05' AND notes = 'typed'"));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM currency_rate WHERE currency_id = " + sar
+                + " AND effective_date = '2026-10-05' AND rate = 13.5961 AND user_id = " + OPERATOR
+                + " AND notes = 'ExchangeRate-API 2026-10-05'"));
+        // Recording the same batch again adds nothing and refuses nothing.
+        RecordedRates again = SERVICE.recordFetched(List.of(
+                new ExchangeRateDraft(0, sar, day, new BigDecimal("13.6"), "ExchangeRate-API 2026-10-05")));
+        assertTrue(again.recorded().isEmpty());
+        assertEquals(1, scalar("SELECT COUNT(*) FROM currency_rate WHERE currency_id = " + sar
+                + " AND effective_date = '2026-10-05'"));
+        // A rate the rules refuse refuses the whole batch: the riyal of the 6th is not left behind.
+        assertThrows(UserValidationException.class, () -> SERVICE.recordFetched(List.of(
+                new ExchangeRateDraft(0, sar, day.plusDays(1), new BigDecimal("13.7"), null),
+                new ExchangeRateDraft(0, idOf("EGP"), day.plusDays(1), BigDecimal.ONE, null))));
+        assertEquals(0, scalar("SELECT COUNT(*) FROM currency_rate WHERE effective_date = '2026-10-06'"));
+        // Leave the dates the next cases read as they were.
+        execute("DELETE FROM currency_rate WHERE effective_date = '2026-10-05'");
+    }
+
     private static int idOf(String code) throws Exception {
         return scalar("SELECT id FROM currency WHERE code = '" + code + "'");
     }
