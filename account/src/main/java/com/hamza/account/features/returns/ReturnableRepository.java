@@ -3,7 +3,6 @@ package com.hamza.account.features.returns;
 import com.hamza.account.document.DocumentType;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -153,15 +152,6 @@ public interface ReturnableRepository {
     List<SourceDocument> searchSources(DocumentType sourceType, int documentNumber,
                                        String partyText, int limit) throws DaoException;
 
-    /**
-     * How many returns of one type were entered for each reason in a date range, and
-     * what they totalled - what a reasons report groups by. A return with no reason
-     * recorded (every one before an entry screen asked for one, and any entered
-     * without picking one) reports under a {@code null} {@link ReasonCount#reason()}.
-     */
-    List<ReasonCount> reasonCounts(DocumentType returnType, LocalDate from, LocalDate to)
-            throws DaoException;
-
     /** One item's quantity on the source invoice, already converted to base units. */
     record SoldLine(int itemId, double baseQuantity) {
     }
@@ -200,6 +190,4 @@ public interface ReturnableRepository {
     }
 
     /** {@code reason} is {@code null} for returns entered with none recorded. */
-    record ReasonCount(ReturnReason reason, int count, BigDecimal total) {
-    }
 }

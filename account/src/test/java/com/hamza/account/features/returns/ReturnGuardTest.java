@@ -407,12 +407,5 @@ class ReturnGuardTest {
             calls.add("sourcePartyId");
             return java.util.Optional.ofNullable(sourcePartyId);
         }
-
-        @Override
-        public List<ReasonCount> reasonCounts(
-                DocumentType returnType, java.time.LocalDate from, java.time.LocalDate to) {
-            calls.add("reasonCounts");
-            return List.of();
-        }
     }
 }

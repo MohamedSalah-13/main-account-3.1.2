@@ -4,13 +4,16 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.productprofile.FeatureKey;
+import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * The one place the payments report comes from. It asks the permission the sidebar button names -
@@ -33,15 +36,41 @@ public final class PartyPaymentsService {
         return kind == PartyKind.CUSTOMER ? AppPermissions.REPORTS_SHOW_SALES : AppPermissions.REPORTS_SHOW_PURCHASE;
     }
 
-    public List<PartyPaymentRow> payments(PartyKind kind, LocalDate from, LocalDate to) throws DaoException {
-        Objects.requireNonNull(kind, "kind");
-        AuthorizationGuard.require(permissionFor(kind));
-        if (from == null || to == null) {
+    /** The edition's feature for one side - the two sidebar buttons' features before they were one. */
+    public static FeatureKey featureFor(PartyKind kind) {
+        return kind == PartyKind.CUSTOMER ? ProductFeatures.REPORT_CUSTOMER_PAYMENTS
+                : ProductFeatures.REPORT_SUPPLIER_PAYMENTS;
+    }
+
+    /**
+     * The sides the screen offers: those this edition carries and this reader may read, customers first.
+     * Answered over two plain questions so it is tested without a session or a profile.
+     */
+    public static List<PartyKind> offeredSides(Predicate<PermissionKey> granted, Predicate<FeatureKey> enabled) {
+        List<PartyKind> sides = new ArrayList<>();
+        for (PartyKind kind : List.of(PartyKind.CUSTOMER, PartyKind.SUPPLIER)) {
+            if (granted.test(permissionFor(kind)) && enabled.test(featureFor(kind))) {
+                sides.add(kind);
+            }
+        }
+        return sides;
+    }
+
+    public List<PartyPaymentRow> payments(PartyPaymentsFilter filter) throws DaoException {
+        Objects.requireNonNull(filter, "filter");
+        AuthorizationGuard.require(permissionFor(filter.kind()));
+        if (filter.from() == null || filter.to() == null) {
             throw new UserValidationException(LanguageManager.getInstance().getString("report.error.date.range.required"));
         }
-        if (from.isAfter(to)) {
+        if (filter.from().isAfter(filter.to())) {
             throw new UserValidationException(LanguageManager.getInstance().getString("party.statement.validation.period.reversed"));
         }
-        return repository.between(kind, from, to);
+        return repository.page(filter);
+    }
+
+    /** The treasuries the filter offers - asked of a reader who may read this side's payments. */
+    public List<PartyPaymentsRepository.TreasuryOption> treasuries(PartyKind kind) throws DaoException {
+        AuthorizationGuard.require(permissionFor(Objects.requireNonNull(kind, "kind")));
+        return repository.treasuries();
     }
 }

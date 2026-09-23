@@ -27,8 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,853 tests** with 306 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after an invoice learned to be typed in its party's currency. What is
+**COUNT_TESTS tests** with COUNT_SKIPPED skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after an invoice learned to be typed in its party's currency, the profit
+and loss became a statement, the returns reasons a report of their own and the two payments reports one
+screen. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -90,10 +92,12 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - forty-six `*AcceptanceTest` files exist, and the later areas' own
+**That list is itself out of date** - forty-nine `*AcceptanceTest` files exist, and the later areas' own
 sections name theirs; the newest are `DocumentCurrencyDatabaseAcceptanceTest` (V83) and
-`PartyCurrencyDatabaseAcceptanceTest` (V82), both under **Currencies**, and
-`YearlyReportDatabaseAcceptanceTest` (see **The yearly report**). The
+`PartyCurrencyDatabaseAcceptanceTest` (V82), both under **Currencies**, the reports work's
+`ProfitLossStatementDatabaseAcceptanceTest`, `ReturnReasonsDatabaseAcceptanceTest` and
+`PartyPaymentsDatabaseAcceptanceTest`, and `YearlyReportDatabaseAcceptanceTest` (see **The yearly
+report**). The
 reports work added four, each building a scratch schema of its own from
 nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
 `PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest`,
@@ -2649,6 +2653,87 @@ FXML screen, `TableDataReports`/`TableDataReportsDao` and its two fixed-column w
 - `YearlyReportDatabaseAcceptanceTest` (gated, scratch schema, six cases) works 2025 out by hand and
   holds the year to the statement's own figures. Seen on a demo schema at 1366x768 and 1920x1080, in
   Arabic and English, light and dark, the drawer, the full view and both PDFs.
+
+### The profit and loss statement
+
+`features/profitloss/statement` and `ProfitLossController` (the sidebar's «الأرباح والخسائر»), built in
+code; `profit-loss.fxml` and `ReportExportService.exportProfitLossReport` are gone. Rebuilt 2026-09-23.
+
+- **Every figure is the statement's own days, summed.** `ProfitLossReportService` reads
+  `ProfitLossService.load` once over both periods - which asks `reports.show.profit` before anything
+  else is read - and splits the days between them. The cards, the table's rows and the statement's
+  subtotals and results are those sums, so they cannot disagree with each other or with the yearly
+  report. `ProfitLossFigures` and `DailyProfitSource` moved up from `yearly` for both to share.
+- **The statement's lines explain the figures and never replace them** (`ProfitLossStatement`). Sales,
+  invoice discounts and returns come from the headers, the cost of what was sold and what came back from
+  the lines, the expenses by main heading (sub-headings rolled in) - all through
+  `ProfitLossStatementQuery`, whose arithmetic is `document_profit`'s and whose bounds sit inside each
+  branch (not the view: it groups the whole `sales` table first). **Every deduction is written negative**,
+  so a section adds up to its subtotal by addition; where lines and figure disagree, a line
+  ("فرق لا تفسره البنود") says by how much. A deduction is compared by its size (more spent is a rise)
+  and a result by its sign.
+- **The period before is counted in months when the period starts on the 1st** (`ProfitLossPeriod`):
+  1-23 September is set against 1-23 August, a whole month against the whole month before; otherwise the
+  same number of days straight before. "The same period last year" goes back whole years until it no
+  longer overlaps itself - a period longer than a year did, which the test found.
+- **Stock count and till differences are shown under the net profit and not counted in it** - the
+  owner's decision (`OutsideProfitFigures`). A posted count's lines (`StockCountHistoryQuery.DIFFERENCE`,
+  now public) are valued at the item's buy price **today**, since a count line keeps no cost; a till's is
+  its close snapshot's `difference_amount` (counted less expected), dated by `close_time`. No screen's
+  profit moved. Counting them in the profit is a decision for every profit screen at once.
+- **A row opens what it is made of** - its invoices, returns and expenses - in a `RowDetailDrawer`
+  (`ProfitLossReportService.movements`, which asks the permission itself). The movements of a row add up
+  to it; a return is signed against the sales.
+- **The paper is the statement above the table** (`PdfExportService.exportStatementReport` over a new
+  `StatementPdfLayout`: headings across the page, lines indented, subtotals ruled, results on the band);
+  the spreadsheet is one sheet with both (`RowsExcelWriter`).
+- `ProfitLossStatementDatabaseAcceptanceTest` (gated, scratch schema, five cases, green twice) works
+  September 2025 out by hand, holds the rows and cards to the statement's days for every grouping and
+  the movements to their row. Seen on a demo schema at 1366x768 in Arabic and English, light and dark,
+  with the drawer open, and its PDF rendered. **Not seen:** the direct print, the Excel file opened, and
+  a reader without the key on screen.
+
+### The returns reasons report
+
+`features/returns/reasons` and `ReturnReasonsController` (the sidebar's «تقرير أسباب المرتجعات», now a
+tab). Rebuilt 2026-09-23; `DialogReturnReasonsReport`, `ReturnReasonReportService` and
+`ReturnableRepository.reasonCounts` are gone.
+
+- **A return is worth its total less its own discount** - what was refunded, `document_profit`'s figure.
+  The old dialog summed `total`, so every return with a discount was reported at more than it was worth.
+- **`reports.show.returns` is asked by the service**, before either read (the report, and a reason's
+  returns); the old service asked nothing and threw Arabic sentences, and it leaves
+  `LocalizationArchitectureTest`'s list with it.
+- **A reason is its stored value**, so "none given" (NULL or blank, counted together, and never the
+  leading reason) and a value this build does not know are rows of their own rather than a failed report.
+- **The items that came back most** are read with `ItemNetLines.lineAmount` in base units - a return's
+  own discount is not shared among them, and the screen says so.
+- The period is `account.table.PeriodPicker` - a `StatementPeriod` preset or two dates, one change
+  reported once - now shared with the profit and loss screen; a report of several tables exports one
+  sheet through `RowsExcelWriter`.
+- `ReturnReasonsDatabaseAcceptanceTest` (gated, scratch schema, five cases, green twice) works September
+  2025 out by hand, both sides. Seen on a demo schema at 1366x768 in Arabic and English, light and dark,
+  with the drawer, the empty state, and its PDF.
+
+### Customers' and suppliers' payments
+
+`PartyPaymentsController` over `features/party/payment` - one sidebar button («مدفوعات العملاء
+والموردين») and one tab since 2026-09-23. `ReportPaid`, `report-paid.fxml` and the two buttons are gone.
+
+- **The side is chosen in the bar, among the sides this reader may read and this edition carries**
+  (`PartyPaymentsService.offeredSides`, over two plain predicates, tested). A reader with one side sees
+  no choice. The service asks the side's key on every read, as before: customers are
+  `reports.show.sales`, suppliers `reports.show.purchase`.
+- **Both features stay**, since a key new to the catalogue is missing from every profile already signed:
+  `MenuButtonSetting.configureButton(button, action, feature, alternative)` hides the one button only
+  when the edition carries neither. `ProductProfileWiringArchitectureTest` counts 52 gated buttons now.
+  The reports index keeps its two cards, each opening the screen on its own side.
+- **The shortcut is `REPORT_PARTY_PAYMENTS`**, and `SidebarShortcutManager` carries a key saved under
+  `REPORT_CUSTOMER_PAID` or `REPORT_SUPPLIER_PAID` onto it, the retirement the master-data screens had.
+- The filter is `PartyPaymentsFilter` - a text that is a name by part or, as a number (٠-٩ included),
+  a party's code or an allocated invoice, and a treasury - built into the statement and its binder in
+  one place. The cards split what came in from what went back; the table shows who entered each row.
+- `PartyPaymentsDatabaseAcceptanceTest` (gated, scratch schema, three cases, green twice).
 
 ### Printed reports
 

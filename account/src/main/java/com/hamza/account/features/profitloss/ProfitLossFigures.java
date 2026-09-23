@@ -1,31 +1,30 @@
-package com.hamza.account.features.profitloss.yearly;
+package com.hamza.account.features.profitloss;
 
-import com.hamza.account.features.profitloss.ProfitLossRow;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Optional;
 
 /**
- * One month of the profit and loss statement: the five figures {@code ProfitLossDao} answers for a day,
- * summed over the month's days.
+ * A span of the profit and loss statement - a week, a month, a whole period: the five figures
+ * {@code ProfitLossDao} answers for a day, summed over the span's days.
  *
  * <p>Nothing here computes a profit. The figures arrive as the statement's own rows and are added up, so
- * the yearly report and the profit and loss screen cannot report two numbers for one month - the defect
+ * the profit and loss screen and the yearly report cannot report two numbers for one month - the defect
  * {@code view_yearly_monthly_report} carried until its profit was made {@code document_profit}'s.</p>
  *
  * <p>A percentage with nothing to divide by is <b>absent</b>, not zero: a margin on no sales, or a change
- * against a month that sold nothing, is not a number.</p>
+ * against a span that sold nothing, is not a number.</p>
  */
-public record MonthFigures(BigDecimal netSales, BigDecimal costOfSales, BigDecimal grossProfit,
+public record ProfitLossFigures(BigDecimal netSales, BigDecimal costOfSales, BigDecimal grossProfit,
                            BigDecimal expenses, BigDecimal netProfit) {
 
-    public static final MonthFigures ZERO = new MonthFigures(BigDecimal.ZERO, BigDecimal.ZERO,
+    public static final ProfitLossFigures ZERO = new ProfitLossFigures(BigDecimal.ZERO, BigDecimal.ZERO,
             BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
 
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
-    public MonthFigures {
+    public ProfitLossFigures {
         netSales = orZero(netSales);
         costOfSales = orZero(costOfSales);
         grossProfit = orZero(grossProfit);
@@ -34,28 +33,28 @@ public record MonthFigures(BigDecimal netSales, BigDecimal costOfSales, BigDecim
     }
 
     /** These figures with one day of the statement added. */
-    public MonthFigures plus(ProfitLossRow day) {
-        return new MonthFigures(netSales.add(orZero(day.netSales())), costOfSales.add(orZero(day.costOfSales())),
+    public ProfitLossFigures plus(ProfitLossRow day) {
+        return new ProfitLossFigures(netSales.add(orZero(day.netSales())), costOfSales.add(orZero(day.costOfSales())),
                 grossProfit.add(orZero(day.grossProfit())), expenses.add(orZero(day.expenses())),
                 netProfit.add(orZero(day.netProfit())));
     }
 
-    public MonthFigures plus(MonthFigures other) {
-        return new MonthFigures(netSales.add(other.netSales), costOfSales.add(other.costOfSales),
+    public ProfitLossFigures plus(ProfitLossFigures other) {
+        return new ProfitLossFigures(netSales.add(other.netSales), costOfSales.add(other.costOfSales),
                 grossProfit.add(other.grossProfit), expenses.add(other.expenses), netProfit.add(other.netProfit));
     }
 
-    /** Whether anything was sold, returned or spent - a month of zeros is still a month on the report. */
+    /** Whether anything was sold, returned or spent - a quiet span is still a row on the report. */
     public boolean hasActivity() {
         return netSales.signum() != 0 || costOfSales.signum() != 0 || expenses.signum() != 0;
     }
 
-    /** The gross profit as a share of what the month sold, net of returns and discounts. */
+    /** The gross profit as a share of what the span sold, net of returns and discounts. */
     public Optional<BigDecimal> grossMargin() {
         return marginOf(grossProfit);
     }
 
-    /** The net profit as a share of what the month sold. */
+    /** The net profit as a share of what the span sold. */
     public Optional<BigDecimal> netMargin() {
         return marginOf(netProfit);
     }

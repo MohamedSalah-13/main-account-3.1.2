@@ -267,12 +267,6 @@ class InvoiceExpiryServiceTest {
         public Optional<Integer> sourcePartyId(DocumentType sourceType, int sourceId) {
             throw new UnsupportedOperationException();
         }
-
-        @Override
-        public List<ReasonCount> reasonCounts(
-                DocumentType returnType, LocalDate from, LocalDate to) {
-            throw new UnsupportedOperationException();
-        }
     }
 
     private static ItemsModel expiryTrackedItem() {

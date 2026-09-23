@@ -345,6 +345,60 @@ public class PdfExportService {
         }
     }
 
+    /**
+     * A statement above a table of its rows: {@link StatementPdfLayout}'s lines, then, a little lower, the
+     * same flat table and totals line {@link #exportGroupedReport} writes. The profit and loss statement
+     * prints this way - the page explains the period, the table shows it a row at a time.
+     *
+     * @param rows   the table's rows, or an empty list for the statement alone
+     * @param totals the table's closing line, or null for none
+     */
+    public boolean exportStatementReport(String filePath, String title, String subtitle,
+                                         StatementPdfLayout statement, String[] headers, float[] columnWidths,
+                                         List<String[]> rows, String[] totals, PageSize pageSize) {
+        try (Document document = createDocument(filePath, pageSize)) {
+            addHeader(document, title, subtitle);
+            Table page = createTable(statement.headers(), statement.columnWidths());
+            int columns = statement.headers().length;
+            for (StatementPdfLayout.Line line : statement.lines()) {
+                switch (line.style()) {
+                    case HEADING -> page.addCell(new Cell(1, columns)
+                            .add(arabicParagraphBold(line.cells()[0]))
+                            .setBackgroundColor(BRANCH_COLOR)
+                            .setFontColor(BRANCH_TEXT_COLOR)
+                            .setTextAlignment(TextAlignment.RIGHT)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setPaddingTop(4)
+                            .setPaddingBottom(4)
+                            .setPaddingRight(6));
+                    case ROW -> addBranchRow(page, line.cells(), false);
+                    case SUBTOTAL -> addBranchSummary(page, line.cells());
+                    case RESULT -> addTotalsRow(page, line.cells());
+                }
+            }
+            document.add(page);
+            if (!rows.isEmpty()) {
+                document.add(new Paragraph("\n"));
+                Table table = createTable(headers, columnWidths);
+                int rowIndex = 0;
+                for (String[] row : rows) {
+                    addTableRow(table, row, rowIndex % 2 == 1);
+                    rowIndex++;
+                }
+                if (totals != null && totals.length == headers.length) {
+                    addTotalsRow(table, totals);
+                }
+                document.add(table);
+            }
+            addFooter(document);
+            log.info("PDF exported successfully: {}", filePath);
+            return true;
+        } catch (IOException e) {
+            log.error("Error exporting PDF", e);
+            return false;
+        }
+    }
+
     /** A leaf line: the first logical column is indented so it reads as belonging to the heading. */
     private void addBranchRow(Table table, String[] rowData, boolean isAlternate) {
         String[] rtlRow = reverseStrings(rowData);

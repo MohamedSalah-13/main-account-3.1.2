@@ -180,8 +180,7 @@
                                                                 <Button fx:id="btnReportItemsDaily" mnemonicParsing="false" text="Items Report Daily" />
                                                                 <Button fx:id="btnReportSalesByYear" mnemonicParsing="false" text="Sales By Year" />
                                                                 <Button fx:id="btnReportPurchaseByYear" mnemonicParsing="false" text="Purchase By Year" />
-                                                                <Button fx:id="btnReportCustomPaid" mnemonicParsing="false" text="Customer Payments" />
-                                                                <Button fx:id="btnReportSuppliersPaid" mnemonicParsing="false" text="Supplier Payments" />
+                                                                <Button fx:id="btnReportPartyPayments" mnemonicParsing="false" text="Party Payments" />
                                                                 <Button fx:id="btnReportYearly" mnemonicParsing="false" text="Yearly Report" />
                                                                 <Button fx:id="btnReportProfitLoss" mnemonicParsing="false" text="Profit Loss" />
                                                                 <Button fx:id="btnReportReturnReasons" mnemonicParsing="false" text="Return Reasons" />
