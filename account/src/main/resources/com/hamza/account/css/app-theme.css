@@ -3594,3 +3594,9 @@
     -fx-text-fill: -app-warning;
     -fx-font-weight: bold;
 }
+
+/* The base currency on the currencies screen (V80): the one every amount in the books is in. Bold rather
+   than coloured - it is not a warning, it is the unit everything else is measured in. */
+.table-row-cell:base-currency > .table-cell {
+    -fx-font-weight: bold;
+}

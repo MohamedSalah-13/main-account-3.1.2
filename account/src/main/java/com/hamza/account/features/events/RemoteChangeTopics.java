@@ -80,6 +80,8 @@ public final class RemoteChangeTopics {
         declare("areas", new AreasChanged(), Announcer.RELAY);
         declare("units", new UnitsChanged(), Announcer.RELAY);
         declare("treasuries", new TreasuriesChanged(), Announcer.RELAY);
+        // RELAY: CurrencyService announces nothing, and the currencies screen publishes after each write.
+        declare("currencies", new CurrenciesChanged(), Announcer.RELAY);
         // SERVICE since the expenses rework: ExpenseService announces inside its transaction, so a batch
         // refused on its third line tells no other till to reload for the two lines that were rolled back.
         declare("expenses", new ExpensesChanged(), Announcer.SERVICE);

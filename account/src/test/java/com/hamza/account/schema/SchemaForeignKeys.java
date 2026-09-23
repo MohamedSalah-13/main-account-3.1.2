@@ -54,7 +54,9 @@ public final class SchemaForeignKeys {
             // stock_count_lines.item_id as ON DELETE CASCADE, which this reader skips, and
             // V75 puts it back as RESTRICT. Without this line the two catalogs go on seeing
             // a cascading key and the rule that declares it fails as "not in the schema".
-            "V75__stock_count_lines_keep_history.sql");
+            "V75__stock_count_lines_keep_history.sql",
+            // A currency's rates point at it without cascading, which DeleteRegistry.CURRENCIES declares.
+            "V80__currencies.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

@@ -21,8 +21,9 @@ class ProductProfileWiringArchitectureTest {
                 .filter(line -> line.contains("menuButtonSetting.configureButton("))
                 .filter(line -> line.contains("ProductFeatures."))
                 .count();
-        // 52 since the quick sale and quick purchase entries, which ask the invoices' own features.
-        assertEquals(52, gatedScreens);
+        // 52 since the quick sale and quick purchase entries, which ask the invoices' own features;
+        // 53 since the currencies screen (V80), which asks the treasuries' feature rather than a new one.
+        assertEquals(53, gatedScreens);
         assertTrue(source.contains("ProductFeatures.SALES_CREATE"));
         assertTrue(source.contains("ProductFeatures.REPORT_PROFIT_LOSS"));
         assertTrue(source.contains("ProductFeatures.SYSTEM_DELETE_DATA"));

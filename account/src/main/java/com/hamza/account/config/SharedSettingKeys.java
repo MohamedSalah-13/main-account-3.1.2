@@ -64,8 +64,13 @@ public final class SharedSettingKeys {
     public static final String SEL_WITHOUT_BALANCE = "item.sel.without.balance";
     public static final String INVOICE_UPDATE_PRICE = "invoice.update.price";
 
-    /** What the customer's paper says, which is the company's and not the till's. */
-    public static final String CURRENCY = "setting.currency";
+    /**
+     * What the customer's paper says, which is the company's and not the till's.
+     * <p>
+     * {@code setting.currency} was here too - a locale whose currency symbol the price-check kiosk
+     * printed. V80 read it once to decide which currency the books are in, and the base currency has
+     * answered that question since; nothing reads the key, so nothing publishes it.
+     */
     public static final String PRINT_REPORT_TITLE = "setting.print.report.title";
 
     /**
@@ -118,7 +123,6 @@ public final class SharedSettingKeys {
             SEL_WITHOUT_BALANCE,
             INVOICE_UPDATE_PRICE,
 
-            CURRENCY,
             PRINT_REPORT_TITLE,
 
             INVOICE_MERGE_REPEATED_ITEM,

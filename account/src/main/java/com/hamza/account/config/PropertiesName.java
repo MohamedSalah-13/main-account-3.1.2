@@ -44,7 +44,6 @@ public class PropertiesName extends PreferencesSetting {
     private static final String RETURN_FREE_LIMIT = SharedSettingKeys.RETURN_FREE_LIMIT;
     // -------------------
 
-    private static final String SETTING_CURRENCY = SharedSettingKeys.CURRENCY;
     private static final String SETTING_PRINT_REPORT_TITLE = SharedSettingKeys.PRINT_REPORT_TITLE;
     private static final String SEL_WITHOUT_BALANCE = SharedSettingKeys.SEL_WITHOUT_BALANCE;
     private static final String ITEM_SHOW_ALERT = "item.show.alert";
@@ -221,14 +220,6 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setReportPdfPaperSize(String value) {
         putString(REPORT_PDF_PAPER_SIZE, value);
-    }
-
-    public static String getSettingCurrency() {
-        return getString(SETTING_CURRENCY, "ar_EG");
-    }
-
-    public static void setSettingCurrency(String value) {
-        putString(SETTING_CURRENCY, value);
     }
 
     public static boolean getSettingPrintReportTitle() {

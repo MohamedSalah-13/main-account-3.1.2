@@ -61,6 +61,10 @@ public enum AppIcon {
     TREASURY_CASH(Feather.DOLLAR_SIGN),
     TREASURY_WALLET(Feather.SMARTPHONE),
     TREASURY_BANK(Feather.CREDIT_CARD),
+    /** A currency and its exchange rates - money counted in more than one unit. */
+    CURRENCY(Feather.GLOBE),
+    /** An amount written in another currency. */
+    EXCHANGE(Feather.REPEAT),
     /** Narrowing a list. Not {@link #SEARCH} - a filter is a standing condition, not a lookup. */
     FILTER(Feather.FILTER),
     /** A report or a figure, as opposed to a list of rows. */

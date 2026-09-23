@@ -4,6 +4,7 @@ import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.BaseCurrencySymbol;
 import com.hamza.account.features.notification.StockLevel;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
@@ -678,7 +679,8 @@ public class ModernDashboardApp {
     }
 
     private String formatMoney(double value) {
-        return String.format(Locale.US, "%,.2f " + LanguageManager.getInstance().getString("report.dashboard.currency.symbol"), value);
+        // The base currency's symbol (V80). It was the bundle's "ج.م" whatever currency the books were in.
+        return String.format(Locale.US, "%,.2f", value) + " " + BaseCurrencySymbol.get();
     }
 
     // ------------------------------------------------------------------

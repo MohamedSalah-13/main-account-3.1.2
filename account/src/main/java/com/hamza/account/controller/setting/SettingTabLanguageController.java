@@ -16,6 +16,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerService;
 import com.hamza.account.features.employee.EmployeeScope;
 import com.hamza.account.features.employee.EmployeeService;
+import com.hamza.account.features.currency.CurrencyService;
 import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -41,8 +42,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.account.otherSetting.Currency_Setting.getCurrency;
-import static com.hamza.account.otherSetting.Currency_Setting.selectableCurrencies;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 
@@ -268,30 +267,26 @@ public class SettingTabLanguageController implements Initializable {
     }
 
 
+    /**
+     * The shop's currency is the base currency now (V80), and it is decided on the currencies screen,
+     * where the rule that it moves only while no exchange rate is recorded is asked. This combo used to
+     * store a locale whose symbol only the price-check kiosk read - a second answer to the question that
+     * screen answers - so it shows that screen's answer and changes nothing. It is left enabled with the
+     * base as its only choice rather than disabled: a disabled control never shows its tooltip, and the
+     * tooltip is what says where the base is changed.
+     */
     private void chooseCurrency() {
-        // The currency is printed on what the customer takes away, so it is the company's
-        // and not the till's - and this is the only control on this tab that is.
-        SettingScope.shared(comboCurrency, com.hamza.account.config.SharedSettingKeys.CURRENCY);
-        List<Map.Entry<Locale, Currency>> entries = selectableCurrencies();
-
-        for (Map.Entry<Locale, Currency> entry : entries) {
-            comboCurrency.getItems().add(entry.getValue().getDisplayName(entry.getKey()));
+        comboCurrency.setTooltip(new Tooltip(LanguageManager.getInstance().getString("settings.currency.hint")));
+        CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+        if (currencies == null) {
+            return;
         }
-
-        comboCurrency.valueProperty().addListener((observableValue, s, t1) -> {
-            Optional<Locale> first = entries.stream()
-                    .filter(localeCurrencyEntry -> localeCurrencyEntry.getValue().getDisplayName(localeCurrencyEntry.getKey()).equals(t1))
-                    .map(Map.Entry::getKey)
-                    .findFirst();
-            first.ifPresent(locale -> setSettingCurrency(locale.toString()));
-        });
-
-        String currency1 = getCurrency()
-                .map(localeCurrencyEntry -> localeCurrencyEntry.getValue().getDisplayName(localeCurrencyEntry.getKey())).orElse(null);
-        if (currency1 == null) {
-            comboCurrency.getSelectionModel().clearSelection();
-        } else {
-            comboCurrency.getSelectionModel().select(currency1);
+        try {
+            String base = currencies.base().label();
+            comboCurrency.getItems().setAll(base);
+            comboCurrency.getSelectionModel().select(base);
+        } catch (Exception e) {
+            log.warn("Could not read the base currency for the settings tab", e);
         }
     }
 

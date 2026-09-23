@@ -5,7 +5,7 @@ import com.hamza.account.features.pricecheck.PriceCheckService;
 import com.hamza.account.features.pricecheck.PriceCheckSession;
 import com.hamza.account.features.pricecheck.PriceCheckSettings;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.otherSetting.Currency_Setting;
+import com.hamza.account.controller.others.BaseCurrencySymbol;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -235,10 +235,9 @@ public class PriceCheckController implements Initializable {
         node.setManaged(visible);
     }
 
+    /** The amount and the base currency's symbol (V80) - see {@code BaseCurrencySymbol}. */
     private static String money(double amount) {
-        String symbol = Currency_Setting.getCurrency()
-                .map(entry -> entry.getValue().getSymbol(entry.getKey()))
-                .orElse("");
+        String symbol = BaseCurrencySymbol.get();
         String formatted = String.format("%,.2f", amount);
         return symbol.isBlank() ? formatted : formatted + " " + symbol;
     }
