@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -89,6 +90,22 @@ class PartyPaymentsServiceTest {
                 feature -> feature.equals(ProductFeatures.REPORT_CUSTOMER_PAYMENTS)),
                 "an edition without the suppliers' report offers none of it");
         assertTrue(PartyPaymentsService.offeredSides(key -> false, everything::contains).isEmpty());
+    }
+
+    @Test
+    @DisplayName("the screen opens on the side asked for when offered, else the first - and the sidebar asks for none")
+    void theSideTheScreenOpensOn() {
+        // List.copyOf is what the screen holds, and it is the list that throws on contains(null).
+        List<PartyKind> both = List.copyOf(List.of(PartyKind.CUSTOMER, PartyKind.SUPPLIER));
+        List<PartyKind> suppliers = List.copyOf(List.of(PartyKind.SUPPLIER));
+
+        assertEquals(PartyKind.CUSTOMER, PartyPaymentsService.openingSide(both, null),
+                "the sidebar's button prefers no side");
+        assertEquals(PartyKind.SUPPLIER, PartyPaymentsService.openingSide(both, PartyKind.SUPPLIER));
+        assertEquals(PartyKind.SUPPLIER, PartyPaymentsService.openingSide(suppliers, null));
+        assertEquals(PartyKind.SUPPLIER, PartyPaymentsService.openingSide(suppliers, PartyKind.CUSTOMER),
+                "a side not offered is not opened on");
+        assertNull(PartyPaymentsService.openingSide(List.of(), null));
     }
 
     @Test

@@ -162,7 +162,7 @@ public class PartyPaymentsController {
         comboSide.getItems().setAll(sides);
         comboSide.setConverter(converter(kind -> text(kind == PartyKind.CUSTOMER
                 ? "report.party.payments.side.customers" : "report.party.payments.side.suppliers")));
-        comboSide.setValue(sides.contains(preferred) ? preferred : sides.isEmpty() ? null : sides.getFirst());
+        comboSide.setValue(PartyPaymentsService.openingSide(sides, preferred));
         // A reader who may read one side is not offered a choice of one.
         comboSide.setVisible(sides.size() > 1);
         comboSide.setManaged(sides.size() > 1);
