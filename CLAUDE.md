@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,628 tests** with 279 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after the foreign-currency treasury (V81) arrived. What is
+**3,657 tests** with 280 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the currencies screen learned to fetch rates from the internet. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -343,9 +343,9 @@ Two documents govern work here and are kept current — read them before large c
   moves in any phase; a rate is what one unit is worth in the base, dated, and the one in force on a
   day is the latest dated on it or before it - none is a refusal, never a zero; a movement copies its
   rate onto its own row; the base changes only while no rate exists. **Phases A and B are built** (see
-  **Currencies** below) - B is a treasury in a foreign currency, all but its statement; phases C-E - a
-  party's currency, a document in a foreign currency, exchange differences - wait on the decisions in
-  §4, and fetching rates from the internet (ق-٩) is decided and next. **Read it before touching
+  **Currencies** below) - B is a treasury in a foreign currency, all but its statement - and so is
+  fetching today's rates from the internet (ق-٩, §12); phases C-E - a party's currency, a document in a
+  foreign currency, exchange differences - wait on the decisions in §4. **Read it before touching
   `features/currency`, `V80`, `V81`, or adding any column that holds an amount in a currency other than
   the base.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
@@ -1344,6 +1344,37 @@ balance and no report moves, and correcting yesterday's rate never rewrites yest
 - The audit triggers for both tables are **the last section of `R__triggers.sql`**: the two acceptance
   tests that build an older schema cut the file at earlier markers, and a trigger cannot be created on
   a table that does not exist yet. Keep anything added for V81+ after it.
+
+**Today's rates from the internet** (`features/currency/online`, `docs/currency-plan.md` ق-٩ and §12).
+The currencies screen's button fetches, a dialog shows each currency's fetched rate beside the recorded
+one, and only what somebody ticks is recorded - the internet suggests, the shop decides.
+
+- **It is the only outbound connection this program makes**, so `JdkHttpText` is narrow on purpose:
+  HTTPS only, five seconds to connect and ten to answer, a body over 1MB refused, the system's proxy,
+  and the client built on the first press. Nothing leaves but the base currency's ISO code, and both
+  halves - fetching and recording - ask `currency.rate.update`. `module-info` requires `java.net.http`.
+- **Two free sources, asked in turn**: ExchangeRate-API (`open.er-api.com`, no key, quotes against any
+  base - the ECB's list behind most others has no pound, riyal or dirham), then the
+  `@fawazahmed0/currency-api` daily file on two mirrors. A source asked about the pound says "one pound
+  is 0.020587 dollars"; `OnlineRateMath` turns that into "the dollar at 48.5743" **once**, to six
+  significant digits rather than a fixed number of places.
+- **A day that has a rate keeps it** - `CurrencyService.recordFetched` asks again under the currency's
+  row lock and keeps, rather than refuses, a day recorded meanwhile, so the rest of the batch goes in.
+  A rate is dated the day of the fetch and noted with the source. `OnlineRatePreview` decides what is
+  ticked for you: a first rate or a move of ten percent or less, never figures more than three days old.
+- **This build cannot reach either source** (the environment's policy refuses both), so the real client
+  was driven end to end against a local server impersonating the three hosts over TLS - see §12.4. The
+  first press on a connected machine is the first real fetch.
+- **The shared error window does not wrap Arabic.** `AlertSetting` draws an Arabic sentence that needs
+  two lines wider than its 360 points and clips both ends; English wraps. Older messages fit on one line
+  and never showed it; seven currency messages did and were shortened (all 43 now fit). Keep a new
+  Arabic refusal to one line - measure it - until the window itself is fixed, which is a change of its
+  own. And **a full stop between a Latin run and an Arabic word lands on the wrong side** ("L.E." drew
+  ".L.E"); a left-to-right mark there did not help, so the examples say `SAR`.
+- **`CurrenciesController.reload` calls `table.refresh()`**: a `Currency` is a record, an unchanged one
+  is equal to itself, and JavaFX redraws a cell only when its item changes by `equals` - while the rate
+  columns read `ratesToday` beside it. Since phase A a rate recorded in the drawer or at another till
+  stayed off the table until the screen was reopened; only photographing the dialog's aftermath showed it.
 
 **A treasury in a foreign currency** (phase B, `V81`, `docs/currency-plan.md` §11). The books still
 move in the base alone; what V81 adds is written **beside** the base figure.

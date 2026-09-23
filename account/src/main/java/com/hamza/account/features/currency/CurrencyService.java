@@ -12,6 +12,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import java.math.BigDecimal;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -240,6 +241,48 @@ public final class CurrencyService {
                 }
                 throw failure;
             }
+        });
+    }
+
+    /**
+     * Records rates taken from the internet (docs/currency-plan.md ق-٩, §12), <b>on days that have none</b>.
+     * <p>
+     * A day that already has a rate keeps it, whoever typed it: the preview was read before its dialog
+     * opened, and another till may have recorded one since. Such a day is kept rather than refused, so the
+     * rest of the batch still goes in - and it is kept under the currency's row lock, the lock
+     * {@link #saveRate} takes, so the check and the insert cannot be separated by another writer's rate. A
+     * rate recorded at the same instant elsewhere meets the unique key and is kept the same way. Every rate
+     * passes the rules a typed one does, and the whole batch is one transaction.
+     */
+    public RecordedRates recordFetched(List<ExchangeRateDraft> drafts) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.CURRENCY_RATE_UPDATE);
+        Objects.requireNonNull(drafts, "drafts");
+        for (ExchangeRateDraft draft : drafts) {
+            if (!draft.isNew()) {
+                throw new IllegalArgumentException("A fetched rate is a new row, never an edit: " + draft.id());
+            }
+        }
+        return transactions.execute(() -> {
+            List<Integer> recorded = new ArrayList<>();
+            List<Integer> kept = new ArrayList<>();
+            for (ExchangeRateDraft draft : drafts) {
+                Currency currency = repository.lockForRate(draft.currencyId());
+                ExchangeRateRules.requireValid(draft, currency);
+                if (repository.rateDayTaken(draft.currencyId(), draft.effectiveDate(), 0)) {
+                    kept.add(draft.currencyId());
+                    continue;
+                }
+                try {
+                    repository.insertRate(draft, currentUserId());
+                    recorded.add(draft.currencyId());
+                } catch (DaoException failure) {
+                    if (duplicateKey(failure) == null) {
+                        throw failure;
+                    }
+                    kept.add(draft.currencyId());
+                }
+            }
+            return new RecordedRates(recorded, kept);
         });
     }
 

@@ -14,6 +14,9 @@ import com.hamza.account.features.currency.ExchangeRate;
 import com.hamza.account.features.currency.ExchangeRateDraft;
 import com.hamza.account.features.currency.RateHistoryLine;
 import com.hamza.account.features.currency.RateInForce;
+import com.hamza.account.features.currency.RecordedRates;
+import com.hamza.account.features.currency.online.OnlineRatePreview;
+import com.hamza.account.features.currency.online.OnlineRateService;
 import com.hamza.account.features.events.CurrenciesChanged;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ContentSizedColumns;
@@ -28,6 +31,7 @@ import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -61,6 +65,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
@@ -93,6 +99,7 @@ public class CurrenciesController {
     private static final String LEFT_TO_RIGHT_MARK = "\u200E";
 
     private final CurrencyService service;
+    private final OnlineRateService online;
     private final EventBus eventBus;
     private final Subscriptions subscriptions = new Subscriptions();
 
@@ -104,6 +111,8 @@ public class CurrenciesController {
     private final TableView<Currency> table = new TableView<>();
     private final ContentSizedColumns<Currency> widths = new ContentSizedColumns<>();
     private final Label baseLabel = new Label();
+    private final Button btnOnline = new Button(text("currency.online.button"));
+    private final Label onlineStatus = new Label();
     private final TextField txtCode = new TextField();
     private final TextField txtName = new TextField();
     private final TextField txtSymbol = new TextField();
@@ -147,6 +156,7 @@ public class CurrenciesController {
 
     public CurrenciesController() {
         this.service = ServiceRegistry.get(CurrencyService.class);
+        this.online = ServiceRegistry.get(OnlineRateService.class);
         this.eventBus = ServiceRegistry.get(EventBus.class);
     }
 
@@ -202,16 +212,92 @@ public class CurrenciesController {
         return bar;
     }
 
-    /** Which currency the books are in, as a sentence - see the class comment. */
+    /**
+     * Which currency the books are in, as a sentence - see the class comment - and beside it the button
+     * that fetches today's rates against it from the internet (ق-٩): every rate is measured against the
+     * base, so this is where asking for them belongs.
+     */
     private Node baseCard() {
         baseLabel.getStyleClass().add("form-label");
         Label hint = new Label(text("currency.base.hint"));
         hint.getStyleClass().add("form-hint");
         hint.setWrapText(true);
-        VBox card = new VBox(4, baseLabel, hint);
+        VBox sentence = new VBox(4, baseLabel, hint);
+        HBox.setHgrow(sentence, Priority.ALWAYS);
+
+        btnOnline.setId("currencyOnlineButton");
+        btnOnline.setGraphic(AppIcon.REFRESH.graphic());
+        btnOnline.getStyleClass().add("app-neutral-button");
+        btnOnline.setMinWidth(Region.USE_PREF_SIZE);
+        btnOnline.setTooltip(new Tooltip(text("currency.online.tip")));
+        btnOnline.setOnAction(event -> fetchOnline());
+        // A hint, not the guard: OnlineRateService asks currency.rate.update before anything is sent.
+        btnOnline.setDisable(online == null || !AuthorizationGuard.isGranted(AppPermissions.CURRENCY_RATE_UPDATE));
+        onlineStatus.getStyleClass().add("form-label");
+        onlineStatus.setMinWidth(Region.USE_PREF_SIZE);
+        VBox fetch = new VBox(4, btnOnline, onlineStatus);
+        fetch.setAlignment(Pos.CENTER);
+
+        HBox card = new HBox(12, sentence, fetch);
+        card.setAlignment(Pos.CENTER_LEFT);
         card.getStyleClass().add("app-card");
         card.setPadding(new Insets(8));
         return card;
+    }
+
+    // ---- today's rates from the internet (ق-٩) -------------------------------------------------
+
+    /**
+     * Fetches off the JavaFX thread - a connection that never answers takes its full timeout - and
+     * opens the dialog with what came back. The button stays disabled until the answer is in, so a
+     * second press cannot send a second request.
+     */
+    private void fetchOnline() {
+        btnOnline.setDisable(true);
+        onlineStatus.setText(text("currency.online.fetching"));
+        Task<OnlineRatePreview> task = new Task<>() {
+            @Override
+            protected OnlineRatePreview call() throws Exception {
+                return online.preview();
+            }
+        };
+        task.setOnSucceeded(event -> {
+            fetched();
+            showOnline(task.getValue());
+        });
+        task.setOnFailed(event -> {
+            fetched();
+            AllAlerts.handleError(text("currency.online.title"), task.getException());
+        });
+        Thread.ofVirtual().name("currency-online-rates").start(task);
+    }
+
+    private void fetched() {
+        onlineStatus.setText("");
+        btnOnline.setDisable(false);
+    }
+
+    private void showOnline(OnlineRatePreview preview) {
+        // The screen may have been closed while the request was out: a closed tab leaves its scene, a
+        // closed window keeps it and stops showing.
+        if (root.getScene() == null || root.getScene().getWindow() == null
+                || !root.getScene().getWindow().isShowing()) {
+            return;
+        }
+        Optional<Set<Integer>> chosen = OnlineRatesDialog.ask(root.getScene().getWindow(), preview);
+        if (chosen.isEmpty()) {
+            return;
+        }
+        try {
+            RecordedRates result = online.record(preview, chosen.get());
+            // The table first, so the new rates are behind the notice: the notice waits for its OK.
+            afterWrite();
+            AllAlerts.alertSaveWithMessage(result.kept().isEmpty()
+                    ? text("currency.online.recorded", result.recorded().size())
+                    : text("currency.online.recorded.kept", result.recorded().size(), result.kept().size()));
+        } catch (Exception e) {
+            AllAlerts.handleError(text("currency.online.title"), e);
+        }
     }
 
     private Node entryCard() {
@@ -623,6 +709,12 @@ public class CurrenciesController {
             base = service.base();
             ratesToday = service.ratesInForce(LocalDate.now());
             table.setItems(FXCollections.observableArrayList(all));
+            // A Currency is a record, so a currency that did not change is equal to the one already in
+            // its row, and JavaFX redraws a cell only when its item changes by equals - while the rate,
+            // its day and its change are read from ratesToday, beside the item. Without this a rate
+            // recorded in the drawer, from the internet or at another till stayed off the table until
+            // the screen was opened again.
+            table.refresh();
             widths.layout(table);
             baseLabel.setText(text("currency.base.current", base.label()));
 

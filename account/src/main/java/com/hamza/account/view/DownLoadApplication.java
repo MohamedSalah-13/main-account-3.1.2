@@ -67,6 +67,8 @@ import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.expense.ExpenseHeadingService;
 import com.hamza.account.features.currency.CurrencyService;
+import com.hamza.account.features.currency.online.OnlineRateService;
+import com.hamza.account.features.currency.online.RateSources;
 import com.hamza.account.features.events.CurrenciesChanged;
 import com.hamza.account.controller.others.BaseCurrencySymbol;
 import com.hamza.account.features.expense.ExpenseService;
@@ -111,6 +113,7 @@ import lombok.extern.log4j.Log4j2;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Clock;
 
 @Log4j2
 public class DownLoadApplication extends Application {
@@ -292,7 +295,12 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ExpenseBudgetService.class, new ExpenseBudgetService());
         ServiceRegistry.register(ExpenseRecurringService.class, new ExpenseRecurringService());
         // The currencies and their rates (V80): the catalogue every later currency phase converts with.
-        ServiceRegistry.register(CurrencyService.class, new CurrencyService());
+        CurrencyService currencyService = new CurrencyService();
+        ServiceRegistry.register(CurrencyService.class, currencyService);
+        // Today's rates from the internet (ق-٩): suggested beside the recorded ones, recorded only when
+        // ticked. Nothing connects until the button is pressed - the HTTPS client is built on first use.
+        ServiceRegistry.register(OnlineRateService.class, new OnlineRateService(currencyService,
+                RateSources.standard("AccountK"), Clock.systemDefaultZone()));
         // The employee's account (V58). The payment service takes the expenses service rather
         // than building one: every pound paid to an employee is an expense row, so it inherits
         // the shift gate, the period lock and the cash journal instead of restating them.
