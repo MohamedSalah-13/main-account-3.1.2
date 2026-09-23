@@ -18,8 +18,11 @@ import java.util.function.ToDoubleFunction;
  * <p>
  * A word wider than the width is left whole on a line of its own: cutting inside an Arabic word
  * separates letters that are joined.
+ * <p>
+ * Public since the startup window's failure message met the same defect: any label that wraps an
+ * Arabic sentence can break it here first and show the lines unwrapped.
  */
-final class MessageLines {
+public final class MessageLines {
 
     private MessageLines() {
     }
@@ -28,7 +31,7 @@ final class MessageLines {
      * The text with a {@code '\n'} wherever a line would be wider than {@code width}, as
      * {@code measure} reports it. A line break already in the text is kept.
      */
-    static String wrap(String text, double width, ToDoubleFunction<String> measure) {
+    public static String wrap(String text, double width, ToDoubleFunction<String> measure) {
         if (text == null || text.isEmpty() || !(width > 0)) {
             return text;
         }

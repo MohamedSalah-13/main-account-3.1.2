@@ -3,7 +3,10 @@ package com.hamza.account.service.version;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
+import com.hamza.account.features.startup.StartupProgress;
+import com.hamza.account.features.startup.StartupStep;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.output.MigrateResult;
@@ -62,18 +65,26 @@ public class DatabaseMigrationService {
     private final ConnectionToDatabase database;
     private final SystemInfoService systemInfoService;
     private final DatabaseBackupService backupService;
+    private final StartupProgress progress;
 
     public DatabaseMigrationService() {
         this(new ConnectionToDatabase());
     }
 
     public DatabaseMigrationService(ConnectionToDatabase database) {
+        this(database, StartupProgress.SILENT);
+    }
+
+    /** @param progress told of each step and each migration, for the startup window */
+    public DatabaseMigrationService(ConnectionToDatabase database, StartupProgress progress) {
         this.database = database;
         this.systemInfoService = new SystemInfoService();
         this.backupService = new DatabaseBackupService();
+        this.progress = progress;
     }
 
     public MigrationResult updateDatabaseIfNeeded() {
+        progress.begin(StartupStep.DATABASE);
         createDatabaseIfMissing();
         alignDatabaseCollationWithItsTables();
 
@@ -99,15 +110,21 @@ public class DatabaseMigrationService {
             return MigrationResult.noUpdateRequired(current, current);
         }
 
+        progress.detail("startup.detail.pending", String.valueOf(pending.size()));
         if (!freshInstall) {
             // Only a database with data in it is worth dumping, and only when something is
             // actually about to be applied to it.
+            progress.begin(StartupStep.BACKUP);
             backupService.createBackup();
         }
 
+        progress.begin(StartupStep.MIGRATION);
         MigrateResult result;
         try {
-            result = flyway.migrate();
+            result = configureFlyway()
+                    .callbacks(new MigrationProgressCallback(progress, pending.size()))
+                    .load()
+                    .migrate();
         } catch (Exception e) {
             log.error("Database migration failed", e);
             throw new RuntimeException("Database migration failed: " + e.getMessage(), e);
@@ -209,6 +226,10 @@ public class DatabaseMigrationService {
     }
 
     private Flyway buildFlyway() {
+        return configureFlyway().load();
+    }
+
+    private FluentConfiguration configureFlyway() {
         return Flyway.configure()
                 .dataSource(jdbcUrl(database.getDbName()), database.getUsername(), database.getPass())
                 .locations(MIGRATIONS_LOCATION)
@@ -218,8 +239,7 @@ public class DatabaseMigrationService {
                 // Client databases have been edited by hand over the years; a checksum mismatch on
                 // a migration that already ran should not stop the app from opening.
                 .validateOnMigrate(false)
-                .cleanDisabled(true)
-                .load();
+                .cleanDisabled(true);
     }
 
     private String currentVersion(Flyway flyway) {

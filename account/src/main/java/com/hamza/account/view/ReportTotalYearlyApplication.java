@@ -1,19 +1,19 @@
 package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.reports.ReportTotalByYearController;
+import com.hamza.account.controller.reports.YearlyReportController;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import lombok.Getter;
 
-import java.io.InputStream;
-
-@Getter
+/**
+ * The yearly report's window: a stage of its own rather than a dialog, so the main window stays usable
+ * beside a report someone reads for a while. The sidebar button and the reports hub both open it here.
+ */
 public class ReportTotalYearlyApplication extends Application {
 
     // A method, not a baked-in static final: the old literal was read once at class
@@ -22,22 +22,22 @@ public class ReportTotalYearlyApplication extends Application {
         return LanguageManager.getInstance().getString("report.yearly.title");
     }
 
-    private final InputStream reports = new Image_Setting().reports;
     private final Pane pane;
 
-    public ReportTotalYearlyApplication(DaoFactory daoFactory) throws Exception {
-        pane = new OpenFxmlApplication(new ReportTotalByYearController(daoFactory)).getPane();
+    /** The factory is not read: the report builds its own collaborators. Kept so both callers stay as they are. */
+    public ReportTotalYearlyApplication(DaoFactory daoFactory) {
+        pane = YearlyReportController.standard().pane();
     }
 
     @Override
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         Scene scene = new SceneAll(pane);
         stage.setScene(scene);
         stage.setTitle(yearlyReportName());
-        stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().reports));
+        stage.getIcons().add(new Image(new Image_Setting().reports));
         stage.setResizable(true);
-//        stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        stage.setMinWidth(900);
+        stage.setMinHeight(600);
         stage.show();
-//        StageDimensions.stageDimensions(getClass(), stage);
     }
 }
