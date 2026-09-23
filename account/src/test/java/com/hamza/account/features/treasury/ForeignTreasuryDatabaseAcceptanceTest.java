@@ -12,6 +12,13 @@ import com.hamza.account.features.shift.JdbcShiftPolicyRepository;
 import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.features.shift.ShiftTrackingMode;
 import com.hamza.account.features.shift.TreasuryShiftPolicy;
+import com.hamza.account.features.treasury.statement.TreasuryMovementKind;
+import com.hamza.account.features.treasury.statement.TreasuryStatementFilter;
+import com.hamza.account.features.treasury.statement.TreasuryStatementPage;
+import com.hamza.account.features.treasury.statement.TreasuryStatementPrintData;
+import com.hamza.account.features.treasury.statement.TreasuryStatementRow;
+import com.hamza.account.features.treasury.statement.TreasuryStatementService;
+import com.hamza.account.features.treasury.statement.TreasuryStatementSummary;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.service.TreasuryService;
@@ -43,9 +50,12 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -363,6 +373,64 @@ class ForeignTreasuryDatabaseAcceptanceTest {
         execute("UPDATE treasury SET min_balance = 150 WHERE id = " + dollarDrawer);
         assertTrue(DaoFactory.INSTANCE.treasuryCurrentBalanceDao().belowMinimum().stream()
                 .noneMatch(row -> row.treasuryId() == dollarDrawer));
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("the drawer's statement is in dollars with its book value beside it; every treasury at once stays in the base")
+    void theStatementIsInDollars() throws Exception {
+        TreasuryStatementService statements = new TreasuryStatementService();
+        TreasuryStatementFilter drawerOnly = new TreasuryStatementFilter(TODAY.minusDays(4), TODAY, dollarDrawer,
+                null, null, 0, 50);
+
+        TreasuryStatementPage page = statements.search(drawerOnly);
+
+        assertEquals("USD", page.currency().code());
+        // Brought forward: the opening of 100 dollars five days ago. In: 50 deposited and 100 bought.
+        // Out: 20 withdrawn and 30 sold. The exchange into riyals was deleted and is not there.
+        assertSummary("100|150|50|200", page.summary());
+        assertSummary("4800|7300|2560|9540", page.totals().base());
+        assertEquals(4, page.rows().size());
+        TreasuryStatementRow newest = page.rows().get(0);
+        TreasuryStatementRow oldest = page.rows().get(page.rows().size() - 1);
+        assertEquals(TreasuryMovementKind.DEPOSIT, oldest.kind());
+        assertEquals(0, new BigDecimal("150").compareTo(page.currency().runningBalance(oldest)));
+        assertEquals(0, new BigDecimal("7200").compareTo(oldest.runningBalance()));
+        assertEquals(0, new BigDecimal("200").compareTo(page.currency().runningBalance(newest)),
+                "the last running balance is the drawer's balance in dollars");
+        assertEquals(0, balance(dollarDrawer).balanceOwn().compareTo(page.currency().runningBalance(newest)));
+        assertEquals(0, new BigDecimal("9540").compareTo(newest.runningBalance()));
+        BigDecimal net = page.rows().stream()
+                .map(row -> page.currency().income(row).subtract(page.currency().output(row)))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, new BigDecimal("100").compareTo(net), "the rows add up to what the cards say moved");
+
+        // A kind narrows the rows and the period's totals; the two balances still answer the dates alone.
+        TreasuryStatementPage deposits = statements.search(new TreasuryStatementFilter(TODAY.minusDays(4), TODAY,
+                dollarDrawer, TreasuryMovementKind.DEPOSIT, null, 0, 50));
+        assertEquals(1, deposits.rows().size());
+        assertSummary("100|50|0|200", deposits.summary());
+
+        // The paper is written in the same currency as the screen.
+        TreasuryStatementPrintData paper = statements.forPrint(drawerOnly);
+        assertEquals("USD", paper.currency().code());
+        assertSummary("100|150|50|200", paper.summary());
+
+        // The main treasury and every treasury at once are in the base, and read the books.
+        assertFalse(statements.search(new TreasuryStatementFilter(TODAY.minusDays(4), TODAY, MAIN,
+                null, null, 0, 50)).currency().isForeign());
+        TreasuryStatementPage everything = statements.search(new TreasuryStatementFilter(TODAY.minusDays(4), TODAY,
+                null, null, null, 0, 50));
+        assertFalse(everything.currency().isForeign(), "dollars and pounds are not added together");
+        assertEquals(0, decimal("SELECT SUM(balance) FROM treasury_current_balance")
+                .compareTo(everything.summary().closingBalance()));
+    }
+
+    private static void assertSummary(String expected, TreasuryStatementSummary summary) {
+        assertEquals(expected, Stream.of(summary.openingBalance(), summary.totalIncome(), summary.totalOutput(),
+                        summary.closingBalance())
+                .map(value -> value.stripTrailingZeros().toPlainString())
+                .collect(Collectors.joining("|")));
     }
 
     // ---- plumbing ----------------------------------------------------------------------------

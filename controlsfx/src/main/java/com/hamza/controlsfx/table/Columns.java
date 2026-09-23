@@ -110,6 +110,17 @@ public final class Columns {
     }
 
     /**
+     * A money column written by the caller's formatter - for an amount in a currency whose places are not
+     * the two {@link #money(BigDecimal)} writes (a Kuwaiti dinar has three, a yen none). Aligned, and
+     * coloured when negative, as every other amount is. The formatter is asked on every paint, so a
+     * screen that changes currency changes what its cells write when it next fills the table.
+     */
+    public static <S> TableColumn<S, BigDecimal> money(String titleKey, Function<S, BigDecimal> extractor,
+                                                       Function<BigDecimal, String> format) {
+        return formatted(column(titleKey, extractor), value -> value, format);
+    }
+
+    /**
      * Writes an existing column's numbers the way {@link #money(String, Function)} writes its own -
      * for a column that holds a {@code Number} rather than a {@code BigDecimal}, such as one bound to
      * a {@code DoubleProperty} through {@link #observable}. An editable column keeps the alignment

@@ -42,6 +42,9 @@
                         <Label fx:id="closingBalance" styleClass="treasury-statement-summary-value" text="0.00" />
                     </VBox>
                 </HBox>
+                <!-- Shown for a single treasury in a foreign currency: what the figures are in, and what
+                     its closing balance is worth in the books. -->
+                <Label fx:id="currencyNote" managed="false" styleClass="page-subtitle" visible="false" />
                 <!-- Ordered by ListToolbar in TreasureDetailsController. The treasury and the period stay
                      in the bar - they say which statement this is; the rest is behind the filters button. -->
                 <VBox spacing="8.0" styleClass="app-card">

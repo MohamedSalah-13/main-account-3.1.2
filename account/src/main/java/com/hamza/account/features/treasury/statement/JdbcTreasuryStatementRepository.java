@@ -1,5 +1,7 @@
 package com.hamza.account.features.treasury.statement;
 
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.treasury.TreasuryCurrencies;
 import com.hamza.account.treasury.TreasuryStatements;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -13,6 +15,8 @@ import java.util.List;
 public final class JdbcTreasuryStatementRepository extends AbstractDao<TreasuryStatementRow>
         implements TreasuryStatementRepository {
 
+    private final TreasuryCurrencies currencies = TreasuryCurrencies.jdbc();
+
     @Override
     public List<TreasuryStatementRow> search(TreasuryStatementFilter filter) throws DaoException {
         Integer kind = filter.kind() == null ? null : filter.kind().code();
@@ -22,22 +26,24 @@ public final class JdbcTreasuryStatementRepository extends AbstractDao<TreasuryS
     }
 
     @Override
-    public TreasuryStatementSummary summarize(TreasuryStatementFilter filter) throws DaoException {
+    public TreasuryStatementTotals summarize(TreasuryStatementFilter filter) throws DaoException {
         Integer kind = filter.kind() == null ? null : filter.kind().code();
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(TreasuryStatements.SELECT_STATEMENT_SUMMARY)) {
                 Object[] values = {
-                        filter.from(),
-                        filter.from(), filter.to(), kind, kind, filter.userId(), filter.userId(),
-                        filter.from(), filter.to(), kind, kind, filter.userId(), filter.userId(),
-                        filter.to(), filter.to(), filter.treasuryId(), filter.treasuryId()
+                        filter.from(), filter.from(), kind, kind, filter.userId(), filter.userId(),
+                        filter.to(), filter.treasuryId(), filter.treasuryId()
                 };
                 setData(statement, values);
                 try (ResultSet rs = statement.executeQuery()) {
-                    if (!rs.next()) return new TreasuryStatementSummary(null, null, null, null);
-                    return new TreasuryStatementSummary(
-                            rs.getBigDecimal("opening_balance"), rs.getBigDecimal("total_income"),
-                            rs.getBigDecimal("total_output"), rs.getBigDecimal("closing_balance"));
+                    if (!rs.next()) return TreasuryStatementTotals.EMPTY;
+                    return new TreasuryStatementTotals(
+                            new TreasuryStatementSummary(
+                                    rs.getBigDecimal("opening_balance"), rs.getBigDecimal("total_income"),
+                                    rs.getBigDecimal("total_output"), rs.getBigDecimal("closing_balance")),
+                            new TreasuryStatementSummary(
+                                    rs.getBigDecimal("opening_balance_own"), rs.getBigDecimal("total_income_own"),
+                                    rs.getBigDecimal("total_output_own"), rs.getBigDecimal("closing_balance_own")));
                 }
             }
         });
@@ -51,7 +57,7 @@ public final class JdbcTreasuryStatementRepository extends AbstractDao<TreasuryS
                  var rs = statement.executeQuery()) {
                 while (rs.next()) {
                     treasuries.add(new TreasuryOption(rs.getInt("id"), rs.getString("t_name"),
-                            rs.getBoolean("is_active")));
+                            rs.getBoolean("is_active"), rs.getString("currency_code")));
                 }
             }
             List<TreasuryUserOption> users = new ArrayList<>();
@@ -61,6 +67,19 @@ public final class JdbcTreasuryStatementRepository extends AbstractDao<TreasuryS
             }
             return new TreasuryStatementOptions(treasuries, users);
         });
+    }
+
+    @Override
+    public Currency currencyOf(int treasuryId) throws DaoException {
+        Integer currencyId = withConnection(connection -> {
+            try (var statement = connection.prepareStatement(TreasuryStatements.SELECT_STATEMENT_CURRENCY)) {
+                statement.setInt(1, treasuryId);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getObject("currency_id", Integer.class) : null;
+                }
+            }
+        });
+        return currencies.find(currencyId);
     }
 
     @Override
@@ -74,6 +93,8 @@ public final class JdbcTreasuryStatementRepository extends AbstractDao<TreasuryS
                     rs.getString("information"), rs.getInt("treasury_id"),
                     rs.getString("treasury_name"), rs.getBigDecimal("income"),
                     rs.getBigDecimal("output"), rs.getBigDecimal("running_balance"),
+                    rs.getBigDecimal("income_own"), rs.getBigDecimal("output_own"),
+                    rs.getBigDecimal("running_balance_own"),
                     rs.getInt("user_id"), rs.getString("user_name"));
         } catch (SQLException | IllegalArgumentException e) {
             throw new DaoException("Could not map treasury statement row", e);

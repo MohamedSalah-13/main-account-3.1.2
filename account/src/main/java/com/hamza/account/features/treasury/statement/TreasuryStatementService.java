@@ -32,7 +32,7 @@ public final class TreasuryStatementService {
         List<TreasuryStatementRow> pageRows = hasNext
                 ? List.copyOf(fetched.subList(0, filter.pageSize())) : List.copyOf(fetched);
         return new TreasuryStatementPage(pageRows, repository.summarize(filter), filter.page(),
-                filter.page() > 0, hasNext);
+                filter.page() > 0, hasNext, currencyOf(filter));
     }
 
     public TreasuryStatementPrintData forPrint(TreasuryStatementFilter filter) throws DaoException {
@@ -42,6 +42,20 @@ public final class TreasuryStatementService {
         boolean truncated = fetched.size() > PRINT_LIMIT;
         List<TreasuryStatementRow> rows = truncated
                 ? List.copyOf(fetched.subList(0, PRINT_LIMIT)) : List.copyOf(fetched);
-        return new TreasuryStatementPrintData(rows, repository.summarize(printable), truncated);
+        return new TreasuryStatementPrintData(rows, repository.summarize(printable), truncated,
+                currencyOf(printable));
+    }
+
+    /**
+     * The currency the statement is written in: a single treasury's own when it is in a foreign one,
+     * the base for one in the base and for every treasury at once (see {@link TreasuryStatementCurrency}).
+     * Read with the rows rather than off the screen's list of treasuries, so the figures and the
+     * currency named beside them come from one moment.
+     */
+    private TreasuryStatementCurrency currencyOf(TreasuryStatementFilter filter) throws DaoException {
+        if (filter.treasuryId() == null) {
+            return TreasuryStatementCurrency.BASE;
+        }
+        return new TreasuryStatementCurrency(repository.currencyOf(filter.treasuryId()));
     }
 }
