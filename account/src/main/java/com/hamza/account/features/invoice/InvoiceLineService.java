@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Owns the business rules for adding and merging editable invoice lines.
@@ -27,9 +28,21 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
     private final int documentId;
     private final InvoiceLineAssembler.LineFactory<T> lineFactory;
     private final Map<Integer, Double> originalBaseQuantityByItem = new HashMap<>();
+    private final Supplier<DocumentPricing> pricing;
 
     public InvoiceLineService(DocumentType documentType, int documentId,
                               InvoiceLineAssembler.LineFactory<T> lineFactory) {
+        this(documentType, documentId, lineFactory, () -> DocumentPricing.BASE);
+    }
+
+    /**
+     * @param pricing the currency the screen's figures are typed in (V83): a sale is held above its cost
+     *                by the base price it will be stored at - docs/currency-plan.md §15 ق-د٧
+     */
+    public InvoiceLineService(DocumentType documentType, int documentId,
+                              InvoiceLineAssembler.LineFactory<T> lineFactory,
+                              Supplier<DocumentPricing> pricing) {
+        this.pricing = Objects.requireNonNull(pricing, "pricing");
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.documentId = documentId;
         this.lineFactory = Objects.requireNonNull(lineFactory, "lineFactory");
@@ -169,7 +182,10 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
     private void requireSalePrice(InvoiceLineDraft draft) throws BusinessRuleException {
         ItemsModel item = draft.item();
         double buyPrice = ItemUnits.buyPrice(item, draft.unit(), item.getBuyPrice());
-        if (draft.price() < buyPrice) {
+        // The cost is kept in the base, so the price is compared as the base price it will be stored at.
+        // With no rate there is no such price yet - the save refuses the document for that on its own.
+        DocumentPricing screen = pricing.get();
+        if (screen.hasRate() && screen.toBase(draft.price()) < buyPrice) {
             throw new BusinessRuleException("لا يمكن البيع بسعر أقل من سعر الشراء");
         }
     }

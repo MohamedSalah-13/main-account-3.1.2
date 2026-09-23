@@ -91,6 +91,18 @@ public final class ReturnEntryCoordinator {
                 : new ReturnedStatusService(new JdbcReturnableRepository());
     }
 
+    /**
+     * The currency the return is typed in (V83): its source invoice is shown in it - see
+     * {@link com.hamza.account.features.invoice.ReturnSourceFigures}.
+     */
+    public ReturnEntryCoordinator pricedBy(
+            java.util.function.Supplier<com.hamza.account.features.invoice.DocumentPricing> pricing) {
+        if (lineSelection != null) {
+            lineSelection.shownIn(pricing);
+        }
+        return this;
+    }
+
     /** Wires the button and sets each control's visibility for this document type. */
     public void configure() {
         boolean isReturn = documentType.isReturn();
@@ -337,6 +349,9 @@ public final class ReturnEntryCoordinator {
         }
 
         try {
+            // The party first: the return is typed in the party's currency, and the lines below are
+            // shown in whatever the screen is priced in when they are read (V83, docs/currency-plan.md §15).
+            applySourceParty(invoiceNumber);
             var lines = lineSelection.selectableLines(invoiceNumber);
             var result = DialogReturnFromInvoice.show(invoiceNumber, lines);
             if (result.isEmpty() || result.get().selectedLines().isEmpty()) {
@@ -350,7 +365,6 @@ public final class ReturnEntryCoordinator {
             sourceInvoiceNumber = invoiceNumber;
             selectedReturnReason = result.get().reason();
             adoptSourceAmounts(invoiceNumber);
-            applySourceParty(invoiceNumber);
             applySourceDelegate(invoiceNumber);
         } catch (Exception e) {
             errorHandler.handle(e);

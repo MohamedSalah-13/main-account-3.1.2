@@ -108,6 +108,26 @@ class InvoiceItemSelectionServiceTest {
         assertFalse(InvoiceItemSelectionService.ScaleBarcodeSettings.disabled().matches("070001"));
     }
 
+    @Test
+    void aDollarScreenIsOfferedTheItemsBasePriceConverted() throws Exception {
+        // The carton sells at 100.00 in the base and costs 90.00; at 48.37 that is 2.07 and 1.86 dollars.
+        ItemsModel item = item();
+        var rate = new java.math.BigDecimal("48.37");
+        java.util.function.Supplier<DocumentPricing> dollars = () -> new DocumentPricing(
+                com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD, rate);
+
+        var sale = new InvoiceItemSelectionService(DocumentType.SALES, lookup(item),
+                (model, tier) -> model.getSelPrice1(), (barcode, stockId, valueType) -> null, dollars);
+        var purchase = new InvoiceItemSelectionService(DocumentType.PURCHASE, lookup(item),
+                (model, tier) -> model.getBuyPrice(), (barcode, stockId, valueType) -> null, dollars);
+
+        assertEquals(2.07, sale.selectByBarcode("CARTON-12", 1, 1,
+                InvoiceItemSelectionService.ScaleBarcodeSettings.disabled()).price());
+        assertEquals(1.86, purchase.selectByBarcode("CARTON-12", 1, 1,
+                InvoiceItemSelectionService.ScaleBarcodeSettings.disabled()).price());
+        assertEquals(0.21, sale.selectByName("صنف اختبار", 1, 1).price(), "a piece at 10.00");
+    }
+
     private static InvoiceItemSelectionService service(
             DocumentType type, ItemsModel item,
             InvoiceItemSelectionService.ItemPriceResolver resolver) {

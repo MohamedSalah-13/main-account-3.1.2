@@ -207,6 +207,11 @@ public final class DeleteRegistry {
             // V82: a customer or a supplier dealing in it - every amount on their account is in it.
             .referencedBy("custom", "currency_id", "delete.ref.currency.customer")
             .referencedBy("suppliers", "currency_id", "delete.ref.currency.supplier")
+            // V83: a document written in it - its prices and its cash were typed in it.
+            .referencedBy("total_sales", "currency_id", "delete.ref.sales_invoice")
+            .referencedBy("total_sales_re", "currency_id", "delete.ref.sales_return")
+            .referencedBy("total_buy", "currency_id", "delete.ref.purchase_invoice")
+            .referencedBy("total_buy_re", "currency_id", "delete.ref.purchase_return")
             .build();
 
     /**

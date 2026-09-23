@@ -182,6 +182,44 @@ class ReturnLineSelectionServiceTest {
         return null;
     }
 
+    @Test
+    void aSourceIsShownInTheReturnsCurrency() throws DaoException {
+        // An invoice typed in dollars at 48.37: line 11 was typed at 2.07 with 0.10 off, and line 12 has no
+        // typed figure (written before V83), so it is shown at its base figure over the rate.
+        repository.existingSources.add(SOURCE);
+        repository.lines.put(SOURCE, List.of(
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 100.13, 4.84, 40, 1, 1, null),
+                new ReturnableRepository.SourceLineRow(12, ITEM_B, 2, 96.74, 0, 40, 1, 1, null)));
+        repository.amounts = new ReturnableRepository.SourceAmounts(493.87, 29.51);
+        repository.linesById.put(11, new ReturnableRepository.SourceLine(ITEM_A, 3, 100.13, 4.84, 40, 1, 1, null));
+        var rate = new java.math.BigDecimal("48.37");
+        service.shownBy((type, number) -> new ReturnSourceFigures(rate, new java.math.BigDecimal("10.21"),
+                new java.math.BigDecimal("0.61"), Map.of(11, new com.hamza.account.features.party.currency
+                .PartyCurrencies.WrittenLine(new java.math.BigDecimal("2.07"), new java.math.BigDecimal("0.10")))));
+
+        List<ReturnableLineSelection> selections = service.selectableLines(SOURCE);
+
+        assertEquals(2.07, selections.get(0).price(), 0.0001);
+        assertEquals(0.10, selections.get(0).soldDiscount(), 0.0001);
+        assertEquals(2.00, selections.get(1).price(), 0.0001, "96.74 / 48.37");
+        assertEquals(40, selections.get(0).buyPrice(), 0.0001, "the cost stays the base's - the save's to read");
+        var amounts = service.sourceAmounts(SOURCE).orElseThrow();
+        assertEquals(10.21, amounts.total(), 0.0001);
+        assertEquals(0.61, amounts.discount(), 0.0001);
+        assertEquals(0.10, service.lineTerms(SOURCE, 11).orElseThrow().soldDiscount(), 0.0001);
+    }
+
+    @Test
+    void aSourceIsShownAsItIsByDefault() throws DaoException {
+        repository.existingSources.add(SOURCE);
+        repository.lines.put(SOURCE, List.of(
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 100.13, 4.84, 40, 1, 1, null)));
+        repository.amounts = new ReturnableRepository.SourceAmounts(300.39, 14.52);
+
+        assertEquals(100.13, service.selectableLines(SOURCE).getFirst().price(), 0.0001);
+        assertEquals(300.39, service.sourceAmounts(SOURCE).orElseThrow().total(), 0.0001);
+    }
+
     private static final class FakeRepository implements ReturnableRepository {
         final java.util.Set<Integer> existingSources = new java.util.HashSet<>();
         final Map<Integer, List<SourceLineRow>> lines = new HashMap<>();
@@ -217,9 +255,12 @@ class ReturnLineSelectionServiceTest {
             return returnedByLine;
         }
 
+        SourceAmounts amounts;
+        final Map<Integer, SourceLine> linesById = new HashMap<>();
+
         @Override
         public Optional<SourceAmounts> sourceAmounts(DocumentType sourceType, int sourceId) {
-            throw new UnsupportedOperationException("not used here");
+            return Optional.ofNullable(amounts);
         }
 
 
@@ -231,7 +272,7 @@ class ReturnLineSelectionServiceTest {
         @Override
         public Optional<SourceLine> lineById(
                 DocumentType sourceType, int sourceId, int sourceLineId) {
-            throw new UnsupportedOperationException("not used by ReturnLineSelectionService");
+            return Optional.ofNullable(linesById.get(sourceLineId));
         }
 
         @Override

@@ -233,11 +233,10 @@ class InvoiceSaveServiceTest {
     void aDollarCustomersInvoiceWithNoRateIsRefusedBeforeANumberIsTaken() throws Exception {
         session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
         var memory = new com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory()
-                .party(com.hamza.account.features.events.PartyKind.CUSTOMER, 8,
-                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD);
+                .party(com.hamza.account.features.events.PartyKind.CUSTOMER, 8, USD);
 
         InvoiceValidationException refusal = assertThrows(InvoiceValidationException.class,
-                () -> withPartyCurrency(memory).save(command(0, 5)));
+                () -> withPartyCurrency(memory).save(inDollars(command(0, 5))));
 
         assertEquals(InvoiceSaveValidator.Target.DATE, refusal.target());
         verifyNoInteractions(numberAllocator);
@@ -245,35 +244,125 @@ class InvoiceSaveServiceTest {
         assertTrue(memory.written.isEmpty());
     }
 
-    /** With a rate, the header is written in the base and then translated beside it, in one save. */
+    /**
+     * A dollar customer's invoice is typed in dollars (V83, docs/currency-plan.md §15): the lines and the
+     * header are stored in the base at the day's rate - so the cost, the profit and the stock never learn
+     * a currency was involved - and exactly what was typed is written beside them.
+     */
     @Test
-    void aDollarCustomersInvoiceIsTranslatedAfterItsHeaderIsWritten() throws Exception {
+    void aDollarCustomersInvoiceIsTypedInDollarsAndStoredInTheBase() throws Exception {
         session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
         when(numberAllocator.next(DocumentType.SALES)).thenReturn(46);
         when(dao.insert(any())).thenReturn(1);
-        var memory = new com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory()
-                .party(com.hamza.account.features.events.PartyKind.CUSTOMER, 8,
-                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD)
-                .rate(com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD,
-                        LocalDate.of(2026, 8, 1), "50");
-        // What the insert stored, as the database would answer it when read back.
-        memory.document(DocumentType.SALES, 46, 8, LocalDate.of(2026, 8, 13), null, "18", "3", "5");
+        var memory = dollarCustomer();
 
-        assertEquals(46, withPartyCurrency(memory).save(command(0, 5)).invoiceNumber());
+        // 2 at 10 dollars less 2 off the line, 3 off the invoice, 5 paid: 18, 15 net, 10 on account.
+        assertEquals(46, withPartyCurrency(memory).save(inDollars(command(0, 5))).invoiceNumber());
+
+        var stored = org.mockito.ArgumentCaptor.forClass(Total_Sales.class);
+        verify(dao).insert(stored.capture());
+        Total_Sales header = stored.getValue();
+        assertEquals(900.0, header.getTotal(), 0.0001, "the line at 500 a piece less 100 off, in pounds");
+        assertEquals(150.0, header.getDiscount(), 0.0001);
+        assertEquals(250.0, header.getPaid(), 0.0001, "the 5 dollars that came in, in pounds");
+        Sales line = header.getSalesList().getFirst();
+        assertEquals(500.0, line.getPrice(), 0.0001);
+        assertEquals(100.0, line.getDiscount(), 0.0001);
+        assertEquals(new BigDecimal("10.00"), line.getPriceForeign(), "the price as typed, beside the base");
+        assertEquals(new BigDecimal("2.00"), line.getDiscountForeign());
 
         var written = memory.written.get("SALES:46");
         assertEquals(new BigDecimal("50"), written.rate());
-        assertEquals(new BigDecimal("0.36"), written.total());
-        assertEquals(new BigDecimal("0.20"), written.remainder(), "the 10 left on account, in dollars");
+        assertEquals(new BigDecimal("18.00"), written.total());
+        assertEquals(new BigDecimal("3.00"), written.discount());
+        assertEquals(new BigDecimal("5.00"), written.paid());
+        assertEquals(USD.id(), memory.writtenCurrency.get("SALES:46"), "and the currency it was typed in");
+    }
+
+    /** A cash invoice paid in full leaves nothing on the account, in pounds as in dollars. */
+    @Test
+    void aCashDollarInvoiceLeavesNothingOnTheAccountInEitherCurrency() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        when(numberAllocator.next(DocumentType.SALES)).thenReturn(47);
+        when(dao.insert(any())).thenReturn(1);
+        var memory = dollarCustomer();
+        InvoiceSaveCommand cash = inDollars(command(0, 0));
+        cash = new InvoiceSaveCommand(cash.existingInvoiceId(), cash.invoiceDate(), InvoiceType.CASH,
+                cash.invoiceDiscount(), cash.discountType(), cash.enteredPaid(), cash.notes(), cash.partyId(),
+                cash.partyName(), cash.treasuryName(), cash.delegateName(), cash.allowInsufficientStock(),
+                cash.sourceInvoiceNumber(), cash.returnReason(), cash.lines(), cash.stockId(),
+                cash.correctionReason(), cash.expectedUpdatedAt(), cash.documentCurrencyId());
+
+        withPartyCurrency(memory).save(cash);
+
+        var stored = org.mockito.ArgumentCaptor.forClass(Total_Sales.class);
+        verify(dao).insert(stored.capture());
+        assertEquals(750.0, stored.getValue().getPaid(), 0.0001, "the net, exactly");
+        assertEquals(0, memory.written.get("SALES:47").remainder().signum());
+    }
+
+    /**
+     * The dollar drawer takes a dollar invoice's cash; a drawer in a third currency does not, and neither
+     * does a wallet on it - its fee would be an expense on a treasury in a foreign currency (§15 ق-د٦).
+     */
+    @Test
+    void aTreasuryInTheInvoicesCurrencyTakesItsCash() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        when(numberAllocator.next(DocumentType.SALES)).thenReturn(48);
+        when(dao.insert(any())).thenReturn(1);
+
+        Treasury dollarDrawer = new Treasury(4, "درج الدولار", BigDecimal.ZERO);
+        dollarDrawer.setCurrencyId(USD.id());
+        assertEquals(48, withPartyCurrency(dollarCustomer(), dollarDrawer).save(inDollars(command(0, 5)))
+                .invoiceNumber());
+
+        Treasury riyalDrawer = new Treasury(5, "درج الريال", BigDecimal.ZERO);
+        riyalDrawer.setCurrencyId(com.hamza.account.features.party.currency.PartyCurrencyFixtures.SAR.id());
+        assertEquals(InvoiceSaveValidator.Target.TREASURY, assertThrows(InvoiceValidationException.class,
+                () -> withPartyCurrency(dollarCustomer(), riyalDrawer).save(inDollars(command(0, 5)))).target());
+
+        Treasury dollarWallet = new Treasury(6, "محفظة دولار", BigDecimal.ZERO);
+        dollarWallet.setCurrencyId(USD.id());
+        dollarWallet.setFeePercent(new BigDecimal("1.5"));
+        assertEquals(InvoiceSaveValidator.Target.TREASURY, assertThrows(InvoiceValidationException.class,
+                () -> withPartyCurrency(dollarCustomer(), dollarWallet).save(inDollars(command(0, 5)))).target());
+
+        var poundCustomer = new com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory();
+        assertEquals(InvoiceSaveValidator.Target.TREASURY, assertThrows(InvoiceValidationException.class,
+                () -> withPartyCurrency(poundCustomer, dollarDrawer).save(command(0, 5))).target(),
+                "a customer in the base pays into no foreign drawer");
+        verify(numberAllocator, times(1)).next(DocumentType.SALES);
+    }
+
+    private static final com.hamza.account.features.currency.Currency USD =
+            com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD;
+
+    private static com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory dollarCustomer() {
+        return new com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory()
+                .party(com.hamza.account.features.events.PartyKind.CUSTOMER, 8, USD)
+                .rate(USD, LocalDate.of(2026, 8, 1), "50");
+    }
+
+    /** The same command, its figures typed in dollars. */
+    private static InvoiceSaveCommand inDollars(InvoiceSaveCommand c) {
+        return new InvoiceSaveCommand(c.existingInvoiceId(), c.invoiceDate(), c.invoiceType(),
+                c.invoiceDiscount(), c.discountType(), c.enteredPaid(), c.notes(), c.partyId(), c.partyName(),
+                c.treasuryName(), c.delegateName(), c.allowInsufficientStock(), c.sourceInvoiceNumber(),
+                c.returnReason(), c.lines(), c.stockId(), c.correctionReason(), c.expectedUpdatedAt(), USD.id());
     }
 
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> withPartyCurrency(
             com.hamza.account.features.party.currency.PartyCurrencies currencies) {
+        return withPartyCurrency(currencies, null);
+    }
+
+    private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> withPartyCurrency(
+            com.hamza.account.features.party.currency.PartyCurrencies currencies, Treasury treasury) {
         return new InvoiceSaveService<>(new SalesInvoice(), repository,
                 DocumentType.SALES, Clock.fixed(Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
                 numberAllocator, InvoiceTransactionExecutor.direct(),
                 stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
-                name -> new Treasury(1, name, BigDecimal.ZERO),
+                name -> treasury != null ? treasury : new Treasury(1, name, BigDecimal.ZERO),
                 name -> new Employees(2, name), stockMovementDao,
                 ShiftGate.disabled(), ShiftAttributionWriter.disabled(), ShiftCashLedger.disabled(), null,
                 changeAnnouncer, InvoiceWalletFee.none(), DelegateDiscountGuard.none(),

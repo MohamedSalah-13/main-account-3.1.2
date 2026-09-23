@@ -19,12 +19,41 @@ import java.time.LocalDate;
  */
 public interface PartyCurrencies {
 
-    /** What a stored document says about its translation, or {@code null} for no such document. */
-    record StoredDocument(int partyId, LocalDate date, BigDecimal rate) {
+    /**
+     * What a stored document says about its currency, or {@code null} for no such document.
+     *
+     * @param rate       the rate copied onto it, or {@code null} for a document of a party in the base
+     * @param currencyId the currency it was <em>written</em> in (V83), or {@code null} for one written in
+     *                   the base - which a document translated in V82 also is
+     */
+    record StoredDocument(int partyId, LocalDate date, BigDecimal rate, Integer currencyId) {
+
+        /** A document of V82: written in the base and translated. */
+        public StoredDocument(int partyId, LocalDate date, BigDecimal rate) {
+            this(partyId, date, rate, null);
+        }
     }
 
     /** The three base figures of a document's header. */
     record DocumentAmounts(BigDecimal total, BigDecimal discount, BigDecimal paid) {
+    }
+
+    /**
+     * A document's header in its party's currency: the rate it is stored at, and the total, the discount
+     * and the cash in that currency - as typed for a document written in it (V83, {@code currencyId} set),
+     * as translated for one written in the base (V82, {@code currencyId} null).
+     */
+    record ForeignHeader(Integer currencyId, BigDecimal rate, BigDecimal total, BigDecimal discount,
+                         BigDecimal paid) {
+
+        /** Whether it was typed in the party's currency rather than translated into it. */
+        public boolean written() {
+            return currencyId != null;
+        }
+    }
+
+    /** One line's price and discount as typed in its document's currency (V83). */
+    record WrittenLine(BigDecimal price, BigDecimal discount) {
     }
 
     /** The currency a party deals in; {@code null} for the base. */
@@ -43,8 +72,20 @@ public interface PartyCurrencies {
 
     DocumentAmounts documentAmounts(DocumentType type, long number) throws DaoException;
 
-    /** Writes a document's translation, or clears it for {@code null}. */
-    void writeDocument(DocumentType type, long number, DocumentTranslation translation) throws DaoException;
+    /** A document's header in its party's currency, or {@code null} for a document of a party in the base. */
+    ForeignHeader foreignHeader(DocumentType type, long number) throws DaoException;
+
+    /** The lines of a document typed in its party's currency, by line id - empty for any other. */
+    java.util.Map<Integer, WrittenLine> writtenLines(DocumentType type, long number) throws DaoException;
+
+    /**
+     * Writes a document's figures in its party's currency, or clears them for {@code null}.
+     *
+     * @param currencyId the currency the document was written in (V83), or {@code null} for one written in
+     *                   the base and translated - the {@code translation} then is a translation
+     */
+    void writeDocument(DocumentType type, long number, Integer currencyId, DocumentTranslation translation)
+            throws DaoException;
 
     static PartyCurrencies jdbc() {
         return new JdbcPartyCurrencies(TreasuryCurrencies.jdbc());

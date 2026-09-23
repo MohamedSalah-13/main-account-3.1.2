@@ -143,6 +143,19 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
     private Map<String, Integer> activeTreasuryIds = Map.of();
     private StringProperty textSearchName;
     private PartySuggestionField<T3> nameSearchField;
+    /**
+     * What this screen's figures are typed in (V83, docs/currency-plan.md §15): the base until a party in a
+     * foreign currency is chosen, or a document written in one is reopened. The services pricing a line read
+     * it through a supplier, so a party chosen later reprices what they offer next.
+     */
+    private DocumentPricing documentPricing = DocumentPricing.BASE;
+    /** The party's currency when its documents are written in the base and translated (ق-د٨), for the badge. */
+    private com.hamza.account.features.currency.Currency translatedCurrency;
+    /** Says which currency the figures are in, beside the title; hidden for a document in the base. */
+    private final Label currencyBadge = new Label();
+    private final InvoiceScreenCurrency screenCurrency = new InvoiceScreenCurrency(currencyCatalogue());
+    /** True while a saved document is put back, so its own currency is not replaced by its party's. */
+    private boolean restoringDocument;
     @FXML
     private Label labelNum, labelName, labelStock, labelDate, labelDelegate, labelTreasury, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
@@ -194,17 +207,17 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                 eventBus, dataInterface.invoiceSide());
         this.invoiceLineService = new InvoiceLineService<>(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
-                dataInterface.invoiceBuy()::object_TableData);
+                dataInterface.invoiceBuy()::object_TableData, () -> documentPricing);
         CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
         this.invoiceExpiryService = new InvoiceExpiryService(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
                 itemId -> cardItemService.expiryBalancesByItem(invoiceStockId, itemId));
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
                 dataInterface.designInterface().documentType(), itemsService,
-                dataInterface.invoiceBuy()::getItemsPrice);
+                dataInterface.invoiceBuy()::getItemsPrice, () -> documentPricing);
         this.invoiceItemPickerService = new InvoiceItemPickerService(
                 dataInterface.designInterface().documentType(), itemsService,
-                dataInterface.invoiceBuy()::getItemsPrice);
+                dataInterface.invoiceBuy()::getItemsPrice, () -> documentPricing);
         this.lineEntry = new InvoiceLineEntry(dataInterface.designInterface().documentType(),
                 invoiceLineService, invoiceExpiryService,
                 options -> new ChoiceItemExpireDate(options).showAndWait(),
@@ -238,6 +251,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         buttonGraphic();
         configureInvoiceTopBar();
         configurePinButtons();
+        installCurrencyBadge();
 
         if (num_invoice_update > 0) {
             selectData();
@@ -591,6 +605,9 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                 // whole party table, once each.
                 T3 party = selectedParty();
                 codeAccount = party == null ? 0 : party.getId();
+                if (!restoringDocument) {
+                    applyPartyCurrency(party);
+                }
                 focusItemEntry();
                 priceTypeByNameId = t3NameData.priceId(party);
                 priceTierChanged(priceTypeByNameId);
@@ -677,6 +694,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                         (number, party, limit) -> new JdbcReturnableRepository().searchSources(
                                 designInterface.documentType().reverses(), number, party, limit),
                         this::logError));
+        returnEntry.pricedBy(() -> documentPricing);
         returnEntry.configure();
         // A return that names an invoice gives back its share of that invoice's own
         // discount, and the share moves with the lines.
@@ -797,6 +815,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
 
 
     private void selectData() {
+        restoringDocument = true;
         try {
             InvoiceHeaderView header = dataInterface.loadInvoiceHeader(num_invoice_update);
             invoiceStockId = header.stockId();
@@ -823,6 +842,9 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             txtPaid.setText(String.valueOf(dataById.getPaid()));
             txtNotes.setText(dataById.getNotes());
             txtOtherDiscount.setText(String.valueOf(dataById.getDiscount()));
+            // Before the return is linked back to its invoice: the invoice is shown in the currency this
+            // document was written in.
+            restoreDocumentCurrency(id, header.partyId(), collection, dataById.getTreasuryModel());
             // Before the guards can check an edit they have to know what this return
             // was linked to - without it ReturnGuard reads a source of 0 and treats the
             // whole document as a free return it has nothing to compare against.
@@ -831,6 +853,8 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             returnEntry.showReturnedStatus(id);
         } catch (Exception e) {
             logError(e);
+        } finally {
+            restoringDocument = false;
         }
     }
 
@@ -961,7 +985,8 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                 comboDelegate.getSelectionModel().getSelectedItem(),
                 getSelWithoutBalance(), returnEntry.sourceInvoiceNumber(),
                 returnEntry.selectedReturnReason(),
-                List.copyOf(linesForSave()), invoiceStockId, correctionReason, loadedUpdatedAt);
+                List.copyOf(linesForSave()), invoiceStockId, correctionReason, loadedUpdatedAt,
+                documentPricing.currencyId());
     }
 
     private void saveInBackground(boolean print, boolean paymentTaken, InvoiceSaveCommand command) {
@@ -1193,13 +1218,18 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
 
     private void reloadTreasuryItems() {
         try {
-            List<Treasury> treasuries = treasuryService.getActiveBaseCurrencyTreasuries();
+            // A treasury in the base takes any document; one in a foreign currency only a document typed
+            // in it (V83, docs/currency-plan.md §15 ق-د٦) - so a dollar invoice is offered the dollar drawer.
             Map<String, Integer> ids = new LinkedHashMap<>();
-            for (Treasury treasury : treasuries) {
+            for (Treasury treasury : treasuryService.getActiveTreasuriesTaking(documentPricing.currencyId())) {
                 ids.put(treasury.getName(), treasury.getId());
             }
+            String selected = comboTreasury.getValue();
             activeTreasuryIds = Map.copyOf(ids);
             comboTreasury.setItems(FXCollections.observableArrayList(ids.keySet()));
+            if (selected != null && ids.containsKey(selected)) {
+                comboTreasury.getSelectionModel().select(selected);
+            }
         } catch (DaoException e) {
             activeTreasuryIds = Map.of();
             comboTreasury.setItems(FXCollections.observableArrayList());
@@ -1219,6 +1249,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         radioDeffer.setSelected(false);
         returnEntry.reset();
         applyPinnedDefaults();
+        applyPartyCurrency(selectedParty());
         resetItemEntry();
     }
 
@@ -1374,7 +1405,8 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                 documentType, itemsService, invoiceBuy::updateItemPrice);
         lineEditService = new InvoiceLineEditService(
                 documentType, catalogService, () -> invoiceStockId,
-                sourceLineId -> returnEntry.sourceLineTerms(sourceLineId));
+                sourceLineId -> returnEntry.sourceLineTerms(sourceLineId))
+                .pricedBy(() -> documentPricing);
         // The column menu on the lines table is the administrator's alone, which is how it has always
         // been - through CurrentUser.get().getId() == 1 written out here. It asks CurrentUser now, so
         // the one place that knows what "the administrator" means is UserSessionContext.
@@ -1476,6 +1508,128 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
     }
 
     /** Builds the surface lines are entered on: the form above the table, or the table itself. */
+    // ---- the document's currency (V83, docs/currency-plan.md §15) -------------------------------
+
+    private static InvoiceScreenCurrency.Catalogue currencyCatalogue() {
+        com.hamza.account.features.currency.CurrencyService service =
+                ServiceRegistry.get(com.hamza.account.features.currency.CurrencyService.class);
+        return service == null ? InvoiceScreenCurrency.Catalogue.NONE : InvoiceScreenCurrency.Catalogue.of(service);
+    }
+
+    /** The badge beside the title, placed after the returned-invoice badge in whichever bar holds it. */
+    private void installCurrencyBadge() {
+        currencyBadge.getStyleClass().add("neutral-button");
+        currencyBadge.setWrapText(false);
+        currencyBadge.managedProperty().bind(currencyBadge.visibleProperty());
+        currencyBadge.setVisible(false);
+        if (labelReturnedBadge != null && labelReturnedBadge.getParent() instanceof Pane bar) {
+            int at = bar.getChildren().indexOf(labelReturnedBadge);
+            bar.getChildren().add(at < 0 ? bar.getChildren().size() : at + 1, currencyBadge);
+        }
+        date.valueProperty().addListener((observable, before, now) -> {
+            if (!restoringDocument && documentPricing.foreign() && now != null) {
+                changePricing(pricingOf(documentPricing.currency().id(), now));
+            }
+        });
+        showCurrency();
+    }
+
+    /**
+     * The party chosen: a party in a currency a document can be typed in prices this screen in it, at the
+     * day's rate; anyone else in the base. Lines already on the screen are restated (§15 ق-د٧).
+     */
+    private void applyPartyCurrency(T3 party) {
+        Integer currencyId = party == null ? null : party.getCurrency_id();
+        try {
+            translatedCurrency = screenCurrency.translatedCurrency(currencyId);
+            changePricing(screenCurrency.forParty(currencyId, date.getValue() == null ? LocalDate.now() : date.getValue()));
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    private DocumentPricing pricingOf(int currencyId, LocalDate day) {
+        try {
+            return screenCurrency.forParty(currencyId, day);
+        } catch (DaoException e) {
+            logError(e);
+            return documentPricing;
+        }
+    }
+
+    private void changePricing(DocumentPricing next) {
+        DocumentPricing previous = documentPricing;
+        documentPricing = next == null ? DocumentPricing.BASE : next;
+        if (!java.util.Objects.equals(previous.currencyId(), documentPricing.currencyId())) {
+            InvoiceScreenCurrency.restate(editor.lines(), previous, documentPricing);
+            editor.refreshTotals();
+            table.refresh();
+            reloadTreasuryItems();
+            if (comboTreasury.getValue() == null) {
+                selectDefaultTreasury();
+            }
+            priceTierChanged(priceTypeByNameId);
+        }
+        showCurrency();
+    }
+
+    /**
+     * A saved document put back in the currency it was written in: its lines and its discount and cash as
+     * they were typed, at the rate it is stored at - never the base converted back.
+     */
+    private void restoreDocumentCurrency(int number, int partyId, List<? extends BasePurchasesAndSales> lines,
+                                         Treasury storedTreasury) throws DaoException {
+        var written = com.hamza.account.features.party.currency.PartyCurrencies.jdbc()
+                .foreignHeader(documentType(), number);
+        T3 party = selectedParty();
+        translatedCurrency = screenCurrency.translatedCurrency(party == null ? null : party.getCurrency_id());
+        if (written != null && written.written()) {
+            documentPricing = screenCurrency.forStored(written.currencyId(), written.rate());
+            InvoiceScreenCurrency.showTyped(lines);
+            editor.refreshTotals();
+            table.refresh();
+            txtOtherDiscount.setText(MoneyMath.text(written.discount()));
+            txtPaid.setText(MoneyMath.text(written.paid()));
+        } else {
+            documentPricing = DocumentPricing.BASE;
+            if (written != null && translatedCurrency == null && party != null && party.getCurrency_id() != null) {
+                // A V82 translation of a party whose documents are now typed in its currency: it keeps the
+                // way it was written, and the badge says so.
+                translatedCurrency = screenCurrency.forStored(party.getCurrency_id(), written.rate()).currency();
+            }
+        }
+        reloadTreasuryItems();
+        selectStoredTreasury(storedTreasury);
+        showCurrency();
+    }
+
+    private void selectDefaultTreasury() {
+        try {
+            String name = treasuryService.getTreasuryById(DefaultTreasury.ID).getName();
+            if (activeTreasuryIds.containsKey(name)) {
+                comboTreasury.getSelectionModel().select(name);
+            }
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    /** The badge's sentence: the currency and the rate, no rate, a translation - or nothing for the base. */
+    private void showCurrency() {
+        var lm = LanguageManager.getInstance();
+        String text = null;
+        if (documentPricing.foreign()) {
+            text = documentPricing.hasRate()
+                    ? lm.getString("invoice.currency.badge", documentPricing.currency().name(),
+                            com.hamza.account.features.currency.CurrencyFormat.rate(documentPricing.rate()))
+                    : lm.getString("invoice.currency.badge.no.rate", documentPricing.currency().name());
+        } else if (translatedCurrency != null) {
+            text = lm.getString("invoice.currency.badge.translated", translatedCurrency.name());
+        }
+        currencyBadge.setText(text == null ? "" : text);
+        currencyBadge.setVisible(text != null);
+    }
+
     protected abstract void configureItemEntrySurface();
 
     /** Puts the party search field where this screen's layout has room for it. */

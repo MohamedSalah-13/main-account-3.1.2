@@ -40,6 +40,8 @@ public final class PartyCurrencyFixtures {
         public final Map<String, StoredDocument> documents = new HashMap<>();
         public final Map<String, DocumentAmounts> amounts = new HashMap<>();
         public final Map<String, DocumentTranslation> written = new HashMap<>();
+        /** The currency each written document was written in (V83); absent or null for a translation. */
+        public final Map<String, Integer> writtenCurrency = new HashMap<>();
         public final Map<Long, PartyMovementFigures> movements = new HashMap<>();
         public final List<String> calls = new ArrayList<>();
 
@@ -60,8 +62,15 @@ public final class PartyCurrencyFixtures {
 
         public Memory document(DocumentType type, long number, int partyId, LocalDate date, String rate,
                         String total, String discount, String paid) {
+            return document(type, number, partyId, date, rate, null, total, discount, paid);
+        }
+
+        /** A document written in {@code writtenIn} (V83), or in the base and translated for {@code null}. */
+        public Memory document(DocumentType type, long number, int partyId, LocalDate date, String rate,
+                               Currency writtenIn, String total, String discount, String paid) {
             documents.put(type + ":" + number,
-                    new StoredDocument(partyId, date, rate == null ? null : new BigDecimal(rate)));
+                    new StoredDocument(partyId, date, rate == null ? null : new BigDecimal(rate),
+                            writtenIn == null ? null : writtenIn.id()));
             amounts.put(type + ":" + number,
                     new DocumentAmounts(new BigDecimal(total), new BigDecimal(discount), new BigDecimal(paid)));
             return this;
@@ -108,15 +117,30 @@ public final class PartyCurrencyFixtures {
             return documents.get(type + ":" + number);
         }
 
+        public final Map<String, ForeignHeader> foreignHeaders = new HashMap<>();
+        public final Map<String, Map<Integer, WrittenLine>> writtenLines = new HashMap<>();
+
+        @Override
+        public ForeignHeader foreignHeader(DocumentType type, long number) {
+            return foreignHeaders.get(type + ":" + number);
+        }
+
+        @Override
+        public Map<Integer, WrittenLine> writtenLines(DocumentType type, long number) {
+            return writtenLines.getOrDefault(type + ":" + number, Map.of());
+        }
+
         @Override
         public DocumentAmounts documentAmounts(DocumentType type, long number) {
             return amounts.get(type + ":" + number);
         }
 
         @Override
-        public void writeDocument(DocumentType type, long number, DocumentTranslation translation) {
+        public void writeDocument(DocumentType type, long number, Integer currencyId,
+                                  DocumentTranslation translation) {
             calls.add("writeDocument:" + type + ":" + number);
             written.put(type + ":" + number, translation);
+            writtenCurrency.put(type + ":" + number, currencyId);
         }
     }
 }

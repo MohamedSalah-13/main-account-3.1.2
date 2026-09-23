@@ -91,7 +91,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
         return new Object[]{sales.getInvoiceNumber(), sales.getItems().getId(), sales.getUnitsType().getUnit_id()
                 , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getTotalSelPrice()
                 , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
-                , sales.getUnitsType().getValue(), sales.getExpiration_date()};
+                , sales.getUnitsType().getValue(), sales.getExpiration_date()
+                , sales.getPriceForeign(), sales.getDiscountForeign()};
     }
 
     @Override
@@ -142,6 +143,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
             if (date != null) {
                 sales.setExpiration_date(date.toLocalDate());
             }
+            sales.setPriceForeign(rs.getBigDecimal(ForeignLineColumns.PRICE));
+            sales.setDiscountForeign(rs.getBigDecimal(ForeignLineColumns.DISCOUNT));
 
 
         } catch (SQLException e) {

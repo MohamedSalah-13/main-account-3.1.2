@@ -16,6 +16,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /** Resolves invoice items, units and prices without depending on JavaFX controls. */
 public final class InvoiceItemSelectionService {
@@ -24,10 +25,22 @@ public final class InvoiceItemSelectionService {
     private final ItemLookup itemLookup;
     private final ItemPriceResolver priceResolver;
     private final ScaleBarcodeReader scaleBarcodeReader;
+    private final Supplier<DocumentPricing> pricing;
 
     public InvoiceItemSelectionService(DocumentType documentType,
                                        ItemsService itemsService,
                                        ItemPriceResolver priceResolver) {
+        this(documentType, itemsService, priceResolver, () -> DocumentPricing.BASE);
+    }
+
+    /**
+     * @param pricing the currency the screen's figures are typed in (V83): an item's price is kept in the
+     *                base and offered converted - docs/currency-plan.md §15 ق-د٧
+     */
+    public InvoiceItemSelectionService(DocumentType documentType,
+                                       ItemsService itemsService,
+                                       ItemPriceResolver priceResolver,
+                                       Supplier<DocumentPricing> pricing) {
         this(documentType,
                 new ItemLookup() {
                     @Override
@@ -41,13 +54,22 @@ public final class InvoiceItemSelectionService {
                     }
                 },
                 priceResolver,
-                scaleReader(itemsService));
+                scaleReader(itemsService), pricing);
     }
 
     InvoiceItemSelectionService(DocumentType documentType,
                                 ItemLookup itemLookup,
                                 ItemPriceResolver priceResolver,
                                 ScaleBarcodeReader scaleBarcodeReader) {
+        this(documentType, itemLookup, priceResolver, scaleBarcodeReader, () -> DocumentPricing.BASE);
+    }
+
+    InvoiceItemSelectionService(DocumentType documentType,
+                                ItemLookup itemLookup,
+                                ItemPriceResolver priceResolver,
+                                ScaleBarcodeReader scaleBarcodeReader,
+                                Supplier<DocumentPricing> pricing) {
+        this.pricing = Objects.requireNonNull(pricing, "pricing");
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.itemLookup = Objects.requireNonNull(itemLookup, "itemLookup");
         this.priceResolver = Objects.requireNonNull(priceResolver, "priceResolver");
@@ -109,12 +131,13 @@ public final class InvoiceItemSelectionService {
                 selected.price(), quantity, total, selected.balance(), scaleBarcode);
     }
 
+    /** The unit's price on this screen: kept in the base, offered in the screen's currency. */
     private double unitPrice(ItemsModel item, UnitsModel unit, int priceTier) {
         double basePrice = priceResolver.resolve(item, priceTier);
-        if (documentType.side() == InvoiceSide.PURCHASE) {
-            return ItemUnits.buyPrice(item, unit, basePrice);
-        }
-        return ItemUnits.sellPrice(item, unit, priceTier, basePrice);
+        double inTheBase = documentType.side() == InvoiceSide.PURCHASE
+                ? ItemUnits.buyPrice(item, unit, basePrice)
+                : ItemUnits.sellPrice(item, unit, priceTier, basePrice);
+        return pricing.get().fromBase(inTheBase);
     }
 
     private static ScaleBarcodeReader scaleReader(ItemsService itemsService) {

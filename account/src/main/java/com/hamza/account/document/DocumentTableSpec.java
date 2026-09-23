@@ -74,8 +74,11 @@ public record DocumentTableSpec(
                     "stock_id", "delegate_id", "treasury_id", "notes", "invoice_number", "user_id"),
             List.of("sup_code", "invoice_type", "invoice_date", "total", "discount", "paid_up",
                     "stock_id", "delegate_id", "treasury_id", "notes"),
+            // The two foreign columns last on all four (V83): the price and the discount as typed in
+            // the document's currency, beside the base figures - see docs/currency-plan.md §15 ق-د٣.
             List.of("invoice_number", "num", "type", "quantity", "price", "buy_price", "total_sel_price",
-                    "total_buy_price", "total_profit", "discount", "type_value", "expiration_date"));
+                    "total_buy_price", "total_profit", "discount", "type_value", "expiration_date",
+                    "price_foreign", "discount_foreign"));
 
     public static final DocumentTableSpec PURCHASE = new DocumentTableSpec(
             DocumentType.PURCHASE,
@@ -88,7 +91,7 @@ public record DocumentTableSpec(
             List.of("sup_code", "invoice_type", "invoice_date", "total", "discount", "paid_up",
                     "stock_id", "treasury_id", "notes"),
             List.of("invoice_number", "num", "type", "quantity", "price", "discount",
-                    "type_value", "expiration_date"));
+                    "type_value", "expiration_date", "price_foreign", "discount_foreign"));
 
     public static final DocumentTableSpec SALES_RETURN = new DocumentTableSpec(
             DocumentType.SALES_RETURN,
@@ -104,7 +107,7 @@ public record DocumentTableSpec(
             // invoice family has it - see V16__return_source.sql.
             List.of("invoice_number", "item_id", "type", "quantity", "price", "buy_price", "total_sel_price",
                     "total_buy_price", "total_profit", "discount", "type_value", "expiration_date",
-                    "source_line_id"));
+                    "source_line_id", "price_foreign", "discount_foreign"));
 
     public static final DocumentTableSpec PURCHASE_RETURN = new DocumentTableSpec(
             DocumentType.PURCHASE_RETURN,
@@ -115,7 +118,7 @@ public record DocumentTableSpec(
             List.of("sup_id", "invoice_date", "invoice_type", "total", "discount", "paid_to_treasury",
                     "stock_id", "treasury_id", "notes"),
             List.of("invoice_number", "item_id", "type", "quantity", "price", "discount",
-                    "type_value", "expiration_date", "source_line_id"));
+                    "type_value", "expiration_date", "source_line_id", "price_foreign", "discount_foreign"));
 
     public DocumentTableSpec {
         for (String identifier : new String[]{table, view, key, party, paid, lineTable, lineView, lineItem}) {

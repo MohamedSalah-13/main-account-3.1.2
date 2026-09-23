@@ -163,6 +163,29 @@ class InvoiceLineServiceTest {
                 () -> service.validateForSave(java.util.List.of(line), false));
     }
 
+    @Test
+    void aDollarSaleIsHeldToTheCostByTheBasePriceItWillBeStoredAt() throws Exception {
+        // The cost is 5.00 in the base; at 48.37 a dollar price of 0.10 is stored at 4.84, below it, and
+        // 0.11 at 5.32, above it. The typed figures alone - 0.10 against 5 - would say the opposite of both.
+        var rate = new java.math.BigDecimal("48.37");
+        var dollars = new InvoiceLineService<Sales>(DocumentType.SALES, 91, new SalesInvoice()::object_TableData,
+                () -> new DocumentPricing(com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD, rate));
+        var lines = new ArrayList<Sales>();
+
+        assertThrows(BusinessRuleException.class,
+                () -> dollars.add(lines, draft(item(100), unit(1, 1), 1, 0.10), true, false));
+        assertTrue(dollars.add(lines, draft(item(100), unit(1, 1), 1, 0.11), true, false).inserted());
+    }
+
+    @Test
+    void aDollarSaleWithNoRateIsNotHeldToACostItCannotBeCompared() throws Exception {
+        var unrated = new InvoiceLineService<Sales>(DocumentType.SALES, 91, new SalesInvoice()::object_TableData,
+                () -> new DocumentPricing(com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD, null));
+
+        assertTrue(unrated.add(new ArrayList<>(), draft(item(100), unit(1, 1), 1, 0.10), true, false).inserted(),
+                "the save refuses a document with no rate on its own");
+    }
+
     private static InvoiceLineService<Sales> salesService() {
         return new InvoiceLineService<>(DocumentType.SALES, 91,
                 new SalesInvoice()::object_TableData);

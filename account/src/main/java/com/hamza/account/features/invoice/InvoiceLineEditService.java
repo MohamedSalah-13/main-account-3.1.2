@@ -10,6 +10,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 
 import java.util.Objects;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 /** Business rules for edits committed from the invoice table. */
 public final class InvoiceLineEditService {
@@ -18,6 +19,17 @@ public final class InvoiceLineEditService {
     private final InvoiceItemCatalogService catalogService;
     private final IntSupplier stockId;
     private final SourceLineTerms sourceLineTerms;
+    private Supplier<DocumentPricing> pricing = () -> DocumentPricing.BASE;
+
+    /**
+     * The currency the screen's figures are typed in (V83): a sale is held above its cost by the base
+     * price it will be stored at, and a price written back to the item is written in the base
+     * (docs/currency-plan.md §15 ق-د٧).
+     */
+    public InvoiceLineEditService pricedBy(Supplier<DocumentPricing> pricing) {
+        this.pricing = java.util.Objects.requireNonNull(pricing, "pricing");
+        return this;
+    }
 
     public InvoiceLineEditService(DocumentType documentType,
                                   InvoiceItemCatalogService catalogService,
@@ -93,9 +105,9 @@ public final class InvoiceLineEditService {
 
         requireNotBelowCost(line, line.getUnitsType(), price);
 
-        if (updateCatalogPrice) {
+        if (updateCatalogPrice && pricing.get().hasRate()) {
             catalogService.updateBasePrice(line.getItems().getId(), stockId.getAsInt(),
-                    line.getUnitsType(), price, priceTier);
+                    line.getUnitsType(), pricing.get().toBase(price), priceTier);
         }
         line.setPrice(price);
         InvoiceLineService.recalculate(line);
@@ -135,7 +147,8 @@ public final class InvoiceLineEditService {
             return;
         }
         double buyPrice = ItemUnits.buyPrice(line.getItems(), unit, line.getItems().getBuyPrice());
-        if (price < buyPrice) {
+        DocumentPricing screen = pricing.get();
+        if (screen.hasRate() && screen.toBase(price) < buyPrice) {
             throw new BusinessRuleException(text("invoice.line.error.below.cost"));
         }
     }

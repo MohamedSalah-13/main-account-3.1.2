@@ -350,13 +350,34 @@ public final class InvoiceSaveService<
     }
 
     private InvoiceSaveResult persist(InvoiceSaveCommand command,
-                                      InvoicePaymentTerms payment,
-                                      InvoiceLineTotals lineTotals)
+                                      InvoicePaymentTerms typedPayment,
+                                      InvoiceLineTotals typedTotals)
             throws DaoException {
+        int existingNumber = command.updating() ? command.existingInvoiceId() : 0;
+        // The document's currency and its rate come first (V82, V83 - docs/currency-plan.md §14, §15):
+        // everything after this line reads base figures, and a document typed in its party's currency
+        // has none until they are worked out here. Before the number is allocated - no rate is a
+        // refusal, and the counter does not roll back.
+        InvoicePartyCurrency.Rate currency = partyCurrency.rateFor(documentType, command.partyId(),
+                command.invoiceDate(), existingNumber, command.sourceInvoiceNumber(),
+                command.documentCurrencyId());
+        List<? extends BasePurchasesAndSales> rows = command.lines();
+        InvoiceLineTotals lineTotals = typedTotals;
+        InvoicePaymentTerms payment = typedPayment;
+        if (currency.written()) {
+            List<T1> baseRows = ForeignDocumentLines.toBase(rows, currency.rate(),
+                    partyCurrency.sourceLines(documentType, command.sourceInvoiceNumber()),
+                    invoiceFactory::object_TableData);
+            lineTotals = InvoiceLineTotals.from(baseRows);
+            payment = ForeignDocumentFigures.header(typedPayment, lineTotals.netAmount(), currency.rate(),
+                    partyCurrency.returnShare(documentType, command.sourceInvoiceNumber(),
+                            lineTotals.netAmount()));
+            rows = baseRows;
+        }
+
         stockGuard.validate(command);
-        returnGuard.validate(documentType, command.sourceInvoiceNumber(),
-                command.updating() ? command.existingInvoiceId() : 0,
-                payment.invoiceType(), command.partyId(), command.lines());
+        returnGuard.validate(documentType, command.sourceInvoiceNumber(), existingNumber,
+                payment.invoiceType(), command.partyId(), rows);
         returnGuard.validateDiscount(documentType, command.sourceInvoiceNumber(),
                 payment.subtotal(), payment.discount());
         Employees delegate = documentType.hasDelegate()
@@ -377,26 +398,14 @@ public final class InvoiceSaveService<
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
                     "الخزينة المحددة غير موجودة");
         }
-        // A document's cash column holds one amount, in the base: a treasury in a foreign currency
-        // cannot take it until documents carry a foreign amount (docs/currency-plan.md §11 ق-ب٦).
-        if (treasury.getCurrencyId() != null) {
-            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
-                    com.hamza.account.features.treasury.TreasuryCurrencyGuard.refusal(treasury.getName()));
-        }
-        // A party in a foreign currency has the document translated into it at the day's rate (V82,
-        // docs/currency-plan.md §14 ق-ج٣). The rate is chosen here, before the number: no rate is a
-        // refusal, and the counter does not roll back.
-        InvoicePartyCurrency.Rate translation = partyCurrency.rateFor(documentType, command.partyId(),
-                command.invoiceDate(), command.updating() ? command.existingInvoiceId() : 0,
-                command.sourceInvoiceNumber());
+        requireTreasuryTakes(treasury, currency);
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);
         List<T1> persistedLines = InvoiceLineAssembler.assemble(
-                command.lines(), invoiceNumber, invoiceFactory::object_TableData);
-        returnCostResolver.apply(documentType, command.sourceInvoiceNumber(),
-                command.updating() ? command.existingInvoiceId() : 0,
-                command.lines(), persistedLines);
+                rows, invoiceNumber, invoiceFactory::object_TableData);
+        returnCostResolver.apply(documentType, command.sourceInvoiceNumber(), existingNumber,
+                rows, persistedLines);
         T3 party = invoiceFactory.objectName(command.partyId(), command.partyName());
         if (documentType.hasDelegate() && delegate == null) {
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.DELEGATE,
@@ -432,7 +441,7 @@ public final class InvoiceSaveService<
         if (affected != 1) {
             throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
         }
-        partyCurrency.write(documentType, invoiceNumber, translation);
+        partyCurrency.write(documentType, invoiceNumber, currency, typedPayment);
         if (!command.updating()) {
             shiftAttribution.assignDocument(documentType, invoiceNumber, shiftId);
         }
@@ -463,6 +472,33 @@ public final class InvoiceSaveService<
         changeAnnouncer.announce(new InvoiceSaved(documentType.side()));
         return new InvoiceSaveResult(invoiceNumber, command.updating(), invoice,
                 payment, persistedLines);
+    }
+
+    /**
+     * Where a document's cash may go (docs/currency-plan.md §11 ق-ب٦, §15 ق-د٦): a treasury in the base
+     * takes any document; one in a foreign currency takes only a document written in that currency -
+     * the amount it holds is then exactly what was typed - and never a wallet fee, which is an expense,
+     * and an expense on a treasury in a foreign currency is refused.
+     */
+    private static void requireTreasuryTakes(Treasury treasury, InvoicePartyCurrency.Rate currency)
+            throws InvoiceValidationException {
+        Integer treasuryCurrency = treasury.getCurrencyId();
+        if (treasuryCurrency == null) {
+            return;
+        }
+        if (!currency.written()) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
+                    com.hamza.account.features.treasury.TreasuryCurrencyGuard.refusal(treasury.getName()));
+        }
+        var language = com.hamza.controlsfx.language.LanguageManager.getInstance();
+        if (treasuryCurrency != currency.currency().id()) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
+                    language.getString("party.currency.error.treasury", treasury.getName()));
+        }
+        if (treasury.getFeePercent() != null && treasury.getFeePercent().signum() > 0) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
+                    language.getString("party.currency.error.fee", treasury.getName()));
+        }
     }
 
     /**

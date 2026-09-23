@@ -30,6 +30,8 @@ SELECT p.id,
        p.quantity AS quantity,
        p.price,
        p.discount,
+       p.price_foreign,
+       p.discount_foreign,
        p.expiration_date,
        i.nameItem,
        i.barcode,
@@ -60,6 +62,8 @@ SELECT s.id,
        s.total_buy_price AS total_buy,
        s.total_profit,
        s.discount,
+       s.price_foreign,
+       s.discount_foreign,
        s.item_has_package,
        s.expiration_date,
        i.nameItem,
@@ -92,6 +96,8 @@ SELECT sr.id,
        sr.total_buy_price,
        sr.total_profit,
        sr.discount,
+       sr.price_foreign,
+       sr.discount_foreign,
        sr.expiration_date,
        i.nameItem,
        i.barcode,
@@ -116,6 +122,8 @@ SELECT pr.id,
        pr.quantity,
        pr.price,
        pr.discount,
+       pr.price_foreign,
+       pr.discount_foreign,
        pr.expiration_date,
        i.nameItem,
        i.barcode,
@@ -969,70 +977,77 @@ ORDER BY e.id;
 
 DROP VIEW IF EXISTS treasury_balance;
 CREATE VIEW treasury_balance AS
-WITH cte_union_data AS (SELECT invoice_number AS id_no,
-                               invoice_date   AS date_val,
-                               0              AS income,
-                               paid_up        AS output,
-                               treasury_id,
-                               date_insert,
-                               user_id,
-                               shift_id,
-                               1               AS source_type,
-                               'المشتريات'    AS information,
-                               -- بعملة الخزينة (V81). الفواتير والمصروفات لا تقع إلا على خزينة
-                               -- بالأساسية (ق-ب٦)، فمبلغها بعملة خزينتها هو مبلغها نفسه. أما حركات
-                               -- حسابات الأطراف فقد تقع على خزينة بعملة الطرف (V82) - فرعاها أدناه.
-                               0               AS income_own,
-                               paid_up         AS output_own
-                        FROM total_buy
+WITH cte_union_data AS (SELECT tb.invoice_number AS id_no,
+                               tb.invoice_date   AS date_val,
+                               0                 AS income,
+                               tb.paid_up        AS output,
+                               tb.treasury_id,
+                               tb.date_insert,
+                               tb.user_id,
+                               tb.shift_id,
+                               1                 AS source_type,
+                               'المشتريات'       AS information,
+                               -- بعملة الخزينة (V81). المصروفات لا تقع إلا على خزينة بالأساسية
+                               -- (ق-ب٦)، فمبلغها بعملة خزينتها هو مبلغها نفسه. أما المستندات
+                               -- وحركات حسابات الأطراف فقد تقع على خزينة بعملة الطرف (V82، V83):
+                               -- مبلغها بعملة الطرف في paid_foreign، ومستند طرف أجنبي في خزينة
+                               -- بالأساسية يحمل هناك مقابله بعملة الطرف لا بعملة الخزينة. فالمبلغ
+                               -- بعملة الخزينة يُسأل عنه الخزينة نفسها.
+                               0                 AS income_own,
+                               IF(t1.currency_id IS NULL, tb.paid_up, tb.paid_foreign) AS output_own
+                        FROM total_buy tb
+                                 LEFT JOIN treasury t1 ON t1.id = tb.treasury_id
                         UNION ALL
                         -- ما دخل الخزينة فعلا هو العمود النقدي وحده، في المرتجع كما في
                         -- الفاتورة. كان هنا IF(invoice_type = 1, ...) يحمّل الخزينة في
                         -- الحالة الآجلة بالجزء الذي يخص حساب المورد لا الخزينة - انظر
                         -- DocumentLedgerEffect.
-                        SELECT id,
-                               invoice_date,
-                               paid_to_treasury AS income,
+                        SELECT tbr.id,
+                               tbr.invoice_date,
+                               tbr.paid_to_treasury AS income,
                                0              AS output,
-                               treasury_id,
-                               date_insert,
-                               user_id,
-                               shift_id,
+                               tbr.treasury_id,
+                               tbr.date_insert,
+                               tbr.user_id,
+                               tbr.shift_id,
                                2,
                                'مرتجع المشتريات',
-                               paid_to_treasury,
+                               IF(t2.currency_id IS NULL, tbr.paid_to_treasury, tbr.paid_foreign),
                                0
-                        FROM total_buy_re
+                        FROM total_buy_re tbr
+                                 LEFT JOIN treasury t2 ON t2.id = tbr.treasury_id
                         UNION ALL
-                        SELECT invoice_number,
-                               invoice_date,
-                               paid_up,
+                        SELECT tsl.invoice_number,
+                               tsl.invoice_date,
+                               tsl.paid_up,
                                0,
-                               treasury_id,
-                               date_insert,
-                               user_id,
-                               shift_id,
+                               tsl.treasury_id,
+                               tsl.date_insert,
+                               tsl.user_id,
+                               tsl.shift_id,
                                3,
                                'المبيعات',
-                               paid_up,
+                               IF(t3.currency_id IS NULL, tsl.paid_up, tsl.paid_foreign),
                                0
-                        FROM total_sales
+                        FROM total_sales tsl
+                                 LEFT JOIN treasury t3 ON t3.id = tsl.treasury_id
                         UNION ALL
                         -- وكذلك ما خرج منها: paid_from_treasury وحده. المبلغ الآجل يخص
                         -- حساب العميل، ويظهر هناك في account_customer_table.
-                        SELECT id,
-                               invoice_date,
+                        SELECT tsr.id,
+                               tsr.invoice_date,
                                0,
-                               paid_from_treasury AS output,
-                               treasury_id,
-                               date_insert,
-                               user_id,
-                               shift_id,
+                               tsr.paid_from_treasury AS output,
+                               tsr.treasury_id,
+                               tsr.date_insert,
+                               tsr.user_id,
+                               tsr.shift_id,
                                4,
                                'مرتجع المبيعات',
                                0,
-                               paid_from_treasury
-                        FROM total_sales_re
+                               IF(t4.currency_id IS NULL, tsr.paid_from_treasury, tsr.paid_foreign)
+                        FROM total_sales_re tsr
+                                 LEFT JOIN treasury t4 ON t4.id = tsr.treasury_id
                         UNION ALL
                         -- حركة طرف في خزينة بعملته تحمل مبلغها بها في paid_foreign، وحركة طرف
                         -- أجنبي في خزينة بالأساسية تحمل هناك مقابلها بعملة الطرف لا بعملة

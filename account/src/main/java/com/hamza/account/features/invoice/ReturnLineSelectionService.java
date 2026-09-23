@@ -1,6 +1,7 @@
 package com.hamza.account.features.invoice;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.party.currency.PartyCurrencies;
 import com.hamza.account.features.returns.ReturnableRepository;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
@@ -14,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * What a "return from this invoice" picker needs: every line a source invoice sold or
@@ -26,6 +28,29 @@ public final class ReturnLineSelectionService {
     private final DocumentType returnType;
     private final ReturnableRepository repository;
     private final ItemLookup itemLookup;
+    private FiguresReader figures = (type, number) -> ReturnSourceFigures.AS_IS;
+
+    /** How a source invoice is shown on this return - see {@link ReturnSourceFigures}. */
+    @FunctionalInterface
+    public interface FiguresReader {
+        ReturnSourceFigures read(DocumentType sourceType, int sourceNumber) throws DaoException;
+    }
+
+    /**
+     * Shows a source invoice in the currency the return is typed in (V83, docs/currency-plan.md §15 ق-د٥):
+     * its lines at what they were typed at, its discount from its own figures in that currency.
+     */
+    public ReturnLineSelectionService shownIn(Supplier<DocumentPricing> returnPricing) {
+        Objects.requireNonNull(returnPricing, "returnPricing");
+        this.figures = (type, number) -> ReturnSourceFigures.read(
+                PartyCurrencies.jdbc(), type, number, returnPricing.get());
+        return this;
+    }
+
+    ReturnLineSelectionService shownBy(FiguresReader figures) {
+        this.figures = Objects.requireNonNull(figures, "figures");
+        return this;
+    }
 
     public ReturnLineSelectionService(DocumentType returnType,
                                       ReturnableRepository repository,
@@ -66,6 +91,7 @@ public final class ReturnLineSelectionService {
         Map<Integer, Double> returnedByLine =
                 repository.alreadyReturnedBySourceLine(returnType, sourceInvoiceNumber, 0);
 
+        ReturnSourceFigures shown = figures.read(sourceType, sourceInvoiceNumber);
         List<ReturnableLineSelection> selections = new ArrayList<>(rawLines.size());
         for (ReturnableRepository.SourceLineRow row : rawLines) {
             ItemsModel item = itemLookup.byId(row.itemId());
@@ -86,7 +112,8 @@ public final class ReturnLineSelectionService {
             double remainingBase = Math.max(0.0,
                     Math.min(soldBase - returnedBase, lineRemainingBase));
             selections.add(new ReturnableLineSelection(row.lineId(), item, unit,
-                    row.quantity(), row.price(), row.discount(), row.buyPrice(),
+                    row.quantity(), shown.price(row.lineId(), row.price()),
+                    shown.discount(row.lineId(), row.discount()), row.buyPrice(),
                     remainingBase, row.expirationDate()));
         }
         return selections;
@@ -101,7 +128,8 @@ public final class ReturnLineSelectionService {
         if (sourceInvoiceNumber <= 0) {
             return java.util.Optional.empty();
         }
-        return repository.sourceAmounts(returnType.reverses(), sourceInvoiceNumber);
+        ReturnSourceFigures shown = figures.read(returnType.reverses(), sourceInvoiceNumber);
+        return repository.sourceAmounts(returnType.reverses(), sourceInvoiceNumber).map(shown::amounts);
     }
 
     /** One source line's sold quantity and discount, for a row already picked from it. */
@@ -110,9 +138,10 @@ public final class ReturnLineSelectionService {
         if (sourceInvoiceNumber <= 0 || sourceLineId <= 0) {
             return java.util.Optional.empty();
         }
+        ReturnSourceFigures shown = figures.read(returnType.reverses(), sourceInvoiceNumber);
         return repository.lineById(returnType.reverses(), sourceInvoiceNumber, sourceLineId)
                 .map(line -> new InvoiceLineEditService.SourceLineTerms.Terms(
-                        line.quantity(), line.discount()));
+                        line.quantity(), shown.discount(sourceLineId, line.discount())));
     }
 
     /**

@@ -54,6 +54,19 @@ public record TreasuryService(DaoFactory daoFactory) {
     }
 
     /**
+     * The treasuries a document typed in {@code documentCurrencyId} may be paid through: every one in the
+     * base, and those in the document's own currency (V83, docs/currency-plan.md §15 ق-د٦). A document in
+     * the base ({@code null}) is offered the base alone, as {@link #getActiveBaseCurrencyTreasuries()}.
+     */
+    public List<Treasury> getActiveTreasuriesTaking(Integer documentCurrencyId) throws DaoException {
+        return getActiveTreasuryModelList()
+                .stream()
+                .filter(treasury -> treasury.getCurrencyId() == null
+                        || treasury.getCurrencyId().equals(documentCurrencyId))
+                .toList();
+    }
+
+    /**
      * The names a picker offers. Closed treasuries are left out, so a screen that
      * re-selects a name read off a saved document has to tolerate its absence -
      * see {@code Add_AccountController.selectTreasury}.

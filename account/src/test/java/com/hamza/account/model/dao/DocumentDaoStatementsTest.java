@@ -193,7 +193,8 @@ class DocumentDaoStatementsTest {
             assertEquals("DELETE FROM sales WHERE id=?", lines.deleteSql());
             assertEquals("SELECT id FROM sales WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE sales SET num=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
-                    + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=? "
+                    + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=?,"
+                    + "price_foreign=?,discount_foreign=? "
                     + "WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
             assertEquals("DELETE FROM sales WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
@@ -220,8 +221,8 @@ class DocumentDaoStatementsTest {
         @Test
         void lineStatement() {
             assertEquals("INSERT INTO sales (invoice_number,num,type,quantity,price,buy_price,total_sel_price,"
-                    + "total_buy_price,total_profit,discount,type_value,expiration_date) "
-                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
+                    + "total_buy_price,total_profit,discount,type_value,expiration_date,price_foreign,"
+                    + "discount_foreign) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
         }
 
         @Test
@@ -238,12 +239,15 @@ class DocumentDaoStatementsTest {
             line.setTotal_profit(BigDecimal.valueOf(20));
             line.setDiscount(5.0);
             line.setExpiration_date(LocalDate.of(2027, 1, 31));
+            // A line of a dollar invoice: the price and the discount as typed, beside the base (V83).
+            line.setPriceForeign(new BigDecimal("1.04"));
+            line.setDiscountForeign(new BigDecimal("0.10"));
 
             Object[] data = lines.getData(line);
             assertBindsExactly(lines.insertListSql(), data);
             assertArrayEquals(new Object[]{
                     INVOICE_ID, 31, 2, 2.0, 50.0, 40.0, BigDecimal.valueOf(100), 80.0, BigDecimal.valueOf(20),
-                    5.0, 12.0, LocalDate.of(2027, 1, 31)}, data);
+                    5.0, 12.0, LocalDate.of(2027, 1, 31), new BigDecimal("1.04"), new BigDecimal("0.10")}, data);
         }
 
         /**
@@ -299,7 +303,8 @@ class DocumentDaoStatementsTest {
             assertEquals("DELETE FROM purchase WHERE id=?", lines.deleteSql());
             assertEquals("SELECT id FROM purchase WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE purchase SET num=?,type=?,quantity=?,price=?,discount=?,type_value=?,"
-                    + "expiration_date=? WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+                    + "expiration_date=?,price_foreign=?,discount_foreign=? WHERE id=? AND invoice_number=?",
+                    lines.lineUpdateSql());
             assertEquals("DELETE FROM purchase WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
@@ -341,7 +346,8 @@ class DocumentDaoStatementsTest {
         @Test
         void lineStatement() {
             assertEquals("INSERT INTO purchase (invoice_number,num,type,quantity,price,discount,type_value,"
-                    + "expiration_date) VALUES (?,?,?,?,?,?,?,?)", lines.insertListSql());
+                    + "expiration_date,price_foreign,discount_foreign) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                    lines.insertListSql());
         }
 
         @Test
@@ -357,8 +363,9 @@ class DocumentDaoStatementsTest {
 
             Object[] data = lines.getData(line);
             assertBindsExactly(lines.insertListSql(), data);
+            // A line of a document in the base carries no foreign figure: NULL, not zero.
             assertArrayEquals(new Object[]{
-                    INVOICE_ID, 31, 2, 2.0, 50.0, 5.0, 12.0, LocalDate.of(2027, 1, 31)}, data);
+                    INVOICE_ID, 31, 2, 2.0, 50.0, 5.0, 12.0, LocalDate.of(2027, 1, 31), null, null}, data);
         }
     }
 
@@ -406,7 +413,8 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT id FROM sales_re WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE sales_re SET item_id=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
                     + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=?,"
-                    + "source_line_id=? WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+                    + "source_line_id=?,price_foreign=?,discount_foreign=? WHERE id=? AND invoice_number=?",
+                    lines.lineUpdateSql());
             assertEquals("DELETE FROM sales_re WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
@@ -436,7 +444,8 @@ class DocumentDaoStatementsTest {
         void lineStatement() {
             assertEquals("INSERT INTO sales_re (invoice_number,item_id,type,quantity,price,buy_price,"
                     + "total_sel_price,total_buy_price,total_profit,discount,type_value,expiration_date,"
-                    + "source_line_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
+                    + "source_line_id,price_foreign,discount_foreign) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    lines.insertListSql());
         }
 
         @Test
@@ -461,7 +470,7 @@ class DocumentDaoStatementsTest {
                     5.0, 12.0, LocalDate.of(2027, 1, 31),
                     // A free return: sourceLineId is 0, and the column is a foreign
                     // key, so it must reach the database as NULL, not line zero.
-                    null}, data);
+                    null, null, null}, data);
         }
     }
 
@@ -507,7 +516,8 @@ class DocumentDaoStatementsTest {
             assertEquals("DELETE FROM purchase_re WHERE id=?", lines.deleteSql());
             assertEquals("SELECT id FROM purchase_re WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE purchase_re SET item_id=?,type=?,quantity=?,price=?,discount=?,type_value=?,"
-                    + "expiration_date=?,source_line_id=? WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+                    + "expiration_date=?,source_line_id=?,price_foreign=?,discount_foreign=? "
+                    + "WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
             assertEquals("DELETE FROM purchase_re WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
@@ -531,7 +541,8 @@ class DocumentDaoStatementsTest {
         @Test
         void lineStatement() {
             assertEquals("INSERT INTO purchase_re (invoice_number,item_id,type,quantity,price,discount,"
-                    + "type_value,expiration_date,source_line_id) VALUES (?,?,?,?,?,?,?,?,?)", lines.insertListSql());
+                    + "type_value,expiration_date,source_line_id,price_foreign,discount_foreign) "
+                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
         }
 
         @Test
@@ -551,7 +562,7 @@ class DocumentDaoStatementsTest {
                     INVOICE_ID, 31, 2, 2.0, 50.0, 5.0, 12.0, LocalDate.of(2027, 1, 31),
                     // A free return: sourceLineId is 0, and the column is a foreign
                     // key, so it must reach the database as NULL, not line zero.
-                    null}, data);
+                    null, null, null}, data);
         }
     }
 
