@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**COUNT_TESTS tests** with COUNT_SKIPPED skipped (below) — the figure `mvn clean test`
+**3,923 tests** with 319 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-23 after an invoice learned to be typed in its party's currency, the profit
 and loss became a statement, the returns reasons a report of their own and the two payments reports one
 screen. What is
