@@ -64,39 +64,38 @@ ON DUPLICATE KEY UPDATE name = VALUES(name), main_id = VALUES(main_id);
 -- ---------------------------------------------------------------- items
 
 INSERT INTO items (id, barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2, sel_price3,
-                   unit_id, mini_quantity, first_balance) VALUES
-    (1,  '6221031492015', 'زيت عافية ذرة 1 لتر',        2, 68.00,  78.00,  76.00,  74.00, 4, 12, 0),
-    (2,  '6221031492022', 'زيت عافية دوار الشمس 1 لتر', 2, 65.00,  75.00,  73.00,  71.00, 4, 12, 0),
-    (3,  '6223000512014', 'سمن بلدنا 800 جم',           2, 92.00, 105.00, 103.00, 100.00, 1, 6,  0),
-    (4,  '6221048100118', 'أرز مصري فاخر 1 كجم',        3, 28.00,  34.00,  33.00,  32.00, 3, 20, 0),
-    (5,  '6221048100125', 'مكرونة الملكة 400 جم',       3, 11.50,  15.00,  14.50,  14.00, 1, 24, 0),
-    (6,  '6221048100132', 'شعرية الملكة 400 جم',        3, 11.00,  14.50,  14.00,  13.50, 1, 24, 0),
-    (7,  '6223001800110', 'سكر أبيض 1 كجم',             4, 26.00,  31.00,  30.00,  29.00, 3, 30, 0),
-    (8,  '6223001800127', 'شاي العروسة 250 جم',         4, 44.00,  52.00,  51.00,  50.00, 1, 12, 0),
-    (9,  '6223001800134', 'نسكافيه كلاسيك 50 جم',       4, 78.00,  92.00,  90.00,  88.00, 1, 8,  0),
-    (10, '6221155000113', 'برسيل مسحوق 2 كجم',          5, 135.00, 158.00, 155.00, 152.00, 1, 6, 0),
-    (11, '6221155000120', 'أريال مسحوق 1 كجم',          5, 78.00,  92.00,  90.00,  88.00, 1, 8,  0),
-    (12, '6221155000137', 'كلوركس 1 لتر',               6, 22.00,  28.00,  27.00,  26.00, 4, 12, 0),
-    (13, '6221155000144', 'فيري سائل أطباق 600 مل',     6, 34.00,  42.00,  41.00,  40.00, 1, 12, 0),
-    (14, '5449000000101', 'كوكاكولا 1 لتر',             7, 16.00,  20.00,  19.50,  19.00, 4, 24, 0),
-    (15, '5449000000118', 'سبرايت 1 لتر',               7, 16.00,  20.00,  19.50,  19.00, 4, 24, 0),
-    (16, '6223007700115', 'مياه بركة 1.5 لتر',          7, 4.50,   6.00,   5.75,   5.50,  4, 48, 0),
-    (17, '6223007700122', 'عصير جهينة مانجو 1 لتر',     8, 26.00,  32.00,  31.00,  30.00, 4, 12, 0),
-    (18, '6223007700139', 'عصير جهينة برتقال 1 لتر',    8, 26.00,  32.00,  31.00,  30.00, 4, 12, 0),
-    (19, '6223007700146', 'لبن جهينة كامل الدسم 1 لتر', 8, 30.00,  36.00,  35.00,  34.00, 4, 12, 0),
-    (20, '6223007700153', 'زبادي جهينة 105 جم',         8, 6.00,   8.00,   7.75,   7.50,  1, 36, 0)
+                   unit_id, mini_quantity) VALUES
+    (1,  '6221031492015', 'زيت عافية ذرة 1 لتر',        2, 68.00,  78.00,  76.00,  74.00, 4, 12),
+    (2,  '6221031492022', 'زيت عافية دوار الشمس 1 لتر', 2, 65.00,  75.00,  73.00,  71.00, 4, 12),
+    (3,  '6223000512014', 'سمن بلدنا 800 جم',           2, 92.00, 105.00, 103.00, 100.00, 1, 6),
+    (4,  '6221048100118', 'أرز مصري فاخر 1 كجم',        3, 28.00,  34.00,  33.00,  32.00, 3, 20),
+    (5,  '6221048100125', 'مكرونة الملكة 400 جم',       3, 11.50,  15.00,  14.50,  14.00, 1, 24),
+    (6,  '6221048100132', 'شعرية الملكة 400 جم',        3, 11.00,  14.50,  14.00,  13.50, 1, 24),
+    (7,  '6223001800110', 'سكر أبيض 1 كجم',             4, 26.00,  31.00,  30.00,  29.00, 3, 30),
+    (8,  '6223001800127', 'شاي العروسة 250 جم',         4, 44.00,  52.00,  51.00,  50.00, 1, 12),
+    (9,  '6223001800134', 'نسكافيه كلاسيك 50 جم',       4, 78.00,  92.00,  90.00,  88.00, 1, 8),
+    (10, '6221155000113', 'برسيل مسحوق 2 كجم',          5, 135.00, 158.00, 155.00, 152.00, 1, 6),
+    (11, '6221155000120', 'أريال مسحوق 1 كجم',          5, 78.00,  92.00,  90.00,  88.00, 1, 8),
+    (12, '6221155000137', 'كلوركس 1 لتر',               6, 22.00,  28.00,  27.00,  26.00, 4, 12),
+    (13, '6221155000144', 'فيري سائل أطباق 600 مل',     6, 34.00,  42.00,  41.00,  40.00, 1, 12),
+    (14, '5449000000101', 'كوكاكولا 1 لتر',             7, 16.00,  20.00,  19.50,  19.00, 4, 24),
+    (15, '5449000000118', 'سبرايت 1 لتر',               7, 16.00,  20.00,  19.50,  19.00, 4, 24),
+    (16, '6223007700115', 'مياه بركة 1.5 لتر',          7, 4.50,   6.00,   5.75,   5.50,  4, 48),
+    (17, '6223007700122', 'عصير جهينة مانجو 1 لتر',     8, 26.00,  32.00,  31.00,  30.00, 4, 12),
+    (18, '6223007700139', 'عصير جهينة برتقال 1 لتر',    8, 26.00,  32.00,  31.00,  30.00, 4, 12),
+    (19, '6223007700146', 'لبن جهينة كامل الدسم 1 لتر', 8, 30.00,  36.00,  35.00,  34.00, 4, 12),
+    (20, '6223007700153', 'زبادي جهينة 105 جم',         8, 6.00,   8.00,   7.75,   7.50,  1, 36)
 ON DUPLICATE KEY UPDATE nameItem = VALUES(nameItem), buy_price = VALUES(buy_price),
                         sel_price1 = VALUES(sel_price1);
 
--- The opening balance lives per warehouse. A missing items_stock row is a silently dropped
--- balance: quantity_items_table is driven by this table, not by items.first_balance.
+-- The opening balance lives per warehouse, here and nowhere else since V78. A missing
+-- items_stock row is a silently dropped balance: quantity_items_table is driven by this table.
 -- The SELECT is wrapped in a derived table on purpose: after a JOIN, MySQL reads the ON of
 -- ON DUPLICATE KEY as the join's own ON and fails near "KEY UPDATE".
-INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
+INSERT INTO items_stock (item_id, stock_id, first_balance)
 SELECT * FROM (
     SELECT i.id AS item_id, s.stock_id AS stock_id,
-           CASE WHEN s.stock_id = 1 THEN 120 ELSE 40 END AS first_balance,
-           0 AS current_quantity
+           CASE WHEN s.stock_id = 1 THEN 120 ELSE 40 END AS first_balance
     FROM items i CROSS JOIN stocks s
 ) AS seed
 ON DUPLICATE KEY UPDATE first_balance = VALUES(first_balance);
@@ -297,13 +296,13 @@ VALUES (1, 'رأس مال', CURRENT_DATE - INTERVAL 25 DAY, 20000.00, 'رأس م
 -- The merge screen lists candidates; with no near-duplicate in the catalogue it is an empty table.
 
 INSERT INTO items (id, barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2, sel_price3,
-                   unit_id, mini_quantity, first_balance) VALUES
-    (21, '5449000000125', 'كوكاكولا 1 لتر - كود قديم', 7, 16.00, 20.00, 19.50, 19.00, 4, 24, 0)
+                   unit_id, mini_quantity) VALUES
+    (21, '5449000000125', 'كوكاكولا 1 لتر - كود قديم', 7, 16.00, 20.00, 19.50, 19.00, 4, 24)
 ON DUPLICATE KEY UPDATE nameItem = VALUES(nameItem);
 
-INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
+INSERT INTO items_stock (item_id, stock_id, first_balance)
 SELECT * FROM (
-    SELECT 21 AS item_id, s.stock_id AS stock_id, 0 AS first_balance, 0 AS current_quantity
+    SELECT 21 AS item_id, s.stock_id AS stock_id, 0 AS first_balance
     FROM stocks s
 ) AS seed
 ON DUPLICATE KEY UPDATE first_balance = VALUES(first_balance);
