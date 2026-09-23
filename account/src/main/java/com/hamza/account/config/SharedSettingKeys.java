@@ -74,6 +74,18 @@ public final class SharedSettingKeys {
     public static final String PRINT_REPORT_TITLE = "setting.print.report.title";
 
     /**
+     * How a printed report and a printed document look - the type sizes, the head and the foot, the
+     * page numbers, the colours, the letterhead on an invoice - as one encoded value
+     * ({@code features/export/ReportStyleCodec}).
+     * <p>
+     * The shop's, for the reason the line above gives: a statement a customer is handed from one till
+     * and from another is the same statement, and two tills disagreeing about whether it carries the
+     * company is a defect. The paper size and the printer stay the computer's; so does whether a report
+     * is saved or printed, which is a matter of what is on that desk.
+     */
+    public static final String REPORT_PDF_STYLE = "report.pdf.style";
+
+    /**
      * Whether the same item scanned twice becomes one line of two or two lines of one.
      * <p>
      * Not a display preference: it is the shape of the rows that get stored. Two tills
@@ -124,6 +136,7 @@ public final class SharedSettingKeys {
             INVOICE_UPDATE_PRICE,
 
             PRINT_REPORT_TITLE,
+            REPORT_PDF_STYLE,
 
             INVOICE_MERGE_REPEATED_ITEM,
             DEFAULT_CUSTOMER,

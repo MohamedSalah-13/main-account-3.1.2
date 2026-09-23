@@ -19,6 +19,7 @@ import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.LineSeparator;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.Text;
 import com.itextpdf.layout.properties.*;
 import lombok.extern.log4j.Log4j2;
 
@@ -27,14 +28,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * خدمة تصدير البيانات إلى ملفات PDF
  * تدعم اللغة العربية والتنسيق الاحترافي
+ * <p>
+ * <b>How a page looks is the {@link ReportSetup}'s, not this class's.</b> The sizes, the colours, what
+ * the head and the foot carry and whether the pages are numbered were constants here; they are the
+ * shop's {@link ReportStyle} now, and the no-argument constructor reads the one installed at start-up
+ * ({@link ReportSetups}), so every screen that prints prints in it without being told. The default
+ * style is the constants' values, so a page printed with it is the page printed before.
  *
  * @author Hamza
- * @version 1.1
+ * @version 1.2
  */
 @Log4j2
 public class PdfExportService {
@@ -45,16 +56,53 @@ public class PdfExportService {
     private static final String ARABIC_FONT_BOLD_RESOURCE =
             "/com/hamza/account/fonts/NotoNaskhArabic-Bold.ttf";
 
-    private static final DeviceRgb HEADER_COLOR = new DeviceRgb(41, 128, 185);
     private static final DeviceRgb ALTERNATE_ROW_COLOR = new DeviceRgb(236, 240, 241);
-    private static final DeviceRgb BRANCH_COLOR = new DeviceRgb(214, 234, 248);
-    private static final DeviceRgb BRANCH_TEXT_COLOR = new DeviceRgb(21, 67, 96);
+    private static final DateTimeFormatter PRINTED_AT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /** A report's margins; the foot is taller when a page number sits in it. */
+    private static final float REPORT_MARGIN = 20;
+    private static final float NUMBERED_FOOT_MARGIN = 34;
+    /** Where a page number's baseline sits, measured up from the page's bottom edge. */
+    private static final float PAGE_NUMBER_Y = 16;
+    /** The line height of a compact row, as a multiple of its type size - the one a document uses. */
+    private static final float COMPACT_LEADING = 1.45f;
+    /** Taken off a cell's width beyond its padding: its two borders and a point to spare. */
+    private static final float CELL_SLACK = 2;
+    private static final float POINTS_PER_MM = 72f / 25.4f;
+
+    private final ReportSetup setup;
+    private final ReportStyle style;
+    private final DeviceRgb headingColor;
+    private final DeviceRgb totalsColor;
+    private final DeviceRgb bandColor;
+    private final DeviceRgb bandTextColor;
 
     private PdfFont arabicFont;
     private PdfFont boldFont;
 
+    /** The width a page's content spans - the page less its side margins - for the file being written. */
+    private float usableWidth = PageSize.A4.getWidth() - 2 * REPORT_MARGIN;
+    /** Each table's column widths in points, in the order its cells are added. */
+    private final Map<Table, float[]> columnPoints = new IdentityHashMap<>();
+
+    /** In the shop's style, as installed at start-up - or the default one where nothing is. */
     public PdfExportService() {
+        this(ReportSetups.current());
+    }
+
+    public PdfExportService(ReportSetup setup) {
+        this.setup = Objects.requireNonNull(setup, "setup");
+        this.style = setup.style();
+        ReportPalette palette = style.palette();
+        this.headingColor = rgb(palette.heading());
+        this.totalsColor = rgb(palette.totals());
+        this.bandColor = rgb(palette.band());
+        this.bandTextColor = rgb(palette.bandText());
         initializeFonts();
+    }
+
+    private static DeviceRgb rgb(int value) {
+        return new DeviceRgb((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF);
     }
 
     /**
@@ -117,17 +165,24 @@ public class PdfExportService {
 
     /**
      * إنشاء مستند PDF جديد
+     * <p>
+     * The pages are kept until the end ({@code immediateFlush} off), because a page's number says how
+     * many there are, which is known only once the last one is laid out - {@link #finishReport} writes
+     * them. The table is held whole in memory before it is laid out in any case, so keeping its pages
+     * adds little to what a long report already costs.
      */
     private Document createDocument(String filePath, PageSize pageSize) throws IOException {
         PdfWriter writer = new PdfWriter(filePath);
         PdfDocument pdf = new PdfDocument(writer);
-        Document document = new Document(pdf, pageSize);
+        Document document = new Document(pdf, pageSize, false);
         document.setFont(arabicFont);
         document.setFontSize(11);
         // الاتجاه الافتراضي للمستند كله: من اليمين لليسار
         document.setProperty(Property.BASE_DIRECTION, BaseDirection.RIGHT_TO_LEFT);
         document.setTextAlignment(TextAlignment.RIGHT);
-        document.setMargins(20, 20, 20, 20);
+        float foot = style.pageNumbering() == PageNumbering.NONE ? REPORT_MARGIN : NUMBERED_FOOT_MARGIN;
+        document.setMargins(REPORT_MARGIN, REPORT_MARGIN, foot, REPORT_MARGIN);
+        usableWidth = pageSize.getWidth() - 2 * REPORT_MARGIN;
         return document;
     }
 
@@ -163,36 +218,245 @@ public class PdfExportService {
         return text.codePoints().allMatch(boldFont::containsGlyph) ? boldFont : arabicFont;
     }
 
+    /** {@link #arabicParagraph(String)} for a place {@code width} points wide, broken into its lines here. */
+    private Paragraph arabicParagraph(String text, float size, float width) {
+        return wrapped(text, false, size, width);
+    }
+
+    /** {@link #arabicParagraphBold(String)} for a place {@code width} points wide, broken into its lines here. */
+    private Paragraph arabicParagraphBold(String text, float size, float width) {
+        return wrapped(text, true, size, width);
+    }
+
     /**
-     * إضافة ترويسة للمستند
+     * A paragraph broken into the lines that fit {@code width} points at {@code size}, each shaped alone.
+     * <p>
+     * <b>iText must never be the one to wrap an Arabic line.</b> The text reaches it already shaped - in
+     * the order it is drawn - so a line it wrapped put the text's <em>end</em> first: an item's name too
+     * long for its column printed "... من إنتاج الشركة" above "زيت عباد الشمس", in every report and every
+     * invoice, and a larger type size made it happen more. Here the logical text is broken at its spaces,
+     * each candidate line measured in the font it will be drawn in, and each line shaped on its own
+     * ({@link ArabicTextHelper#shapeLine}); the lines are joined by breaks iText keeps. A word longer
+     * than the whole width is left on a line of its own for iText to split, as before.
+     *
+     * @param width the room for the text itself, padding and borders already taken off; zero or less
+     *              breaks nothing
+     */
+    private Paragraph wrapped(String text, boolean bold, float size, float width) {
+        String logical = text == null ? "" : text;
+        String shaped = ArabicTextHelper.shape(logical);
+        PdfFont font = bold ? boldFontFor(shaped) : arabicFont;
+        Paragraph paragraph = new Paragraph()
+                .setFont(font)
+                .setFontSize(size)
+                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
+                .setTextAlignment(TextAlignment.RIGHT);
+        if (bold) {
+            paragraph.setBold();
+        }
+        // Nearly every cell fits on one line: that one is shaped once, as before, and measured once.
+        if (width <= 0 || !logical.contains("\n") && font.getWidth(shaped, size) <= width) {
+            return paragraph.add(new Text(shaped));
+        }
+        List<String> lines = lines(logical, font, size, width);
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0) {
+                paragraph.add(new Text("\n"));
+            }
+            paragraph.add(new Text(ArabicTextHelper.shapeLine(lines.get(i), logical)));
+        }
+        return paragraph;
+    }
+
+    /** The logical lines {@code text} breaks into at {@code width}; a line break already in it is kept. */
+    static List<String> lines(String text, PdfFont font, float size, float width) {
+        List<String> lines = new ArrayList<>();
+        for (String hard : text.split("\n", -1)) {
+            if (width <= 0 || fits(hard, font, size, width)) {
+                lines.add(hard);
+                continue;
+            }
+            StringBuilder line = new StringBuilder();
+            for (String word : hard.strip().split(" +")) {
+                String candidate = line.isEmpty() ? word : line + " " + word;
+                if (!line.isEmpty() && !fits(candidate, font, size, width)) {
+                    lines.add(line.toString());
+                    line = new StringBuilder(word);
+                } else {
+                    line = new StringBuilder(candidate);
+                }
+            }
+            lines.add(line.toString());
+        }
+        return lines;
+    }
+
+    private static boolean fits(String logical, PdfFont font, float size, float width) {
+        return font.getWidth(ArabicTextHelper.shape(logical), size) <= width;
+    }
+
+    /** Records a table's columns in points, in the order its cells are added; it spans the usable width. */
+    private void registerColumns(Table table, float[] addedOrderWidths) {
+        float sum = 0;
+        for (float width : addedOrderWidths) {
+            sum += width;
+        }
+        float[] points = new float[addedOrderWidths.length];
+        for (int i = 0; i < points.length; i++) {
+            points[i] = sum <= 0 ? 0 : usableWidth * addedOrderWidths[i] / sum;
+        }
+        columnPoints.put(table, points);
+    }
+
+    /** The room for text in one column's cell, less the cell's own padding; zero when the table is unknown. */
+    private float textWidth(Table table, int addedIndex, float padding) {
+        float[] points = columnPoints.get(table);
+        if (points == null || addedIndex < 0 || addedIndex >= points.length) {
+            return 0;
+        }
+        return points[addedIndex] - padding - CELL_SLACK;
+    }
+
+    /** The room for text in a cell spanning the whole table. */
+    private float spanWidth(Table table, float padding) {
+        float[] points = columnPoints.get(table);
+        if (points == null) {
+            return 0;
+        }
+        float sum = 0;
+        for (float point : points) {
+            sum += point;
+        }
+        return sum - padding - CELL_SLACK;
+    }
+
+    /**
+     * إضافة ترويسة للمستند: the company when the shop asked for it, the title, the subtitle, and the
+     * line saying when and by whom it was printed - each only as the style asks.
      */
     private void addHeader(Document document, String title, String subtitle) {
+        if (setup.printsLetterhead()) {
+            document.add(reportLetterhead(setup.letterhead()));
+            document.add(new LineSeparator(rule(1f)).setMarginTop(3).setMarginBottom(6));
+        }
+
         // العنوان الرئيسي
-        Paragraph titlePara = arabicParagraphBold(title)
-                .setFontSize(20)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setMarginBottom(5);
-        document.add(titlePara);
+        if (style.showTitle()) {
+            Paragraph titlePara = arabicParagraphBold(title, style.titleSize(), usableWidth)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginBottom(5);
+            document.add(titlePara);
+        }
 
         // العنوان الفرعي - سطر لكل '\n'. النص يُشكَّل بترتيب العرض قبل أن يلفّه iText، فالفقرة العربية
         // التي تلتف تضع آخرها في السطر الأول وقد تقسم تاريخًا عند شَرطته؛ السطر المقصود يُكتب فقرةً وحده.
-        if (subtitle != null && !subtitle.isEmpty()) {
+        if (style.showSubtitle() && subtitle != null && !subtitle.isEmpty()) {
             String[] lines = subtitle.split("\n");
             for (int i = 0; i < lines.length; i++) {
-                Paragraph subtitlePara = arabicParagraph(lines[i])
-                        .setFontSize(12)
+                Paragraph subtitlePara = arabicParagraph(lines[i], style.subtitleSize(), usableWidth)
                         .setMarginBottom(i == lines.length - 1 ? 5 : 0);
                 document.add(subtitlePara);
             }
         }
 
-        // التاريخ والوقت
-        String dateTime = LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        Paragraph datePara = arabicParagraph("تاريخ التقرير: " + dateTime)
-                .setFontSize(10)
-                .setMarginBottom(5);
-        document.add(datePara);
+        // التاريخ والوقت، ومن طبع التقرير
+        String printed = setup.printedLine(LocalDateTime.now().format(PRINTED_AT));
+        if (!printed.isEmpty()) {
+            document.add(arabicParagraph(printed, style.smallSize(), usableWidth)
+                    .setMarginBottom(5));
+        }
+    }
+
+    /**
+     * The company above a report: its name and lines on the right with its picture beside them, the way
+     * an invoice's letterhead reads - smaller, since on a report it is not what the page is about.
+     */
+    private Table reportLetterhead(ReportLetterhead letterhead) {
+        Div text = new Div();
+        if (!letterhead.name().isEmpty()) {
+            text.add(arabicParagraphBold(letterhead.name()).setFontSize(style.subtitleSize() + 2)
+                    .setMarginTop(0).setMarginBottom(1));
+        }
+        for (String line : letterhead.lines()) {
+            text.add(arabicParagraph(line).setFontSize(Math.max(ReportStyle.MIN_FONT_SIZE, style.smallSize() - 1))
+                    .setFontColor(ColorConstants.DARK_GRAY)
+                    .setFixedLeading(style.smallSize() * COMPACT_LEADING)
+                    .setMarginTop(0).setMarginBottom(0));
+        }
+        Image logo = logoImage(letterhead.logo());
+        Table band = new Table(UnitValue.createPercentArray(logo == null ? new float[]{100} : new float[]{84, 16}))
+                .useAllAvailableWidth();
+        band.addCell(new Cell().add(text).setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE).setPaddingRight(logo == null ? 0 : 6));
+        if (logo != null) {
+            band.addCell(new Cell().add(logo.scaleToFit(48, 48)).setBorder(Border.NO_BORDER)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+        }
+        return band;
+    }
+
+    /**
+     * The rule under a letterhead, in the heading's colour. The colour belongs to the line drawn, not to
+     * the separator holding it: set on the separator it was ignored, and the rule under every invoice's
+     * head printed black while the code asked for blue.
+     */
+    private SolidLine rule(float width) {
+        SolidLine line = new SolidLine(width);
+        line.setColor(headingColor);
+        return line;
+    }
+
+    /**
+     * A paragraph set in a table cell. A compact row is as tall as its text: no margin above or below,
+     * and a fixed line height, because the Naskh face declares a line far taller than its letters.
+     */
+    private Paragraph inCell(Paragraph paragraph, float size) {
+        if (style.compactRows()) {
+            paragraph.setMarginTop(0).setMarginBottom(0).setFixedLeading(size * COMPACT_LEADING);
+        }
+        return paragraph;
+    }
+
+    /** A heading row's cell: filled with the heading colour in white, or - saving ink - dark type ruled beneath. */
+    private Cell headingCell(Cell cell) {
+        if (style.inkSaver()) {
+            return cell.setFontColor(bandTextColor).setBorderBottom(new SolidBorder(bandTextColor, 1.2f));
+        }
+        return cell.setBackgroundColor(headingColor).setFontColor(ColorConstants.WHITE);
+    }
+
+    /** A closing totals line's cell: on the totals band in white, or ruled above and below. */
+    private Cell totalsCell(Cell cell) {
+        if (style.inkSaver()) {
+            return cell.setFontColor(bandTextColor)
+                    .setBorderTop(new SolidBorder(bandTextColor, 1.2f))
+                    .setBorderBottom(new SolidBorder(bandTextColor, 1.2f));
+        }
+        return cell.setBackgroundColor(totalsColor).setFontColor(ColorConstants.WHITE);
+    }
+
+    /** A branch heading, a subtotal or the figure a document's reader looks for: dark type on the light band. */
+    private Cell bandCell(Cell cell) {
+        cell.setFontColor(bandTextColor);
+        return style.inkSaver() ? cell : cell.setBackgroundColor(bandColor);
+    }
+
+    /** Every second row striped, unless saving ink. */
+    private Cell striped(Cell cell, boolean alternate) {
+        return alternate && !style.inkSaver() ? cell.setBackgroundColor(ALTERNATE_ROW_COLOR) : cell;
+    }
+
+    /** A branch heading across every column: bold on the band, or ruled beneath when saving ink. */
+    private Cell branchHeading(Table table, String title, int columns) {
+        Cell cell = bandCell(new Cell(1, columns)
+                .add(inCell(arabicParagraphBold(title, style.bodySize(), spanWidth(table, 8)), style.bodySize()))
+                .setFontSize(style.bodySize())
+                .setTextAlignment(TextAlignment.RIGHT)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setPaddingTop(4)
+                .setPaddingBottom(4)
+                .setPaddingRight(6));
+        return style.inkSaver() ? cell.setBorderBottom(new SolidBorder(bandTextColor, 1f)) : cell;
     }
 
     /**
@@ -209,15 +473,17 @@ public class PdfExportService {
         table.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.RIGHT);
         table.setWidth(UnitValue.createPercentValue(100));
         table.setFont(arabicFont);
+        registerColumns(table, rtlWidths);
 
-        for (String header : rtlHeaders) {
-            Cell cell = new Cell()
-                    .add(arabicParagraphBold(header).setTextAlignment(TextAlignment.CENTER))
-                    .setBackgroundColor(HEADER_COLOR)
-                    .setFontColor(ColorConstants.WHITE)
+        for (int i = 0; i < rtlHeaders.length; i++) {
+            String header = rtlHeaders[i];
+            Cell cell = headingCell(new Cell()
+                    .add(inCell(arabicParagraphBold(header, style.headerSize(), textWidth(table, i, 4)),
+                            style.headerSize()).setTextAlignment(TextAlignment.CENTER))
+                    .setFontSize(style.headerSize())
                     .setTextAlignment(TextAlignment.CENTER)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPadding(2);
+                    .setPadding(2));
             table.addHeaderCell(cell);
         }
         return table;
@@ -228,17 +494,14 @@ public class PdfExportService {
      */
     private void addTableRow(Table table, String[] rowData, boolean isAlternate) {
         String[] rtlRow = reverseStrings(rowData);
-        for (String data : rtlRow) {
+        for (int i = 0; i < rtlRow.length; i++) {
             Cell cell = new Cell()
-                    .add(arabicParagraph(data))
+                    .add(inCell(arabicParagraph(rtlRow[i], style.bodySize(), textWidth(table, i, 4)), style.bodySize()))
+                    .setFontSize(style.bodySize())
                     .setTextAlignment(TextAlignment.RIGHT)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
                     .setPadding(2);
-
-            if (isAlternate) {
-                cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
-            }
-            table.addCell(cell);
+            table.addCell(striped(cell, isAlternate));
         }
     }
 
@@ -293,7 +556,7 @@ public class PdfExportService {
                 addTotalsRow(table, totals);
             }
             document.add(table);
-            addFooter(document);
+            finishReport(document);
             log.info("PDF exported successfully: {}", filePath);
             return true;
         } catch (IOException e) {
@@ -314,15 +577,7 @@ public class PdfExportService {
             Table table = createTable(layout.headers(), layout.columnWidths());
             int columns = layout.headers().length;
             for (TreePdfLayout.Branch branch : layout.branches()) {
-                table.addCell(new Cell(1, columns)
-                        .add(arabicParagraphBold(branch.title()))
-                        .setBackgroundColor(BRANCH_COLOR)
-                        .setFontColor(BRANCH_TEXT_COLOR)
-                        .setTextAlignment(TextAlignment.RIGHT)
-                        .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                        .setPaddingTop(4)
-                        .setPaddingBottom(4)
-                        .setPaddingRight(6));
+                table.addCell(branchHeading(table, branch.title(), columns));
                 int rowIndex = 0;
                 for (String[] row : branch.rows()) {
                     addBranchRow(table, row, rowIndex % 2 == 1);
@@ -336,7 +591,7 @@ public class PdfExportService {
                 addTotalsRow(table, layout.totals());
             }
             document.add(table);
-            addFooter(document);
+            finishReport(document);
             log.info("PDF exported successfully: {}", filePath);
             return true;
         } catch (IOException e) {
@@ -362,15 +617,7 @@ public class PdfExportService {
             int columns = statement.headers().length;
             for (StatementPdfLayout.Line line : statement.lines()) {
                 switch (line.style()) {
-                    case HEADING -> page.addCell(new Cell(1, columns)
-                            .add(arabicParagraphBold(line.cells()[0]))
-                            .setBackgroundColor(BRANCH_COLOR)
-                            .setFontColor(BRANCH_TEXT_COLOR)
-                            .setTextAlignment(TextAlignment.RIGHT)
-                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                            .setPaddingTop(4)
-                            .setPaddingBottom(4)
-                            .setPaddingRight(6));
+                    case HEADING -> page.addCell(branchHeading(page, line.cells()[0], columns));
                     case ROW -> addBranchRow(page, line.cells(), false);
                     case SUBTOTAL -> addBranchSummary(page, line.cells());
                     case RESULT -> addTotalsRow(page, line.cells());
@@ -390,7 +637,7 @@ public class PdfExportService {
                 }
                 document.add(table);
             }
-            addFooter(document);
+            finishReport(document);
             log.info("PDF exported successfully: {}", filePath);
             return true;
         } catch (IOException e) {
@@ -402,31 +649,32 @@ public class PdfExportService {
     /** A leaf line: the first logical column is indented so it reads as belonging to the heading. */
     private void addBranchRow(Table table, String[] rowData, boolean isAlternate) {
         String[] rtlRow = reverseStrings(rowData);
+        int size = style.branchRowSize();
         for (int i = 0; i < rtlRow.length; i++) {
             boolean first = i == rtlRow.length - 1;
             Cell cell = new Cell()
-                    .add(arabicParagraph(rtlRow[i]))
-                    .setFontSize(10)
+                    .add(inCell(arabicParagraph(rtlRow[i], size, textWidth(table, i, first ? 20 : 8)), size))
+                    .setFontSize(size)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
                     .setPadding(2)
                     .setPaddingRight(first ? 18 : 6);
-            if (isAlternate) {
-                cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
-            }
-            table.addCell(cell);
+            table.addCell(striped(cell, isAlternate));
         }
     }
 
     /** Right-aligned like the rows above it, so each figure sits under the column it sums. */
     private void addBranchSummary(Table table, String[] cells) {
-        for (String cell : reverseStrings(cells)) {
+        String[] rtlCells = reverseStrings(cells);
+        for (int i = 0; i < rtlCells.length; i++) {
+            String cell = rtlCells[i];
             table.addCell(new Cell()
-                    .add(arabicParagraphBold(cell == null ? "" : cell))
-                    .setFontColor(BRANCH_TEXT_COLOR)
-                    .setBorderTop(new SolidBorder(BRANCH_TEXT_COLOR, 0.8f))
-                    .setBorderBottom(new SolidBorder(BRANCH_TEXT_COLOR, 0.8f))
+                    .add(inCell(arabicParagraphBold(cell == null ? "" : cell, style.totalsSize(),
+                            textWidth(table, i, 8)), style.totalsSize()))
+                    .setFontColor(bandTextColor)
+                    .setBorderTop(new SolidBorder(bandTextColor, 0.8f))
+                    .setBorderBottom(new SolidBorder(bandTextColor, 0.8f))
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setFontSize(10)
+                    .setFontSize(style.totalsSize())
                     .setPadding(2)
                     .setPaddingRight(6));
         }
@@ -442,36 +690,38 @@ public class PdfExportService {
      * read the file could see it; {@code PdfExportServiceLayoutTest} reads the positions.
      */
     private void addTotalsRow(Table table, String[] cells) {
-        for (String cell : reverseStrings(cells)) {
-            table.addCell(new Cell()
-                    .add(arabicParagraphBold(cell == null ? "" : cell)
+        String[] rtlCells = reverseStrings(cells);
+        for (int i = 0; i < rtlCells.length; i++) {
+            String cell = rtlCells[i];
+            table.addCell(totalsCell(new Cell()
+                    .add(inCell(arabicParagraphBold(cell == null ? "" : cell, style.totalsSize(),
+                            textWidth(table, i, 4)), style.totalsSize())
                             .setTextAlignment(TextAlignment.CENTER))
-                    .setBackgroundColor(new DeviceRgb(52, 152, 219))
-                    .setFontColor(ColorConstants.WHITE)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(10)
-                    .setPadding(2));
+                    .setFontSize(style.totalsSize())
+                    .setPadding(2)));
         }
     }
 
     private void addTotalRow(Table table, String label, String total, int colspan) {
         // خلية المجموع أولاً لتظهر في أقصى اليمين
-        Cell totalCell = new Cell()
-                .add(arabicParagraphBold(total).setTextAlignment(TextAlignment.CENTER))
-                .setBackgroundColor(new DeviceRgb(52, 152, 219))
-                .setFontColor(ColorConstants.WHITE)
+        float totalWidth = textWidth(table, 0, 4);
+        Cell totalCell = totalsCell(new Cell()
+                .add(inCell(arabicParagraphBold(total, style.totalsSize(), totalWidth), style.totalsSize())
+                        .setTextAlignment(TextAlignment.CENTER))
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(10)
-                .setPadding(2);
+                .setFontSize(style.totalsSize())
+                .setPadding(2));
         table.addCell(totalCell);
 
         // ثم خلية الوصف الممتدة
-        Cell labelCell = new Cell(1, colspan)
-                .add(arabicParagraphBold(label).setTextAlignment(TextAlignment.CENTER))
-                .setBackgroundColor(new DeviceRgb(52, 152, 219))
-                .setFontColor(ColorConstants.WHITE)
+        Cell labelCell = totalsCell(new Cell(1, colspan)
+                .add(inCell(arabicParagraphBold(label, style.totalsSize(),
+                        spanWidth(table, 4) - totalWidth - 4 - CELL_SLACK), style.totalsSize())
+                        .setTextAlignment(TextAlignment.CENTER))
                 .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(2);
+                .setFontSize(style.totalsSize())
+                .setPadding(2));
         table.addCell(labelCell);
     }
 
@@ -496,15 +746,44 @@ public class PdfExportService {
     }
 
     /**
-     * إضافة تذييل للمستند
+     * إضافة تذييل للمستند، ثم أرقام الصفحات: the closing sentence the style asks for, and every page's
+     * number - which can only be written now, when the last page is known.
      */
-    private void addFooter(Document document) {
-        document.add(new Paragraph("\n"));
-        Paragraph footer = arabicParagraph("تم إنشاء هذا التقرير بواسطة نظام الحسابات")
-                .setFontSize(10)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setFontColor(ColorConstants.GRAY);
-        document.add(footer);
+    private void finishReport(Document document) {
+        String footer = setup.footer();
+        if (!footer.isEmpty()) {
+            document.add(new Paragraph("\n"));
+            document.add(arabicParagraph(footer, style.smallSize(), usableWidth)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontColor(ColorConstants.GRAY));
+        }
+        numberPages(document, style.pageNumberSize());
+    }
+
+    /**
+     * Writes each page's number centred at its foot, or nothing when the style numbers no page.
+     * <p>
+     * A number written in words is shaped - {@code صفحة 1 من 3} needs it - and placed without a
+     * direction of its own: once shaped it is already in the order it is read, and the page's width,
+     * not a right edge, is what centres it. <b>A number with no word in it is not shaped.</b> The
+     * shaping reads a line with no letter as right to left and reverses its numbers, so {@code 1 / 3}
+     * came out {@code 3 / 1} - the first test of this method found it; an invoice has always printed
+     * {@code 1 / 3} as written. Each page is measured on its own, since a report may turn one sideways.
+     */
+    private void numberPages(Document document, float size) {
+        PdfDocument pdf = document.getPdfDocument();
+        int pages = pdf.getNumberOfPages();
+        for (int number = 1; number <= pages; number++) {
+            String text = setup.pageText(number, pages);
+            if (text.isEmpty()) {
+                return;
+            }
+            String written = text.codePoints().anyMatch(Character::isLetter) ? ArabicTextHelper.shape(text) : text;
+            float width = pdf.getPage(number).getPageSize().getWidth();
+            document.showTextAligned(new Paragraph(written)
+                            .setFont(arabicFont).setFontSize(size).setFontColor(ColorConstants.GRAY),
+                    width / 2, PAGE_NUMBER_Y, number, TextAlignment.CENTER, VerticalAlignment.BOTTOM, 0);
+        }
     }
 
     /**
@@ -547,7 +826,7 @@ public class PdfExportService {
                 document.add(chartImage);
             }
 
-            addFooter(document);
+            finishReport(document);
 
             log.info("PDF exported successfully: {}", filePath);
             return true;
@@ -562,6 +841,8 @@ public class PdfExportService {
     private static final DeviceRgb LABEL_COLOR = new DeviceRgb(236, 240, 241);
     private static final DeviceRgb RULE_COLOR = new DeviceRgb(189, 195, 199);
     private static final float DOCUMENT_FONT_SIZE = 9.5f;
+    private static final float DOCUMENT_MARGIN = 24;
+    private static final float DOCUMENT_PAGE_NUMBER_SIZE = 8;
 
     /**
      * An invoice or a return, on the page it was given: the letterhead on the right with the
@@ -570,7 +851,12 @@ public class PdfExportService {
      * <p>
      * The page is the one passed and is never turned: a document is upright whatever it holds.
      * The column headings repeat on every page a long document runs onto, the summary is kept
-     * whole on the last, and every page is numbered at its foot.
+     * whole on the last, and every page is numbered at its foot as the style says.
+     * <p>
+     * The shop may leave the letterhead off, for paper that already has the company printed at its
+     * head, and push the page down under that printed heading ({@link ReportStyle#documentTopSpaceMm}).
+     * The document's own name, number and date stay where they are: they are what the paper does not
+     * already say.
      * <p>
      * Like every table here, cells are added left to right and each line is reversed on its way
      * in, so the first logical column lands on the right - {@code PdfExportServiceLayoutTest}
@@ -583,29 +869,25 @@ public class PdfExportService {
             document.setFontSize(DOCUMENT_FONT_SIZE);
             document.setProperty(Property.BASE_DIRECTION, BaseDirection.RIGHT_TO_LEFT);
             document.setTextAlignment(TextAlignment.RIGHT);
-            document.setMargins(24, 24, 34, 24);
+            float top = DOCUMENT_MARGIN
+                    + (style.showDocumentLetterhead() ? 0 : style.documentTopSpaceMm() * POINTS_PER_MM);
+            document.setMargins(top, DOCUMENT_MARGIN, NUMBERED_FOOT_MARGIN, DOCUMENT_MARGIN);
+            usableWidth = pageSize.getWidth() - 2 * DOCUMENT_MARGIN;
 
             document.add(documentHeader(page));
-            document.add(new LineSeparator(new SolidLine(1.2f)).setStrokeColor(HEADER_COLOR)
-                    .setMarginTop(4).setMarginBottom(6));
+            document.add(new LineSeparator(rule(1.2f)).setMarginTop(4).setMarginBottom(6));
             if (!page.details().isEmpty()) {
                 document.add(documentDetails(page.details()));
             }
             document.add(documentLines(page));
             document.add(documentClosing(page));
             if (!page.footer().isBlank()) {
-                document.add(arabicParagraph(page.footer()).setFontSize(8)
+                document.add(arabicParagraph(page.footer(), 8, usableWidth)
                         .setFontColor(ColorConstants.GRAY)
                         .setTextAlignment(TextAlignment.CENTER).setMarginTop(8));
             }
 
-            int pages = pdf.getNumberOfPages();
-            for (int number = 1; number <= pages; number++) {
-                document.showTextAligned(new Paragraph(number + " / " + pages)
-                                .setFont(arabicFont).setFontSize(8).setFontColor(ColorConstants.GRAY),
-                        pageSize.getWidth() / 2, 16, number,
-                        TextAlignment.CENTER, VerticalAlignment.BOTTOM, 0);
-            }
+            numberPages(document, DOCUMENT_PAGE_NUMBER_SIZE);
             log.info("Document PDF exported successfully: {}", filePath);
             return true;
         } catch (IOException e) {
@@ -621,14 +903,19 @@ public class PdfExportService {
      * invoice was more than twice the height of its text, and forty-five lines ran onto three pages.
      */
     private static Paragraph tight(Paragraph paragraph) {
-        return paragraph.setMarginTop(0).setMarginBottom(0).setFixedLeading(DOCUMENT_FONT_SIZE * 1.45f);
+        return paragraph.setMarginTop(0).setMarginBottom(0).setFixedLeading(DOCUMENT_FONT_SIZE * COMPACT_LEADING);
     }
-    /** The document's name and number on the left, the letterhead on the right. */
+
+    /** A field's caption on its light grey, unless saving ink. */
+    private Cell labelled(Cell cell) {
+        return style.inkSaver() ? cell : cell.setBackgroundColor(LABEL_COLOR);
+    }
+    /** The document's name and number on the left, the letterhead - unless the shop left it off - on the right. */
     private Table documentHeader(DocumentPdfPage page) {
         Table header = new Table(UnitValue.createPercentArray(new float[]{40, 60})).useAllAvailableWidth();
 
         Cell identity = new Cell().setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
-        identity.add(arabicParagraphBold(page.title()).setFontSize(17).setFontColor(HEADER_COLOR)
+        identity.add(arabicParagraphBold(page.title()).setFontSize(17).setFontColor(headingColor)
                 .setTextAlignment(TextAlignment.CENTER).setMarginBottom(3));
         if (!page.identity().isEmpty()) {
             Table fields = new Table(UnitValue.createPercentArray(new float[]{55, 45})).useAllAvailableWidth();
@@ -636,15 +923,18 @@ public class PdfExportService {
                 fields.addCell(new Cell().add(tight(arabicParagraphBold(field.value()))
                                 .setTextAlignment(TextAlignment.CENTER))
                         .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(2));
-                fields.addCell(new Cell().add(tight(arabicParagraphBold(field.label())))
-                        .setBackgroundColor(LABEL_COLOR)
-                        .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(2).setPaddingRight(5));
+                fields.addCell(labelled(new Cell().add(tight(arabicParagraphBold(field.label())))
+                        .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(2).setPaddingRight(5)));
             }
             identity.add(fields);
         }
         header.addCell(identity);
 
         Cell letterhead = new Cell().setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        if (!style.showDocumentLetterhead()) {
+            header.addCell(letterhead);
+            return header;
+        }
         Div text = new Div();
         text.add(arabicParagraphBold(page.companyName()).setFontSize(15).setMarginBottom(1));
         for (String line : page.companyLines()) {
@@ -706,7 +996,7 @@ public class PdfExportService {
         Cell labelCell = new Cell().add(tight(arabicParagraphBold(label)))
                 .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(3).setPaddingRight(5);
         if (field != null) {
-            labelCell.setBackgroundColor(LABEL_COLOR);
+            labelled(labelCell);
         }
         table.addCell(labelCell);
     }
@@ -717,16 +1007,17 @@ public class PdfExportService {
      */
     private Table documentLines(DocumentPdfPage page) {
         String[] headers = reverseStrings(page.headers());
-        Table table = new Table(UnitValue.createPercentArray(reverseFloats(page.columnWidths())))
+        float[] widths = reverseFloats(page.columnWidths());
+        Table table = new Table(UnitValue.createPercentArray(widths))
                 .useAllAvailableWidth();
         table.setFont(arabicFont);
-        for (String heading : headers) {
-            table.addHeaderCell(new Cell()
-                    .add(tight(arabicParagraphBold(heading)).setTextAlignment(TextAlignment.CENTER))
-                    .setBackgroundColor(HEADER_COLOR)
-                    .setFontColor(ColorConstants.WHITE)
+        registerColumns(table, widths);
+        for (int i = 0; i < headers.length; i++) {
+            table.addHeaderCell(headingCell(new Cell()
+                    .add(tight(arabicParagraphBold(headers[i], DOCUMENT_FONT_SIZE, textWidth(table, i, 6)))
+                            .setTextAlignment(TextAlignment.CENTER))
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPadding(3));
+                    .setPadding(3)));
         }
         int columns = headers.length;
         int rowIndex = 0;
@@ -735,27 +1026,25 @@ public class PdfExportService {
             for (int i = 0; i < columns; i++) {
                 boolean textColumn = columns - 1 - i == 1;
                 Cell cell = new Cell()
-                        .add(tight(arabicParagraph(cells[i])).setTextAlignment(
+                        .add(tight(arabicParagraph(cells[i], DOCUMENT_FONT_SIZE, textWidth(table, i, textColumn ? 7 : 4)))
+                                .setTextAlignment(
                                 textColumn ? TextAlignment.RIGHT : TextAlignment.CENTER))
                         .setVerticalAlignment(VerticalAlignment.MIDDLE)
                         .setBorder(new SolidBorder(RULE_COLOR, 0.5f))
                         .setPadding(2).setPaddingRight(textColumn ? 5 : 2);
-                if (rowIndex % 2 == 1) {
-                    cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
-                }
-                table.addCell(cell);
+                table.addCell(striped(cell, rowIndex % 2 == 1));
             }
             rowIndex++;
         }
         if (page.totals() != null) {
-            for (String cell : reverseStrings(page.totals())) {
-                table.addCell(new Cell()
-                        .add(tight(arabicParagraphBold(cell)).setTextAlignment(TextAlignment.CENTER))
-                        .setBackgroundColor(BRANCH_COLOR)
-                        .setFontColor(BRANCH_TEXT_COLOR)
+            String[] totals = reverseStrings(page.totals());
+            for (int i = 0; i < totals.length; i++) {
+                table.addCell(bandCell(new Cell()
+                        .add(tight(arabicParagraphBold(totals[i], DOCUMENT_FONT_SIZE, textWidth(table, i, 6)))
+                                .setTextAlignment(TextAlignment.CENTER))
                         .setBorder(new SolidBorder(RULE_COLOR, 0.5f))
                         .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                        .setPadding(3));
+                        .setPadding(3)));
             }
         }
         return table;
@@ -778,10 +1067,10 @@ public class PdfExportService {
                 Cell labelCell = new Cell().add(tight(arabicParagraphBold(field.label())))
                         .setBorder(new SolidBorder(RULE_COLOR, 0.6f)).setPadding(3).setPaddingRight(6);
                 if (field.emphasised()) {
-                    valueCell.setBackgroundColor(BRANCH_COLOR).setFontColor(BRANCH_TEXT_COLOR);
-                    labelCell.setBackgroundColor(BRANCH_COLOR).setFontColor(BRANCH_TEXT_COLOR);
+                    bandCell(valueCell);
+                    bandCell(labelCell);
                 } else {
-                    labelCell.setBackgroundColor(LABEL_COLOR);
+                    labelled(labelCell);
                 }
                 summary.addCell(valueCell);
                 summary.addCell(labelCell);
@@ -793,7 +1082,8 @@ public class PdfExportService {
         Cell side = new Cell().setBorder(Border.NO_BORDER).setPaddingRight(0).setPaddingLeft(12);
         if (!page.notes().isBlank()) {
             side.add(arabicParagraphBold(page.notesLabel()).setMarginBottom(1));
-            side.add(arabicParagraph(page.notes()).setFontSize(9).setMarginBottom(10));
+            // The side cell is 56 of the closing table's hundred, padded 12 on its left.
+            side.add(arabicParagraph(page.notes(), 9, usableWidth * 0.56f - 12 - CELL_SLACK).setMarginBottom(10));
         }
         if (!page.signatureLabel().isBlank()) {
             side.add(arabicParagraph(page.signatureLabel() + ": ....................................")

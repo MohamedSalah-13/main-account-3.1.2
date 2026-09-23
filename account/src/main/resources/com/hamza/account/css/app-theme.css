@@ -892,12 +892,13 @@
     -fx-text-fill: -app-primary;
 }
 
-/* The card titles over a report's tables: the shared title's dark blue is lost on the dark theme's dark
-   card. */
+/* The card titles over a report's tables, and over the report appearance settings: the shared title's dark
+   blue is lost on the dark theme's dark card. */
 .profit-loss .section-title,
 .return-reasons .section-title,
 .monthly-totals .section-title,
-.item-sales .section-title {
+.item-sales .section-title,
+.report-style .section-title {
     -fx-text-fill: -app-text-strong;
 }
 

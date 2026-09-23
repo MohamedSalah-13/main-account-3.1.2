@@ -91,6 +91,7 @@ import com.hamza.account.config.SharedSettingsStore;
 import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.account.service.version.MigrationResult;
+import com.hamza.account.table.ShopReportSetup;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
@@ -185,6 +186,8 @@ public class DownLoadApplication extends Application {
         // answers from this machine's own Preferences, which is what the theme and the
         // fonts above have already done.
         SharedSettings.install(new SharedSettingsStore());
+        // Every PDF printed from here on reads the shop's report style, which is one of those settings.
+        ShopReportSetup.install();
         BackupPolicy.claimIfUnowned();
         progress.begin(StartupStep.LICENSE);
         checkTrialStatus();
