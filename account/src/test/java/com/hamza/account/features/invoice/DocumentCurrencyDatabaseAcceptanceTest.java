@@ -16,6 +16,8 @@ import com.hamza.account.features.party.statement.MovementBalance;
 import com.hamza.account.features.party.statement.PartyMovementKind;
 import com.hamza.account.features.party.statement.PartyStatementService;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoice;
+import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoiceReturn;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoiceReturn;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -25,13 +27,20 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.Purchase;
+import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Sales_Return;
+import com.hamza.account.model.domain.SupplierAccount;
+import com.hamza.account.model.domain.Suppliers;
+import com.hamza.account.model.domain.Total_Buy_Re;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.model.domain.Total_Sales_Re;
+import com.hamza.account.model.domain.Total_buy;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.service.CustomerService;
+import com.hamza.account.service.SuppliersService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.treasury.TreasuryType;
 import com.hamza.account.type.DiscountType;
@@ -93,6 +102,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *       1.77 - so every base guard holds. The customer then owes 3.00 dollars, at a book value of 145.11.</li>
  *   <li>A dinar customer's invoice of 500 is written in the base and translated, as phase C wrote every
  *       one: a dinar has three places and a document is worked out to two (ق-د٨).</li>
+ *   <li><b>Purchase P</b> from a dollar supplier, deferred, out of the main treasury: 10 at 1.50 dollars less
+ *       0.25 off the line, 0.20 off the invoice, 1.00 paid - 13.55 dollars owed. In the base 72.56 a piece
+ *       (72.555) and 12.09 off (12.0925): 725.60 less 12.09 is 713.51, less 9.67 (9.674) is 703.84, and
+ *       the 48.37 paid empties the main treasury of what invoice A put in it.</li>
+ *   <li><b>Return Q</b> of P: 4 of its line at P's 72.56 less 4.84 (a share of 12.09), and 3.87 of P's 9.67
+ *       - typed 5.90 less 0.08. We then owe 7.73 dollars, at a book value of 373.94.</li>
+ *   <li><b>An edit of B</b> to two pieces, after today's dollar was corrected to 50.00: the invoice keeps
+ *       its 48.37 - 200.26 in the base, 4.14 dollars in the drawer - and moving its day to one with no
+ *       rate is refused.</li>
  * </ul>
  * Gated like the others ({@code -Daccount.db.acceptance=true}); a scratch schema is built from nothing,
  * named uniquely, and dropped. The session is user 9, never user 1.
@@ -124,6 +142,8 @@ class DocumentCurrencyDatabaseAcceptanceTest {
     private static int invoiceA;
     private static int invoiceB;
     private static int returnR;
+    private static int dollarSupplier;
+    private static int purchaseP;
 
     private static CurrencyService currencies;
 
@@ -149,6 +169,9 @@ class DocumentCurrencyDatabaseAcceptanceTest {
                     + OPERATOR + ", '" + STAMP + "', 'not-a-password', 0)");
             UserSessionContext session = new UserSessionContext();
             session.signIn(OPERATOR, "operator", List.of(AppPermissions.SALES_CREATE, AppPermissions.SALES_RE_CREATE,
+                    AppPermissions.SALES_UPDATE, AppPermissions.PURCHASE_CREATE, AppPermissions.PURCHASE_RE_CREATE,
+                    AppPermissions.SUPPLIERS_SHOW, AppPermissions.SUPPLIERS_CREATE, AppPermissions.SUPPLIERS_UPDATE,
+                    AppPermissions.SUPPLIERS_ACCOUNT_SHOW,
                     AppPermissions.CUSTOMER_SHOW, AppPermissions.CUSTOMER_CREATE, AppPermissions.CUSTOMER_UPDATE,
                     AppPermissions.CUSTOMER_ACCOUNT_SHOW, AppPermissions.TREASURY_SHOW,
                     AppPermissions.TREASURY_UPDATE, AppPermissions.TREASURY_OPENING, AppPermissions.CURRENCY_SHOW,
@@ -238,6 +261,8 @@ class DocumentCurrencyDatabaseAcceptanceTest {
         dollarCustomer = customer("C-USD", usd);
         dinarCustomer = customer("C-KWD", kwd);
         assertEquals(usd, scalar("SELECT currency_id FROM custom WHERE id = " + dollarCustomer));
+        dollarSupplier = supplier("S-USD", usd);
+        assertEquals(usd, scalar("SELECT currency_id FROM suppliers WHERE id = " + dollarSupplier));
     }
 
     @Test
@@ -400,6 +425,100 @@ class DocumentCurrencyDatabaseAcceptanceTest {
         assertFalse(paper.lines().iterator().hasNext());
     }
 
+    @Test
+    @Order(9)
+    @DisplayName("a dollar purchase is stored in the base line by line, and the supplier is owed it in dollars")
+    void aDollarPurchase() throws Exception {
+        long counter = counter("PURCHASE");
+        purchaseP = purchases().save(dollars(purchase(InvoiceType.DEFER, "0.20", "1.00",
+                purchaseLine(10, "1.50", "0.25")))).invoiceNumber();
+        assertEquals(counter + 1, counter("PURCHASE"));
+
+        assertEquals("713.51|9.67|48.37|" + usd + "|48.3700000000|14.750|0.200|1.000",
+                text("SELECT CONCAT(total, '|', discount, '|', paid_up, '|', currency_id, '|', exchange_rate, '|',"
+                        + " total_foreign, '|', discount_foreign, '|', paid_foreign) FROM total_buy"
+                        + " WHERE invoice_number = " + purchaseP));
+        assertEquals("72.56|12.09|10.000|1.500|0.250",
+                text("SELECT CONCAT(price, '|', discount, '|', quantity, '|', price_foreign, '|',"
+                        + " discount_foreign) FROM purchase WHERE invoice_number = " + purchaseP));
+        assertEquals("1.500|0.250", text("SELECT CONCAT(price_foreign, '|', discount_foreign)"
+                + " FROM purchase_names_table WHERE invoice_number = " + purchaseP));
+
+        PartyStatementService statements = new PartyStatementService();
+        assertEquals(0, new BigDecimal("13.55").compareTo(
+                statements.currentBalanceOwn(PartyKind.SUPPLIER, dollarSupplier)), "14.75 less 0.20 less 1.00");
+        assertEquals(0, new BigDecimal("655.47").compareTo(
+                statements.currentBalance(PartyKind.SUPPLIER, dollarSupplier)), "703.84 less 48.37");
+        assertEquals("0.00|0.000", text("SELECT CONCAT(balance, '|', balance_own) FROM treasury_current_balance"
+                + " WHERE id = 1"), "invoice A's dollar in, the purchase's dollar out, both at 48.37");
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("a return picked from the dollar purchase takes its base figures and passes every base guard")
+    void aPurchaseReturn() throws Exception {
+        int sourceLine = scalar("SELECT id FROM purchase WHERE invoice_number = " + purchaseP);
+        Purchase_Return line = new Purchase_Return();
+        fill(line, 4, "1.50", "0.10");
+        line.setSourceLineId(sourceLine);
+        InvoiceSaveCommand command = new InvoiceSaveCommand(0, TODAY, InvoiceType.DEFER, new BigDecimal("0.08"),
+                DiscountType.AMOUNT, BigDecimal.ZERO, STAMP, dollarSupplier, STAMP + "-S-USD", MAIN_TREASURY,
+                "", false, purchaseP, null, List.of(line), 1, null, null, usd);
+
+        int returnQ = purchaseReturns().save(command).invoiceNumber();
+
+        assertEquals("285.40|3.87|0.00|" + usd + "|48.3700000000|5.900|0.080|0.000",
+                text("SELECT CONCAT(total, '|', discount, '|', paid_to_treasury, '|', currency_id, '|',"
+                        + " exchange_rate, '|', total_foreign, '|', discount_foreign, '|', paid_foreign)"
+                        + " FROM total_buy_re WHERE id = " + returnQ));
+        assertEquals("72.56|4.84|1.500|0.100|" + sourceLine,
+                text("SELECT CONCAT(price, '|', discount, '|', price_foreign, '|', discount_foreign, '|',"
+                        + " source_line_id) FROM purchase_re WHERE invoice_number = " + returnQ));
+
+        PartyStatementService statements = new PartyStatementService();
+        assertEquals(0, new BigDecimal("7.73").compareTo(
+                statements.currentBalanceOwn(PartyKind.SUPPLIER, dollarSupplier)), "13.55 less 5.82 returned");
+        assertEquals(0, new BigDecimal("373.94").compareTo(
+                statements.currentBalance(PartyKind.SUPPLIER, dollarSupplier)), "655.47 less 281.53");
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("an edit keeps the rate it was saved with, and a day with no rate is still a refusal")
+    void anEditKeepsItsRate() throws Exception {
+        int rateId = scalar("SELECT id FROM currency_rate WHERE currency_id = " + usd
+                + " AND effective_date = CURDATE()");
+        currencies.saveRate(new ExchangeRateDraft(rateId, usd, TODAY, new BigDecimal("50.00"), null));
+        long counter = counter();
+        int lineId = scalar("SELECT id FROM sales WHERE invoice_number = " + invoiceB);
+
+        // Another day is another rate, and there is none before today.
+        InvoiceValidationException noRate = assertThrows(InvoiceValidationException.class,
+                () -> sales().save(editOfB(TODAY.minusDays(1), lineId)));
+        assertEquals(InvoiceSaveValidator.Target.DATE, noRate.target());
+
+        sales().save(editOfB(TODAY, lineId));
+
+        assertEquals("200.26|200.26|48.3700000000|4.140|4.140",
+                text("SELECT CONCAT(total, '|', paid_up, '|', exchange_rate, '|', total_foreign, '|',"
+                        + " paid_foreign) FROM total_sales WHERE invoice_number = " + invoiceB));
+        assertEquals("100.13|2.000|2.070|" + lineId, text("SELECT CONCAT(price, '|', quantity, '|',"
+                + " price_foreign, '|', id) FROM sales WHERE invoice_number = " + invoiceB), "the same line, edited");
+        assertEquals("200.26|4.140", text("SELECT CONCAT(balance, '|', balance_own) FROM treasury_current_balance"
+                + " WHERE id = " + dollarDrawer));
+        assertEquals(counter, counter(), "an edit takes no number");
+    }
+
+    private static InvoiceSaveCommand editOfB(LocalDate day, int lineId) throws Exception {
+        Sales line = line(2, "2.07", "0");
+        line.setId(lineId);
+        line.setInvoiceNumber(invoiceB);
+        return new InvoiceSaveCommand(invoiceB, day, InvoiceType.CASH, BigDecimal.ZERO, DiscountType.AMOUNT,
+                new BigDecimal("4.14"), STAMP, dollarCustomer, "customer", STAMP + "-USD", DELEGATE, false, 0,
+                null, List.of(line), 1, null,
+                DaoFactory.INSTANCE.totalsSalesDao().getDataById(invoiceB).getUpdated_at(), usd);
+    }
+
     // --- the save the invoice screens call -------------------------------------------------------------------
 
     private static InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> sales() {
@@ -411,6 +530,19 @@ class DocumentCurrencyDatabaseAcceptanceTest {
     private static InvoiceSaveService<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> returns() {
         return new InvoiceSaveService<>(new SalesInvoiceReturn(),
                 repository(DaoFactory.INSTANCE.totalsSalesReturnDao()), DocumentType.SALES_RETURN,
+                name -> new TreasuryService(DaoFactory.INSTANCE).getTreasuryByName(name),
+                name -> new Employees(1, name));
+    }
+
+    private static InvoiceSaveService<Purchase, Total_buy, Suppliers, SupplierAccount> purchases() {
+        return new InvoiceSaveService<>(new PurchaseInvoice(), repository(DaoFactory.INSTANCE.totalsPurchaseDao()),
+                DocumentType.PURCHASE, name -> new TreasuryService(DaoFactory.INSTANCE).getTreasuryByName(name),
+                name -> new Employees(1, name));
+    }
+
+    private static InvoiceSaveService<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> purchaseReturns() {
+        return new InvoiceSaveService<>(new PurchaseInvoiceReturn(),
+                repository(DaoFactory.INSTANCE.totalsBuyReturnDao()), DocumentType.PURCHASE_RETURN,
                 name -> new TreasuryService(DaoFactory.INSTANCE).getTreasuryByName(name),
                 name -> new Employees(1, name));
     }
@@ -461,6 +593,18 @@ class DocumentCurrencyDatabaseAcceptanceTest {
         return new InvoiceSaveCommand(0, TODAY, type, new BigDecimal(discount), DiscountType.AMOUNT,
                 new BigDecimal(paid), STAMP, customer, "customer", treasury, DELEGATE, false, 0, null,
                 List.of(line), 1, null, null, null);
+    }
+
+    private static InvoiceSaveCommand purchase(InvoiceType type, String discount, String paid, Purchase line) {
+        return new InvoiceSaveCommand(0, TODAY, type, new BigDecimal(discount), DiscountType.AMOUNT,
+                new BigDecimal(paid), STAMP, dollarSupplier, "supplier", MAIN_TREASURY, "", false, 0, null,
+                List.of(line), 1, null, null, null);
+    }
+
+    private static Purchase purchaseLine(double quantity, String price, String discount) {
+        Purchase line = new Purchase();
+        fill(line, quantity, price, discount);
+        return line;
     }
 
     /** The screen says its figures are in dollars. */
@@ -522,6 +666,18 @@ class DocumentCurrencyDatabaseAcceptanceTest {
         return id;
     }
 
+    private static int supplier(String suffix, int currencyId) throws Exception {
+        execute("INSERT INTO suppliers (name, first_balance, area_id, user_id) VALUES ('"
+                + STAMP + "-" + suffix + "', 0, 1, " + OPERATOR + ")");
+        int id = scalar("SELECT id FROM suppliers WHERE name = '" + STAMP + "-" + suffix + "'");
+        SuppliersService suppliers = new SuppliersService(DaoFactory.INSTANCE);
+        Suppliers supplier = suppliers.nameDao().getDataById(id);
+        supplier.setCurrency_id(currencyId);
+        supplier.setOpening_foreign(BigDecimal.ZERO);
+        suppliers.save(supplier);
+        return id;
+    }
+
     private static int insertItem() throws Exception {
         Connection connection = ConnectionManager.acquire();
         try (PreparedStatement statement = connection.prepareStatement(
@@ -550,7 +706,11 @@ class DocumentCurrencyDatabaseAcceptanceTest {
     }
 
     private static long counter() throws Exception {
-        return scalar("SELECT current_value FROM document_sequences WHERE document_type = 'SALES'");
+        return counter("SALES");
+    }
+
+    private static long counter(String documentType) throws Exception {
+        return scalar("SELECT current_value FROM document_sequences WHERE document_type = '" + documentType + "'");
     }
 
     private static void assertSqlRefused(int errorCode, String sql) {
