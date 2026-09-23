@@ -237,6 +237,20 @@ public enum DocumentType {
         return showTotalsInvoice;
     }
 
+    /**
+     * The key that opens the quick invoice screen for this document, or empty where that screen
+     * does not exist. It exists for a new sale and a new purchase only: a return is written
+     * against a source invoice, through a picker and a set of refusals the quick screen's single
+     * entry row has no room for, and a saved document is always reopened on the standard screen.
+     */
+    public java.util.Optional<PermissionKey> quickEntryPermission() {
+        return switch (this) {
+            case SALES -> java.util.Optional.of(AppPermissions.SALES_QUICK);
+            case PURCHASE -> java.util.Optional.of(AppPermissions.PURCHASE_QUICK);
+            case SALES_RETURN, PURCHASE_RETURN -> java.util.Optional.empty();
+        };
+    }
+
     /** What the totals list is called for this document. */
     public String totalText() {
         return LanguageManager.getInstance().getString(totalTextKey);

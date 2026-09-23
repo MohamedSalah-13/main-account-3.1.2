@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,468 tests** with 256 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-22 after the shift reports and the sidebar's settings section. What is
+**3,490 tests** with 256 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the quick invoice became a screen of its own. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -876,10 +876,52 @@ a column built from a getter is a snapshot, and editing a quantity left the row'
 
 ### The quick invoice
 
-The same four document families open in one of two screens: `InvoiceScreenMode.STANDARD`, which
-has a barcode/name/price/quantity form above the table, and `QUICK`, which hides that form and makes
-**the table itself the only entry surface**. F6 switches; both are `BuyController2` with the same
-save path, the same guards and the same `DataInterface`.
+Two screens, and since 2026-09-23 two classes: `BuyController2` (`buy-view2.fxml`) has a
+barcode/name/unit/price/quantity form above the table, and `QuickInvoiceController`
+(`quick-invoice.fxml`) has none - **the table itself is the only entry surface**. Both extend
+`InvoiceScreenController`, which holds everything they share: the header and its pins, the lines
+table, the payment footer, and the whole save, print and return path. A subclass answers only how a
+line is entered (`configureItemEntrySurface`, `placePartyField`, `focusItemEntry`, `resetItemEntry`,
+`openCurrentItem`). They used to be one class switching on a mode, which hid fourteen controls and
+left the till screen with the standard header whole; the quick FXML now lays out one header row, a
+status line and a large amount to pay from the same `fx:id`s, **every one of which it must declare** -
+a field the loader cannot find stays null and fails on the first click that reaches it.
+
+**The quick screen exists for a new sale and a new purchase, to the holder of its key.**
+`DocumentType.quickEntryPermission()` answers `sales.quick` or `purchase.quick`, and empty for both
+returns - a return is written against a source invoice through a picker the entry row has no room
+for - and a saved document always reopens on the standard screen. The key chooses a screen and grants
+no write: saving still asks the create key inside `InvoiceSaveService`. `QuickInvoiceController`
+`require`s it when it opens, the F6 switch and the two sidebar entries hide on it, and `V79` grants it
+to every role and every `ALLOW` override holding the create key, so no till loses its screen on
+upgrade. **The screen chosen with F6 is remembered per document** (`invoice.screen.mode.<type>`), with
+the one global value written before as the fallback, and a user without the key opens the standard
+screen whatever the computer remembers - `features/invoice/QuickInvoiceAccess` decides all of it.
+A scan the quick table cannot take - an unknown barcode, a refusal - is written in its status line with
+a beep instead of a dialog, because a dialog is dismissed by the next scan's Enter unread; a fault that
+is not a `UserFacingException` still gets the dialog and its reference code.
+
+**The unit is chosen on the line, on both screens** (`InvoiceLineCells.unit`,
+`InvoiceLineEditService.editUnit`): a list of the line's own item's units, repriced through
+`InvoiceItemSelectionService.selectUnit` and held to the unit's cost on a sale. Before it the unit
+could only be set on the form above the table, so on the quick screen an item whose carton had no
+barcode of its own could not be sold by the carton at all. The editable cells open on a line of the
+invoice only - on the entry row a price or a quantity used to open and then be refused as "the
+invoice line is not valid". **The lines table opens with widths of its own** (`applyDefaultWidths`,
+the name taking the room): every column used to open at JavaFX's 80 points, so for anybody but the
+administrator - whose column menu stores widths - an item's name read "زي..." beside half a window of
+empty table. Whether the columns then stretch is the user's "fill the width" setting, which
+`ThemeManager` applies to every table after the screen is built, over any policy set in code.
+
+**Both screens were driven on a schema migrated from nothing (V79 included) and photographed at
+1366**, by a throwaway harness that signs in through `RbacService.signIn` as ordinary users - a cashier
+holding `sales.quick` through the role V79 granted, the same cashier with it denied, and a purchasing
+clerk: a scan, a quantity, an unknown barcode answered in the status line with no dialog, a carton
+chosen on the line at its own price, the save through the payment screen (the invoice stored the
+carton with `type_value` 12), the standard form, the refusals, and a quick purchase. What the pictures
+found and the tests could not: the squeezed columns, a header that wrapped onto a second row, and a
+unit cell whose handler read a field its own commit had cleared. **Not yet seen:** a real scanner and
+keyboard, the toast over an open entry cell, the 80mm receipt, and English.
 
 The quick screen keeps a trailing **entry row** for the operator to scan into. Two rules make that
 safe, and both were missing when it was first written - the screen could not be saved at all:
@@ -889,8 +931,10 @@ safe, and both were missing when it was first written - the screen could not be 
   counted, so `hasInvalidLine` - which `btnSave.disableProperty()` is bound to - was permanently
   true, and `comboStock` was permanently disabled for the same reason (`isNotEmpty(getItems())`).
   Anything reading a total must go through the summary, never through `table.getItems().size()`.
-- **A line is added through `BuyController2.addLine`, from either screen.** That method is where the
-  line validation, the expiry-batch dialog, the repeated-item merge and the low-stock alert live.
+- **A line is added through `InvoiceScreenController.addLine`, from either screen**, and that is
+  `features/invoice/InvoiceLineEntry`: the line validation, the expiry question and its batch check,
+  the repeated-item merge (never for a scale barcode's weighing) and the low-stock warning, with a
+  test per rule (`InvoiceLineEntryTest`). It lived in the controller, where nothing could test it.
   The quick screen used to set the fields on its entry row directly and so had none of them: an item
   with `item_has_validity` could be scanned onto a quick invoice and was then refused at save with no
   way to supply the date.
@@ -3031,7 +3075,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V78`, which leaves
+  new database executes it and continues with `V2`, `V3`, … The current head is `V79`, which gives
+  the quick invoice its own two keys, `sales.quick` and `purchase.quick`, granted to every role and
+  `ALLOW` override that holds the matching create key (see **The quick invoice**). Before it `V78` leaves
   an item one opening balance per warehouse (`items_stock.first_balance`) and drops the other two
   places one lived - `items.first_balance` and the trigger that copied it over warehouse 1 on every
   update of the item - with the dead `items_stock.current_quantity` (see **Warehouses**). Before it

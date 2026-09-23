@@ -637,6 +637,19 @@ public class PropertiesName extends PreferencesSetting {
         putString(INVOICE_SCREEN_MODE, value);
     }
 
+    /**
+     * The screen last chosen for one kind of document, as an {@code InvoiceScreenMode} name;
+     * blank when nothing was chosen for it since the choice became per document. A till that
+     * sells on the quick screen still buys on the standard one.
+     */
+    public static String getInvoiceScreenMode(DocumentType documentType) {
+        return getString(INVOICE_SCREEN_MODE + "." + documentType.name().toLowerCase(java.util.Locale.ROOT), "");
+    }
+
+    public static void setInvoiceScreenMode(DocumentType documentType, String value) {
+        putString(INVOICE_SCREEN_MODE + "." + documentType.name().toLowerCase(java.util.Locale.ROOT), value);
+    }
+
     public static double getSearchItemsSplitPaneDivider() {
         return getDouble(SEARCH_ITEMS_SPLIT_PANE_DIVIDER, 0.5);
     }

@@ -95,6 +95,10 @@ public final class QuickInvoiceTable {
         void handleError(Exception error, boolean scaleBarcode);
 
         void totalsChanged();
+
+        /** A line reached the invoice - the moment a refusal shown about the last scan is stale. */
+        default void lineAdded() {
+        }
     }
 
     /**
@@ -132,7 +136,9 @@ public final class QuickInvoiceTable {
 
         nameColumn.setCellFactory(view -> new ItemSuggestionCell(host, this::selectByName));
 
-        quantityColumn.setCellFactory(TextFieldTableCell.forTableColumn(NumberTextConverter.quantity()));
+        // Only a line of the invoice has a quantity to edit: the entry row gets one when an
+        // item is scanned onto it, and a quantity typed on it before that had nothing to be of.
+        quantityColumn.setCellFactory(InvoiceLineCells.text(NumberTextConverter.quantity()));
         quantityColumn.setOnEditCommit(event -> {
             BasePurchasesAndSales line = event.getRowValue();
             try {
@@ -337,6 +343,9 @@ public final class QuickInvoiceTable {
         }
         restoreEntryRow(entryRow);
         host.totalsChanged();
+        if (added != null) {
+            host.lineAdded();
+        }
         int row = QuickEntryRules.rowToEditAfterAdd(table.getItems(), added);
         if (row == QuickEntryRules.ENTRY_ROW) {
             focusEntryRow();

@@ -90,7 +90,7 @@ public class MainScreenController extends MainItems implements Initializable {
     @FXML
     private Accordion sideAccordion;
     @FXML
-    private Button btnSales, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems, btnItemGroups,
+    private Button btnSales, btnQuickSales, btnQuickPurchase, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems, btnItemGroups,
             btnAddItem, btnMasterData, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems, btnPriceCheck,
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
@@ -201,11 +201,13 @@ public class MainScreenController extends MainItems implements Initializable {
     private void configureAllButtons() throws Exception {
         /*----------------------------------------------- Sales -----------------------------------------------*/
         menuButtonSetting.configureButton(btnSales, getTotalSales().addInvoice(), ProductFeatures.SALES_CREATE);
+        menuButtonSetting.configureButton(btnQuickSales, getTotalSales().addQuickInvoice(), ProductFeatures.SALES_CREATE);
         menuButtonSetting.configureButton(btnSalesReturn, getTotalSalesReturn().addInvoice(), ProductFeatures.SALES_RETURN_CREATE);
         menuButtonSetting.configureButton(btnTotalSale, getTotalSales().totals(), ProductFeatures.SALES_LIST);
         menuButtonSetting.configureButton(btnTotalSalesReturn, getTotalSalesReturn().totals(), ProductFeatures.SALES_RETURN_LIST);
         /*----------------------------------------------- Purchase -----------------------------------------------*/
         menuButtonSetting.configureButton(btnPurchase, getTotalPurchase().addInvoice(), ProductFeatures.PURCHASES_CREATE);
+        menuButtonSetting.configureButton(btnQuickPurchase, getTotalPurchase().addQuickInvoice(), ProductFeatures.PURCHASES_CREATE);
         menuButtonSetting.configureButton(btnTotalPurchase, getTotalPurchase().totals(), ProductFeatures.PURCHASES_LIST);
         menuButtonSetting.configureButton(btnPurchaseRe, getTotalPurchaseReturn().addInvoice(), ProductFeatures.PURCHASES_RETURN_CREATE);
         menuButtonSetting.configureButton(btnTotalPurchaseRe, getTotalPurchaseReturn().totals(), ProductFeatures.PURCHASES_RETURN_LIST);

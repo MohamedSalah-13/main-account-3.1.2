@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- The quick invoice (QuickInvoiceController). One header row instead of the standard screen's
+     four, the lines table as the only entry surface, a status line under it for what a scan could
+     not do, and a footer whose largest figure is the amount to pay. The fx:ids of the header,
+     the footer and the command bar are InvoiceScreenController's and must all be here: a field the
+     loader cannot find stays null and fails on the first click that reaches it. -->
+<StackPane fx:id="stackPane" styleClass="app-root, invoice-quick" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.invoice.QuickInvoiceController">
+    <children>
+        <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="AS_NEEDED" styleClass="invoice-scroll" vbarPolicy="AS_NEEDED">
+            <content>
+                <BorderPane styleClass="app-container">
+                    <top>
+                        <VBox spacing="5.0">
+                            <children>
+                                <FlowPane fx:id="invoiceTopBar" alignment="CENTER_LEFT" hgap="8.0" prefWrapLength="1000.0" styleClass="app-card, invoice-command-bar" vgap="5.0">
+                                    <children>
+                                        <VBox alignment="CENTER_LEFT" spacing="3.0">
+                                            <children>
+                                                <Label fx:id="labelTitle" styleClass="app-title" />
+                                                <Label styleClass="app-subtitle" text="%invoice.quick.subtitle" />
+                                            </children>
+                                        </VBox>
+                                        <Label fx:id="labelReturnedBadge" managed="false" styleClass="warning-button" visible="false" />
+                                        <Region fx:id="invoiceTopBarSpacer" />
+                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="primary-button" text="%invoice.btn.new" />
+                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="neutral-button" text="%invoice.btn.search" />
+                                        <Button fx:id="btnReturnFromInvoice" managed="false" mnemonicParsing="false" styleClass="neutral-button" visible="false" />
+                                        <Button fx:id="btnQuickMode" mnemonicParsing="false" styleClass="neutral-button" text="%invoice.screen.standard" />
+                                        <Separator orientation="VERTICAL" />
+                                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="success-button" text="%invoice.btn.save" />
+                                        <Button fx:id="btnPrintSave" mnemonicParsing="false" styleClass="primary-button" text="%invoice.btn.save.print" />
+                                    </children>
+                                </FlowPane>
+                                <!-- Every group keeps its caption beside its control, so a wrapped row never
+                                     leaves a caption at the end of one line and its field at the start of the
+                                     next - the FlowPane lesson of the expenses screens. -->
+                                <FlowPane alignment="CENTER_LEFT" hgap="14.0" styleClass="app-card, quick-invoice-header" vgap="6.0">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                            <children>
+                                                <Label fx:id="labelNum" styleClass="form-label" />
+                                                <TextField fx:id="txtNum" editable="false" prefColumnCount="6" />
+                                            </children>
+                                        </HBox>
+                                        <HBox fx:id="partyBox" alignment="CENTER_LEFT" prefWidth="270.0" spacing="4.0">
+                                            <children>
+                                                <Label fx:id="labelName" styleClass="form-label" />
+                                                <Button fx:id="btnPinParty" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                            <children>
+                                                <Label fx:id="labelDate" styleClass="form-label" />
+                                                <DatePicker fx:id="date" editable="false" prefWidth="135.0" />
+                                            </children>
+                                        </HBox>
+                                        <HBox fx:id="boxDelegate" alignment="CENTER_LEFT" spacing="4.0">
+                                            <children>
+                                                <Label fx:id="labelDelegate" styleClass="form-label" />
+                                                <Button fx:id="btnPinDelegate" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                                <ComboBox fx:id="comboDelegate" prefWidth="130.0" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                            <children>
+                                                <Label fx:id="labelTreasury" styleClass="form-label" />
+                                                <Button fx:id="btnPinTreasury" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                                <ComboBox fx:id="comboTreasury" prefWidth="150.0" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                            <children>
+                                                <Label fx:id="labelStock" styleClass="form-label" />
+                                                <Button fx:id="btnPinStock" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                                <ComboBox fx:id="comboStock" prefWidth="130.0" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </FlowPane>
+                            </children>
+                        </VBox>
+                    </top>
+                    <center>
+                        <VBox spacing="4.0">
+                            <children>
+                                <TableView fx:id="table" id="quickInvoiceLines" VBox.vgrow="ALWAYS" />
+                                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="quick-entry-status-bar">
+                                    <children>
+                                        <Label fx:id="labelEntryStatus" maxWidth="1.7976931348623157E308" styleClass="quick-entry-status" HBox.hgrow="ALWAYS" />
+                                        <Label minWidth="-Infinity" styleClass="quick-entry-keys" text="%invoice.quick.keys" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                    </center>
+                    <bottom>
+                        <HBox minHeight="-Infinity" spacing="16.0" styleClass="summary-card" BorderPane.alignment="CENTER">
+                            <children>
+                                <GridPane hgap="10.0" vgap="5.0" HBox.hgrow="ALWAYS">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="NEVER" maxWidth="-Infinity" minWidth="-Infinity" />
+                                        <ColumnConstraints hgrow="NEVER" maxWidth="-Infinity" minWidth="-Infinity" />
+                                        <ColumnConstraints hgrow="NEVER" maxWidth="-Infinity" minWidth="-Infinity" />
+                                        <ColumnConstraints hgrow="NEVER" maxWidth="-Infinity" minWidth="-Infinity" />
+                                        <ColumnConstraints hgrow="NEVER" maxWidth="-Infinity" minWidth="-Infinity" />
+                                        <ColumnConstraints hgrow="SOMETIMES" />
+                                        <ColumnConstraints hgrow="SOMETIMES" />
+                                        <ColumnConstraints hgrow="NEVER" maxWidth="-Infinity" minWidth="-Infinity" />
+                                        <ColumnConstraints hgrow="SOMETIMES" />
+                                        <ColumnConstraints hgrow="SOMETIMES" />
+                                    </columnConstraints>
+                                    <children>
+                                        <Label fx:id="last1" minWidth="-Infinity" styleClass="summary-label" />
+                                        <Label fx:id="textSumCount" styleClass="text-sum, invoice-summary-figure" text="0" GridPane.columnIndex="1" />
+                                        <Label fx:id="last2" minWidth="-Infinity" styleClass="summary-label" GridPane.rowIndex="1" />
+                                        <Label fx:id="txtSumQuantity" styleClass="text-sum, invoice-summary-figure" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                        <Label fx:id="last3" minWidth="-Infinity" styleClass="summary-label" GridPane.columnIndex="2" />
+                                        <Label fx:id="txtBeforeDiscount" styleClass="text-sum, invoice-summary-figure" text="0" GridPane.columnIndex="3" />
+                                        <Label fx:id="last4" minWidth="-Infinity" styleClass="summary-label" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                        <Label fx:id="txtSumDiscount" styleClass="text-sum, invoice-summary-figure" text="0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                        <Label fx:id="last5" minWidth="-Infinity" styleClass="summary-label" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                        <Label fx:id="txtSumTotals" styleClass="text-sum, invoice-summary-figure" text="0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+
+                                        <Label minWidth="-Infinity" styleClass="summary-label" text="%discount" GridPane.columnIndex="4" />
+                                        <RadioButton fx:id="radioAmount" minWidth="-Infinity" mnemonicParsing="false" selected="true" GridPane.columnIndex="5">
+                                            <toggleGroup>
+                                                <ToggleGroup fx:id="group" />
+                                            </toggleGroup>
+                                        </RadioButton>
+                                        <RadioButton fx:id="radioRate" minWidth="-Infinity" mnemonicParsing="false" toggleGroup="$group" GridPane.columnIndex="6" />
+                                        <Label minWidth="-Infinity" styleClass="summary-label" text="%discount" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                                        <TextField fx:id="txtOtherDiscount" text="0.0" GridPane.columnIndex="5" GridPane.columnSpan="2" GridPane.rowIndex="1" />
+                                        <Label fx:id="labelNetAfterDiscount" minWidth="-Infinity" styleClass="summary-label" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+                                        <TextField fx:id="txtRestAfterDiscount" editable="false" text="0.0" GridPane.columnIndex="5" GridPane.columnSpan="2" GridPane.rowIndex="2" />
+
+                                        <Label minWidth="-Infinity" styleClass="summary-label" text="%invoice.type.label" GridPane.columnIndex="7" />
+                                        <RadioButton fx:id="radioCash" minWidth="-Infinity" mnemonicParsing="false" selected="true" GridPane.columnIndex="8">
+                                            <toggleGroup>
+                                                <ToggleGroup fx:id="group1" />
+                                            </toggleGroup>
+                                        </RadioButton>
+                                        <RadioButton fx:id="radioDeffer" minWidth="-Infinity" mnemonicParsing="false" toggleGroup="$group1" GridPane.columnIndex="9" />
+                                        <Label fx:id="labelPaid" minWidth="-Infinity" styleClass="summary-label, invoice-summary-caption" GridPane.columnIndex="7" GridPane.rowIndex="1" />
+                                        <TextField fx:id="txtPaid" text="0.0" GridPane.columnIndex="8" GridPane.columnSpan="2" GridPane.rowIndex="1" />
+                                        <Label fx:id="labelRemaining" minWidth="-Infinity" styleClass="summary-label, invoice-summary-caption" GridPane.columnIndex="7" GridPane.rowIndex="2" />
+                                        <TextField fx:id="txtRestAfterPaid" editable="false" text="0.0" GridPane.columnIndex="8" GridPane.columnSpan="2" GridPane.rowIndex="2" />
+                                    </children>
+                                </GridPane>
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <Label fx:id="labelNotes" minWidth="-Infinity" styleClass="form-label" />
+                                        <TextArea fx:id="txtNotes" prefRowCount="2" prefWidth="230.0" styleClass="invoice-notes" VBox.vgrow="ALWAYS" />
+                                    </children>
+                                </VBox>
+                                <VBox alignment="CENTER" spacing="6.0" styleClass="summary-light-card, quick-invoice-total">
+                                    <children>
+                                        <Label fx:id="labelInvoiceTotal" styleClass="summary-light-label" />
+                                        <Label fx:id="textInvoiceTotal" styleClass="summary-value, invoice-summary-total" text="0" />
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="5.0" left="12.0" right="12.0" top="5.0" />
+                                    </padding>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </bottom>
+                </BorderPane>
+            </content>
+        </ScrollPane>
+    </children>
+</StackPane>

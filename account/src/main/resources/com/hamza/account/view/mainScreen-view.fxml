@@ -74,6 +74,7 @@
                                                 <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnSales" mnemonicParsing="false" text="Sales" />
+                                                                <Button fx:id="btnQuickSales" mnemonicParsing="false" text="Quick sale" />
                                                                 <Button fx:id="btnSalesReturn" mnemonicParsing="false" text="Sales Return" />
                                                                 <Button fx:id="btnTotalSale" mnemonicParsing="false" text="Total Sales" />
                                                                 <Button fx:id="btnTotalSalesReturn" mnemonicParsing="false" text="Total Sales Returns" />
@@ -87,6 +88,7 @@
                                                 <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnPurchase" mnemonicParsing="false" text="Purchase" />
+                                                                <Button fx:id="btnQuickPurchase" mnemonicParsing="false" text="Quick purchase" />
                                                                 <Button fx:id="btnPurchaseRe" mnemonicParsing="false" text="Purchase Re" />
                                                                 <Button fx:id="btnTotalPurchase" mnemonicParsing="false" text="Total Purchase" />
                                                                 <Button fx:id="btnTotalPurchaseRe" mnemonicParsing="false" text="Total Purchase Re" />

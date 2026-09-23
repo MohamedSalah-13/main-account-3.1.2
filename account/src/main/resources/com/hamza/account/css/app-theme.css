@@ -2381,6 +2381,42 @@
     -fx-text-fill: -app-text-strong;
 }
 
+/* The quick screen's own layout: one header row, and a status line under the table that
+   answers a scan the table could not take - read at arm's length, never a dialog. */
+.quick-invoice-header {
+    -fx-padding: 0.45em 0.65em;
+}
+
+.quick-entry-status-bar {
+    -fx-padding: 0.35em 0.65em;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 0.4em;
+    -fx-border-radius: 0.4em;
+}
+
+.quick-entry-status {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 1.05em;
+}
+
+.quick-entry-status.quick-entry-status-refused {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.quick-entry-keys {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.9em;
+}
+
+/* The amount to pay is the one figure a cashier reads out. */
+.invoice-quick .quick-invoice-total .invoice-summary-total {
+    -fx-font-size: 2.2em;
+    -fx-font-weight: bold;
+}
+
 /* =========================================================
    Item suggestions (ItemSuggestionField)
    ========================================================= */

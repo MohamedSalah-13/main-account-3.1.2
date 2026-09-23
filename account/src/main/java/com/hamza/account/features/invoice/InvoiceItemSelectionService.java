@@ -12,6 +12,7 @@ import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.List;
 import java.util.Objects;
@@ -55,16 +56,16 @@ public final class InvoiceItemSelectionService {
 
     public InvoiceItemSelection selectByName(String name, int stockId, int priceTier)
             throws DaoException {
-        String query = requireQuery(name, "اسم الصنف مطلوب");
+        String query = requireQuery(name, text("invoice.entry.error.name.required"));
         ItemsModel item = requireItem(itemLookup.byName(query, stockId),
-                "لا يوجد صنف بهذا الاسم: " + query);
+                text("invoice.entry.error.name.not.found", query));
         return selection(item, ItemUnits.baseUnit(item), priceTier, 1, false);
     }
 
     public InvoiceItemSelection selectByBarcode(String barcode, int stockId, int priceTier,
                                                 ScaleBarcodeSettings scaleSettings)
             throws DaoException {
-        String query = requireQuery(barcode, "الباركود مطلوب");
+        String query = requireQuery(barcode, text("invoice.entry.error.barcode.required"));
         ScaleBarcodeSettings settings = scaleSettings == null
                 ? ScaleBarcodeSettings.disabled()
                 : scaleSettings;
@@ -72,22 +73,22 @@ public final class InvoiceItemSelectionService {
         if (settings.matches(query)) {
             ScaleBarcodeReading result = scaleBarcodeReader.read(query, stockId, settings.valueType());
             ItemsModel item = requireItem(result == null ? null : result.item(),
-                    "لا يوجد صنف لباركود الميزان: " + query);
+                    text("invoice.entry.error.scale.not.found", query));
             return selection(item, ItemUnits.baseUnit(item), priceTier,
                     result.quantity(), true);
         }
 
         ItemsModel item = requireItem(itemLookup.byBarcode(query, stockId),
-                "لا يوجد هذا الباركود: " + query);
+                text("invoice.entry.error.barcode.not.found", query));
         return selection(item, ItemUnits.unitByBarcode(item, query), priceTier, 1, false);
     }
 
     public UnitSelection selectUnit(ItemsModel item, String unitName, int priceTier)
             throws UserValidationException {
-        ItemsModel validItem = requireItem(item, "من فضلك اختر صنفًا صحيحًا");
+        ItemsModel validItem = requireItem(item, text("invoice.entry.error.item.invalid"));
         UnitsModel unit = ItemUnits.unitByName(validItem, unitName);
         if (unit == null) {
-            throw new UserValidationException("الصنف لا يحتوي على وحدة صالحة");
+            throw new UserValidationException(text("invoice.entry.error.unit.missing"));
         }
         return new UnitSelection(unit, unitPrice(validItem, unit, priceTier),
                 ItemUnits.fromBase(validItem.getSumAllBalance(), unit));
@@ -98,7 +99,8 @@ public final class InvoiceItemSelectionService {
                                            boolean scaleBarcode) throws UserValidationException {
         List<UnitsModel> units = ItemUnits.unitsFor(item);
         if (units.isEmpty()) {
-            throw new UserValidationException("الصنف لا يحتوي على وحدة صالحة: " + item.getNameItem());
+            throw new UserValidationException(
+                    text("invoice.entry.error.unit.missing.item", item.getNameItem()));
         }
         UnitsModel unit = preferredUnit == null ? units.getFirst() : preferredUnit;
         UnitSelection selected = selectUnit(item, unit.getUnit_name(), priceTier);
@@ -126,6 +128,11 @@ public final class InvoiceItemSelectionService {
             throw new UserValidationException(message);
         }
         return item;
+    }
+
+    /** The sentence a refusal reads, from the bundles - never a literal written here. */
+    private static String text(String key, Object... args) {
+        return LanguageManager.getInstance().getString(key, args);
     }
 
     private static String requireQuery(String value, String message)

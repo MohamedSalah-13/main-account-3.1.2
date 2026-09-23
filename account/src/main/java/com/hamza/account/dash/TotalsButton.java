@@ -11,7 +11,10 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.TotalsService;
+import com.hamza.account.controller.invoice.InvoiceScreenMode;
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.view.BuyApplication;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.view.TotalsApplication;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
@@ -98,6 +101,41 @@ public class TotalsButton<T3 extends BaseNames, T4 extends BaseAccount>
 //            public boolean showOnTapPane() {
 //                return !getSettingShowInvoiceScreenSeparate();
 //            }
+
+            @Override
+            public boolean addMultiTabWithSameName() {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * The quick invoice's own entry in the sidebar, for a sale or a purchase. It opens the quick
+     * screen whatever was last chosen with F6 - that choice is what the ordinary invoice button
+     * follows - and asks the document's quick key, so a user without it sees the entry greyed out
+     * like every other command they may not run. Only a sale and a purchase have one.
+     */
+    public ButtonWithPerm addQuickInvoice() {
+        DocumentType documentType = dataInterface.designInterface().documentType();
+        PermissionKey key = documentType.quickEntryPermission().orElseThrow(() ->
+                new IllegalStateException("No quick invoice for " + documentType));
+        return new ButtonWithPerm() {
+            @Override
+            public PermissionKey getPermissionType() {
+                return key;
+            }
+
+            @Override
+            public void action() throws Exception {
+                new BuyApplication(dataInterface, 0, InvoiceScreenMode.QUICK).start(new Stage());
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return LanguageManager.getInstance().getString(documentType == DocumentType.SALES
+                        ? "invoice.quick.menu.sales" : "invoice.quick.menu.purchase");
+            }
 
             @Override
             public boolean addMultiTabWithSameName() {

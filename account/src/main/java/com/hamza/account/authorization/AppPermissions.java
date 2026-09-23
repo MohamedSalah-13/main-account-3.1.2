@@ -47,6 +47,8 @@ public final class AppPermissions {
     public static final PermissionKey PURCHASE_CREATE = key("purchase.create");
     public static final PermissionKey PURCHASE_UPDATE = key("purchase.update");
     public static final PermissionKey PURCHASE_DELETE = key("purchase.delete");
+    /** The quick screen for purchases - see {@link #SALES_QUICK}. */
+    public static final PermissionKey PURCHASE_QUICK = key("purchase.quick");
     public static final PermissionKey TOTAL_PURCHASE_SHOW = key("total.purchase.show");
     public static final PermissionKey TOTAL_PURCHASE_SHOW_INVOICE = key("total.purchase.show.invoice");
     public static final PermissionKey PURCHASE_RE_SHOW = key("purchase.re.show");
@@ -59,6 +61,12 @@ public final class AppPermissions {
     public static final PermissionKey SALES_CREATE = key("sales.create");
     public static final PermissionKey SALES_UPDATE = key("sales.update");
     public static final PermissionKey SALES_DELETE = key("sales.delete");
+    /**
+     * The quick invoice screen, where the lines table is the only entry surface. It is not a
+     * guard on writing - saving still asks {@link #SALES_CREATE} inside the save - but a choice of
+     * screen the owner may give a cashier or keep from one. V79 grants it to whoever may create.
+     */
+    public static final PermissionKey SALES_QUICK = key("sales.quick");
     public static final PermissionKey TOTAL_SALES_SHOW = key("total.sales.show");
     public static final PermissionKey TOTAL_SALES_SHOW_INVOICE = key("total.sales.show.invoice");
     public static final PermissionKey SALES_RE_SHOW = key("sales.re.show");
