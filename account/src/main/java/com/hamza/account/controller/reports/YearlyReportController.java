@@ -12,6 +12,7 @@ import com.hamza.account.features.profitloss.yearly.YearlyReportRow;
 import com.hamza.account.features.profitloss.yearly.YearlyReportService;
 import com.hamza.account.features.profitloss.yearly.YearlySummary;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.FigureLine;
 import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
@@ -290,7 +291,7 @@ public class YearlyReportController {
         title.getStyleClass().add("stat-title");
         VBox card = new VBox(4, title, value);
         for (FigureLine line : lines) {
-            card.getChildren().add(line.box);
+            card.getChildren().add(line.node());
         }
         card.getStyleClass().addAll("dashboard-tile", "party-stat-card");
         card.setMinWidth(170);
@@ -722,46 +723,6 @@ public class YearlyReportController {
         profit.show("report.yearly.stat.month.profit", Columns.money(netProfit), netProfit.signum() < 0, null);
     }
 
-    /**
-     * A caption and its figures on one line, each figure a label of its own read left to right. Written
-     * into one Arabic sentence, a loss drew its minus on the far side of the number and the change's arrow
-     * left its brackets for the amount before it - both seen on the rendered screen, neither by a test.
-     */
-    private static final class FigureLine {
-        private final Label caption = subtitleLabel();
-        private final Label value = subtitleLabel();
-        private final Label change = subtitleLabel();
-        private final HBox box = new HBox(6, caption, value, change);
-
-        FigureLine() {
-            value.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            change.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            box.setAlignment(Pos.CENTER_LEFT);
-            hide();
-        }
-
-        void show(String captionKey, String valueText, boolean negative, String changeText) {
-            caption.setText(text(captionKey));
-            value.setText(valueText);
-            value.pseudoClassStateChanged(Columns.NEGATIVE, negative);
-            change.setText(changeText == null ? "" : changeText);
-            change.setVisible(changeText != null);
-            change.setManaged(changeText != null);
-            box.setVisible(true);
-            box.setManaged(true);
-        }
-
-        void hide() {
-            box.setVisible(false);
-            box.setManaged(false);
-        }
-
-        private static Label subtitleLabel() {
-            Label label = new Label();
-            label.getStyleClass().add("stat-subtitle");
-            return label;
-        }
-    }
 
     private void report(Throwable error) {
         AllAlerts.handleError(text("report.error.load.yearly.title"),

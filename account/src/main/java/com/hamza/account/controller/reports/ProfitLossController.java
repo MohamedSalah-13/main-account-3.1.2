@@ -21,6 +21,7 @@ import com.hamza.account.features.profitloss.statement.ProfitLossReport;
 import com.hamza.account.features.profitloss.statement.ProfitLossReportService;
 import com.hamza.account.features.profitloss.statement.StatementLine;
 import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.FigureLine;
 import com.hamza.account.table.ListToolbar;
 import com.hamza.account.table.PeriodPicker;
 import com.hamza.account.table.RowAction;
@@ -289,7 +290,7 @@ public class ProfitLossController {
         title.getStyleClass().add("stat-title");
         VBox card = new VBox(4, title, value);
         for (FigureLine line : lines) {
-            card.getChildren().add(line.box);
+            card.getChildren().add(line.node());
         }
         card.getStyleClass().addAll("dashboard-tile", "party-stat-card");
         card.setMinWidth(190);
@@ -786,45 +787,6 @@ public class ProfitLossController {
         };
     }
 
-    /**
-     * A caption and its figures on one line, each figure a label of its own read left to right. Written
-     * into one Arabic sentence, a loss drew its minus on the far side of the number.
-     */
-    private static final class FigureLine {
-        private final Label caption = subtitleLabel();
-        private final Label value = subtitleLabel();
-        private final Label change = subtitleLabel();
-        private final HBox box = new HBox(6, caption, value, change);
-
-        FigureLine() {
-            value.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            change.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            box.setAlignment(Pos.CENTER_LEFT);
-            hide();
-        }
-
-        void show(String captionKey, String valueText, boolean negative, String changeText) {
-            caption.setText(text(captionKey));
-            value.setText(valueText);
-            value.pseudoClassStateChanged(Columns.NEGATIVE, negative);
-            change.setText(changeText == null ? "" : changeText);
-            change.setVisible(changeText != null);
-            change.setManaged(changeText != null);
-            box.setVisible(true);
-            box.setManaged(true);
-        }
-
-        void hide() {
-            box.setVisible(false);
-            box.setManaged(false);
-        }
-
-        private static Label subtitleLabel() {
-            Label label = new Label();
-            label.getStyleClass().add("stat-subtitle");
-            return label;
-        }
-    }
 
     private static void report(String titleKey, Throwable error) {
         AllAlerts.handleError(text(titleKey), error instanceof Exception exception ? exception : new Exception(error));

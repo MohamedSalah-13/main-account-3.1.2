@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * a screen that will not open. {@code FXMLLoader} throws {@code LoadException} on
  * the first {@code %key} it meets when the bundle is null, <i>and</i> when the key
  * is absent from the bundle it was given. Five screens were dead for exactly the
- * first reason - {@code MonthlySalesView}, {@code customer-purchased-items-view},
+ * first reason - {@code MonthlySalesView} (since rebuilt in code), {@code customer-purchased-items-view},
  * {@code CustomerReceivableView}, {@code ItemSalesRankView} and
  * {@code DailyItemSalesView} - and nothing in the build noticed.
  * <p>
@@ -230,7 +230,8 @@ class FxmlArchitectureTest {
         // A regex that silently matches nothing would make every check above pass.
         Map<String, Boolean> usesKeys = fxmlUsesResourceKeys();
         assertFalse(usesKeys.isEmpty(), "no FXML found - the walk is wrong");
-        assertTrue(Boolean.TRUE.equals(usesKeys.get("MonthlySalesView.fxml")),
-                "MonthlySalesView.fxml is known to use %key; the scanner no longer sees it");
+        // MonthlySalesView.fxml was the canary until the monthly totals were built in code (2026-09-23).
+        assertTrue(Boolean.TRUE.equals(usesKeys.get("setting-view.fxml")),
+                "setting-view.fxml is known to use %key; the scanner no longer sees it");
     }
 }

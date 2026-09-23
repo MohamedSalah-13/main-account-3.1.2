@@ -2,7 +2,6 @@ package com.hamza.account.features.export;
 
 import com.hamza.account.model.domain.*;
 import com.itextpdf.kernel.geom.PageSize;
-import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -34,68 +33,6 @@ public class ReportExportService {
         return new File("reports", fileName).getAbsolutePath();
     }
 
-
-    /**
-     * تصدير تقرير المجاميع الشهرية
-     */
-    public boolean exportMonthlyTotalsReport(
-            ObservableList<MonthlySalesViewModel> data,
-            String title, byte[] chartImageBytes, // الصورة هنا
-            String outputPath) {
-
-        String[] headers = {
-                "السنة", "يناير", "فبراير", "مارس", "أبريل",
-                "مايو", "يونيو", "يوليو", "أغسطس",
-                "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "الإجمالي"
-        };
-
-        // تم تعديل أحجام الأعمدة لتكون نسب مئوية (المجموع = 100)
-        // تقليل حجم عمود السنة وتكبير عمود الإجمالي قليلاً
-        float[] columnWidths = {
-                6f,   // البيان (السنة)
-                7f, 7f, 7f, 7f, 7f, 7f, // 6 شهور الأولى
-                7f, 7f, 7f, 7f, 7f, 7f, // 6 شهور الأخيرة
-                10f   // الإجمالي
-        };
-
-        List<String[]> rows = new ArrayList<>();
-        double totalRow = 0.0;
-
-        for (MonthlySalesViewModel item : data) {
-            String[] row = {
-                    String.valueOf(item.getSalesYear()), // تصحيح: طباعة السنة كنص عادي بدلاً من تنسيق مالي
-                    format(item.getJanuary().doubleValue()),
-                    format(item.getFebruary().doubleValue()),
-                    format(item.getMarch().doubleValue()),
-                    format(item.getApril().doubleValue()),
-                    format(item.getMay().doubleValue()),
-                    format(item.getJune().doubleValue()),
-                    format(item.getJuly().doubleValue()),
-                    format(item.getAugust().doubleValue()),
-                    format(item.getSeptember().doubleValue()),
-                    format(item.getOctober().doubleValue()),
-                    format(item.getNovember().doubleValue()),
-                    format(item.getDecember().doubleValue()),
-                    format(item.getTotalYearlySales().doubleValue())
-            };
-            rows.add(row);
-            totalRow += item.getTotalYearlySales().doubleValue();
-        }
-
-//        String totalValue = totalRow != null ? format(totalRow.getTotalYearlySales().doubleValue()) : "0.00";
-
-        // يتم طباعة التقرير بالعرض (Landscape) باستخدام PageSize.A4.rotate()
-        return pdfExportService.exportGenericReport(
-                outputPath,
-                title,
-                "تقرير المجاميع الشهرية",
-                headers,
-                columnWidths,
-                rows,
-                "الإجمالي الكلي",
-                format(totalRow), chartImageBytes, PageSize.A4.rotate()
-        );
-    }
 
     /**
      * تصدير تقرير حسابات العملاء

@@ -752,12 +752,95 @@
     -fx-background-color: -app-primary;
 }
 
+/* The monthly totals: a line per year, the newest in the primary colour and each year before it in one
+   of its own - so a year keeps its colour whichever of the others is ticked off. */
+.party-trend-chart .chart-series-line.trend-year-0 {
+    -fx-stroke: -app-primary;
+}
+
+.party-trend-chart .chart-line-symbol.trend-year-0 {
+    -fx-background-color: -app-primary, -app-surface;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-year-0 {
+    -fx-background-color: -app-primary, white;
+}
+
+.trend-marker.trend-year-0 {
+    -fx-background-color: -app-primary;
+}
+
+.party-trend-chart .chart-series-line.trend-year-1 {
+    -fx-stroke: -app-warning;
+}
+
+.party-trend-chart .chart-line-symbol.trend-year-1 {
+    -fx-background-color: -app-warning, -app-surface;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-year-1 {
+    -fx-background-color: -app-warning, white;
+}
+
+.trend-marker.trend-year-1 {
+    -fx-background-color: -app-warning;
+}
+
+.party-trend-chart .chart-series-line.trend-year-2 {
+    -fx-stroke: -app-success;
+}
+
+.party-trend-chart .chart-line-symbol.trend-year-2 {
+    -fx-background-color: -app-success, -app-surface;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-year-2 {
+    -fx-background-color: -app-success, white;
+}
+
+.trend-marker.trend-year-2 {
+    -fx-background-color: -app-success;
+}
+
+.party-trend-chart .chart-series-line.trend-year-3 {
+    -fx-stroke: -app-danger;
+}
+
+.party-trend-chart .chart-line-symbol.trend-year-3 {
+    -fx-background-color: -app-danger, -app-surface;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-year-3 {
+    -fx-background-color: -app-danger, white;
+}
+
+.trend-marker.trend-year-3 {
+    -fx-background-color: -app-danger;
+}
+
+.party-trend-chart .chart-series-line.trend-year-4 {
+    -fx-stroke: -app-text-muted;
+}
+
+.party-trend-chart .chart-line-symbol.trend-year-4 {
+    -fx-background-color: -app-text-muted, -app-surface;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-year-4 {
+    -fx-background-color: -app-text-muted, white;
+}
+
+.trend-marker.trend-year-4 {
+    -fx-background-color: -app-text-muted;
+}
+
 /* Its cards stand on no party palette, and a stat value with no colour of its own came out dark on the
    dark theme's dark card. */
 .yearly-report .party-stat-card .stat-value,
 .profit-loss .party-stat-card .stat-value,
 .return-reasons .party-stat-card .stat-value,
 .party-payments .party-stat-card .stat-value,
+.monthly-totals .party-stat-card .stat-value,
 .exchange-differences .party-stat-card .stat-value {
     -fx-text-fill: -app-text-strong;
 }
@@ -767,6 +850,7 @@
 .profit-loss .party-stat-card .stat-value:negative-amount,
 .return-reasons .party-stat-card .stat-value:negative-amount,
 .party-payments .party-stat-card .stat-value:negative-amount,
+.monthly-totals .party-stat-card .stat-value:negative-amount,
 .exchange-differences .party-stat-card .stat-value:negative-amount,
 .party-stat-card .stat-subtitle:negative-amount,
 .party-summary-bar .stat-value:negative-amount {
@@ -795,7 +879,8 @@
 /* The card titles over a report's tables: the shared title's dark blue is lost on the dark theme's dark
    card. */
 .profit-loss .section-title,
-.return-reasons .section-title {
+.return-reasons .section-title,
+.monthly-totals .section-title {
     -fx-text-fill: -app-text-strong;
 }
 

@@ -17,7 +17,7 @@ import com.hamza.account.controller.reports.*;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.party.payment.PartyPaymentsService;
 import com.hamza.account.features.report.ReportEntry;
-import com.hamza.account.model.dao.MonthlySalesViewDao;
+import com.hamza.account.features.report.monthly.MonthlySide;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -25,7 +25,6 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.ExchangeDifferencesApplication;
 import com.hamza.account.view.ItemReportsApplication;
-import com.hamza.account.view.MonthlyView;
 import com.hamza.account.view.ReportTotalYearlyApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
@@ -314,8 +313,8 @@ public class ReportsButtons extends LoadData {
         openers.put(ReportEntry.SUMMARY, run(summaryReport(), tabPane));
         openers.put(ReportEntry.PROFIT_LOSS, run(profitLossReport(), tabPane));
         openers.put(ReportEntry.YEARLY, () -> run(reportYearly(), tabPane).open());
-        openers.put(ReportEntry.SALES_BY_YEAR, run(salesByYear(), tabPane));
-        openers.put(ReportEntry.PURCHASES_BY_YEAR, run(purchasesByYear(), tabPane));
+        openers.put(ReportEntry.SALES_BY_YEAR, run(monthlyTotals(MonthlySide.SALES), tabPane));
+        openers.put(ReportEntry.PURCHASES_BY_YEAR, run(monthlyTotals(MonthlySide.PURCHASES), tabPane));
         openers.put(ReportEntry.ITEMS_RANK, run(itemsReport(), tabPane));
         openers.put(ReportEntry.ITEMS_DAILY, run(itemsReportDaily(), tabPane));
         openers.put(ReportEntry.RETURN_REASONS, run(returnReasonsReport(), tabPane));
@@ -363,58 +362,42 @@ public class ReportsButtons extends LoadData {
         };
     }
 
-    public ButtonWithPerm salesByYear() {
-        return monthlyReport(new MonthlySalesInterface() {
-        });
-    }
-
-    public ButtonWithPerm purchasesByYear() {
-        return monthlyReport(new MonthlySalesInterface() {
-            @Override
-            public String reportName() {
-                return "Annual_Purchase_Report";
-            }
-
-            @Override
-            public String reportTitle() {
-                return LanguageManager.getInstance().getString("report.monthly.purchase.title");
-            }
-
-            @Override
-            public MonthlySalesViewDao getMonthlySalesViewDao(DaoFactory daoFactory) {
-                return daoFactory.monthlyPurchaseViewDao();
-            }
-
-            @Override
-            public String chartTitle() {
-                return LanguageManager.getInstance().getString("report.monthly.purchase.chart.title");
-            }
-
-            @Override
-            public boolean isPurchase() {
-                return true;
-            }
-        });
-    }
-
-    private ButtonWithPerm monthlyReport(MonthlySalesInterface monthly) {
+    /**
+     * The monthly sales and purchases - one screen and one sidebar button since 2026-09-23, where there were
+     * two entries, one class opened twice in windows of their own. The button opens for a reader who may read
+     * either side; which sides the screen offers, and the service's own check, are the screen's.
+     *
+     * @param preferred the side it opens on when that side is offered, or null for the first one offered
+     */
+    public ButtonWithPerm monthlyTotals(MonthlySide preferred) {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return monthly.isPurchase()
-                        ? AppPermissions.REPORTS_SHOW_PURCHASE
-                        : AppPermissions.REPORTS_SHOW_SALES;
+                return AuthorizationGuard.isGranted(MonthlySide.SALES.permission())
+                        || AuthorizationGuard.isGranted(MonthlySide.PURCHASES.permission())
+                        ? AppPermissions.PUBLIC_ACCESS : PermissionKey.deny();
             }
 
             @Override
-            public void action() throws Exception {
-                new MonthlyView(daoFactory, monthly).start(new Stage());
+            public void action() {
+
             }
 
             @NotNull
             @Override
             public String textName() {
-                return monthly.reportTitle();
+                return LanguageManager.getInstance().getString("report.monthly.title");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = MonthlyTotalsController.standard(preferred).pane();
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
