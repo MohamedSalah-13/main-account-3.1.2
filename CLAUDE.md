@@ -27,10 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,924 tests** with 319 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after an invoice learned to be typed in its party's currency, the profit
-and loss became a statement, the returns reasons a report of their own and the two payments reports one
-screen. What is
+**3,954 tests** with 326 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the exchange differences were named (phase E of the currencies),
+an invoice learned to be typed in its party's currency, the profit and loss became a statement, the
+returns reasons a report of their own and the two payments reports one screen. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
