@@ -2,6 +2,7 @@ package com.hamza.account.features.profitloss.statement;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.currency.difference.ExchangeFigures;
 import com.hamza.account.features.profitloss.DailyProfitSource;
 import com.hamza.account.features.profitloss.ProfitLossFigures;
 import com.hamza.account.features.profitloss.ProfitLossRow;
@@ -21,15 +22,34 @@ import java.util.Objects;
  * days, so they cannot disagree with each other or with the yearly report. The repository only explains
  * them: what the net sales are made of, which headings the expenses went to, and what is outside the
  * profit. Because the days are read first, nothing is read from it for a reader the statement refused.</p>
+ *
+ * <p>The exchange differences are read from their own report ({@link ExchangeSource}, the exchange
+ * differences service), never computed here, so the statement's two lines are that report's totals for the
+ * same period (docs/currency-plan.md §16).</p>
  */
 public final class ProfitLossReportService {
 
+    /** What the exchange rates made of the foreign accounts over a period - the exchange differences report's totals. */
+    @FunctionalInterface
+    public interface ExchangeSource {
+        ExchangeSource NONE = (from, to) -> ExchangeFigures.NONE;
+
+        ExchangeFigures figures(LocalDate from, LocalDate to) throws DaoException;
+    }
+
     private final DailyProfitSource source;
     private final ProfitLossStatementRepository repository;
+    private final ExchangeSource exchange;
 
     public ProfitLossReportService(DailyProfitSource source, ProfitLossStatementRepository repository) {
+        this(source, repository, ExchangeSource.NONE);
+    }
+
+    public ProfitLossReportService(DailyProfitSource source, ProfitLossStatementRepository repository,
+                                   ExchangeSource exchange) {
         this.source = Objects.requireNonNull(source, "source");
         this.repository = Objects.requireNonNull(repository, "repository");
+        this.exchange = Objects.requireNonNull(exchange, "exchange");
     }
 
     public ProfitLossReport report(ProfitLossPeriod period, ComparisonBasis basis, ProfitLossGrouping grouping)
@@ -54,14 +74,18 @@ public final class ProfitLossReportService {
             }
         }
 
-        OutsideProfitFigures outside = repository.outsideProfit(period);
+        OutsideProfitFigures outside = outside(period);
         ProfitLossStatement.Side now = new ProfitLossStatement.Side(current, repository.breakdown(period),
                 repository.expensesByHeading(period), outside);
         ProfitLossStatement.Side before = new ProfitLossStatement.Side(previous, repository.breakdown(previousPeriod),
-                repository.expensesByHeading(previousPeriod), repository.outsideProfit(previousPeriod));
+                repository.expensesByHeading(previousPeriod), outside(previousPeriod));
 
         return new ProfitLossReport(period, basis, previousPeriod, grouping, rows(period, grouping, currentDays),
                 current, previous, ProfitLossStatement.lines(now, before), outside);
+    }
+
+    private OutsideProfitFigures outside(ProfitLossPeriod period) throws DaoException {
+        return repository.outsideProfit(period).withExchange(exchange.figures(period.from(), period.to()));
     }
 
     /**

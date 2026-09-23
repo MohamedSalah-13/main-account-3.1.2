@@ -27,11 +27,11 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,000 tests** with 332 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after an invoice learned to be typed in its party's currency, the profit
-and loss became a statement, the returns reasons a report of their own, the two payments reports, the two
-monthly totals reports and the two item reports each one screen, and the summary's figures became its
-screens' own. What is
+**4,030 tests** with 339 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the exchange differences were named (phase E of the currencies),
+an invoice learned to be typed in its party's currency, the profit and loss became a statement, the
+returns reasons a report of their own, the two payments reports, the two monthly totals reports and the
+two item reports each one screen, and the summary's figures became its screens' own. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -93,9 +93,10 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - forty-nine `*AcceptanceTest` files exist, and the later areas' own
-sections name theirs; the newest are `DocumentCurrencyDatabaseAcceptanceTest` (V83) and
-`PartyCurrencyDatabaseAcceptanceTest` (V82), both under **Currencies**, the reports work's
+**That list is itself out of date** - fifty-three `*AcceptanceTest` files exist, and the later areas' own
+sections name theirs; the newest are `ExchangeDifferenceDatabaseAcceptanceTest` (phase E, no migration),
+`DocumentCurrencyDatabaseAcceptanceTest` (V83) and `PartyCurrencyDatabaseAcceptanceTest` (V82), all three
+under **Currencies**, `MonthlyTotalsDatabaseAcceptanceTest`, the reports work's
 `ProfitLossStatementDatabaseAcceptanceTest`, `ReturnReasonsDatabaseAcceptanceTest` and
 `PartyPaymentsDatabaseAcceptanceTest`, `YearlyReportDatabaseAcceptanceTest` (see **The yearly
 report**), and `ItemSalesDatabaseAcceptanceTest` and `SummaryDatabaseAcceptanceTest` (see **The item sales**
@@ -350,11 +351,12 @@ Two documents govern work here and are kept current — read them before large c
   amount is recorded beside its base figure and never instead of it, so no view, balance or report
   moves in any phase; a rate is what one unit is worth in the base, dated, and the one in force on a
   day is the latest dated on it or before it - none is a refusal, never a zero; a movement copies its
-  rate onto its own row; the base changes only while no rate exists. **Phases A to D are built**
+  rate onto its own row; the base changes only while no rate exists. **Phases A to E are built**
   (see **Currencies** below) - B is a treasury in a foreign currency, its statement in its own currency
-  included (§13), C a customer or a supplier dealing in one (§14), and D a document typed in its
-  party's currency (§15) - and so is fetching today's rates from the internet (ق-٩, §12); phase E,
-  exchange differences, waits on the decisions in §4. **Read it before touching `features/currency`,
+  included (§13), C a customer or a supplier dealing in one (§14), D a document typed in its party's
+  currency (§15), and E the exchange differences, at the average rate and shown under the net profit
+  without being counted in it (§16) - and so is fetching today's rates from the internet (ق-٩, §12).
+  **Read it before touching `features/currency`,
   `features/party/currency`, `V80`-`V83`, the foreign half of `InvoiceSaveService`, or adding any column
   that holds an amount in a currency other than the base.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
@@ -1316,9 +1318,10 @@ mutated the *opening* balance under a name suggesting the current one - is gone;
 `features/currency`, `CurrenciesController` (the treasury section's «العملات») and `V80`; the
 foreign treasury is `V81` and the classes named under **A treasury in a foreign currency** below, a
 party's currency is `V82` and `features/party/currency` (**A party in a foreign currency**), and a
-document typed in it is `V83` (**A document in a foreign currency**).
+document typed in it is `V83` (**A document in a foreign currency**); what the rates made of all of it is
+`features/currency/difference`, with no migration (**Exchange differences**).
 `docs/currency-plan.md` is the contract, §4 of it is what the owner still has to decide, §11 is
-phase B and §14 phase C.
+phase B, §14 phase C, §15 phase D and §16 phase E.
 
 **The books are in one currency, and `currency.is_base` says which.** Every amount column was
 written in it before V80 existed and still is: V80 *named* the currency the figures had always been
@@ -1560,6 +1563,46 @@ move in the base alone: what was typed is written **beside** the base figure eve
   MySQL**: the purchase side and an edit of a typed document. **Not seen**: English, the dark theme,
   Windows, a real thermal printer, picking a return's lines on screen, and changing the party with lines
   already on the invoice.
+
+**Exchange differences** (phase E, `docs/currency-plan.md` §16). The owner's three decisions: the
+difference is **shown under the net profit and not counted in it**, it is split **at the average rate**, and
+the profit and loss shows a period's **realized figure and the change in the unrealized**. **Nothing is
+written** - no migration, no movement, no balance moves: every figure comes from the base and own-currency
+columns phases B to D already write.
+
+- **`AveragePosition` walks one account in its statement's order.** A movement that grows the balance is
+  acquired at its own rate; one that shrinks it takes out the cost at the average, and what it moved in the
+  base beyond that share stays in the book value as the **realized** difference; one past zero opens the
+  other way at its own rate. So realized to date = cost − book value, unrealized = balance × a day's rate −
+  cost, and the two together are **the treasuries screen's valuation difference, by construction**. The
+  cost is carried unrounded and rounded once where it is read, and the value at a rate rounds as
+  `TreasuryExchange.baseOf` does, so the identities hold to the piastre.
+- **A difference is a gain or a loss to the shop** (`ExchangeAccountKind.gain`): a treasury and a customer
+  are assets, a supplier a liability, and a customer who paid ahead has a negative balance, so a rising
+  rate is a loss on them with no second rule.
+- **Each account is read the way its own statement reads it** (`ExchangeDifferenceQuery`): a treasury off
+  `treasury_balance` in the treasury statement's order, a party off its ledger view in the party
+  statement's; the test finds each order in the statement it copies. The accounts are three statements,
+  never one `UNION` - a treasury's name and a party's are two tables' columns, which a restored database
+  can hold in two collations (V63).
+- **A period** is the position the day before it at that day's rate and the position at its end at the
+  last day's; nothing held is worth nothing whatever the rate, and **a balance on a day with no rate has no
+  unrealized figure** - null, never zero - so the row's result is absent and the totals say which
+  currencies they left out. Two periods side by side add up to the period that spans them.
+- **The profit and loss reads the report's own totals** (`ProfitLossReportService.ExchangeSource`, into
+  `OutsideProfitFigures.exchange`), and draws its two lines, its card line, its note and its button only
+  for a shop holding something in a foreign currency. `reports.show.profit` is asked by
+  `ExchangeDifferenceService` before anything is read; no key and no product feature is new.
+- **The screen** (`ExchangeDifferencesController`, a window of its own through
+  `ExchangeDifferencesApplication`) opens from the currencies screen, the profit and loss screen and the
+  reports hub. A row's drawer lists its movements after the balance brought forward, and their realized
+  figures sum to the row's. `ExchangeDifferenceDatabaseAcceptanceTest` works a dollar drawer, customer and
+  supplier out by hand through the real services: seven cases, green twice.
+- **What the pictures found**: the drawer's realized column behind its scroll bar, the English headings
+  pushing the result behind the table's, and the cards' figures near-invisible on the dark theme - the
+  theme colours report cards through a list of screens by name (`app-theme.css`), and a new report screen
+  has to be added to it. **Not seen**: Windows, a real printer, the Excel file opened, and a reader without
+  the key on screen.
 
 ### Shifts
 
@@ -2325,6 +2368,18 @@ the theme files, which is what the capital-management block should have done ins
 shared class name. One declaration now, with colours that answer the background it actually has.
 A screen-specific style must never redefine a shared class.
 
+**A control's text colour does not reach the child that draws its text.** A combo shows its value in a
+`.list-cell` inside it and a menu button its caption in a `.label` inside it, and Modena colours both
+with `-fx-text-base-color` - worked out from its own light `-fx-base`, so dark text whatever the theme.
+The `-fx-text-fill` the input and button rules set on the control never got there, and on the dark
+theme every report bar's period preset and «العرض» menu, the invoices list's print menu and the
+statement's two combos were dark on dark (2026-09-23). `app-theme.css` now gives `.combo-box >
+.list-cell` the input's `-app-text-strong` and `.menu-button > .label` `inherit`, so a menu button reads
+like the button class it wears and a plain one keeps Modena's. The glass theme colours its combos itself
+and loads after, so it keeps its white. Seen on the dark and light themes on the profit and loss, the
+exchange differences, the currencies, a sales invoice and the invoices list; the inventory screen's two
+`ChoiceBox`es keep Modena's light box and were left alone.
+
 ### A row's detail, and a screen that has to fit 1366x768
 
 **A detail table stacked under its master table does not fit the screen this ships to.**
@@ -2682,7 +2737,9 @@ code; `profit-loss.fxml` and `ReportExportService.exportProfitLossReport` are go
   owner's decision (`OutsideProfitFigures`). A posted count's lines (`StockCountHistoryQuery.DIFFERENCE`,
   now public) are valued at the item's buy price **today**, since a count line keeps no cost; a till's is
   its close snapshot's `difference_amount` (counted less expected), dated by `close_time`. No screen's
-  profit moved. Counting them in the profit is a decision for every profit screen at once.
+  profit moved. Counting them in the profit is a decision for every profit screen at once. **The exchange
+  differences join them** for a shop holding a foreign currency (realized, and the change in the
+  unrealized - see **Exchange differences**), read from their own report and never computed here.
 - **A row opens what it is made of** - its invoices, returns and expenses - in a `RowDetailDrawer`
   (`ProfitLossReportService.movements`, which asks the permission itself). The movements of a row add up
   to it; a return is signed against the sales.

@@ -23,6 +23,7 @@ import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.RowDetailDrawer;
+import com.hamza.account.view.ExchangeDifferencesApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -58,6 +59,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -112,6 +114,7 @@ public class CurrenciesController {
     private final ContentSizedColumns<Currency> widths = new ContentSizedColumns<>();
     private final Label baseLabel = new Label();
     private final Button btnOnline = new Button(text("currency.online.button"));
+    private final Button btnDifferences = new Button(text("currency.difference.open"));
     private final Label onlineStatus = new Label();
     private final TextField txtCode = new TextField();
     private final TextField txtName = new TextField();
@@ -238,11 +241,30 @@ public class CurrenciesController {
         VBox fetch = new VBox(4, btnOnline, onlineStatus);
         fetch.setAlignment(Pos.CENTER);
 
-        HBox card = new HBox(12, sentence, fetch);
+        // What the rates made of the accounts held in a currency (docs/currency-plan.md §16). A hint, not the
+        // guard: ExchangeDifferenceService asks reports.show.profit before it reads anything.
+        btnDifferences.setId("currencyDifferencesButton");
+        btnDifferences.setGraphic(AppIcon.REPORT.graphic());
+        btnDifferences.getStyleClass().add("app-neutral-button");
+        btnDifferences.setMinWidth(Region.USE_PREF_SIZE);
+        btnDifferences.setOnAction(event -> openDifferences());
+        boolean mayRead = AuthorizationGuard.isGranted(AppPermissions.REPORTS_SHOW_PROFIT);
+        btnDifferences.setVisible(mayRead);
+        btnDifferences.setManaged(mayRead);
+
+        HBox card = new HBox(12, sentence, btnDifferences, fetch);
         card.setAlignment(Pos.CENTER_LEFT);
         card.getStyleClass().add("app-card");
         card.setPadding(new Insets(8));
         return card;
+    }
+
+    private void openDifferences() {
+        try {
+            new ExchangeDifferencesApplication().start(new Stage());
+        } catch (Exception e) {
+            AllAlerts.handleError(text("currency.difference.error.load"), e);
+        }
     }
 
     // ---- today's rates from the internet (ق-٩) -------------------------------------------------

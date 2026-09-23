@@ -23,6 +23,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.ExchangeDifferencesApplication;
 import com.hamza.account.view.ItemReportsApplication;
 import com.hamza.account.view.ReportTotalYearlyApplication;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -344,6 +345,7 @@ public class ReportsButtons extends LoadData {
 
         openers.put(ReportEntry.CAPITAL, run(mainScreenData.getTreasuryButtons().treasuryCapital(), tabPane));
         openers.put(ReportEntry.WALLET_FEES, () -> new OpenApplication<>(new WalletFeeReportController()));
+        openers.put(ReportEntry.EXCHANGE_DIFFERENCES, () -> new ExchangeDifferencesApplication().start(new Stage()));
         openers.put(ReportEntry.EXPENSE_REPORTS, () -> mainScreenData.getTreasuryButtons().openExpenseReports(tabPane));
 
         openers.put(ReportEntry.DELEGATE_PERFORMANCE, () -> new OpenApplication<>(new DelegatePerformanceController()));

@@ -69,6 +69,10 @@ public enum ReportEntry {
             ProductFeatures.TREASURY_CAPITAL, AppPermissions.TREASURY_CAPITAL),
     WALLET_FEES(ReportSection.TREASURY, "treasury.fee.report.title", "report.hub.describe.wallet.fees",
             ProductFeatures.TREASURY_LIST, AppPermissions.TREASURY_UPDATE, AppPermissions.TREASURY_SHOW),
+    // From the currencies screen's button, so its key and feature as well as the report's own
+    // (docs/currency-plan.md §16 ق-هـ٧).
+    EXCHANGE_DIFFERENCES(ReportSection.TREASURY, "currency.difference.title", "report.hub.describe.exchange.differences",
+            ProductFeatures.TREASURY_LIST, AppPermissions.CURRENCY_SHOW, AppPermissions.REPORTS_SHOW_PROFIT),
 
     EXPENSE_REPORTS(ReportSection.EXPENSES, "expense.report.title", "report.hub.describe.expenses",
             ProductFeatures.TREASURY_EXPENSES, AppPermissions.EXPENSES_SHOW, AppPermissions.EXPENSES_REPORTS),
