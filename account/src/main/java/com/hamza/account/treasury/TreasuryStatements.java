@@ -187,28 +187,43 @@ public final class TreasuryStatements {
      * One deterministic page from the unified movement view. The window is calculated
      * before the optional movement/user filters, so the displayed running balance is
      * the real treasury balance rather than the balance of only the visible kind.
+     * <p>
+     * Every figure comes twice: in the base, which is what the books hold, and in the
+     * treasury's own currency ({@code income_own}/{@code output_own}, V81), which for a
+     * treasury in the base is the same figure. A statement of one foreign treasury shows
+     * the second (docs/currency-plan.md §13); what is brought forward into the period is
+     * summed once per treasury, for both, before the window adds the period to it.
      */
     public static final String SELECT_STATEMENT_PAGE = """
-            WITH period_rows AS (
+            WITH prior AS (
+                SELECT treasury_id,
+                       SUM(income - output)         AS balance,
+                       SUM(income_own - output_own) AS balance_own
+                FROM treasury_balance
+                WHERE date_val < ?
+                GROUP BY treasury_id
+            ),
+            period_rows AS (
                 SELECT b.id_no, b.date_val, b.income, b.output, b.treasury_id,
                        b.date_insert, b.user_id, b.source_type, b.information,
-                       b.treasury_name, b.user_name,
-                       COALESCE((SELECT SUM(prior.income - prior.output)
-                                 FROM treasury_balance prior
-                                 WHERE prior.treasury_id = b.treasury_id
-                                   AND prior.date_val < ?), 0)
-                       + SUM(b.income - b.output) OVER (
-                           PARTITION BY b.treasury_id
-                           ORDER BY b.date_val, b.date_insert, b.source_type, b.id_no
-                           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                       ) AS running_balance
+                       b.treasury_name, b.user_name, b.income_own, b.output_own,
+                       COALESCE(p.balance, 0) + SUM(b.income - b.output) OVER running
+                           AS running_balance,
+                       COALESCE(p.balance_own, 0) + SUM(b.income_own - b.output_own) OVER running
+                           AS running_balance_own
                 FROM treasury_balance b
+                         LEFT JOIN prior p ON p.treasury_id = b.treasury_id
                 WHERE b.date_val BETWEEN ? AND ?
                   AND (? IS NULL OR b.treasury_id = ?)
+                WINDOW running AS (
+                    PARTITION BY b.treasury_id
+                    ORDER BY b.date_val, b.date_insert, b.source_type, b.id_no
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                )
             )
             SELECT id_no, date_val, income, output, treasury_id, date_insert,
                    user_id, source_type, information, treasury_name, user_name,
-                   running_balance
+                   running_balance, income_own, output_own, running_balance_own
             FROM period_rows
             WHERE (? IS NULL OR source_type = ?)
               AND (? IS NULL OR user_id = ?)
@@ -216,30 +231,46 @@ public final class TreasuryStatements {
             LIMIT ? OFFSET ?
             """;
 
-    /** Opening/closing are actual balances; period totals respect every visible filter. */
+    /**
+     * Opening/closing are actual balances; period totals respect every visible filter. Each
+     * movement is classified once - brought forward, or one of the listed rows - and summed in
+     * the base and in the treasury's own currency alike, so the two sets cannot answer two
+     * different questions.
+     */
     public static final String SELECT_STATEMENT_SUMMARY = """
             SELECT
-                COALESCE(SUM(CASE WHEN date_val < ? THEN income - output ELSE 0 END), 0)
-                    AS opening_balance,
-                COALESCE(SUM(CASE WHEN date_val BETWEEN ? AND ?
-                                       AND (? IS NULL OR source_type = ?)
-                                       AND (? IS NULL OR user_id = ?)
-                                  THEN income ELSE 0 END), 0) AS total_income,
-                COALESCE(SUM(CASE WHEN date_val BETWEEN ? AND ?
-                                       AND (? IS NULL OR source_type = ?)
-                                       AND (? IS NULL OR user_id = ?)
-                                  THEN output ELSE 0 END), 0) AS total_output,
-                COALESCE(SUM(CASE WHEN date_val <= ? THEN income - output ELSE 0 END), 0)
-                    AS closing_balance
-            FROM treasury_balance
-            WHERE date_val <= ?
-              AND (? IS NULL OR treasury_id = ?)
+                COALESCE(SUM(CASE WHEN brought_forward THEN income - output END), 0) AS opening_balance,
+                COALESCE(SUM(CASE WHEN listed THEN income END), 0)                  AS total_income,
+                COALESCE(SUM(CASE WHEN listed THEN output END), 0)                  AS total_output,
+                COALESCE(SUM(income - output), 0)                                   AS closing_balance,
+                COALESCE(SUM(CASE WHEN brought_forward THEN income_own - output_own END), 0)
+                    AS opening_balance_own,
+                COALESCE(SUM(CASE WHEN listed THEN income_own END), 0)              AS total_income_own,
+                COALESCE(SUM(CASE WHEN listed THEN output_own END), 0)              AS total_output_own,
+                COALESCE(SUM(income_own - output_own), 0)                           AS closing_balance_own
+            FROM (SELECT income, output, income_own, output_own,
+                         date_val < ? AS brought_forward,
+                         date_val >= ?
+                             AND (? IS NULL OR source_type = ?)
+                             AND (? IS NULL OR user_id = ?) AS listed
+                  FROM treasury_balance
+                  WHERE date_val <= ?
+                    AND (? IS NULL OR treasury_id = ?)) movements
             """;
 
+    /** The treasuries to choose from, each with the code of its currency - NULL for the base. */
     public static final String SELECT_STATEMENT_TREASURIES = """
-            SELECT id, t_name, is_active
+            SELECT t.id, t.t_name, t.is_active, c.code AS currency_code
+            FROM treasury t
+                     LEFT JOIN currency c ON c.id = t.currency_id
+            ORDER BY t.sort_order, t.id
+            """;
+
+    /** The currency one treasury is in, read when its statement is - NULL for the base. */
+    public static final String SELECT_STATEMENT_CURRENCY = """
+            SELECT currency_id
             FROM treasury
-            ORDER BY sort_order, id
+            WHERE id = ?
             """;
 
     public static final String SELECT_STATEMENT_USERS = """

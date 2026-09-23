@@ -225,6 +225,24 @@ class TreasuryStatementsTest {
     }
 
     @Test
+    @DisplayName("a statement carries every figure in the treasury's own currency too, accumulated the same way")
+    void theStatementCarriesTheOwnCurrency() {
+        String page = TreasuryStatements.SELECT_STATEMENT_PAGE;
+        assertTrue(page.contains("SUM(b.income_own - b.output_own) OVER running"));
+        assertTrue(page.contains("COALESCE(p.balance_own, 0)"));
+        for (String column : List.of("income_own", "output_own", "running_balance_own")) {
+            assertTrue(page.contains(column), column);
+        }
+        String summary = TreasuryStatements.SELECT_STATEMENT_SUMMARY;
+        for (String column : List.of("opening_balance_own", "total_income_own", "total_output_own",
+                "closing_balance_own")) {
+            assertTrue(summary.contains("AS " + column), column);
+        }
+        assertTrue(TreasuryStatements.SELECT_STATEMENT_TREASURIES.contains("c.code AS currency_code"));
+        assertEquals(1, parameters(TreasuryStatements.SELECT_STATEMENT_CURRENCY));
+    }
+
+    @Test
     @DisplayName("statement summary keeps actual boundary balances and filtered period totals")
     void statementSummaryHasPinnedInputs() {
         String sql = TreasuryStatements.SELECT_STATEMENT_SUMMARY;
@@ -232,7 +250,7 @@ class TreasuryStatementsTest {
         assertTrue(sql.contains("AS closing_balance"));
         assertTrue(sql.contains("source_type = ?"));
         assertTrue(sql.contains("user_id = ?"));
-        assertEquals(17, parameters(sql));
+        assertEquals(9, parameters(sql));
     }
 
     @Test

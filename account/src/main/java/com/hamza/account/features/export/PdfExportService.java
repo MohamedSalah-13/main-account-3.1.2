@@ -174,12 +174,16 @@ public class PdfExportService {
                 .setMarginBottom(5);
         document.add(titlePara);
 
-        // العنوان الفرعي
+        // العنوان الفرعي - سطر لكل '\n'. النص يُشكَّل بترتيب العرض قبل أن يلفّه iText، فالفقرة العربية
+        // التي تلتف تضع آخرها في السطر الأول وقد تقسم تاريخًا عند شَرطته؛ السطر المقصود يُكتب فقرةً وحده.
         if (subtitle != null && !subtitle.isEmpty()) {
-            Paragraph subtitlePara = arabicParagraph(subtitle)
-                    .setFontSize(12)
-                    .setMarginBottom(5);
-            document.add(subtitlePara);
+            String[] lines = subtitle.split("\n");
+            for (int i = 0; i < lines.length; i++) {
+                Paragraph subtitlePara = arabicParagraph(lines[i])
+                        .setFontSize(12)
+                        .setMarginBottom(i == lines.length - 1 ? 5 : 0);
+                document.add(subtitlePara);
+            }
         }
 
         // التاريخ والوقت

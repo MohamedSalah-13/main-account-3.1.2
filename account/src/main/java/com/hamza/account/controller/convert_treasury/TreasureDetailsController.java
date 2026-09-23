@@ -8,6 +8,7 @@ import com.hamza.account.features.events.TreasuriesChanged;
 import com.hamza.account.features.events.TreasuryBalancesChanged;
 import com.hamza.account.features.events.TreasuryMovementRecorded;
 import com.hamza.account.features.treasury.statement.TreasuryMovementKind;
+import com.hamza.account.features.treasury.statement.TreasuryStatementCurrency;
 import com.hamza.account.features.treasury.statement.TreasuryOption;
 import com.hamza.account.features.treasury.statement.TreasuryStatementFilter;
 import com.hamza.account.features.treasury.statement.TreasuryStatementOptions;
@@ -20,7 +21,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.ListToolbar;
-import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
@@ -51,8 +51,6 @@ import java.math.BigDecimal;
 import java.io.File;
 import java.text.MessageFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hamza.account.controller.items.CardController.dataInterface;
@@ -61,7 +59,6 @@ import static com.hamza.account.controller.items.CardController.dataInterface;
 @FxmlPath(pathFile = "treasury/treasury-details.fxml")
 public class TreasureDetailsController {
     private static final int PAGE_SIZE = 250;
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
@@ -92,7 +89,20 @@ public class TreasureDetailsController {
     @FXML private Label sumOutput;
     @FXML private Label netMovement;
     @FXML private Label closingBalance;
+    @FXML private Label currencyNote;
     @FXML private TableView<TreasuryStatementRow> tableView;
+
+    /**
+     * The currency the figures on screen are in - a single foreign treasury's own, else the base
+     * (docs/currency-plan.md §13). Set from each page before its rows are placed, so a cell is
+     * never written in the currency of the page before.
+     */
+    private TreasuryStatementCurrency shown = TreasuryStatementCurrency.BASE;
+    private TableColumn<TreasuryStatementRow, BigDecimal> incomeColumn;
+    private TableColumn<TreasuryStatementRow, BigDecimal> outputColumn;
+    private TableColumn<TreasuryStatementRow, BigDecimal> balanceColumn;
+    /** Each movement's value in the books, beside a foreign statement's own figures; absent otherwise. */
+    private TableColumn<TreasuryStatementRow, BigDecimal> bookColumn;
 
     private MaskerPaneSetting maskerPaneSetting;
     private int currentPage;
@@ -119,6 +129,7 @@ public class TreasureDetailsController {
         dateTo.setValue(LocalDate.now());
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
+        currencyNote.managedProperty().bind(currencyNote.visibleProperty());
         configureChoices();
         configureButtons();
         arrangeToolbar();
@@ -146,7 +157,8 @@ public class TreasureDetailsController {
 
     private void configureChoices() {
         comboTreasury.setConverter(converter(option -> option.id() == 0 ? text("all")
-                : option.name() + (option.active() ? "" : " (" + text("treasury.statement.option.closed") + ")")));
+                : option.name() + (option.currencyCode() == null ? "" : " (" + option.currencyCode() + ")")
+                + (option.active() ? "" : " (" + text("treasury.statement.option.closed") + ")")));
         comboUsers.setConverter(converter(option -> option.id() == 0 ? text("all") : option.name()));
         comboDetails.setConverter(converter(choice -> choice.kind() == null
                 ? text("all") : text(choice.kind().labelKey())));
@@ -177,6 +189,18 @@ public class TreasureDetailsController {
         action.setSortable(false);
         action.setPrefWidth(72);
 
+        // The three amounts are the statement's currency's - the books' two places, or a foreign
+        // treasury's own - and read which set of figures to show on every paint.
+        incomeColumn = Columns.money("treasury.statement.column.income", row -> shown.income(row), this::money);
+        outputColumn = Columns.money("treasury.statement.column.output", row -> shown.output(row), this::money);
+        balanceColumn = Columns.money("treasury.statement.column.balance",
+                row -> shown.runningBalance(row), this::money);
+        // Added after TableSetting has read the table, so its presence follows the currency and is
+        // never stored as somebody's choice.
+        bookColumn = named("treasury-book", Columns.money("treasury.statement.column.book",
+                TreasuryStatementRow::netMovement));
+        bookColumn.setPrefWidth(150);
+
         // The action first, where every list puts a row's own button, and the three amounts written
         // as money like the cards above them. Every column carries an id: TableSetting keys a saved
         // width by position when there is none, so moving the action column would otherwise hand
@@ -187,17 +211,14 @@ public class TreasureDetailsController {
                         TreasuryStatementRow::referenceId)),
                 named("treasury-date", Columns.date("treasury.statement.column.date", TreasuryStatementRow::movementDate)),
                 named("treasury-time", Columns.text("treasury.statement.column.time", row -> row.recordedAt() == null
-                        ? "" : row.recordedAt().format(TIME_FORMAT))),
+                        ? "" : row.recordedAt().format(TreasuryStatementPaper.TIME_FORMAT))),
                 named("treasury-movement", Columns.text("treasury.statement.column.movement",
                         row -> text(row.kind().labelKey()))),
                 named("treasury-name", Columns.text("treasury.statement.column.treasury",
                         TreasuryStatementRow::treasuryName)),
-                named("treasury-income", Columns.money("treasury.statement.column.income",
-                        TreasuryStatementRow::income)),
-                named("treasury-output", Columns.money("treasury.statement.column.output",
-                        TreasuryStatementRow::output)),
-                named("treasury-balance", Columns.money("treasury.statement.column.balance",
-                        TreasuryStatementRow::runningBalance)),
+                named("treasury-income", incomeColumn),
+                named("treasury-output", outputColumn),
+                named("treasury-balance", balanceColumn),
                 named("treasury-user", Columns.text("treasury.statement.column.user", TreasuryStatementRow::username)));
         tableView.setPlaceholder(new Label(text("treasury.statement.empty")));
         TableSetting.tableMenuSetting(getClass(), tableView);
@@ -323,17 +344,39 @@ public class TreasureDetailsController {
     }
 
     private void applyPage(TreasuryStatementPage page) {
+        showCurrency(page);
         tableView.setItems(FXCollections.observableArrayList(page.rows()));
         currentPage = page.page();
         btnPrevious.setDisable(!page.hasPrevious());
         btnNext.setDisable(!page.hasNext());
         pageLabel.setText(MessageFormat.format(text("treasury.statement.page"), currentPage + 1));
         statusLabel.setText(MessageFormat.format(text("treasury.statement.status"), page.rows().size()));
-        openingBalance.setText(money(page.summary().openingBalance()));
-        sumIncome.setText(money(page.summary().totalIncome()));
-        sumOutput.setText(money(page.summary().totalOutput()));
-        netMovement.setText(money(page.summary().netMovement()));
-        closingBalance.setText(money(page.summary().closingBalance()));
+        openingBalance.setText(card(page.summary().openingBalance()));
+        sumIncome.setText(card(page.summary().totalIncome()));
+        sumOutput.setText(card(page.summary().totalOutput()));
+        netMovement.setText(card(page.summary().netMovement()));
+        closingBalance.setText(card(page.summary().closingBalance()));
+    }
+
+    /**
+     * Puts the page's currency on the screen: the three amount headings name it, the book value of
+     * each movement stands beside them, and a line under the cards says both what the figures are in
+     * and what the closing balance is worth in the books. A statement in the base shows none of it.
+     */
+    private void showCurrency(TreasuryStatementPage page) {
+        shown = page.currency();
+        incomeColumn.setText(TreasuryStatementPaper.titled("treasury.statement.column.income", shown));
+        outputColumn.setText(TreasuryStatementPaper.titled("treasury.statement.column.output", shown));
+        balanceColumn.setText(TreasuryStatementPaper.titled("treasury.statement.column.balance", shown));
+        boolean listed = tableView.getColumns().contains(bookColumn);
+        if (shown.isForeign() && !listed) {
+            tableView.getColumns().add(tableView.getColumns().indexOf(balanceColumn) + 1, bookColumn);
+        } else if (!shown.isForeign() && listed) {
+            tableView.getColumns().remove(bookColumn);
+        }
+        currencyNote.setVisible(shown.isForeign());
+        currencyNote.setText(shown.isForeign()
+                ? TreasuryStatementPaper.note(shown, page.totals().base().closingBalance()) : "");
     }
 
     private void setLoading(boolean value) {
@@ -355,49 +398,12 @@ public class TreasureDetailsController {
     }
 
     private void print(TreasuryStatementPrintData data, TreasuryStatementFilter filter) {
-        var summary = data.summary();
         String title = text("report.treasury.statement.title");
         File target = TablePdfReport.chooseTarget(tableView.getScene().getWindow(), title);
         if (target == null) return;
-        String[] headers = {
-                text("treasury.statement.column.reference"), text("treasury.statement.column.date"),
-                text("treasury.statement.column.time"), text("treasury.statement.column.movement"),
-                text("treasury.statement.column.treasury"), text("treasury.statement.column.income"),
-                text("treasury.statement.column.output"), text("treasury.statement.column.balance"),
-                text("treasury.statement.column.user")};
-        float[] widths = {65, 85, 70, 120, 110, 85, 85, 95, 100};
-        List<String[]> rows = data.rows().stream().map(row -> new String[]{
-                String.valueOf(row.referenceId()), row.movementDate().toString(),
-                row.recordedAt() == null ? "" : row.recordedAt().format(TIME_FORMAT),
-                text(row.kind().labelKey()), row.treasuryName(), money(row.income()), money(row.output()),
-                money(row.runningBalance()), row.username()}).toList();
-        String subtitle = printedSubtitle(filter, summary.openingBalance());
-        String[] totals = {text("total"), "", "", "", "", money(summary.totalIncome()), money(summary.totalOutput()),
-                money(summary.closingBalance()), ""};
-        TablePdfReport.write(target, title, subtitle, new TablePdfLayout(headers, widths, rows, totals), () -> { });
-    }
-
-    /**
-     * Which statement this is, on the paper as on the screen: the treasury, whatever narrows the
-     * rows, and the balance carried into the period. The paper used to carry the two dates alone -
-     * so a printed statement of one wallet could not be told from one of every treasury, and its
-     * running balance began at a figure printed nowhere on it.
-     */
-    private String printedSubtitle(TreasuryStatementFilter filter, BigDecimal opening) {
-        StringBuilder line = new StringBuilder(text("from")).append(": ").append(filter.from())
-                .append("  |  ").append(text("to")).append(": ").append(filter.to())
-                .append("  |  ").append(text("treasury.statement.column.treasury")).append(": ")
-                .append(chosenText(comboTreasury));
-        if (filter.kind() != null) {
-            line.append("  |  ").append(text("treasury.statement.column.movement")).append(": ")
-                    .append(text(filter.kind().labelKey()));
-        }
-        if (filter.userId() != null) {
-            line.append("  |  ").append(text("treasury.statement.column.user")).append(": ")
-                    .append(chosenText(comboUsers));
-        }
-        return line.append("  |  ").append(text("treasury.statement.print.opening")).append(": ")
-                .append(money(opening)).toString();
+        TablePdfReport.write(target, title,
+                TreasuryStatementPaper.subtitle(filter, chosenText(comboTreasury), chosenText(comboUsers), data),
+                TreasuryStatementPaper.layout(data), () -> { });
     }
 
     private static <T> String chosenText(ComboBox<T> combo) {
@@ -452,8 +458,16 @@ public class TreasureDetailsController {
         }
     }
 
-    /** As every other money figure is written - thousands separated - on the cards and on paper alike. */
-    private String money(BigDecimal value) { return Columns.money(value); }
+    /**
+     * As every other money figure is written - thousands separated - on the cards and on paper alike;
+     * and a foreign treasury's own figures to its currency's places, not to the books' two.
+     */
+    private String money(BigDecimal value) { return TreasuryStatementPaper.amount(value, shown); }
+
+    /** A card names the currency it counts in, since it has no heading to do it. */
+    private String card(BigDecimal value) {
+        return shown.isForeign() ? money(value) + " " + shown.code() : money(value);
+    }
     private String text(String key) { return LanguageManager.getInstance().getString(key); }
 
     private record MovementChoice(TreasuryMovementKind kind) { }

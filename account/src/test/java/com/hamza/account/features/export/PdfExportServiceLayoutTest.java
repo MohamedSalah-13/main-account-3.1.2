@@ -54,6 +54,27 @@ class PdfExportServiceLayoutTest {
         assertOrderedRightToLeft(x, "911", "922", "933");
     }
 
+    /**
+     * A subtitle of two lines prints them in the order they were written. It is shaped into display
+     * order before iText wraps it, so a single wrapped Arabic paragraph put its end on the first line -
+     * a treasury statement's subtitle printed its closing note above its dates, the start date split at
+     * its hyphen. Each line is a paragraph of its own.
+     */
+    @Test
+    void aSubtitleOfTwoLinesPrintsThemInOrder() throws Exception {
+        String pdf = dir.resolve("subtitle.pdf").toString();
+        assertTrue(new PdfExportService().exportGroupedReport(pdf, "1", "7001\n7002",
+                new String[]{"101"}, new float[]{1}, List.<String[]>of(new String[]{"111"}), null, PageSize.A4));
+
+        Map<String, Float> y = textPositions(pdf, Set.of("7001", "7002", "101"), 1);
+
+        for (String text : new String[]{"7001", "7002", "101"}) {
+            assertNotNull(y.get(text), text + " was not found on the page: " + y);
+        }
+        assertTrue(y.get("7001") > y.get("7002") && y.get("7002") > y.get("101"),
+                "the first line above the second, both above the table: " + y);
+    }
+
     private static void assertOrderedRightToLeft(Map<String, Float> x, String first, String second,
                                                  String third) {
         for (String text : new String[]{first, second, third}) {

@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,663 tests** with 280 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after the shared alert learned to break an Arabic message into lines itself. What is
+**3,675 tests** with 281 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after a foreign treasury's statement learned to show its own currency. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -343,8 +343,8 @@ Two documents govern work here and are kept current — read them before large c
   moves in any phase; a rate is what one unit is worth in the base, dated, and the one in force on a
   day is the latest dated on it or before it - none is a refusal, never a zero; a movement copies its
   rate onto its own row; the base changes only while no rate exists. **Phases A and B are built** (see
-  **Currencies** below) - B is a treasury in a foreign currency, all but its statement - and so is
-  fetching today's rates from the internet (ق-٩, §12); phases C-E - a party's currency, a document in a
+  **Currencies** below) - B is a treasury in a foreign currency, its statement in its own currency
+  included (§13) - and so is fetching today's rates from the internet (ق-٩, §12); phases C-E - a party's currency, a document in a
   foreign currency, exchange differences - wait on the decisions in §4. **Read it before touching
   `features/currency`, `V80`, `V81`, or adding any column that holds an amount in a currency other than
   the base.**
@@ -1407,9 +1407,15 @@ move in the base alone; what V81 adds is written **beside** the base figure.
   exchange into dollars needs no recorded rate, so the rate count alone would not stop it. A currency
   an active treasury uses cannot be stopped, and `DeleteRegistry.CURRENCIES` declares
   `treasury.currency_id`.
-- **Not built: the treasury statement in the treasury's own currency** - it shows a dollar drawer's
-  book values. The view already carries the columns. And `audit_treasury_*` (V2) records only
-  `id`, `t_name` and `amount`, as it did for every column V20, V21 and V69 added.
+- **A foreign treasury's statement is in its own currency** (`TreasuryStatementCurrency`, §13): the rows,
+  the running balance and the five cards in dollars to the dollar's places, its code in the three
+  amount headings, each movement's book value in a column beside them and the closing book value in a
+  line under the cards. **Every other statement is in the base** - one treasury in the base, and every
+  treasury at once, where a total would add dollars to pounds. Both queries carry every figure twice
+  and classify a movement once; the currency is read with the rows (`currencyOf`), never off the
+  screen's list. The paper is `TreasuryStatementPaper`, testable without a toolkit or a save dialog.
+- **Not built:** `audit_treasury_*` (V2) records only `id`, `t_name` and `amount`, as it did for every
+  column V20, V21 and V69 added.
 - **An acceptance test that builds an older schema cannot take today's `R__views.sql` for that step**:
   a view reading a V81 column cannot be built on a V79 schema. `CurrencyDatabaseAcceptanceTest` and
   `DelegateActivityDatabaseAcceptanceTest` leave it out, since no versioned migration reads a view.
@@ -2540,7 +2546,11 @@ positive number beside an empty box; `boldFontFor` falls back to the regular fac
 line ran left to right under a right-to-left table - the headers and rows were reversed on their
 way in and it was not - so every label and figure on it sat under another column's heading, in the
 totals screen's reports as much as the party ones. All three were found only by rendering a report
-to an image: the text extracted from the PDF was right all along. `PdfExportServiceLayoutTest` now
+to an image: the text extracted from the PDF was right all along. **A subtitle is written line by line**
+(`addHeader` splits on `\n`): it is shaped into display order before iText wraps it, so a wrapped
+Arabic subtitle prints its end on the first line - a treasury statement's note printed above its
+dates, the start date split at its hyphen. Give a long subtitle a second line rather than letting it
+wrap; one that wraps still prints backwards. `PdfExportServiceLayoutTest` now
 reads cell positions out of a real PDF, which is the only check that can see the last one.
 
 **An invoice is a document, not a report, and prints through its own path.** The A4 invoice
