@@ -2367,6 +2367,18 @@ the theme files, which is what the capital-management block should have done ins
 shared class name. One declaration now, with colours that answer the background it actually has.
 A screen-specific style must never redefine a shared class.
 
+**A control's text colour does not reach the child that draws its text.** A combo shows its value in a
+`.list-cell` inside it and a menu button its caption in a `.label` inside it, and Modena colours both
+with `-fx-text-base-color` - worked out from its own light `-fx-base`, so dark text whatever the theme.
+The `-fx-text-fill` the input and button rules set on the control never got there, and on the dark
+theme every report bar's period preset and «العرض» menu, the invoices list's print menu and the
+statement's two combos were dark on dark (2026-09-23). `app-theme.css` now gives `.combo-box >
+.list-cell` the input's `-app-text-strong` and `.menu-button > .label` `inherit`, so a menu button reads
+like the button class it wears and a plain one keeps Modena's. The glass theme colours its combos itself
+and loads after, so it keeps its white. Seen on the dark and light themes on the profit and loss, the
+exchange differences, the currencies, a sales invoice and the invoices list; the inventory screen's two
+`ChoiceBox`es keep Modena's light box and were left alone.
+
 ### A row's detail, and a screen that has to fit 1366x768
 
 **A detail table stacked under its master table does not fit the screen this ships to.**
