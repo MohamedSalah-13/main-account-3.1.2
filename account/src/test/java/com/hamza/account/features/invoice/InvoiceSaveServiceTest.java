@@ -225,6 +225,61 @@ class InvoiceSaveServiceTest {
         assertEquals(45, withCeiling(new BigDecimal("20"), true).save(command(0, 5)).invoiceNumber());
     }
 
+    /**
+     * A customer who deals in dollars (V82, docs/currency-plan.md §14 ق-ج٣): with no rate on the
+     * invoice's day the save is refused before a number is taken - the counter does not roll back.
+     */
+    @Test
+    void aDollarCustomersInvoiceWithNoRateIsRefusedBeforeANumberIsTaken() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        var memory = new com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory()
+                .party(com.hamza.account.features.events.PartyKind.CUSTOMER, 8,
+                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD);
+
+        InvoiceValidationException refusal = assertThrows(InvoiceValidationException.class,
+                () -> withPartyCurrency(memory).save(command(0, 5)));
+
+        assertEquals(InvoiceSaveValidator.Target.DATE, refusal.target());
+        verifyNoInteractions(numberAllocator);
+        verify(dao, never()).insert(any());
+        assertTrue(memory.written.isEmpty());
+    }
+
+    /** With a rate, the header is written in the base and then translated beside it, in one save. */
+    @Test
+    void aDollarCustomersInvoiceIsTranslatedAfterItsHeaderIsWritten() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        when(numberAllocator.next(DocumentType.SALES)).thenReturn(46);
+        when(dao.insert(any())).thenReturn(1);
+        var memory = new com.hamza.account.features.party.currency.PartyCurrencyFixtures.Memory()
+                .party(com.hamza.account.features.events.PartyKind.CUSTOMER, 8,
+                        com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD)
+                .rate(com.hamza.account.features.party.currency.PartyCurrencyFixtures.USD,
+                        LocalDate.of(2026, 8, 1), "50");
+        // What the insert stored, as the database would answer it when read back.
+        memory.document(DocumentType.SALES, 46, 8, LocalDate.of(2026, 8, 13), null, "18", "3", "5");
+
+        assertEquals(46, withPartyCurrency(memory).save(command(0, 5)).invoiceNumber());
+
+        var written = memory.written.get("SALES:46");
+        assertEquals(new BigDecimal("50"), written.rate());
+        assertEquals(new BigDecimal("0.36"), written.total());
+        assertEquals(new BigDecimal("0.20"), written.remainder(), "the 10 left on account, in dollars");
+    }
+
+    private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> withPartyCurrency(
+            com.hamza.account.features.party.currency.PartyCurrencies currencies) {
+        return new InvoiceSaveService<>(new SalesInvoice(), repository,
+                DocumentType.SALES, Clock.fixed(Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
+                numberAllocator, InvoiceTransactionExecutor.direct(),
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
+                name -> new Treasury(1, name, BigDecimal.ZERO),
+                name -> new Employees(2, name), stockMovementDao,
+                ShiftGate.disabled(), ShiftAttributionWriter.disabled(), ShiftCashLedger.disabled(), null,
+                changeAnnouncer, InvoiceWalletFee.none(), DelegateDiscountGuard.none(),
+                new InvoicePartyCurrency(currencies));
+    }
+
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> withCeiling(
             BigDecimal maxPercent, boolean mayOverride) {
         DiscountCeilingRepository ceilings = new DiscountCeilingRepository() {
