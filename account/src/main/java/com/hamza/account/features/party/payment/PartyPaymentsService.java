@@ -56,6 +56,18 @@ public final class PartyPaymentsService {
         return sides;
     }
 
+    /**
+     * The side the screen opens on: {@code preferred} when it is offered, else the first side offered, else
+     * none. The sidebar's button prefers no side and passes null, and an immutable list answers
+     * {@code contains(null)} by throwing - which is how the screen first failed to open from the sidebar.
+     */
+    public static PartyKind openingSide(List<PartyKind> sides, PartyKind preferred) {
+        if (preferred != null && sides.contains(preferred)) {
+            return preferred;
+        }
+        return sides.isEmpty() ? null : sides.getFirst();
+    }
+
     public List<PartyPaymentRow> payments(PartyPaymentsFilter filter) throws DaoException {
         Objects.requireNonNull(filter, "filter");
         AuthorizationGuard.require(permissionFor(filter.kind()));
