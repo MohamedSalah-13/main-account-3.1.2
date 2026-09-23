@@ -44,12 +44,12 @@ public final class ShopReportSetup {
     public static ReportSetup current() {
         ReportStyle style = storedStyle();
         return new ReportSetup(style, style.showLetterhead() ? letterhead() : ReportLetterhead.EMPTY,
-                labels(), userName());
+                labels(), userName(), rightToLeft());
     }
 
     /** A setup that holds the company whatever the style says - the preview needs it to switch the letterhead on. */
     public static ReportSetup forPreview(ReportStyle style) {
-        return new ReportSetup(style, letterhead(), labels(), userName());
+        return new ReportSetup(style, letterhead(), labels(), userName(), rightToLeft());
     }
 
     public static ReportStyle storedStyle() {
@@ -89,6 +89,11 @@ public final class ShopReportSetup {
             log.warn("The company could not be read; the report prints without its letterhead", e);
             return ReportLetterhead.EMPTY;
         }
+    }
+
+    /** A report runs the way its reader reads - which is the language the program is in. */
+    private static boolean rightToLeft() {
+        return LanguageManager.getInstance().isRtl();
     }
 
     private static String userName() {

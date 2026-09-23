@@ -402,6 +402,72 @@ class PdfExportServiceLayoutTest {
         }
     }
 
+    /**
+     * A report runs the way its reader reads. In English it ran right to left like an Arabic one - its
+     * first column on the right under an English heading; the audit log's own renderer was the one PDF
+     * that did not, and it prints through this service now.
+     */
+    @Nested
+    class LeftToRight {
+
+        private final ReportSetup english = new ReportSetup(ReportStyle.DEFAULT, ReportLetterhead.EMPTY,
+                ReportLabels.NONE, "", false);
+
+        @Test
+        void aReportsHeadingsRowsAndTotalsRunLeftToRight() throws Exception {
+            String pdf = dir.resolve("ltr-grouped.pdf").toString();
+            assertTrue(new PdfExportService(english).exportGroupedReport(pdf, "1", "",
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                    List.<String[]>of(new String[]{"111", "222", "333"}),
+                    new String[]{"911", "922", "933"}, PageSize.A4));
+
+            Map<String, Float> x = textPositions(pdf, Set.of("101", "202", "303",
+                    "111", "222", "333", "911", "922", "933"));
+            assertOrderedRightToLeft(x, "303", "202", "101");
+            assertOrderedRightToLeft(x, "333", "222", "111");
+            assertOrderedRightToLeft(x, "933", "922", "911");
+        }
+
+        /** The one-figure totals line: the caption across the left, the figure under the last column. */
+        @Test
+        void aSingleTotalSitsUnderTheLastColumn() throws Exception {
+            String pdf = dir.resolve("ltr-generic.pdf").toString();
+            assertTrue(new PdfExportService(english).exportGenericReport(pdf, "1", "",
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                    List.<String[]>of(new String[]{"111", "222", "333"}), "901", "902", null, PageSize.A4));
+
+            Map<String, Float> x = textPositions(pdf, Set.of("303", "333", "901", "902"));
+            assertTrue(x.get("901") < x.get("902"), "the caption left of the figure: " + x);
+            // Both are centred in their cell, so they start within a few points of each other.
+            assertEquals(x.get("303"), x.get("902"), 10f, "the figure under the last column's heading: " + x);
+        }
+
+        @Test
+        void aTreesLinesRunLeftToRight() throws Exception {
+            String pdf = dir.resolve("ltr-tree.pdf").toString();
+            TreePdfLayout layout = new TreePdfLayout(new String[]{"101", "202"}, new float[]{1, 1},
+                    List.of(new TreePdfLayout.Branch("7001", List.<String[]>of(new String[]{"111", "222"}),
+                            new String[]{"511", "522"})), new String[]{"911", "922"});
+            assertTrue(new PdfExportService(english).exportTreeReport(pdf, "1", "", layout, PageSize.A4));
+
+            Map<String, Float> x = textPositions(pdf, Set.of("111", "222", "511", "522", "911", "922"));
+            assertTrue(x.get("111") < x.get("222") && x.get("511") < x.get("522") && x.get("911") < x.get("922"),
+                    "every line left to right: " + x);
+        }
+
+        /** An invoice keeps its right-to-left layout whatever the reader's language: it is drawn for it. */
+        @Test
+        void aDocumentStillRunsRightToLeft() throws Exception {
+            String pdf = dir.resolve("ltr-document.pdf").toString();
+            DocumentPdfPage page = new DocumentPdfPage("1", "2", List.of(), null, List.of(), List.of(),
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                    List.<String[]>of(new String[]{"11", "12", "13"}), null, List.of(), "", "", "", "");
+            assertTrue(new PdfExportService(english).exportDocument(pdf, page, PageSize.A4));
+
+            assertOrderedRightToLeft(textPositions(pdf, Set.of("101", "202", "303")), "101", "202", "303");
+        }
+    }
+
     private static int pageCount(String pdf) throws Exception {
         try (PdfDocument document = new PdfDocument(new PdfReader(pdf))) {
             return document.getNumberOfPages();

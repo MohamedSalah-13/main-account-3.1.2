@@ -3040,9 +3040,14 @@ fix); **a page number with no word in it is not shaped** - `ArabicTextHelper` re
 `1 / 5` as `5 / 1`; **a colour set on a `LineSeparator` is ignored** - it belongs to the `SolidLine` - so the
 rule under every invoice's head had printed black while the code asked for blue; and the shared
 `.section-title` blue vanishes on the dark theme, so the tab's root carries `report-style`, listed in
-`app-theme.css` beside the report screens. **Not done**: a page still runs right to left in English (the
-preview shows it), an invoice's type sizes are fixed, the two audit PDFs draw themselves and ignore the style,
-and the 80mm receipt is Jasper's. The checks tab's «طباعة عنوان التقرير» (`setting.print.report.title`) sets
+`app-theme.css` beside the report screens. **A report runs the reader's way** (`ReportSetup.rightToLeft`,
+from the language): in English its first column is on the left, and a text with no letter in it - a date and
+a time - reads as written (`ArabicTextHelper.shapeLine(..., rightToLeft)`; on a right-to-left page it still
+reads right to left). An invoice or a voucher stays right to left whatever the language: its letterhead,
+fields and summary box are laid out for it. **The two audit PDFs print through `PdfExportService`** in the
+shop's style, keeping only their A3 sheet on its side - they had drawn their own page with a blue and sizes
+of their own, and were the one PDF that already followed the language. **Not done**: an invoice's type sizes
+are fixed, and the 80mm receipt is Jasper's. The checks tab's «طباعة عنوان التقرير» (`setting.print.report.title`) sets
 a Jasper parameter no template reads - it predates this and does nothing. **Not seen**: Windows, a real
 printer, and the tab with a database behind it (the harness handed it the company).
 

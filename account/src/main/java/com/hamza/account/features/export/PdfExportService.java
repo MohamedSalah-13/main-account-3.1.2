@@ -84,6 +84,11 @@ public class PdfExportService {
     private float usableWidth = PageSize.A4.getWidth() - 2 * REPORT_MARGIN;
     /** Each table's column widths in points, in the order its cells are added. */
     private final Map<Table, float[]> columnPoints = new IdentityHashMap<>();
+    /**
+     * Whether the file being written runs right to left: a report as the reader's language does
+     * ({@link ReportSetup#rightToLeft}), an invoice or a voucher always, since its layout is drawn for it.
+     */
+    private boolean rtl = true;
 
     /** In the shop's style, as installed at start-up - or the default one where nothing is. */
     public PdfExportService() {
@@ -175,11 +180,12 @@ public class PdfExportService {
         PdfWriter writer = new PdfWriter(filePath);
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf, pageSize, false);
+        rtl = setup.rightToLeft();
         document.setFont(arabicFont);
         document.setFontSize(11);
-        // الاتجاه الافتراضي للمستند كله: من اليمين لليسار
-        document.setProperty(Property.BASE_DIRECTION, BaseDirection.RIGHT_TO_LEFT);
-        document.setTextAlignment(TextAlignment.RIGHT);
+        // الاتجاه الافتراضي للتقرير: اتجاه لغة القارئ
+        document.setProperty(Property.BASE_DIRECTION, direction());
+        document.setTextAlignment(start());
         float foot = style.pageNumbering() == PageNumbering.NONE ? REPORT_MARGIN : NUMBERED_FOOT_MARGIN;
         document.setMargins(REPORT_MARGIN, REPORT_MARGIN, foot, REPORT_MARGIN);
         usableWidth = pageSize.getWidth() - 2 * REPORT_MARGIN;
@@ -190,19 +196,52 @@ public class PdfExportService {
      * فقرة عربية جاهزة مع reshaping و bidi
      */
     private Paragraph arabicParagraph(String text) {
-        return new Paragraph(ArabicTextHelper.shape(text != null ? text : ""))
+        return new Paragraph(shape(text != null ? text : ""))
                 .setFont(arabicFont)
-                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
-                .setTextAlignment(TextAlignment.RIGHT);
+                .setBaseDirection(direction())
+                .setTextAlignment(start());
     }
 
     private Paragraph arabicParagraphBold(String text) {
-        String shaped = ArabicTextHelper.shape(text != null ? text : "");
+        String shaped = shape(text != null ? text : "");
         return new Paragraph(shaped)
                 .setFont(boldFontFor(shaped))
                 .setBold()
-                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
-                .setTextAlignment(TextAlignment.RIGHT);
+                .setBaseDirection(direction())
+                .setTextAlignment(start());
+    }
+
+    /** A whole text shaped for the page: one with no letter in it takes the page's direction. */
+    private String shape(String text) {
+        return ArabicTextHelper.shapeLine(text, text, rtl);
+    }
+
+    /** The direction the file being written runs in. */
+    private BaseDirection direction() {
+        return rtl ? BaseDirection.RIGHT_TO_LEFT : BaseDirection.LEFT_TO_RIGHT;
+    }
+
+    /** The side a line of text starts on: the right in Arabic, the left in English. */
+    private TextAlignment start() {
+        return rtl ? TextAlignment.RIGHT : TextAlignment.LEFT;
+    }
+
+    /**
+     * A line's cells in the order they are added to a table. iText places the first cell on the left
+     * whatever the direction, so a right-to-left line is reversed on its way in - its first logical
+     * column lands on the right - and a left-to-right one goes in as written.
+     */
+    private String[] inAddedOrder(String[] cells) {
+        return rtl ? reverseStrings(cells) : cells;
+    }
+
+    private float[] inAddedOrder(float[] widths) {
+        return rtl ? reverseFloats(widths) : widths;
+    }
+
+    /** Padding on the side a line starts on - where a leaf line is indented under its heading. */
+    private Cell paddedAtStart(Cell cell, float padding) {
+        return rtl ? cell.setPaddingRight(padding) : cell.setPaddingLeft(padding);
     }
 
     /**
@@ -244,13 +283,13 @@ public class PdfExportService {
      */
     private Paragraph wrapped(String text, boolean bold, float size, float width) {
         String logical = text == null ? "" : text;
-        String shaped = ArabicTextHelper.shape(logical);
+        String shaped = shape(logical);
         PdfFont font = bold ? boldFontFor(shaped) : arabicFont;
         Paragraph paragraph = new Paragraph()
                 .setFont(font)
                 .setFontSize(size)
-                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
-                .setTextAlignment(TextAlignment.RIGHT);
+                .setBaseDirection(direction())
+                .setTextAlignment(start());
         if (bold) {
             paragraph.setBold();
         }
@@ -263,7 +302,7 @@ public class PdfExportService {
             if (i > 0) {
                 paragraph.add(new Text("\n"));
             }
-            paragraph.add(new Text(ArabicTextHelper.shapeLine(lines.get(i), logical)));
+            paragraph.add(new Text(ArabicTextHelper.shapeLine(lines.get(i), logical, rtl)));
         }
         return paragraph;
     }
@@ -384,14 +423,21 @@ public class PdfExportService {
                     .setMarginTop(0).setMarginBottom(0));
         }
         Image logo = logoImage(letterhead.logo());
-        Table band = new Table(UnitValue.createPercentArray(logo == null ? new float[]{100} : new float[]{84, 16}))
-                .useAllAvailableWidth();
-        band.addCell(new Cell().add(text).setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE).setPaddingRight(logo == null ? 0 : 6));
-        if (logo != null) {
-            band.addCell(new Cell().add(logo.scaleToFit(48, 48)).setBorder(Border.NO_BORDER)
-                    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+        if (logo == null) {
+            Table band = new Table(UnitValue.createPercentArray(new float[]{100})).useAllAvailableWidth();
+            band.addCell(new Cell().add(text).setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE));
+            return band;
         }
+        // The picture on the side the page starts on, the name beside it.
+        Cell textCell = paddedAtStart(new Cell().add(text).setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE), 6);
+        Cell logoCell = new Cell().add(logo.scaleToFit(48, 48)
+                        .setHorizontalAlignment(rtl ? HorizontalAlignment.RIGHT : HorizontalAlignment.LEFT))
+                .setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        Table band = new Table(UnitValue.createPercentArray(rtl ? new float[]{84, 16} : new float[]{16, 84}))
+                .useAllAvailableWidth();
+        band.addCell(rtl ? textCell : logoCell);
+        band.addCell(rtl ? logoCell : textCell);
         return band;
     }
 
@@ -448,14 +494,13 @@ public class PdfExportService {
 
     /** A branch heading across every column: bold on the band, or ruled beneath when saving ink. */
     private Cell branchHeading(Table table, String title, int columns) {
-        Cell cell = bandCell(new Cell(1, columns)
+        Cell cell = bandCell(paddedAtStart(new Cell(1, columns)
                 .add(inCell(arabicParagraphBold(title, style.bodySize(), spanWidth(table, 8)), style.bodySize()))
                 .setFontSize(style.bodySize())
-                .setTextAlignment(TextAlignment.RIGHT)
+                .setTextAlignment(start())
                 .setVerticalAlignment(VerticalAlignment.MIDDLE)
                 .setPaddingTop(4)
-                .setPaddingBottom(4)
-                .setPaddingRight(6));
+                .setPaddingBottom(4), 6));
         return style.inkSaver() ? cell.setBorderBottom(new SolidBorder(bandTextColor, 1f)) : cell;
     }
 
@@ -464,13 +509,13 @@ public class PdfExportService {
      */
     private Table createTable(String[] headers, float[] columnWidths) {
         // عكس الأعمدة والعناوين لجعل أول عمود منطقي يظهر في أقصى اليمين
-        float[] rtlWidths = reverseFloats(columnWidths);
-        String[] rtlHeaders = reverseStrings(headers);
+        float[] rtlWidths = inAddedOrder(columnWidths);
+        String[] rtlHeaders = inAddedOrder(headers);
 
         Table table = new Table(UnitValue.createPercentArray(rtlWidths));
-        table.setBaseDirection(BaseDirection.RIGHT_TO_LEFT);
-        table.setTextAlignment(TextAlignment.RIGHT);
-        table.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.RIGHT);
+        table.setBaseDirection(direction());
+        table.setTextAlignment(start());
+        table.setHorizontalAlignment(rtl ? HorizontalAlignment.RIGHT : HorizontalAlignment.LEFT);
         table.setWidth(UnitValue.createPercentValue(100));
         table.setFont(arabicFont);
         registerColumns(table, rtlWidths);
@@ -493,12 +538,12 @@ public class PdfExportService {
      * إضافة صف للجدول مع عكس ترتيب الخلايا (RTL)
      */
     private void addTableRow(Table table, String[] rowData, boolean isAlternate) {
-        String[] rtlRow = reverseStrings(rowData);
+        String[] rtlRow = inAddedOrder(rowData);
         for (int i = 0; i < rtlRow.length; i++) {
             Cell cell = new Cell()
                     .add(inCell(arabicParagraph(rtlRow[i], style.bodySize(), textWidth(table, i, 4)), style.bodySize()))
                     .setFontSize(style.bodySize())
-                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setTextAlignment(start())
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
                     .setPadding(2);
             table.addCell(striped(cell, isAlternate));
@@ -648,26 +693,25 @@ public class PdfExportService {
 
     /** A leaf line: the first logical column is indented so it reads as belonging to the heading. */
     private void addBranchRow(Table table, String[] rowData, boolean isAlternate) {
-        String[] rtlRow = reverseStrings(rowData);
+        String[] rtlRow = inAddedOrder(rowData);
         int size = style.branchRowSize();
         for (int i = 0; i < rtlRow.length; i++) {
-            boolean first = i == rtlRow.length - 1;
-            Cell cell = new Cell()
+            boolean first = rtl ? i == rtlRow.length - 1 : i == 0;
+            Cell cell = paddedAtStart(new Cell()
                     .add(inCell(arabicParagraph(rtlRow[i], size, textWidth(table, i, first ? 20 : 8)), size))
                     .setFontSize(size)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPadding(2)
-                    .setPaddingRight(first ? 18 : 6);
+                    .setPadding(2), first ? 18 : 6);
             table.addCell(striped(cell, isAlternate));
         }
     }
 
     /** Right-aligned like the rows above it, so each figure sits under the column it sums. */
     private void addBranchSummary(Table table, String[] cells) {
-        String[] rtlCells = reverseStrings(cells);
+        String[] rtlCells = inAddedOrder(cells);
         for (int i = 0; i < rtlCells.length; i++) {
             String cell = rtlCells[i];
-            table.addCell(new Cell()
+            table.addCell(paddedAtStart(new Cell()
                     .add(inCell(arabicParagraphBold(cell == null ? "" : cell, style.totalsSize(),
                             textWidth(table, i, 8)), style.totalsSize()))
                     .setFontColor(bandTextColor)
@@ -675,8 +719,7 @@ public class PdfExportService {
                     .setBorderBottom(new SolidBorder(bandTextColor, 0.8f))
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
                     .setFontSize(style.totalsSize())
-                    .setPadding(2)
-                    .setPaddingRight(6));
+                    .setPadding(2), 6));
         }
     }
 
@@ -690,7 +733,7 @@ public class PdfExportService {
      * read the file could see it; {@code PdfExportServiceLayoutTest} reads the positions.
      */
     private void addTotalsRow(Table table, String[] cells) {
-        String[] rtlCells = reverseStrings(cells);
+        String[] rtlCells = inAddedOrder(cells);
         for (int i = 0; i < rtlCells.length; i++) {
             String cell = rtlCells[i];
             table.addCell(totalsCell(new Cell()
@@ -704,15 +747,18 @@ public class PdfExportService {
     }
 
     private void addTotalRow(Table table, String label, String total, int colspan) {
-        // خلية المجموع أولاً لتظهر في أقصى اليمين
-        float totalWidth = textWidth(table, 0, 4);
+        // The figure sits under the last column: added first in a right-to-left table, last otherwise.
+        float[] points = columnPoints.get(table);
+        float totalWidth = textWidth(table, rtl || points == null ? 0 : points.length - 1, 4);
         Cell totalCell = totalsCell(new Cell()
                 .add(inCell(arabicParagraphBold(total, style.totalsSize(), totalWidth), style.totalsSize())
                         .setTextAlignment(TextAlignment.CENTER))
                 .setTextAlignment(TextAlignment.CENTER)
                 .setFontSize(style.totalsSize())
                 .setPadding(2));
-        table.addCell(totalCell);
+        if (rtl) {
+            table.addCell(totalCell);
+        }
 
         // ثم خلية الوصف الممتدة
         Cell labelCell = totalsCell(new Cell(1, colspan)
@@ -723,6 +769,9 @@ public class PdfExportService {
                 .setFontSize(style.totalsSize())
                 .setPadding(2));
         table.addCell(labelCell);
+        if (!rtl) {
+            table.addCell(totalCell);
+        }
     }
 
     // ===================== أدوات مساعدة لعكس المصفوفات (RTL) =====================
@@ -865,6 +914,7 @@ public class PdfExportService {
     public boolean exportDocument(String filePath, DocumentPdfPage page, PageSize pageSize) {
         try (PdfDocument pdf = new PdfDocument(new PdfWriter(filePath));
              Document document = new Document(pdf, pageSize, false)) {
+            rtl = true;
             document.setFont(arabicFont);
             document.setFontSize(DOCUMENT_FONT_SIZE);
             document.setProperty(Property.BASE_DIRECTION, BaseDirection.RIGHT_TO_LEFT);

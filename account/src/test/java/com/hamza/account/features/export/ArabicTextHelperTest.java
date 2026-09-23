@@ -207,4 +207,22 @@ class ArabicTextHelperTest {
     private static String isolated(String number) {
         return LEFT_TO_RIGHT_ISOLATE + number + POP_DIRECTIONAL_ISOLATE;
     }
+
+    /**
+     * A date and a time have no direction of their own: on a right-to-left page they read right to left,
+     * as they always have, and on a left-to-right one as written - an English report printed
+     * "2026-09-23 09:01" as "09:01 2026-09-23".
+     */
+    @org.junit.jupiter.api.Test
+    void aTextWithNoLetterTakesThePagesDirection() {
+        String dateTime = "2026-09-23 09:01:00";
+        org.junit.jupiter.api.Assertions.assertEquals("09:01:00 2026-09-23",
+                ArabicTextHelper.shapeLine(dateTime, dateTime, true));
+        org.junit.jupiter.api.Assertions.assertEquals(dateTime,
+                ArabicTextHelper.shapeLine(dateTime, dateTime, false));
+        org.junit.jupiter.api.Assertions.assertEquals(ArabicTextHelper.shape(dateTime),
+                ArabicTextHelper.shapeLine(dateTime, dateTime, true), "right to left is what shape always did");
+        org.junit.jupiter.api.Assertions.assertEquals(ArabicTextHelper.shape("Total: 5"),
+                ArabicTextHelper.shapeLine("Total: 5", "Total: 5", true), "a letter still decides for itself");
+    }
 }

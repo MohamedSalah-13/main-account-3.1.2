@@ -11,12 +11,22 @@ import java.util.Objects;
  * The decisions about what the head and the foot say are made here, over plain values, so they are
  * tested without writing a PDF; {@link PdfExportService} places what these methods answer.
  *
- * @param userName the signed-in user's name, or blank
+ * @param userName    the signed-in user's name, or blank
+ * @param rightToLeft whether a report runs right to left - the reader's language decides. A report in
+ *                    English ran right to left like an Arabic one, its first column on the right under an
+ *                    English heading. An invoice or a voucher still runs right to left whatever this says:
+ *                    its letterhead, its fields and its summary box are laid out for it.
  */
-public record ReportSetup(ReportStyle style, ReportLetterhead letterhead, ReportLabels labels, String userName) {
+public record ReportSetup(ReportStyle style, ReportLetterhead letterhead, ReportLabels labels, String userName,
+                          boolean rightToLeft) {
 
     /** Between the date and the name on the line under a report's title. */
     static final String SEPARATOR = "      ";
+
+    /** Right to left, as every report printed before the direction was the reader's. */
+    public ReportSetup(ReportStyle style, ReportLetterhead letterhead, ReportLabels labels, String userName) {
+        this(style, letterhead, labels, userName, true);
+    }
 
     public ReportSetup {
         style = Objects.requireNonNullElse(style, ReportStyle.DEFAULT);
@@ -32,7 +42,7 @@ public record ReportSetup(ReportStyle style, ReportLetterhead letterhead, Report
 
     /** The same setup in another style - the settings screen previews each change this way. */
     public ReportSetup withStyle(ReportStyle newStyle) {
-        return new ReportSetup(newStyle, letterhead, labels, userName);
+        return new ReportSetup(newStyle, letterhead, labels, userName, rightToLeft);
     }
 
     /** Whether a report's head carries the company: the shop asked for it and there is something to print. */

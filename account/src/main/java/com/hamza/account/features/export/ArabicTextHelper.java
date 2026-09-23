@@ -109,6 +109,18 @@ public final class ArabicTextHelper {
      * @param paragraph the whole text the line belongs to, which decides the direction
      */
     public static String shapeLine(String line, String paragraph) {
+        return shapeLine(line, paragraph, true);
+    }
+
+    /**
+     * {@link #shapeLine(String, String)} on a page that runs {@code rightToLeft} or not.
+     * <p>
+     * The page's direction decides only a text with no letter in it - a date and a time, a code of digits
+     * and dashes - which has no direction of its own. On a right-to-left page it reads right to left, as
+     * it always has; on a left-to-right one it reads as written, or an English report printed
+     * "2026-09-23 09:01" as "09:01 2026-09-23".
+     */
+    public static String shapeLine(String line, String paragraph, boolean rightToLeft) {
         if (line == null || line.isEmpty()) {
             return "";
         }
@@ -121,7 +133,7 @@ public final class ArabicTextHelper {
             // Asked of the isolated text it would skip what the isolates hold, and a line that is all
             // English - one Latin run - would be set right to left: "Total: 5" as "5 :Total".
             Bidi bidi = new Bidi(shaped.length(), Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT);
-            bidi.setPara(shaped, paragraphLevel(paragraph == null ? line : paragraph), null);
+            bidi.setPara(shaped, paragraphLevel(paragraph == null ? line : paragraph, rightToLeft), null);
             return bidi.writeReordered(Bidi.DO_MIRRORING | Bidi.REMOVE_BIDI_CONTROLS);
         } catch (ArabicShapingException e) {
             return line;
@@ -129,8 +141,12 @@ public final class ArabicTextHelper {
     }
 
     /** Left to right when the first strong letter is, otherwise right to left - an empty line included. */
-    private static byte paragraphLevel(String text) {
-        return Bidi.getBaseDirection(text) == Bidi.LTR ? (byte) 0 : (byte) 1;
+    private static byte paragraphLevel(String text, boolean rightToLeftWhenNeutral) {
+        return switch (Bidi.getBaseDirection(text)) {
+            case Bidi.LTR -> (byte) 0;
+            case Bidi.RTL -> (byte) 1;
+            default -> rightToLeftWhenNeutral ? (byte) 1 : (byte) 0;
+        };
     }
 
     /**
