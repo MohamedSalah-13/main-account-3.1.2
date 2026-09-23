@@ -734,6 +734,37 @@
     -fx-text-fill: -app-text-muted;
 }
 
+/* The yearly report: its net sales line, beside a net profit line that wears trend-credit's colour,
+   and a card whose figure is a loss. */
+.party-trend-chart .chart-series-line.trend-sales {
+    -fx-stroke: -app-primary;
+}
+
+.party-trend-chart .chart-line-symbol.trend-sales {
+    -fx-background-color: -app-primary, -app-surface;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-sales {
+    -fx-background-color: -app-primary, white;
+}
+
+.trend-marker.trend-sales {
+    -fx-background-color: -app-primary;
+}
+
+/* Its cards stand on no party palette, and a stat value with no colour of its own came out dark on the
+   dark theme's dark card. */
+.yearly-report .party-stat-card .stat-value {
+    -fx-text-fill: -app-text-strong;
+}
+
+.party-stat-card .stat-value:negative-amount,
+.yearly-report .party-stat-card .stat-value:negative-amount,
+.party-stat-card .stat-subtitle:negative-amount,
+.party-summary-bar .stat-value:negative-amount {
+    -fx-text-fill: -app-danger;
+}
+
 /* The chart at the moment it is photographed for a PDF: dark on white whatever the theme,
    because the page is white and a dark theme's light labels would print as nothing. The class
    is on the chart only for the length of the snapshot. */

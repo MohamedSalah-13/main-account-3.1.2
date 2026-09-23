@@ -197,10 +197,6 @@ public enum DaoFactory {
         return new MonthlySalesViewDao("view_monthly_purchase");
     }
 
-    public TableDataReportsDao tableDataReportsDao() {
-        return new TableDataReportsDao();
-    }
-
     public ItemSalesRankDao itemSalesRankDao() {
         return new ItemSalesRankDao();
     }
