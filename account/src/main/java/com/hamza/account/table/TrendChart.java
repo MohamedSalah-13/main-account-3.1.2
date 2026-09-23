@@ -101,10 +101,9 @@ public final class TrendChart {
         }
         chart.getData().add(series);
         seriesStyles.put(name, List.copyOf(classes));
-        style(series.getNode(), classes);
+        restyle();
         for (int index = 0; index < points.size(); index++) {
             Node symbol = series.getData().get(index).getNode();
-            style(symbol, classes);
             if (symbol != null) {
                 P point = points.get(index);
                 Tooltip.install(symbol, new Tooltip(name + "\n" + label.apply(point) + ": "
@@ -131,9 +130,31 @@ public final class TrendChart {
         return marker;
     }
 
+    /**
+     * Puts every drawn line's classes back. {@code LineChart} sets the classes of <em>all</em> its lines
+     * and symbols back to its own ({@code chart-series-line seriesN default-colorN}) each time a line is
+     * added, so classing only the new line left every earlier one in JavaFX's default palette: of two
+     * lines, the first was drawn orange whatever its class said - close enough to the danger red on the
+     * collections trend that it passed for it, and plainly wrong on the yearly report's blue.
+     */
+    private void restyle() {
+        for (XYChart.Series<String, Number> drawn : chart.getData()) {
+            List<String> classes = seriesStyles.getOrDefault(drawn.getName(), List.of());
+            style(drawn.getNode(), classes);
+            for (XYChart.Data<String, Number> point : drawn.getData()) {
+                style(point.getNode(), classes);
+            }
+        }
+    }
+
     private static void style(Node node, List<String> classes) {
-        if (node != null) {
-            node.getStyleClass().addAll(classes);
+        if (node == null) {
+            return;
+        }
+        for (String styleClass : classes) {
+            if (!node.getStyleClass().contains(styleClass)) {
+                node.getStyleClass().add(styleClass);
+            }
         }
     }
 }

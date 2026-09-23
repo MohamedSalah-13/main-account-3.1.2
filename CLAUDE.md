@@ -2444,7 +2444,12 @@ delegate and the expenses trends draw through it, and a fourth trend takes it ra
 carries the four decisions the three copies shared: time runs left to right in either language, the
 axis is whole amounts in Latin digits, a line is coloured by its classes (the checkboxes wearing the
 same markers are the legend), and every point says its figure on hover. The move was checked by
-photographing the three screens before and after on one copy: not one pixel differed.
+photographing the three screens before and after on one copy: not one pixel differed. **Which is how a
+defect in both went unseen: only the last line drawn kept its classes.** `LineChart` sets every line's
+and every symbol's classes back to its own (`chart-series-line seriesN default-colorN`) each time a line
+is added, so an earlier line fell back to JavaFX's palette - on the collections trend its default orange
+passed for the danger red. `TrendChart.restyle` puts every line's classes back after each addition;
+found when the yearly report's blue came out orange (2026-09-23).
 
 **The customers' recency, frequency and value** (`features/party/rfm`, `CustomerRfmController`, from the
 customer balances screen and the hub) are the party profile's figures for every customer at once, and
@@ -2486,6 +2491,34 @@ item reports screen: by net sales and by margin. `docs/reports-plan.md` §13.
   the view is gone, its `DROP` kept, and `ProfitDefinitionTest` refuses it back - it would be a second
   definition of what an item sold. On a copy of real data 13 item-months were overstated by their
   line discounts and a month sold by the carton changed its first item.
+
+### The yearly report
+
+`features/profitloss/yearly` and `YearlyReportController` (the sidebar's «التقرير السنوي» and the hub,
+through `ReportTotalYearlyApplication`, which is now only its window). Rebuilt 2026-09-23; the old
+FXML screen, `TableDataReports`/`TableDataReportsDao` and its two fixed-column writers are gone.
+
+- **It is the profit and loss statement grouped by the month, and computes no profit.** Both years
+  are one call to `ProfitLossService.load` - which asks `reports.show.profit` - folded into months by
+  `YearlyReportService`. The old screen showed purchases, discounts and returns beside a profit none
+  of them explained (the cost of sales was nowhere on it); the columns are now the statement's own
+  order, so each figure on a row is worked out from the ones before it.
+- **The breakdown of the net sales** (gross, discounts, returns net of theirs) and the net purchases
+  come from `view_yearly_monthly_report` (`JdbcYearlyBreakdownRepository`), which is read for nothing
+  else. `YearlyReportRow.unexplainedSales()` is the statement's net less the breakdown's; it is zero
+  by construction and the screen and the paper say it when it is not, rather than hiding a drift.
+- **A running year stops at this month, and the year before at today's date a year back**
+  (`YearlyReportPeriod`), so nine months are never set against twelve. The running month is read to
+  its end, because the view knows only whole months. Every month up to it is a row, a quiet one as
+  zeros - the view grouped the rows that existed, so an idle month used to vanish.
+- **On screen, a figure is never inside an Arabic sentence.** A loss after an Arabic caption drew its
+  minus on the far side, and an arrow left its brackets - so each card line is a caption and
+  left-to-right labels of their own (`FigureLine`), and a date after an Arabic word is written
+  "23 سبتمبر 2025", never `2025-09-23`. A change is "+6.30%", not an arrow: the paper's font has
+  no glyph for one and printed a box.
+- `YearlyReportDatabaseAcceptanceTest` (gated, scratch schema, six cases) works 2025 out by hand and
+  holds the year to the statement's own figures. Seen on a demo schema at 1366x768 and 1920x1080, in
+  Arabic and English, light and dark, the drawer, the full view and both PDFs.
 
 ### Printed reports
 
