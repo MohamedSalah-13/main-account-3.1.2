@@ -2381,7 +2381,16 @@ letter, which is what the screen does, so "owala-5250" and "Pepsi 330" print as 
 *before* a Latin word stay the Arabic line's, again as on screen, so a code typed "74-AY" prints
 "AY-74" the way every screen draws it. `ArabicTextHelperTest` holds the paper to plain Unicode bidi
 over real names; on a database of 1,840 items the change moved 76 names, each to what the screen shows,
-and moved none away from it. The paragraph's direction is still read from the original text - asked
+and moved none away from it. **Nor numbers joined by a hyphen after an Arabic word**: a hyphen joins
+European numbers but not Arabic ones, so the screen draws the pan set "طقم مقلاية 3ق 20-24-28" as a
+list in the line's direction (28 on the left), while the whole run was isolated as one piece and
+printed 20 on the left - 16 of 1,841 names. Each number between the hyphens is isolated alone now;
+a comma, full stop, colon or slash still joins them, on screen as on paper. **A date or month the
+application writes is the exception** (`ArabicTextHelper.DATE`, a real `yyyy-MM-dd` or `yyyy-MM`):
+no screen draws a report's period, and it reads as written. A hyphen with a space on one side is
+still read as a minus sign - "26 -24- 22" prints "22 --24 26" - and is not fixed. A telephone written with
+hyphens after an Arabic word follows the same rule, so "هاتف: 010-1234-5678" prints its groups as
+5678-1234-010 - which is how the screen draws it too; checked by rendering the page before and after. The paragraph's direction is still read from the original text - asked
 of the isolated one it would skip the run, and "Total: 5" would come out "5 :Total". And the bundled bold Naskh
 has **no glyph for the minus sign**, so a negative total - the one bold row - printed as a
 positive number beside an empty box; `boldFontFor` falls back to the regular face. And the totals

@@ -134,6 +134,57 @@ class ArabicTextHelperTest {
     }
 
     /**
+     * After an Arabic letter, a hyphen between two numbers separates them, and the list reads in the
+     * line's direction. The Unicode bidi rules make those digits Arabic numbers, and only a common
+     * separator (a comma, a full stop, a colon, a slash) joins Arabic numbers: a hyphen does not. So a
+     * pan set named "... 3ق 20-24-28" is drawn by every screen with 20 on the right and 28 on the left
+     * (the returned string is in visual order, read left to right), while every PDF printed the three
+     * sizes as one left-to-right piece, 20 on the left: the same name, the opposite order.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "ماستر - طقم مقلاية 3ق 20-24-28",
+            "مقاس 10-20",
+            "كود 1-2-3 ب",
+            "مقاس 10/20",
+            "مقاس 1.5",
+            "مقاس 1,500",
+            "10-20",
+    })
+    void numbersJoinedBySeparatorsPrintWhatTheScreenDraws(String name) throws Exception {
+        assertEquals(screen(name), ArabicTextHelper.shape(name));
+    }
+
+    @Test
+    void theSizesOfAPanSetReadRightToLeft() {
+        String shaped = ArabicTextHelper.shape("ماستر - طقم مقلاية 3ق 20-24-28");
+
+        assertTrue(shaped.startsWith("28-24-20 "), shaped);
+        assertFalse(shaped.contains("20-24-28"), shaped);
+    }
+
+    /**
+     * Each number is isolated on its own and the hyphen left to the line; with no Arabic letter
+     * before them the digits are European numbers, which a hyphen does join, and they stay one piece.
+     */
+    @Test
+    void aHyphenAfterAnArabicWordIsNotPartOfEitherNumber() {
+        assertEquals("مقاس " + isolated("10") + "-" + isolated("20"), ArabicTextHelper.isolateNumbers("مقاس 10-20"));
+        assertEquals(isolated("10-20"), ArabicTextHelper.isolateNumbers("10-20"));
+    }
+
+    /**
+     * A date the application writes into a sentence is the exception, and reads as written: a
+     * report's period and the month the delegate reports print ("الشهر: 2025-10").
+     */
+    @Test
+    void aDateOrAMonthAfterAnArabicWordStaysWhole() {
+        assertEquals("الشهر: " + isolated("2025-10"), ArabicTextHelper.isolateNumbers("الشهر: 2025-10"));
+        assertTrue(ArabicTextHelper.shape("الشهر: 2025-10").contains("2025-10"));
+        assertEquals(FROM + " " + isolated("2025-10-01"), ArabicTextHelper.isolateNumbers(FROM + " 2025-10-01"));
+    }
+
+    /**
      * A line that is all English keeps its left-to-right paragraph. Asking the isolated text for its
      * direction would skip the one Latin run it holds and set "Total: 5" right to left.
      */
