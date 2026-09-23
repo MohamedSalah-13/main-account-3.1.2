@@ -36,13 +36,13 @@ public final class JdbcCurrencyRepository extends AbstractDao<Currency> implemen
     @Override
     public int insert(CurrencyDraft draft, int userId) throws DaoException {
         return insertReturningId(CurrencyQuery.INSERT_SQL, draft.code(), draft.name(), draft.symbol(),
-                draft.decimalPlaces(), draft.active(), draft.sortOrder(), userId);
+                draft.latinSymbol(), draft.decimalPlaces(), draft.active(), draft.sortOrder(), userId);
     }
 
     @Override
     public int update(CurrencyDraft draft) throws DaoException {
         return executeUpdate(CurrencyQuery.UPDATE_SQL, draft.code(), draft.name(), draft.symbol(),
-                draft.decimalPlaces(), draft.active(), draft.sortOrder(), draft.id());
+                draft.latinSymbol(), draft.decimalPlaces(), draft.active(), draft.sortOrder(), draft.id());
     }
 
     @Override
@@ -190,7 +190,7 @@ public final class JdbcCurrencyRepository extends AbstractDao<Currency> implemen
     public Currency map(ResultSet rs) throws DaoException {
         try {
             return new Currency(rs.getInt("id"), rs.getString("code"), rs.getString("name"),
-                    rs.getString("symbol"), rs.getInt("decimal_places"), rs.getBoolean("is_base"),
+                    rs.getString("symbol"), rs.getString("symbol_latin"), rs.getInt("decimal_places"), rs.getBoolean("is_base"),
                     rs.getBoolean("is_active"), rs.getInt("sort_order"));
         } catch (SQLException e) {
             throw new DaoException(e);

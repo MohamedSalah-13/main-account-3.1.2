@@ -31,6 +31,13 @@
 -- **خطأ هذا التخمين يُصلَح من شاشة العملات**: تغيير الأساسية مسموح ما دام لا سعر صرف مسجَّلًا،
 -- لأنه قبل ذلك إعادة تسمية لا تحويل (docs/currency-plan.md ق-٦).
 --
+-- ### رمزان للعرض، كاللغتين
+--
+-- `symbol` هو ما يُكتب بجوار المبلغ في الواجهة العربية («ج.م»)، و`symbol_latin` ما يُكتب في
+-- الواجهة الإنجليزية («L.E.»). الثاني اختياري: إن لم يُكتب فالرمز العربي نفسه إن لم يكن فيه حرف
+-- عربي («$»)، وإلا الرمز الدولي («KWD»). رمز عربي في واجهة إنجليزية هو ما كانت لوحة التحكم
+-- ستكتبه لو قرأت `symbol` وحده.
+--
 -- ### ما لا تفعله
 --
 -- لا عملة على الخزينة ولا على الطرف ولا على الفاتورة: كلٌّ في هجرة مرحلته، وهجرة مشحونة لا
@@ -49,7 +56,10 @@ CREATE TABLE IF NOT EXISTS currency
     code           CHAR(3)                                 NOT NULL
         COMMENT 'ISO 4217: ثلاثة حروف لاتينية كبيرة',
     name           VARCHAR(50)                             NOT NULL,
-    symbol         VARCHAR(10)                             NOT NULL,
+    symbol         VARCHAR(10)                             NOT NULL
+        COMMENT 'ما يُكتب بجوار المبلغ في الواجهة العربية',
+    symbol_latin   VARCHAR(10)                             NULL
+        COMMENT 'ما يُكتب بجواره في أي واجهة غير عربية؛ NULL = الرمز العربي إن كان لاتينيًا، وإلا الرمز الدولي',
     decimal_places TINYINT       DEFAULT 2                 NOT NULL
         COMMENT 'المنازل التي يُقرَّب إليها مبلغ بهذه العملة',
     is_base        TINYINT(1)    DEFAULT 0                 NOT NULL
@@ -94,10 +104,13 @@ CREATE TABLE IF NOT EXISTS currency_rate
 -- العملات الثلاث التي طُلبت، والأساسية
 -- ---------------------------------------------------------------------
 
-INSERT INTO currency (code, name, symbol, decimal_places, sort_order)
-VALUES ('EGP', 'جنيه مصري', 'ج.م', 2, 1),
-       ('SAR', 'ريال سعودي', 'ر.س', 2, 2),
-       ('USD', 'دولار أمريكي', '$', 2, 3);
+-- `L.E.` هو ما كانت لوحة التحكم تكتبه بجوار الجنيه في الواجهة الإنجليزية قبل هذه الهجرة
+-- (`report.dashboard.currency.symbol`)، فلا يتغير شيء أمام من يعمل بالإنجليزية. والدولار رمزه
+-- لاتيني في الواجهتين.
+INSERT INTO currency (code, name, symbol, symbol_latin, decimal_places, sort_order)
+VALUES ('EGP', 'جنيه مصري', 'ج.م', 'L.E.', 2, 1),
+       ('SAR', 'ريال سعودي', 'ر.س', 'SAR', 2, 2),
+       ('USD', 'دولار أمريكي', '$', '$', 2, 3);
 
 -- The list the settings screen offered (Currency_Setting.selectableCurrencies): every Arabic locale
 -- Java gives a currency, less the shekel it filtered out. Names, symbols and minor units are Java's.

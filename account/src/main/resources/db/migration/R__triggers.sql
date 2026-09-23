@@ -850,7 +850,7 @@ DELIMITER |
 CREATE TRIGGER audit_currency_insert AFTER INSERT ON currency FOR EACH ROW
 BEGIN
     CALL write_audit_log('currency', NEW.id, 'INSERT', @app_user_id, NULL,
-        JSON_OBJECT('code', NEW.code, 'name', NEW.name, 'symbol', NEW.symbol,
+        JSON_OBJECT('code', NEW.code, 'name', NEW.name, 'symbol', NEW.symbol, 'symbol_latin', NEW.symbol_latin,
                     'decimal_places', NEW.decimal_places, 'is_base', NEW.is_base,
                     'is_active', NEW.is_active, 'user_id', NEW.user_id),
         'Currency created');
@@ -859,10 +859,10 @@ END|
 CREATE TRIGGER audit_currency_update AFTER UPDATE ON currency FOR EACH ROW
 BEGIN
     CALL write_audit_log('currency', NEW.id, 'UPDATE', @app_user_id,
-        JSON_OBJECT('code', OLD.code, 'name', OLD.name, 'symbol', OLD.symbol,
+        JSON_OBJECT('code', OLD.code, 'name', OLD.name, 'symbol', OLD.symbol, 'symbol_latin', OLD.symbol_latin,
                     'decimal_places', OLD.decimal_places, 'is_base', OLD.is_base,
                     'is_active', OLD.is_active, 'sort_order', OLD.sort_order),
-        JSON_OBJECT('code', NEW.code, 'name', NEW.name, 'symbol', NEW.symbol,
+        JSON_OBJECT('code', NEW.code, 'name', NEW.name, 'symbol', NEW.symbol, 'symbol_latin', NEW.symbol_latin,
                     'decimal_places', NEW.decimal_places, 'is_base', NEW.is_base,
                     'is_active', NEW.is_active, 'sort_order', NEW.sort_order),
         IF(OLD.is_base <> NEW.is_base,
@@ -875,7 +875,7 @@ END|
 CREATE TRIGGER audit_currency_delete AFTER DELETE ON currency FOR EACH ROW
 BEGIN
     CALL write_audit_log('currency', OLD.id, 'DELETE', @app_user_id,
-        JSON_OBJECT('code', OLD.code, 'name', OLD.name, 'symbol', OLD.symbol,
+        JSON_OBJECT('code', OLD.code, 'name', OLD.name, 'symbol', OLD.symbol, 'symbol_latin', OLD.symbol_latin,
                     'decimal_places', OLD.decimal_places, 'is_base', OLD.is_base,
                     'is_active', OLD.is_active), NULL,
         'Currency deleted');

@@ -31,6 +31,7 @@ import javafx.collections.FXCollections;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -45,6 +46,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -57,6 +59,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -104,6 +107,7 @@ public class CurrenciesController {
     private final TextField txtCode = new TextField();
     private final TextField txtName = new TextField();
     private final TextField txtSymbol = new TextField();
+    private final TextField txtLatinSymbol = new TextField();
     private final TextField txtDecimals = new TextField();
     private final TextField txtSort = new TextField();
     private final CheckBox checkActive = new CheckBox(text("currency.active"));
@@ -215,8 +219,14 @@ public class CurrenciesController {
         txtCode.setPrefWidth(70);
         txtName.setPromptText(text("currency.name.prompt"));
         txtName.setPrefWidth(180);
-        txtSymbol.setPromptText("$");
+        txtSymbol.setPromptText("ج.م");
         txtSymbol.setPrefWidth(70);
+        // Optional: empty, the English interface prints the Arabic symbol when it is Latin, else the code.
+        txtLatinSymbol.setPromptText("L.E.");
+        // Latin text: in the Arabic layout "L.E." would be drawn ".L.E", its full stop carried to the far end.
+        txtLatinSymbol.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        txtLatinSymbol.setPrefWidth(70);
+        txtLatinSymbol.setTooltip(new Tooltip(text("currency.symbol.latin.hint")));
         txtDecimals.setPrefWidth(50);
         txtSort.setPrefWidth(60);
         checkActive.setSelected(true);
@@ -227,13 +237,14 @@ public class CurrenciesController {
         btnNew.getStyleClass().add("app-neutral-button");
         btnNew.setOnAction(event -> resetCurrencyForm());
         editingLabel.getStyleClass().add("form-hint");
-        whenEnterPressed(txtCode, txtName, txtSymbol, txtDecimals, txtSort, btnSave);
+        whenEnterPressed(txtCode, txtName, txtSymbol, txtLatinSymbol, txtDecimals, txtSort, btnSave);
 
         // A FlowPane, not an HBox: at 1366 points six fields, a check box and two buttons do not fit on
         // one line, and a row whose children may not shrink is a row wider than the window.
         FlowPane row = new FlowPane(8, 6,
                 caption("currency.code"), txtCode, caption("currency.name"), txtName,
-                caption("currency.symbol"), txtSymbol, caption("currency.decimals"), txtDecimals,
+                caption("currency.symbol"), txtSymbol, caption("currency.symbol.latin"), txtLatinSymbol,
+                caption("currency.decimals"), txtDecimals,
                 caption("currency.sort"), txtSort, checkActive, btnSave, btnNew, editingLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         VBox card = new VBox(6, row);
@@ -266,6 +277,9 @@ public class CurrenciesController {
                 withId("currencyCode", Columns.text("currency.column.code", Currency::code)),
                 withId("currencyName", Columns.text("currency.column.name", Currency::name)),
                 withId("currencySymbol", Columns.text("currency.column.symbol", Currency::symbol)),
+                // What the English interface prints, the fallback included - so an empty box reads as "KWD".
+                withId("currencyLatinSymbol", Columns.text("currency.column.symbol.latin",
+                        currency -> currency.symbolFor(Locale.ENGLISH))),
                 withId("currencyDecimals", Columns.number("currency.column.decimals", Currency::decimalPlaces)),
                 withId("currencyBase", Columns.text("currency.column.base",
                         currency -> currency.base() ? text("yes") : "")),
@@ -321,7 +335,7 @@ public class CurrenciesController {
     private void saveCurrency() {
         try {
             service.save(new CurrencyDraft(editing, txtCode.getText(), txtName.getText(), txtSymbol.getText(),
-                    whole(txtDecimals, "currency.error.decimals"), checkActive.isSelected(),
+                    txtLatinSymbol.getText(), whole(txtDecimals, "currency.error.decimals"), checkActive.isSelected(),
                     whole(txtSort, "currency.error.sort")));
             resetCurrencyForm();
             afterWrite();
@@ -335,6 +349,7 @@ public class CurrenciesController {
         txtCode.setText(currency.code());
         txtName.setText(currency.name());
         txtSymbol.setText(currency.symbol());
+        txtLatinSymbol.setText(currency.latinSymbol());
         txtDecimals.setText(String.valueOf(currency.decimalPlaces()));
         txtSort.setText(String.valueOf(currency.sortOrder()));
         checkActive.setSelected(currency.active());
@@ -347,6 +362,7 @@ public class CurrenciesController {
         txtCode.clear();
         txtName.clear();
         txtSymbol.clear();
+        txtLatinSymbol.clear();
         txtDecimals.setText("2");
         txtSort.setText("0");
         checkActive.setSelected(true);
@@ -560,7 +576,8 @@ public class CurrenciesController {
                 withId("conversionCurrency", Columns.text("currency.convert.column.currency",
                         line -> line.target().label())),
                 withId("conversionAmount", figure("currency.convert.column.amount", line -> line.available()
-                        ? CurrencyFormat.amount(line.amount(), line.target()) + " " + line.target().symbol()
+                        ? CurrencyFormat.amount(line.amount(), line.target()) + " "
+                        + line.target().symbolFor(LanguageManager.getInstance().getCurrentLocale())
                         : text("currency.rate.none"))),
                 withId("conversionRate", figure("currency.column.rate", line -> line.target().base()
                         ? "1" : line.rate() == null ? "" : CurrencyFormat.rate(line.rate().rate()))),

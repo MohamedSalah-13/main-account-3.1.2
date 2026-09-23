@@ -67,6 +67,15 @@ public final class CurrencyService {
         return base;
     }
 
+    /**
+     * Whether {@link #setBase} would still take a new base: true while no exchange rate is recorded
+     * (docs/currency-plan.md ق-٦). A hint for the settings tab, read outside any lock - {@code setBase}
+     * asks the same question again, under one.
+     */
+    public boolean baseMayChange() throws DaoException {
+        return repository.rateCount() == 0;
+    }
+
     // ---- rates -----------------------------------------------------------------------------
 
     /** One currency's recorded rates, newest day first. The history is the screen's, so it asks the screen's key. */

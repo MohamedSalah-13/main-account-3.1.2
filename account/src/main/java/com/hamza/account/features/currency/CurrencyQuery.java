@@ -18,6 +18,7 @@ public final class CurrencyQuery {
                    c.code,
                    c.name,
                    c.symbol,
+                   c.symbol_latin,
                    c.decimal_places,
                    c.is_base,
                    c.is_active,
@@ -35,8 +36,8 @@ public final class CurrencyQuery {
     public static final String BASE_SQL = COLUMNS + "WHERE c.is_base = 1";
 
     public static final String INSERT_SQL = """
-            INSERT INTO currency (code, name, symbol, decimal_places, is_active, sort_order, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""";
+            INSERT INTO currency (code, name, symbol, symbol_latin, decimal_places, is_active, sort_order, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""";
 
     /**
      * The update names what the form owns. Not {@code is_base} - see {@link CurrencyDraft} - and not
@@ -44,7 +45,7 @@ public final class CurrencyQuery {
      */
     public static final String UPDATE_SQL = """
             UPDATE currency
-            SET code = ?, name = ?, symbol = ?, decimal_places = ?, is_active = ?, sort_order = ?
+            SET code = ?, name = ?, symbol = ?, symbol_latin = ?, decimal_places = ?, is_active = ?, sort_order = ?
             WHERE id = ?""";
 
     public static final String DELETE_SQL = "DELETE FROM currency WHERE id = ?";

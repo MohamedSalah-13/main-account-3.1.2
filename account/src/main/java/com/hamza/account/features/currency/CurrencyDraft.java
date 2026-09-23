@@ -10,15 +10,18 @@ import java.util.Locale;
  * a transaction that takes the flag off one row and puts it on another. A form able to tick it would
  * be a form able to leave the books in no currency, or - for one save - in two.
  *
- * @param id 0 for a new currency
+ * @param id          0 for a new currency
+ * @param latinSymbol the symbol for an interface that is not Arabic; {@code null} when none is typed,
+ *                    and then {@link Currency#symbolFor} decides
  */
-public record CurrencyDraft(int id, String code, String name, String symbol, int decimalPlaces,
-                            boolean active, int sortOrder) {
+public record CurrencyDraft(int id, String code, String name, String symbol, String latinSymbol,
+                            int decimalPlaces, boolean active, int sortOrder) {
 
     public CurrencyDraft {
         code = code == null ? "" : code.strip().toUpperCase(Locale.ROOT);
         name = name == null ? "" : name.strip();
         symbol = symbol == null ? "" : symbol.strip();
+        latinSymbol = latinSymbol == null || latinSymbol.isBlank() ? null : latinSymbol.strip();
     }
 
     public boolean isNew() {
@@ -28,6 +31,6 @@ public record CurrencyDraft(int id, String code, String name, String symbol, int
     /** The draft that edits a stored currency and changes nothing but whether it is offered. */
     public static CurrencyDraft switching(Currency currency, boolean active) {
         return new CurrencyDraft(currency.id(), currency.code(), currency.name(), currency.symbol(),
-                currency.decimalPlaces(), active, currency.sortOrder());
+                currency.latinSymbol(), currency.decimalPlaces(), active, currency.sortOrder());
     }
 }

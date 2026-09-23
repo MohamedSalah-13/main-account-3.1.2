@@ -25,7 +25,11 @@ class CurrencyRulesTest {
     }
 
     private static CurrencyDraft draft(String code, String name, String symbol, int decimals) {
-        return new CurrencyDraft(0, code, name, symbol, decimals, true, 0);
+        return new CurrencyDraft(0, code, name, symbol, null, decimals, true, 0);
+    }
+
+    private static CurrencyDraft latin(String latinSymbol) {
+        return new CurrencyDraft(0, "EUR", "يورو", "€", latinSymbol, 2, true, 0);
     }
 
     @Nested
@@ -65,11 +69,22 @@ class CurrencyRulesTest {
         }
 
         @Test
+        @DisplayName("the English symbol is optional, within its column, and has no Arabic letter")
+        void latinSymbol() {
+            assertDoesNotThrow(() -> CurrencyRules.requireValid(latin("€"), EXISTING));
+            assertEquals(null, latin("   ").latinSymbol(), "a blank box is no symbol, not a symbol of spaces");
+            assertDoesNotThrow(() -> CurrencyRules.requireValid(latin("   "), EXISTING));
+            assertEquals("currency.error.latin.symbol.length", refusal(latin("E".repeat(11))));
+            assertEquals("currency.error.latin.symbol.script", refusal(latin("ج.م")));
+            assertEquals("currency.error.latin.symbol.script", refusal(latin("L.ج")));
+        }
+
+        @Test
         @DisplayName("the places run from 0 to 3, and the order is not negative")
         void placesAndOrder() {
             assertEquals("currency.error.decimals", refusal(draft("EUR", "يورو", "€", 4)));
             assertEquals("currency.error.decimals", refusal(draft("EUR", "يورو", "€", -1)));
-            assertEquals("currency.error.sort", refusal(new CurrencyDraft(0, "EUR", "يورو", "€", 2, true, -1)));
+            assertEquals("currency.error.sort", refusal(new CurrencyDraft(0, "EUR", "يورو", "€", null, 2, true, -1)));
         }
     }
 
@@ -88,14 +103,14 @@ class CurrencyRulesTest {
         @DisplayName("a currency keeps its own code and name when it is edited")
         void editingKeepsItsOwn() {
             assertDoesNotThrow(() -> CurrencyRules.requireValid(
-                    new CurrencyDraft(USD.id(), "USD", USD.name(), "US$", 2, true, 9), EXISTING));
+                    new CurrencyDraft(USD.id(), "USD", USD.name(), "US$", null, 2, true, 9), EXISTING));
         }
 
         @Test
         @DisplayName("an edit of a currency that is not there is refused")
         void editingNothing() {
             assertEquals("currency.error.not.found",
-                    refusal(new CurrencyDraft(99, "EUR", "يورو", "€", 2, true, 0)));
+                    refusal(new CurrencyDraft(99, "EUR", "يورو", "€", null, 2, true, 0)));
         }
 
         @Test

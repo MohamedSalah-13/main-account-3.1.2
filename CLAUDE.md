@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,580 tests** with 268 skipped (below) — the figure `mvn clean test`
+**3,587 tests** with 268 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-23 after the currencies (V80) arrived. What is
 genuinely covered:
 
@@ -1318,8 +1318,18 @@ balance and no report moves, and correcting yesterday's rate never rewrites yest
   temporary copy of the list that screen offered - else the Egyptian pound. That setting is only in
   `app_setting` once a machine running V40 or later published it, so an install jumping from before
   V40 gets the pound and corrects it on the screen. The setting, `Currency_Setting` and the dashboard's
-  hard-coded «ج.م» are gone: the price-check kiosk and the dashboard print `BaseCurrencySymbol`, and
-  the settings tab shows the base read-only.
+  hard-coded «ج.م» are gone: the price-check kiosk and the dashboard print `BaseCurrencySymbol`.
+- **The program's currency is chosen in the settings like its language, and it *is* the base** - not
+  a second setting beside it, since a symbol naming the riyal beside figures recorded in pounds is a
+  lie on the screen. The combo under the language calls `setBase` itself, rule and confirmation
+  included, and publishes `CurrenciesChanged`. Two differences from the language are the point: the
+  language is the computer's and the currency the shop's (one `is_base` row, relayed to every till),
+  and once a rate exists the combo holds the base alone with a line saying why.
+- **A currency has a symbol per interface language** (`Currency.symbolFor`): `symbol` for Arabic,
+  `symbol_latin` for any other, and with none set the Arabic symbol when it holds no Arabic letter
+  («$»), else the ISO code («KWD»). The dashboard's bundle key answered «ج.م» and «L.E.» per language
+  before V80, and the pound is seeded with `L.E.` so English readers see no change.
+  `BaseCurrencySymbol` keeps the currency, not a symbol, so switching language needs no `forget()`.
 - **A currency is stopped, not deleted**, once anything names it. Today that is its rates -
   `currency_rate.currency_id` does **not** cascade, and `DeleteRegistry.CURRENCIES` declares it; each
   phase that adds a reference declares it there in the same review.

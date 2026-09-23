@@ -23,14 +23,15 @@ class CurrencyQueryTest {
     @DisplayName("the currency writes, and how many values each binds")
     void currencyWrites() {
         assertEquals("""
-                INSERT INTO currency (code, name, symbol, decimal_places, is_active, sort_order, user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)""", CurrencyQuery.INSERT_SQL);
+                INSERT INTO currency (code, name, symbol, symbol_latin, decimal_places, is_active, sort_order, user_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", CurrencyQuery.INSERT_SQL);
         assertEquals("""
                 UPDATE currency
-                SET code = ?, name = ?, symbol = ?, decimal_places = ?, is_active = ?, sort_order = ?
+                SET code = ?, name = ?, symbol = ?, symbol_latin = ?, decimal_places = ?, is_active = ?, sort_order = ?
                 WHERE id = ?""", CurrencyQuery.UPDATE_SQL);
-        assertEquals(7, parameters(CurrencyQuery.INSERT_SQL));
-        assertEquals(7, parameters(CurrencyQuery.UPDATE_SQL));
+        assertEquals(8, parameters(CurrencyQuery.INSERT_SQL));
+        assertEquals(8, parameters(CurrencyQuery.UPDATE_SQL));
+        assertTrue(CurrencyQuery.ALL_SQL.contains("c.symbol_latin,"), "the mapper reads the English symbol");
         assertEquals("DELETE FROM currency WHERE id = ?", CurrencyQuery.DELETE_SQL);
     }
 

@@ -106,7 +106,7 @@ class CurrencyServiceTest {
         void guarded() {
             signInWith(AppPermissions.CURRENCY_SHOW, AppPermissions.CURRENCY_RATE_UPDATE);
             assertThrows(BusinessRuleException.class,
-                    () -> service.save(new CurrencyDraft(0, "EUR", "يورو", "€", 2, true, 0)));
+                    () -> service.save(new CurrencyDraft(0, "EUR", "يورو", "€", null, 2, true, 0)));
             assertThrows(BusinessRuleException.class, () -> service.setBase(SAR.id()));
             assertThrows(BusinessRuleException.class, () -> service.delete(USD.id()));
             assertTrue(repository.inserted.isEmpty());
@@ -117,9 +117,9 @@ class CurrencyServiceTest {
         @DisplayName("a new currency answers its generated id; an edit answers its own")
         void saveAnswersTheId() throws Exception {
             signInWith(AppPermissions.CURRENCY_UPDATE);
-            assertEquals(40, service.save(new CurrencyDraft(0, "eur", "يورو", "€", 2, true, 0)));
+            assertEquals(40, service.save(new CurrencyDraft(0, "eur", "يورو", "€", null, 2, true, 0)));
             assertEquals("EUR", repository.inserted.get(0).code());
-            assertEquals(USD.id(), service.save(new CurrencyDraft(USD.id(), "USD", USD.name(), "US$", 2, true, 3)));
+            assertEquals(USD.id(), service.save(new CurrencyDraft(USD.id(), "USD", USD.name(), "US$", null, 2, true, 3)));
         }
 
         @Test
@@ -128,10 +128,10 @@ class CurrencyServiceTest {
             signInWith(AppPermissions.CURRENCY_UPDATE);
             repository.duplicateKey = "currency_code_uk";
             assertEquals("currency.error.code.taken", assertThrows(UserValidationException.class,
-                    () -> service.save(new CurrencyDraft(0, "EUR", "يورو", "€", 2, true, 0))).getMessage());
+                    () -> service.save(new CurrencyDraft(0, "EUR", "يورو", "€", null, 2, true, 0))).getMessage());
             repository.duplicateKey = "currency_name_uk";
             assertEquals("currency.error.name.taken", assertThrows(UserValidationException.class,
-                    () -> service.save(new CurrencyDraft(0, "EUR", "يورو", "€", 2, true, 0))).getMessage());
+                    () -> service.save(new CurrencyDraft(0, "EUR", "يورو", "€", null, 2, true, 0))).getMessage());
         }
 
         @Test
@@ -173,6 +173,14 @@ class CurrencyServiceTest {
             signInWith(AppPermissions.CURRENCY_UPDATE);
             assertEquals("currency.error.base.inactive", assertThrows(UserValidationException.class,
                     () -> service.setBase(OLD_LIRA.id())).getMessage());
+        }
+
+        @Test
+        @DisplayName("the settings tab's hint says whether it may still move, and needs no permission to ask")
+        void mayChange() throws Exception {
+            assertEquals(true, service.baseMayChange());
+            repository.rates.add(rate(1, USD, DAY, "48.5"));
+            assertEquals(false, service.baseMayChange());
         }
 
         @Test

@@ -30,9 +30,10 @@ class CurrencyMigrationTest {
     @DisplayName("seeds the three currencies asked for, and names the base in one statement with a fallback")
     void seeds() throws IOException {
         String sql = read("V80__currencies.sql");
-        assertTrue(sql.contains("('EGP', 'جنيه مصري', 'ج.م', 2, 1)"));
-        assertTrue(sql.contains("('SAR', 'ريال سعودي', 'ر.س', 2, 2)"));
-        assertTrue(sql.contains("('USD', 'دولار أمريكي', '$', 2, 3)"));
+        // The pound's English symbol is the "L.E." the English dashboard wrote before V80.
+        assertTrue(sql.contains("('EGP', 'جنيه مصري', 'ج.م', 'L.E.', 2, 1)"));
+        assertTrue(sql.contains("('SAR', 'ريال سعودي', 'ر.س', 'SAR', 2, 2)"));
+        assertTrue(sql.contains("('USD', 'دولار أمريكي', '$', '$', 2, 3)"));
         assertEquals(1, count(sql, "UPDATE currency\nSET is_base = 1"), "the base is set exactly once");
         assertTrue(sql.contains("setting_key = 'setting.currency'"), "the base follows the settings screen");
         assertTrue(sql.contains("'EGP');"), "and falls back to what that setting fell back to");
@@ -70,6 +71,17 @@ class CurrencyMigrationTest {
         String sql = read("V80__currencies.sql");
         assertTrue(sql.contains("name           VARCHAR(" + CurrencyRules.NAME_MAX + ")"));
         assertTrue(sql.contains("symbol         VARCHAR(" + CurrencyRules.SYMBOL_MAX + ")"));
+        assertTrue(sql.contains("symbol_latin   VARCHAR(" + CurrencyRules.SYMBOL_MAX + ")                             NULL"),
+                "the English symbol is optional - Currency.symbolFor falls back");
+    }
+
+    @Test
+    @DisplayName("the audit records the English symbol beside the Arabic one")
+    void englishSymbolAudited() throws IOException {
+        String triggers = read("R__triggers.sql");
+        String section = triggers.substring(triggers.indexOf("-- currencies and their rates (V80)"));
+        assertEquals(4, section.split("'symbol_latin', ", -1).length - 1,
+                "insert, update's two sides and delete each record the English symbol");
     }
 
     @Test

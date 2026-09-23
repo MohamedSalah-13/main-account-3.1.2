@@ -22,12 +22,12 @@ final class CurrencyFixtures {
     /** Not user 1: user 1 bypasses every permission, and a test signed in as it tests nothing. */
     static final int OPERATOR = 7;
 
-    static final Currency EGP = new Currency(1, "EGP", "جنيه مصري", "ج.م", 2, true, true, 1);
-    static final Currency SAR = new Currency(2, "SAR", "ريال سعودي", "ر.س", 2, false, true, 2);
-    static final Currency USD = new Currency(3, "USD", "دولار أمريكي", "$", 2, false, true, 3);
-    static final Currency KWD = new Currency(4, "KWD", "دينار كويتي", "د.ك", 3, false, true, 4);
-    static final Currency JPY = new Currency(5, "JPY", "ين ياباني", "¥", 0, false, true, 5);
-    static final Currency OLD_LIRA = new Currency(6, "TRY", "ليرة تركية", "₺", 2, false, false, 6);
+    static final Currency EGP = new Currency(1, "EGP", "جنيه مصري", "ج.م", "L.E.", 2, true, true, 1);
+    static final Currency SAR = new Currency(2, "SAR", "ريال سعودي", "ر.س", "SAR", 2, false, true, 2);
+    static final Currency USD = new Currency(3, "USD", "دولار أمريكي", "$", "", 2, false, true, 3);
+    static final Currency KWD = new Currency(4, "KWD", "دينار كويتي", "د.ك", "", 3, false, true, 4);
+    static final Currency JPY = new Currency(5, "JPY", "ين ياباني", "¥", "", 0, false, true, 5);
+    static final Currency OLD_LIRA = new Currency(6, "TRY", "ليرة تركية", "₺", "", 2, false, false, 6);
 
     static final LocalDate DAY = LocalDate.of(2026, 9, 23);
 
@@ -108,7 +108,7 @@ final class CurrencyFixtures {
             calls.add("clearBase");
             currencies.replaceAll(currency -> currency.base()
                     ? new Currency(currency.id(), currency.code(), currency.name(), currency.symbol(),
-                    currency.decimalPlaces(), false, currency.active(), currency.sortOrder())
+                    currency.latinSymbol(), currency.decimalPlaces(), false, currency.active(), currency.sortOrder())
                     : currency);
         }
 
@@ -121,7 +121,7 @@ final class CurrencyFixtures {
             }
             currencies.replaceAll(currency -> currency.id() == id
                     ? new Currency(currency.id(), currency.code(), currency.name(), currency.symbol(),
-                    currency.decimalPlaces(), true, currency.active(), currency.sortOrder())
+                    currency.latinSymbol(), currency.decimalPlaces(), true, currency.active(), currency.sortOrder())
                     : currency);
             return 1;
         }

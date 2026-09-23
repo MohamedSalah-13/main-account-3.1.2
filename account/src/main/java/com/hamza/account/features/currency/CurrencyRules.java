@@ -26,7 +26,7 @@ public final class CurrencyRules {
     /** {@code currency.name} is {@code VARCHAR(50)}. */
     public static final int NAME_MAX = 50;
 
-    /** {@code currency.symbol} is {@code VARCHAR(10)}. */
+    /** {@code currency.symbol} and {@code currency.symbol_latin} are {@code VARCHAR(10)}. */
     public static final int SYMBOL_MAX = 10;
 
     /** {@code currency_decimals_chk}: 0 for the yen, 3 for the Kuwaiti dinar, and nothing past it. */
@@ -58,6 +58,16 @@ public final class CurrencyRules {
         }
         if (length(draft.symbol()) > SYMBOL_MAX) {
             throw new UserValidationException("currency.error.symbol.length");
+        }
+        // Optional; but one typed is what the English interface prints, so an Arabic letter in it is
+        // the Arabic symbol typed into the wrong box.
+        if (draft.latinSymbol() != null) {
+            if (length(draft.latinSymbol()) > SYMBOL_MAX) {
+                throw new UserValidationException("currency.error.latin.symbol.length");
+            }
+            if (Currency.hasArabicLetter(draft.latinSymbol())) {
+                throw new UserValidationException("currency.error.latin.symbol.script");
+            }
         }
         if (draft.decimalPlaces() < 0 || draft.decimalPlaces() > DECIMALS_MAX) {
             throw new UserValidationException("currency.error.decimals");

@@ -33,6 +33,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -136,6 +137,9 @@ class CurrencyDatabaseAcceptanceTest {
         assertEquals(3, scalar("SELECT COUNT(*) FROM currency WHERE code IN ('EGP', 'SAR', 'USD')"));
         assertEquals(1, scalar("SELECT COUNT(*) FROM currency WHERE is_base = 1"));
         assertEquals("EGP", SERVICE.base().code(), "a fresh install has no setting, and the setting fell back to it");
+        // The dashboard wrote "L.E." in English before V80, and still does.
+        assertEquals("L.E.", SERVICE.base().symbolFor(Locale.ENGLISH));
+        assertEquals("ج.م", SERVICE.base().symbolFor(Locale.of("ar")));
         assertEquals(0, scalar("SELECT COUNT(*) FROM currency_rate"));
         assertEquals(3, scalar("SELECT COUNT(*) FROM information_schema.table_constraints"
                 + " WHERE table_schema = DATABASE() AND table_name = 'currency' AND constraint_type = 'CHECK'"));
@@ -188,14 +192,19 @@ class CurrencyDatabaseAcceptanceTest {
     @Order(4)
     @DisplayName("a currency is added through the service, typed in any case, entered by the operator")
     void aCurrencyIsAdded() throws Exception {
-        int id = SERVICE.save(new CurrencyDraft(0, "eur", "يورو", "€", 2, true, 4));
+        int id = SERVICE.save(new CurrencyDraft(0, "eur", "يورو", "€", null, 2, true, 4));
         Currency euro = SERVICE.find(id);
         assertEquals("EUR", euro.code());
         assertEquals("يورو", euro.name(), "Arabic survives the round trip");
+        assertEquals(1, scalar("SELECT COUNT(*) FROM currency WHERE id = " + id + " AND symbol_latin IS NULL"),
+                "an empty English symbol is stored as none, not as an empty string");
+        assertEquals("€", euro.symbolFor(Locale.ENGLISH));
+        SERVICE.save(new CurrencyDraft(id, "EUR", "يورو", "€", "EUR", 2, true, 4));
+        assertEquals("EUR", SERVICE.find(id).symbolFor(Locale.ENGLISH), "and one typed is read back");
         assertFalse(euro.base());
         assertEquals(OPERATOR, scalar("SELECT user_id FROM currency WHERE id = " + id));
         assertEquals("currency.error.code.taken", assertThrows(UserValidationException.class,
-                () -> SERVICE.save(new CurrencyDraft(0, "EUR", "يورو آخر", "€", 2, true, 0))).getMessage());
+                () -> SERVICE.save(new CurrencyDraft(0, "EUR", "يورو آخر", "€", null, 2, true, 0))).getMessage());
     }
 
     @Test
@@ -326,7 +335,7 @@ class CurrencyDatabaseAcceptanceTest {
             assertThrows(BusinessRuleException.class, () -> SERVICE.saveRate(new ExchangeRateDraft(0, idOf("USD"),
                     LocalDate.of(2026, 10, 1), BigDecimal.TEN, null)));
             assertThrows(BusinessRuleException.class, () -> SERVICE.save(new CurrencyDraft(0, "GBP", "جنيه إسترليني",
-                    "£", 2, true, 0)));
+                    "£", null, 2, true, 0)));
             assertEquals(before, scalar("SELECT COUNT(*) FROM currency_rate"));
             assertEquals(0, scalar("SELECT COUNT(*) FROM currency WHERE code = 'GBP'"));
         } finally {
@@ -348,12 +357,15 @@ class CurrencyDatabaseAcceptanceTest {
         migrate(upgradedSchema, "classpath:db/migration");
         try (Connection connection = DriverManager.getConnection(jdbcUrl(upgradedSchema), username, password);
              Statement statement = connection.createStatement();
-             ResultSet rows = statement.executeQuery("SELECT code, decimal_places, is_base FROM currency ORDER BY code")) {
+             ResultSet rows = statement.executeQuery(
+                     "SELECT code, decimal_places, is_base, COALESCE(symbol_latin, '-') FROM currency ORDER BY code")) {
             StringBuilder seen = new StringBuilder();
             while (rows.next()) {
-                seen.append(rows.getString(1)).append(':').append(rows.getInt(2)).append(':').append(rows.getInt(3)).append(' ');
+                seen.append(rows.getString(1)).append(':').append(rows.getInt(2)).append(':').append(rows.getInt(3))
+                        .append(':').append(rows.getString(4)).append(' ');
             }
-            assertEquals("EGP:2:0 KWD:3:1 SAR:2:0 USD:2:0 ", seen.toString());
+            // The dinar the settings chose has no English symbol, so the English interface writes KWD.
+            assertEquals("EGP:2:0:L.E. KWD:3:1:- SAR:2:0:SAR USD:2:0:$ ", seen.toString());
         }
     }
 
