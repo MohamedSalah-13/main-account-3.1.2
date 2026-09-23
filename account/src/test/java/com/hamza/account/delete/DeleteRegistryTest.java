@@ -51,7 +51,8 @@ class DeleteRegistryTest {
             Map.entry(DeleteRegistry.EXPENSES_DETAILS, "expenses_details"),
             // Added with V66: the rule existed from V64 and was never checked against the schema,
             // because neither the migration nor the rule was named here.
-            Map.entry(DeleteRegistry.EXPENSE_HEADINGS, "expenses"));
+            Map.entry(DeleteRegistry.EXPENSE_HEADINGS, "expenses"),
+            Map.entry(DeleteRegistry.CURRENCIES, "currency"));
 
     private record Reference(String child, String column) {
     }

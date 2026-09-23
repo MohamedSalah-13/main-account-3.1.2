@@ -10,6 +10,8 @@ public final class AuditTableLabels {
         if (tableName == null) return null;
         return switch (tableName.toUpperCase()) {
             case "COMPANY" -> "audit.log.table.company";
+            case "CURRENCY" -> "audit.log.table.currencies";
+            case "CURRENCY_RATE" -> "audit.log.table.currency.rates";
             case "CUSTOM" -> "audit.log.table.customers";
             case "CUSTOMERS_ACCOUNTS", "CUSTOMER_ACC" -> "audit.log.table.customer.accounts";
             case "EMPLOYEES" -> "audit.log.table.employees";

@@ -9,11 +9,13 @@ import com.hamza.account.controller.convert_treasury.TreasureDetailsController;
 import com.hamza.account.controller.convert_treasury.TreasuryCapitalController;
 import com.hamza.account.controller.convert_treasury.TreasuryCashController;
 import com.hamza.account.controller.convert_treasury.TreasuryController;
+import com.hamza.account.controller.convert_treasury.CurrenciesController;
 import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.view.OpenCurrenciesApplication;
 import com.hamza.account.view.OpenExpensesApplication;
 import com.hamza.account.view.OpenTreasuryApplication;
 import com.hamza.account.view.OpenTreasuryCapitalApplication;
@@ -102,6 +104,43 @@ public class TreasuryButtons {
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new TreasuryController(daoFactory)).getPane();
                 addTape(tabPane, pane, textName(), AppIcon.TREASURY_BANK.graphic(20));
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * The currencies the shop deals in and their exchange rates (V80, docs/currency-plan.md). Opened by
+     * whoever may read a rate; defining a currency and recording a rate each ask their own key inside
+     * {@code CurrencyService}.
+     */
+    public ButtonWithPerm currencies() {
+        return new ButtonWithPerm() {
+
+            @Override
+            public PermissionKey getPermissionType() {
+                return AppPermissions.CURRENCY_SHOW;
+            }
+
+            @Override
+            public void action() throws Exception {
+                new OpenCurrenciesApplication().start(new Stage());
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return OpenCurrenciesApplication.title();
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new CurrenciesController()).getPane();
+                addTape(tabPane, pane, textName(), AppIcon.CURRENCY.graphic(20));
             }
 
             @Override

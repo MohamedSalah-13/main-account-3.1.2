@@ -827,3 +827,83 @@ BEGIN
     END IF;
 END|
 DELIMITER ;
+
+
+-- ---------------------------------------------------------------------------------------------
+-- currencies and their rates (V80)
+--
+-- A rate is the one figure here that decides what a foreign amount is worth in the books, and it
+-- may be corrected: so who typed it, who changed it from what, and who deleted it are recorded.
+-- The currency's own UPDATE names the two changes that matter - which currency the books are in,
+-- and a currency taken out of every picker. Last in the file, being the newest: every acceptance
+-- test that builds an older schema cuts this file at an earlier marker, and a trigger cannot be
+-- created on a table that does not exist yet.
+
+DROP TRIGGER IF EXISTS audit_currency_insert;
+DROP TRIGGER IF EXISTS audit_currency_update;
+DROP TRIGGER IF EXISTS audit_currency_delete;
+DROP TRIGGER IF EXISTS audit_currency_rate_insert;
+DROP TRIGGER IF EXISTS audit_currency_rate_update;
+DROP TRIGGER IF EXISTS audit_currency_rate_delete;
+
+DELIMITER |
+CREATE TRIGGER audit_currency_insert AFTER INSERT ON currency FOR EACH ROW
+BEGIN
+    CALL write_audit_log('currency', NEW.id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('code', NEW.code, 'name', NEW.name, 'symbol', NEW.symbol, 'symbol_latin', NEW.symbol_latin,
+                    'decimal_places', NEW.decimal_places, 'is_base', NEW.is_base,
+                    'is_active', NEW.is_active, 'user_id', NEW.user_id),
+        'Currency created');
+END|
+
+CREATE TRIGGER audit_currency_update AFTER UPDATE ON currency FOR EACH ROW
+BEGIN
+    CALL write_audit_log('currency', NEW.id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('code', OLD.code, 'name', OLD.name, 'symbol', OLD.symbol, 'symbol_latin', OLD.symbol_latin,
+                    'decimal_places', OLD.decimal_places, 'is_base', OLD.is_base,
+                    'is_active', OLD.is_active, 'sort_order', OLD.sort_order),
+        JSON_OBJECT('code', NEW.code, 'name', NEW.name, 'symbol', NEW.symbol, 'symbol_latin', NEW.symbol_latin,
+                    'decimal_places', NEW.decimal_places, 'is_base', NEW.is_base,
+                    'is_active', NEW.is_active, 'sort_order', NEW.sort_order),
+        IF(OLD.is_base <> NEW.is_base,
+           IF(NEW.is_base = 1, 'Base currency set', 'Base currency cleared'),
+           IF(OLD.is_active <> NEW.is_active,
+              IF(NEW.is_active = 1, 'Currency switched on', 'Currency switched off'),
+              'Currency updated')));
+END|
+
+CREATE TRIGGER audit_currency_delete AFTER DELETE ON currency FOR EACH ROW
+BEGIN
+    CALL write_audit_log('currency', OLD.id, 'DELETE', @app_user_id,
+        JSON_OBJECT('code', OLD.code, 'name', OLD.name, 'symbol', OLD.symbol, 'symbol_latin', OLD.symbol_latin,
+                    'decimal_places', OLD.decimal_places, 'is_base', OLD.is_base,
+                    'is_active', OLD.is_active), NULL,
+        'Currency deleted');
+END|
+
+CREATE TRIGGER audit_currency_rate_insert AFTER INSERT ON currency_rate FOR EACH ROW
+BEGIN
+    CALL write_audit_log('currency_rate', NEW.id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('currency_id', NEW.currency_id, 'effective_date', NEW.effective_date,
+                    'rate', NEW.rate, 'notes', NEW.notes, 'user_id', NEW.user_id),
+        'Exchange rate recorded');
+END|
+
+CREATE TRIGGER audit_currency_rate_update AFTER UPDATE ON currency_rate FOR EACH ROW
+BEGIN
+    CALL write_audit_log('currency_rate', NEW.id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('currency_id', OLD.currency_id, 'effective_date', OLD.effective_date,
+                    'rate', OLD.rate, 'notes', OLD.notes),
+        JSON_OBJECT('currency_id', NEW.currency_id, 'effective_date', NEW.effective_date,
+                    'rate', NEW.rate, 'notes', NEW.notes),
+        'Exchange rate changed');
+END|
+
+CREATE TRIGGER audit_currency_rate_delete AFTER DELETE ON currency_rate FOR EACH ROW
+BEGIN
+    CALL write_audit_log('currency_rate', OLD.id, 'DELETE', @app_user_id,
+        JSON_OBJECT('currency_id', OLD.currency_id, 'effective_date', OLD.effective_date,
+                    'rate', OLD.rate, 'notes', OLD.notes), NULL,
+        'Exchange rate deleted');
+END|
+DELIMITER ;

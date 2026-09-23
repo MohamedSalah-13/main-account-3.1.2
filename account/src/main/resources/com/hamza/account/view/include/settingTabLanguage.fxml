@@ -52,34 +52,44 @@
                                 <Label fx:id="labelLanguage" styleClass="form-label" text="%settings.language" GridPane.rowIndex="1" />
                                 <ComboBox fx:id="comboLanguage" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                <Label fx:id="labelPath" styleClass="form-label" text="%settings.image.pathLabel" GridPane.rowIndex="2" />
-                                <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="%settings.image.none" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                <!-- Beside the language on purpose: the interface's language and the program's currency are
+                                     the two things every figure on every screen is written in. -->
+                                <Label fx:id="labelCurrency" styleClass="form-label" text="%settings.currency" GridPane.rowIndex="2" GridPane.valignment="TOP" />
+                                <VBox spacing="3.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                    <children>
+                                        <ComboBox fx:id="comboCurrency" prefWidth="320.0" styleClass="modern-input" />
+                                        <Label fx:id="labelCurrencyPreview" styleClass="settings-subtitle" />
+                                        <!-- One line on purpose: JavaFX wrapped a long Arabic sentence here past its own
+                                             wrapping width, off the card (rendered 2026-09-23). The rest is the tooltip. -->
+                                        <Label fx:id="labelCurrencyNote" minHeight="-Infinity" styleClass="settings-subtitle" wrapText="true" />
+                                    </children>
+                                </VBox>
+
+                                <Label fx:id="labelPath" styleClass="form-label" text="%settings.image.pathLabel" GridPane.rowIndex="3" />
+                                <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="%settings.image.none" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="3">
                                     <children>
                                         <Button fx:id="btnPath" mnemonicParsing="false" styleClass="icon-button" text="..." />
                                         <Button fx:id="btnDeleteImage" mnemonicParsing="false" styleClass="danger-button" />
                                     </children>
                                 </HBox>
 
-                                <Label styleClass="form-label" text="%settings.language.salesInvoiceSection" GridPane.rowIndex="3" />
-                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="info-text" text="%settings.language.salesInvoiceHint" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Label styleClass="form-label" text="%settings.language.salesInvoiceSection" GridPane.rowIndex="4" />
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="info-text" text="%settings.language.salesInvoiceHint" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-                                <Label styleClass="form-label" text="%invoice.customer" GridPane.rowIndex="4" />
-                                <TextField fx:id="txtNameCustomer" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                <Button fx:id="btnSaveCustomer" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                                <Label styleClass="form-label" text="%invoice.customer" GridPane.rowIndex="5" />
+                                <TextField fx:id="txtNameCustomer" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                <Button fx:id="btnSaveCustomer" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="5" />
 
-                                <Label styleClass="form-label" text="%invoice.delegate" GridPane.rowIndex="5" />
-                                <TextField fx:id="txtNameDelegate" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                                <Button fx:id="btnSaveDelegate" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                <Label styleClass="form-label" text="%invoice.delegate" GridPane.rowIndex="6" />
+                                <TextField fx:id="txtNameDelegate" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                                <Button fx:id="btnSaveDelegate" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="6" />
 
-                                <Label fx:id="labelRate" styleClass="form-label" text="%rate" GridPane.rowIndex="6" />
-                                <TextField fx:id="textRateSel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                                <Label fx:id="labelRate" styleClass="form-label" text="%rate" GridPane.rowIndex="7" />
+                                <TextField fx:id="textRateSel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="7" />
 
-                                <Label fx:id="labelMiniRate" styleClass="form-label" text="%settings.language.printerSerialResetLabel" GridPane.rowIndex="7" />
-                                <TextField fx:id="textSerial" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="7" />
-
-                                <Label fx:id="labelCurrency" styleClass="form-label" text="%settings.currency" GridPane.rowIndex="8" />
-                                <ComboBox fx:id="comboCurrency" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="8" />
+                                <Label fx:id="labelMiniRate" styleClass="form-label" text="%settings.language.printerSerialResetLabel" GridPane.rowIndex="8" />
+                                <TextField fx:id="textSerial" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="8" />
 
                                 <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="9" />
                                 <ComboBox fx:id="comboUiScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="9" />

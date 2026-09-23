@@ -305,3 +305,14 @@
     -party-row-hover: #78350f;
     -party-row-selected: #92400e;
 }
+
+/* The currencies screen - see theme-light.css. */
+.screen-currencies {
+    -party-accent: #10b981;
+    -party-accent-dark: #047857;
+    -party-border: rgba(52, 211, 153, 0.55);
+    -party-shadow: rgba(5, 150, 105, 0.38);
+    -party-row-alt: #022c22;
+    -party-row-hover: #064e3b;
+    -party-row-selected: #065f46;
+}

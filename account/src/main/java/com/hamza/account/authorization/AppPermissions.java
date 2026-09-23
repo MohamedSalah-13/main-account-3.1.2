@@ -131,6 +131,15 @@ public final class AppPermissions {
     // which is what CRITICAL means, and neither word derives it.
     public static final PermissionKey TREASURY_CAPITAL = key("treasury.capital", PermissionRisk.CRITICAL);
     public static final PermissionKey TREASURY_OPENING = key("treasury.opening", PermissionRisk.CRITICAL);
+    /**
+     * The currencies the shop deals in and their exchange rates (V80, docs/currency-plan.md). Three keys
+     * because they are three trusts: reading a rate, recording today's, and deciding which currencies
+     * exist and which one the books are in. Granted on upgrade to whoever may edit a treasury - the person
+     * who decides what the tills are is the person who decides what they count in.
+     */
+    public static final PermissionKey CURRENCY_SHOW = key("currency.show");
+    public static final PermissionKey CURRENCY_UPDATE = key("currency.update");
+    public static final PermissionKey CURRENCY_RATE_UPDATE = key("currency.rate.update");
     public static final PermissionKey UNITS_SHOW = key("units.show");
     public static final PermissionKey UNITS_CREATE = key("units.create");
     public static final PermissionKey UNITS_UPDATE = key("units.update");

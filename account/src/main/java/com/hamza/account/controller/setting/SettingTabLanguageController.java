@@ -16,6 +16,12 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerService;
 import com.hamza.account.features.employee.EmployeeScope;
 import com.hamza.account.features.employee.EmployeeService;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.currency.Currency;
+import com.hamza.account.features.currency.CurrencyFormat;
+import com.hamza.account.features.currency.CurrencyService;
+import com.hamza.account.features.events.CurrenciesChanged;
 import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -26,6 +32,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.controlsfx.util.ImageChoose;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -35,14 +42,13 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.account.otherSetting.Currency_Setting.getCurrency;
-import static com.hamza.account.otherSetting.Currency_Setting.selectableCurrencies;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 
@@ -54,12 +60,15 @@ public class SettingTabLanguageController implements Initializable {
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final CurrencyService currencies = ServiceRegistry.get(CurrencyService.class);
+    /** Set while the combo is refilled, so putting the base back in it is not read as a choice. */
+    private boolean fillingCurrencies;
     @FXML
     private Button btnPath, btnDeleteImage;
     @FXML
-    private ComboBox<String> comboCurrency;
+    private ComboBox<Currency> comboCurrency;
     @FXML
-    private Label labelRate, labelLanguage, labelCurrency;
+    private Label labelRate, labelLanguage, labelCurrency, labelCurrencyPreview, labelCurrencyNote;
     @FXML
     private Label labelPath;
     @FXML
@@ -144,7 +153,7 @@ public class SettingTabLanguageController implements Initializable {
         // add imagePath
         var text = LanguageManager.getInstance().getString("settings.image.none");
         textPath.setText(getPathImageMainScreen().isEmpty() ? text : getPathImageMainScreen());
-        chooseCurrency();
+        configureCurrencyCombo();
 
         // Theme selection: initialize and wire listeners
         try {
@@ -268,31 +277,93 @@ public class SettingTabLanguageController implements Initializable {
     }
 
 
-    private void chooseCurrency() {
-        // The currency is printed on what the customer takes away, so it is the company's
-        // and not the till's - and this is the only control on this tab that is.
-        SettingScope.shared(comboCurrency, com.hamza.account.config.SharedSettingKeys.CURRENCY);
-        List<Map.Entry<Locale, Currency>> entries = selectableCurrencies();
+    /**
+     * The program's currency, chosen here the way its language is chosen above it - and it is the base
+     * currency (V80), the one every amount in the books is in, not a second setting beside it.
+     * <p>
+     * <b>Two differences from the language are the point.</b> The language is this computer's: two tills
+     * may read one database in two languages. The currency is the shop's, because it says what the
+     * figures in that database are - so it lives in {@code currency.is_base}, every till reads the same
+     * row, and a change here is raised as {@code CurrenciesChanged}, which the relay carries to the
+     * others. And a language changes freely while the currency changes only through
+     * {@link CurrencyService#setBase}, whose rule is that it moves only while no exchange rate is recorded:
+     * before that it corrects a wrong label, after it every rate would silently change meaning.
+     * <p>
+     * The combo offers every active currency only to a user who may set the base and only while it may
+     * still move; otherwise it holds the base alone and the line under it says why - in words, since a
+     * disabled control never shows its tooltip. Its symbol follows the interface's language
+     * ({@link Currency#symbolFor}), which the example line shows.
+     */
+    private void configureCurrencyCombo() {
+        comboCurrency.setTooltip(new Tooltip(LanguageManager.getInstance().getString("settings.currency.hint")));
+        comboCurrency.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Currency currency) {
+                return currency == null ? "" : currency.label();
+            }
 
-        for (Map.Entry<Locale, Currency> entry : entries) {
-            comboCurrency.getItems().add(entry.getValue().getDisplayName(entry.getKey()));
-        }
-
-        comboCurrency.valueProperty().addListener((observableValue, s, t1) -> {
-            Optional<Locale> first = entries.stream()
-                    .filter(localeCurrencyEntry -> localeCurrencyEntry.getValue().getDisplayName(localeCurrencyEntry.getKey()).equals(t1))
-                    .map(Map.Entry::getKey)
-                    .findFirst();
-            first.ifPresent(locale -> setSettingCurrency(locale.toString()));
+            @Override
+            public Currency fromString(String string) {
+                return null;
+            }
         });
-
-        String currency1 = getCurrency()
-                .map(localeCurrencyEntry -> localeCurrencyEntry.getValue().getDisplayName(localeCurrencyEntry.getKey())).orElse(null);
-        if (currency1 == null) {
-            comboCurrency.getSelectionModel().clearSelection();
-        } else {
-            comboCurrency.getSelectionModel().select(currency1);
+        if (currencies == null) {
+            return;
         }
+        fillCurrencies();
+        comboCurrency.valueProperty().addListener((observable, oldValue, chosen) -> {
+            if (fillingCurrencies || chosen == null || chosen.base()) return;
+            // After the popup has closed: a confirmation opened from inside the selection change would
+            // sit over a list still being dismissed.
+            Platform.runLater(() -> changeProgramCurrency(chosen));
+        });
+    }
+
+    private void fillCurrencies() {
+        try {
+            Currency base = currencies.base();
+            boolean granted = AuthorizationGuard.isGranted(AppPermissions.CURRENCY_UPDATE);
+            boolean mayChange = granted && currencies.baseMayChange();
+            List<Currency> choices = mayChange ? currencies.active() : List.of(base);
+            fillingCurrencies = true;
+            try {
+                comboCurrency.getItems().setAll(choices);
+                comboCurrency.getSelectionModel().select(choices.stream()
+                        .filter(currency -> currency.id() == base.id()).findFirst().orElse(base));
+            } finally {
+                fillingCurrencies = false;
+            }
+            String note = mayChange ? "settings.currency.note.open"
+                    : granted ? "settings.currency.note.locked" : "settings.currency.note.denied";
+            labelCurrencyNote.setText(LanguageManager.getInstance().getString(note));
+            showCurrencyExample(base);
+        } catch (Exception e) {
+            log.warn("Could not read the currencies for the settings tab", e);
+        }
+    }
+
+    private void changeProgramCurrency(Currency chosen) {
+        var languageManager = LanguageManager.getInstance();
+        String operation = languageManager.getString("settings.currency.op");
+        if (AllAlerts.confirm_all(operation, languageManager.getString("currency.base.confirm", chosen.label()))) {
+            try {
+                currencies.setBase(chosen.id());
+                // The dashboard's and the kiosk's symbol, the currencies screen, and the other tills.
+                if (eventBus != null) eventBus.publish(new CurrenciesChanged());
+            } catch (Exception e) {
+                AllAlerts.handleError(operation, e);
+            }
+        }
+        // Refused, declined or done: the combo says what the database now says.
+        fillCurrencies();
+    }
+
+    /** "For example: 1,250.00 L.E." - the base's places and its symbol in the interface's language. */
+    private void showCurrencyExample(Currency base) {
+        String symbol = base.symbolFor(LanguageManager.getInstance().getCurrentLocale());
+        String amount = CurrencyFormat.amount(BigDecimal.valueOf(1250), base);
+        labelCurrencyPreview.setText(LanguageManager.getInstance().getString("settings.currency.preview",
+                symbol.isBlank() ? amount : amount + " " + symbol));
     }
 
     private void getFileChooser() {
@@ -450,8 +521,9 @@ public class SettingTabLanguageController implements Initializable {
         labelFontSupport.setText(LanguageManager.getInstance().getString(supportKey));
     }
     /**
-     * The font preview is assembled in code from the chosen family, so it is the one
-     * piece of this tab's text a language change still has to be told about. The rest are
+     * The font preview is assembled in code from the chosen family, and the currency's example
+     * line from the symbol of the interface's language, so they are the two pieces of this
+     * tab's text a language change still has to be told about. The rest are
      * {@code %key} bindings in the FXML now - including the theme label and its radio
      * buttons, which were English literals no code ever replaced - and come back
      * translated when the tab is reopened, which is what {@link
@@ -460,6 +532,8 @@ public class SettingTabLanguageController implements Initializable {
      */
     private void refreshOwnText() {
         updateFontPreview(comboFont.getValue());
+        // The symbol is written in the interface's language, so the example line changes with it.
+        if (currencies != null) fillCurrencies();
     }
 
     /**

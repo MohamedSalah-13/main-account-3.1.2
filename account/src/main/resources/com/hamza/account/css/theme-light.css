@@ -299,3 +299,15 @@
     -party-row-hover: #fef3c7;
     -party-row-selected: #fde68a;
 }
+
+/* The currencies screen (V80), as the same palette class: emerald, the colour of money that is not the
+   books' own, told apart from an expense (amber) and a party (blue, teal) at a glance. */
+.screen-currencies {
+    -party-accent: #059669;
+    -party-accent-dark: #047857;
+    -party-border: #6ee7b7;
+    -party-shadow: rgba(5, 150, 105, 0.28);
+    -party-row-alt: #f0fdf4;
+    -party-row-hover: #d1fae5;
+    -party-row-selected: #a7f3d0;
+}

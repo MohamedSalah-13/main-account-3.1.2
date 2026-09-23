@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.StackPane?>
+
+<!-- The currencies the shop deals in and their exchange rates (V80). Built in code: see CurrenciesController. -->
+<StackPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.convert_treasury.CurrenciesController"/>

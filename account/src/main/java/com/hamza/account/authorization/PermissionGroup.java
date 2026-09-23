@@ -55,8 +55,11 @@ public enum PermissionGroup {
      */
     PARTIES("user.category.parties", "customer.", "suppliers.", "area."),
 
-    /** The tills, what moves between them, and the owner's own money. */
-    TREASURY("user.category.treasury", "treasury."),
+    /**
+     * The tills, what moves between them, the owner's own money, and the currencies they are counted in
+     * (V80): a currency is a question about cash before it is a question about anything else.
+     */
+    TREASURY("user.category.treasury", "treasury.", "currency."),
 
     EXPENSES("user.category.expenses", "expenses."),
 

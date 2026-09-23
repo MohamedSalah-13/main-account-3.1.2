@@ -66,6 +66,9 @@ import com.hamza.account.features.shift.ShiftShortageChargeService;
 import com.hamza.account.features.shift.ShiftVarianceSettlementService;
 import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.expense.ExpenseHeadingService;
+import com.hamza.account.features.currency.CurrencyService;
+import com.hamza.account.features.events.CurrenciesChanged;
+import com.hamza.account.controller.others.BaseCurrencySymbol;
 import com.hamza.account.features.expense.ExpenseService;
 import com.hamza.account.features.expense.budget.ExpenseBudgetService;
 import com.hamza.account.features.expense.recurring.ExpenseRecurringService;
@@ -244,6 +247,9 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(UserSessionContext.class, userSession);
         RbacService rbacService = new RbacService(authorizationRepository, userSession);
         ServiceRegistry.register(RbacService.class, rbacService);
+        // The symbol printed beside an amount of the books is the base currency's, and is kept; any change
+        // to the currencies - here, or on another till through the relay - makes the next reading fresh.
+        eventBus.subscribe(CurrenciesChanged.class, ignored -> BaseCurrencySymbol.forget());
         // UsersChanged is relayed to other workstations. Refreshing the immutable session
         // snapshot here makes a role or override change effective on every signed-in device.
         eventBus.subscribe(UsersChanged.class, ignored -> Thread.ofVirtual().start(() -> {
@@ -285,6 +291,8 @@ public class DownLoadApplication extends Application {
         // decision about a period, and a template reminds while the entry screen records.
         ServiceRegistry.register(ExpenseBudgetService.class, new ExpenseBudgetService());
         ServiceRegistry.register(ExpenseRecurringService.class, new ExpenseRecurringService());
+        // The currencies and their rates (V80): the catalogue every later currency phase converts with.
+        ServiceRegistry.register(CurrencyService.class, new CurrencyService());
         // The employee's account (V58). The payment service takes the expenses service rather
         // than building one: every pound paid to an employee is an expense row, so it inherits
         // the shift gate, the period lock and the cash journal instead of restating them.

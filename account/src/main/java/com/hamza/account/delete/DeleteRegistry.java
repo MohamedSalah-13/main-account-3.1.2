@@ -193,6 +193,18 @@ public final class DeleteRegistry {
             .build();
 
     /**
+     * A currency (V80). Its rates are not {@code ON DELETE CASCADE} on purpose: a currency's rate history
+     * is a record of what the shop traded at, and deleting the currency does not erase it with it - one
+     * that is merely out of use is stopped instead, which is what {@code is_active} is for. The base
+     * currency is refused before this rule is asked ({@code CurrencyRules.requireDeletable}), because it
+     * is a property of the whole database and not a row anything points at.
+     */
+    public static final DeleteRule CURRENCIES = DeleteRule.forEntity("delete.entity.currency")
+            .requirePermission(AppPermissions.CURRENCY_UPDATE)
+            .referencedBy("currency_rate", "currency_id", "delete.ref.currency.rate")
+            .build();
+
+    /**
      * Stock {@code DefaultStock.ID} is the seeded {@code 'الرئيسي'} row every document
      * still writes to; see {@link DefaultStock}. {@code items_stock}, the four invoice
      * totals tables and {@code stock_count} all carry a non-cascading {@code stock_id},

@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**3,490 tests** with 256 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 after the quick invoice became a screen of its own. What is
+**3,587 tests** with 268 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-23 after the currencies (V80) arrived. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -90,8 +90,9 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - forty `*AcceptanceTest` files exist, and the later areas' own
-sections name theirs. The reports work added four, each building a scratch schema of its own from
+**That list is itself out of date** - forty-two `*AcceptanceTest` files exist, and the later areas' own
+sections name theirs; the newest is `CurrencyDatabaseAcceptanceTest` (V80, see **Currencies**). The
+reports work added four, each building a scratch schema of its own from
 nothing and dropping it, and each run with `ACCOUNT_DB_ACCEPTANCE_CONFIG`:
 `PartyProfileDatabaseAcceptanceTest`, `CapitalDatabaseAcceptanceTest`,
 `CustomerRfmDatabaseAcceptanceTest` and `ParetoDatabaseAcceptanceTest` (`docs/reports-plan.md` §12
@@ -336,6 +337,16 @@ Two documents govern work here and are kept current — read them before large c
   session, `update.data.before.month`, and which settings tabs deserve a key. §5 says what was not
   verified, which is every screen. **Read it before touching `account.authorization`,
   `features/rbac`, `V11`-`V13`, or any migration that adds a key.**
+- **[`docs/currency-plan.md`](docs/currency-plan.md)** - the multi-currency contract, written
+  2026-09-23 at the owner's request: **the books stay in one currency, the base**, and a foreign
+  amount is recorded beside its base figure and never instead of it, so no view, balance or report
+  moves in any phase; a rate is what one unit is worth in the base, dated, and the one in force on a
+  day is the latest dated on it or before it - none is a refusal, never a zero; a movement copies its
+  rate onto its own row; the base changes only while no rate exists. **Phase A is built** (see
+  **Currencies** below); phases B-E - a treasury in a foreign currency, a party's currency, a document
+  in a foreign currency, exchange differences - wait on the decisions in §4. **Read it before touching
+  `features/currency`, `V80`, or adding any column that holds an amount in a currency other than the
+  base.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -1275,6 +1286,61 @@ definition and a warning level is not part of it; `SELECT_BELOW_MINIMUM` joins t
 itself. The dead `TreasuryMovementDao` family - eight classes and the four `@Deprecated` methods that
 mutated the *opening* balance under a name suggesting the current one - is gone; the
 `treasury_movements` table stays, deliberately dead.
+
+### Currencies
+
+`features/currency`, `CurrenciesController` (the treasury section's «العملات») and `V80`;
+`docs/currency-plan.md` is the contract and §4 of it is what the owner still has to decide.
+
+**The books are in one currency, and `currency.is_base` says which.** Every amount column was
+written in it before V80 existed and still is: V80 *named* the currency the figures had always been
+in, converting nothing. A later phase that records a foreign amount writes it **beside** the base
+figure, with the rate copied onto the same row - never a key into `currency_rate` - so no view, no
+balance and no report moves, and correcting yesterday's rate never rewrites yesterday's document.
+
+- **A rate is base units per one unit** ("the dollar at 48.50"), `DECIMAL(20, 10)`, one per currency
+  per day, and the rate in force on a day is the latest dated on it or before it. **None is a
+  refusal** (`currency.error.no.rate`), never a zero and never a one. `CurrencyQuery.RATE_ON_SQL`
+  (one currency) and `RATES_IN_FORCE_SQL` (all of them) are two statements of that one definition,
+  held to each other on every day of a month by `CurrencyDatabaseAcceptanceTest`. A rate with more
+  places than the column holds is refused, not rounded - MySQL would round it silently.
+- **Rounding is half up, once, to the target's own places** (`CurrencyConverter`): a conversion
+  between two foreign currencies passes through the base unrounded. An amount in a currency is
+  written with `CurrencyFormat.amount`, **not `Columns.money`**, which always writes two places - a
+  Kuwaiti dinar has three and a yen none.
+- **Exactly one base is the database's rule**: a unique key on a generated `base_key` (1 or NULL),
+  the `month_key`/`active_key` trick again, and a CHECK that the base is active. **The base moves
+  only while no rate exists** (`CurrencyRules.requireCanBecomeBase`): before that it is a correction
+  of a wrong label, after it every rate would silently change meaning. `setBase` locks every currency
+  row first; a rate's insert takes a shared lock on its currency's row through the foreign key, so a
+  rate cannot land between the count and the flag moving - proven with two real transactions.
+- **V80 chose the base from `setting.currency`**, the locale the settings screen stored, through a
+  temporary copy of the list that screen offered - else the Egyptian pound. That setting is only in
+  `app_setting` once a machine running V40 or later published it, so an install jumping from before
+  V40 gets the pound and corrects it on the screen. The setting, `Currency_Setting` and the dashboard's
+  hard-coded «ج.م» are gone: the price-check kiosk and the dashboard print `BaseCurrencySymbol`.
+- **The program's currency is chosen in the settings like its language, and it *is* the base** - not
+  a second setting beside it, since a symbol naming the riyal beside figures recorded in pounds is a
+  lie on the screen. The combo under the language calls `setBase` itself, rule and confirmation
+  included, and publishes `CurrenciesChanged`. Two differences from the language are the point: the
+  language is the computer's and the currency the shop's (one `is_base` row, relayed to every till),
+  and once a rate exists the combo holds the base alone with a line saying why.
+- **A currency has a symbol per interface language** (`Currency.symbolFor`): `symbol` for Arabic,
+  `symbol_latin` for any other, and with none set the Arabic symbol when it holds no Arabic letter
+  («$»), else the ISO code («KWD»). The dashboard's bundle key answered «ج.م» and «L.E.» per language
+  before V80, and the pound is seeded with `L.E.` so English readers see no change.
+  `BaseCurrencySymbol` keeps the currency, not a symbol, so switching language needs no `forget()`.
+- **A currency is stopped, not deleted**, once anything names it. Today that is its rates -
+  `currency_rate.currency_id` does **not** cascade, and `DeleteRegistry.CURRENCIES` declares it; each
+  phase that adds a reference declares it there in the same review.
+- **The catalogue and the rate in force are unguarded** - they are what later phases' documents
+  convert with, and a rate is not a figure about a person; the rate history asks `currency.show`,
+  a currency's writes `currency.update`, a rate's `currency.rate.update` (V80 grants all three to
+  whoever holds `treasury.update`). The screen asks the treasuries' product feature: a key new to the
+  catalogue would be absent from every profile already signed.
+- The audit triggers for both tables are **the last section of `R__triggers.sql`**: the two acceptance
+  tests that build an older schema cut the file at earlier markers, and a trigger cannot be created on
+  a table that does not exist yet. Keep anything added for V81+ after it.
 
 ### Shifts
 
@@ -3084,7 +3150,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V79`, which gives
+  new database executes it and continues with `V2`, `V3`, … The current head is `V80`, the currencies:
+  `currency` with exactly one base and `currency_rate` with one dated rate per currency per day, the
+  base chosen from the old `setting.currency` (see **Currencies**). Before it `V79` gives
   the quick invoice its own two keys, `sales.quick` and `purchase.quick`, granted to every role and
   `ALLOW` override that holds the matching create key (see **The quick invoice**). Before it `V78` leaves
   an item one opening balance per warehouse (`items_stock.first_balance`) and drops the other two
