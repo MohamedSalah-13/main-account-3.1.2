@@ -2657,6 +2657,26 @@ tab). Rebuilt 2026-09-23; `DialogReturnReasonsReport`, `ReturnReasonReportServic
   2025 out by hand, both sides. Seen on a demo schema at 1366x768 in Arabic and English, light and dark,
   with the drawer, the empty state, and its PDF.
 
+### Customers' and suppliers' payments
+
+`PartyPaymentsController` over `features/party/payment` - one sidebar button («مدفوعات العملاء
+والموردين») and one tab since 2026-09-23. `ReportPaid`, `report-paid.fxml` and the two buttons are gone.
+
+- **The side is chosen in the bar, among the sides this reader may read and this edition carries**
+  (`PartyPaymentsService.offeredSides`, over two plain predicates, tested). A reader with one side sees
+  no choice. The service asks the side's key on every read, as before: customers are
+  `reports.show.sales`, suppliers `reports.show.purchase`.
+- **Both features stay**, since a key new to the catalogue is missing from every profile already signed:
+  `MenuButtonSetting.configureButton(button, action, feature, alternative)` hides the one button only
+  when the edition carries neither. `ProductProfileWiringArchitectureTest` counts 52 gated buttons now.
+  The reports index keeps its two cards, each opening the screen on its own side.
+- **The shortcut is `REPORT_PARTY_PAYMENTS`**, and `SidebarShortcutManager` carries a key saved under
+  `REPORT_CUSTOMER_PAID` or `REPORT_SUPPLIER_PAID` onto it, the retirement the master-data screens had.
+- The filter is `PartyPaymentsFilter` - a text that is a name by part or, as a number (٠-٩ included),
+  a party's code or an allocated invoice, and a treasury - built into the statement and its binder in
+  one place. The cards split what came in from what went back; the table shows who entered each row.
+- `PartyPaymentsDatabaseAcceptanceTest` (gated, scratch schema, three cases, green twice).
+
 ### Printed reports
 
 The `.jrxml` templates live in **`reports/` at the repository root**, and `Configs.FILE_REPORTS`

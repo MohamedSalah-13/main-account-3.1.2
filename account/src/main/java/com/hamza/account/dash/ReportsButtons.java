@@ -15,11 +15,12 @@ import com.hamza.account.controller.name_account.PartyAgeingController;
 import com.hamza.account.controller.name_account.PartyTrendController;
 import com.hamza.account.controller.reports.*;
 import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.features.party.payment.PartyPaymentsService;
 import com.hamza.account.features.report.ReportEntry;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.ItemReportsApplication;
@@ -27,7 +28,6 @@ import com.hamza.account.view.MonthlyView;
 import com.hamza.account.view.ReportTotalYearlyApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
-import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -233,84 +233,46 @@ public class ReportsButtons extends LoadData {
         };
     }
 
-    public ButtonWithPerm reportCustomPaid() {
-        return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return AppPermissions.REPORTS_SHOW_SALES;
-            }
-
-            @Override
-            public void action() throws Exception {
-                var pane = new OpenFxmlApplication(new ReportPaid(PartyKind.CUSTOMER, textName())).getPane();
-                new OpenApplication<>(new AppSettingInterface() {
-                    @Override
-                    public Pane pane() throws Exception {
-                        return pane;
-                    }
-
-                    @Override
-                    public String title() {
-                        return textName();
-                    }
-
-                    @Override
-                    public boolean resize() {
-                        return true;
-                    }
-                });
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("report.customer.payments.title");
-            }
-        };
-    }
-
-    public ButtonWithPerm reportSupplierPaid() {
-        return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return AppPermissions.REPORTS_SHOW_PURCHASE;
-            }
-
-            @Override
-            public void action() throws Exception {
-                var pane = new OpenFxmlApplication(new ReportPaid(PartyKind.SUPPLIER, textName())).getPane();
-                new OpenApplication<>(new AppSettingInterface() {
-                    @Override
-                    public Pane pane() throws Exception {
-                        return pane;
-                    }
-
-                    @Override
-                    public String title() {
-                        return textName();
-                    }
-
-                    @Override
-                    public boolean resize() {
-                        return true;
-                    }
-                });
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("report.supplier.payments.title");
-            }
-        };
-    }
-
-
     /**
-     * Every report in one place, each card opening the report's own entry point
-     * ({@link ReportsHubController}). Public: the hub hides what a reader may not open, and every
-     * card asks its own feature and its screen asks its own permission.
+     * Customers' and suppliers' payments, one screen since 2026-09-23. It opens for a reader who may read
+     * either side - {@code reports.show.sales} for customers, {@code reports.show.purchase} for suppliers -
+     * and offers only the sides that reader may read; the service asks the side's key again on every read.
+     *
+     * @param preferred the side it opens on when that side is offered, or null for the first one offered
      */
+    public ButtonWithPerm partyPayments(PartyKind preferred) {
+        return new ButtonWithPerm() {
+            @Override
+            public PermissionKey getPermissionType() {
+                return AuthorizationGuard.isGranted(PartyPaymentsService.permissionFor(PartyKind.CUSTOMER))
+                        || AuthorizationGuard.isGranted(PartyPaymentsService.permissionFor(PartyKind.SUPPLIER))
+                        ? AppPermissions.PUBLIC_ACCESS : PermissionKey.deny();
+            }
+
+            @Override
+            public void action() {
+
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return LanguageManager.getInstance().getString("report.party.payments.title");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = PartyPaymentsController.standard(preferred).pane();
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
+        };
+    }
+
     public ButtonWithPerm reportsHub() {
         return new ButtonWithPerm() {
             @Override
@@ -363,13 +325,13 @@ public class ReportsButtons extends LoadData {
         openers.put(ReportEntry.CUSTOMER_TREND, () -> new OpenApplication<>(
                 new PartyTrendController<>(daoFactory, dataPublisher, mainScreenData.getCustomData())));
         openers.put(ReportEntry.CUSTOMER_RFM, () -> new OpenApplication<>(new CustomerRfmController()));
-        openers.put(ReportEntry.CUSTOMER_PAYMENTS, run(reportCustomPaid(), tabPane));
+        openers.put(ReportEntry.CUSTOMER_PAYMENTS, run(partyPayments(PartyKind.CUSTOMER), tabPane));
         openers.put(ReportEntry.SUPPLIER_BALANCES, run(mainScreenData.getAccountButtonsSup(), tabPane));
         openers.put(ReportEntry.SUPPLIER_AGEING, () -> new OpenApplication<>(
                 new PartyAgeingController<>(daoFactory, dataPublisher, mainScreenData.getSuppliersData())));
         openers.put(ReportEntry.SUPPLIER_TREND, () -> new OpenApplication<>(
                 new PartyTrendController<>(daoFactory, dataPublisher, mainScreenData.getSuppliersData())));
-        openers.put(ReportEntry.SUPPLIER_PAYMENTS, run(reportSupplierPaid(), tabPane));
+        openers.put(ReportEntry.SUPPLIER_PAYMENTS, run(partyPayments(PartyKind.SUPPLIER), tabPane));
 
         // The item reports open over the list's filter from the items screen; from here there is no
         // list, so they open over the whole catalogue - which is that screen's own filter before

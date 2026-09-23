@@ -96,7 +96,7 @@ public class MainScreenController extends MainItems implements Initializable {
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
             btnTreasuries, btnCurrencies, btnTreasuryCash, btnTreasuryTransfer, btnTreasuryCapital, btnTreasuryDetails, btnProcess, btnExpenses,
             btnReportHub, btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear,
-            btnReportCustomPaid, btnReportSuppliersPaid, btnReportYearly, btnReportProfitLoss,
+            btnReportPartyPayments, btnReportYearly, btnReportProfitLoss,
             btnReportReturnReasons,
             btnHome, btnSetting, btnMyShift, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
     @FXML
@@ -262,8 +262,8 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily(), ProductFeatures.REPORT_ITEMS_DAILY);
         menuButtonSetting.configureButton(btnReportSalesByYear, getReportsButtons().salesByYear(), ProductFeatures.REPORT_SALES_YEAR);
         menuButtonSetting.configureButton(btnReportPurchaseByYear, getReportsButtons().purchasesByYear(), ProductFeatures.REPORT_PURCHASES_YEAR);
-        menuButtonSetting.configureButton(btnReportCustomPaid, getReportsButtons().reportCustomPaid(), ProductFeatures.REPORT_CUSTOMER_PAYMENTS);
-        menuButtonSetting.configureButton(btnReportSuppliersPaid, getReportsButtons().reportSupplierPaid(), ProductFeatures.REPORT_SUPPLIER_PAYMENTS);
+        // One screen for both sides since 2026-09-23, and so one button that either side's feature opens.
+        menuButtonSetting.configureButton(btnReportPartyPayments, getReportsButtons().partyPayments(null), ProductFeatures.REPORT_CUSTOMER_PAYMENTS, ProductFeatures.REPORT_SUPPLIER_PAYMENTS);
         menuButtonSetting.configureButton(btnReportYearly, getReportsButtons().reportYearly(), ProductFeatures.REPORT_YEARLY);
         menuButtonSetting.configureButton(btnReportProfitLoss, getReportsButtons().profitLossReport(), ProductFeatures.REPORT_PROFIT_LOSS);
         menuButtonSetting.configureButton(btnReportReturnReasons, getReportsButtons().returnReasonsReport(), ProductFeatures.REPORT_RETURN_REASONS);
@@ -413,7 +413,7 @@ public class MainScreenController extends MainItems implements Initializable {
                 Map.entry(SidebarShortcut.ADD_SUPPLIER, btnAddSupplierName), Map.entry(SidebarShortcut.SUPPLIERS, btnSuppliers), Map.entry(SidebarShortcut.SUPPLIER_ACCOUNT, btnAccountSuppliers),
                 Map.entry(SidebarShortcut.ADD_EMPLOYEE, btnAddEmployee), Map.entry(SidebarShortcut.EMPLOYEES, btnEmployees), Map.entry(SidebarShortcut.ADD_USER, btnAddUser), Map.entry(SidebarShortcut.USERS, btnUsers),
                 Map.entry(SidebarShortcut.TREASURIES, btnTreasuries), Map.entry(SidebarShortcut.CURRENCIES, btnCurrencies), Map.entry(SidebarShortcut.TREASURY_CASH, btnTreasuryCash), Map.entry(SidebarShortcut.TREASURY_TRANSFER, btnTreasuryTransfer), Map.entry(SidebarShortcut.TREASURY_CAPITAL, btnTreasuryCapital), Map.entry(SidebarShortcut.TREASURY_DETAILS, btnTreasuryDetails), Map.entry(SidebarShortcut.TREASURY_PROCESS, btnProcess), Map.entry(SidebarShortcut.EXPENSES, btnExpenses),
-                Map.entry(SidebarShortcut.REPORT_HUB, btnReportHub), Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_SALES_YEAR, btnReportSalesByYear), Map.entry(SidebarShortcut.REPORT_PURCHASE_YEAR, btnReportPurchaseByYear), Map.entry(SidebarShortcut.REPORT_CUSTOMER_PAID, btnReportCustomPaid), Map.entry(SidebarShortcut.REPORT_SUPPLIER_PAID, btnReportSuppliersPaid), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
+                Map.entry(SidebarShortcut.REPORT_HUB, btnReportHub), Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_SALES_YEAR, btnReportSalesByYear), Map.entry(SidebarShortcut.REPORT_PURCHASE_YEAR, btnReportPurchaseByYear), Map.entry(SidebarShortcut.REPORT_PARTY_PAYMENTS, btnReportPartyPayments), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
                 Map.entry(SidebarShortcut.HOME, btnHome), Map.entry(SidebarShortcut.SETTINGS, btnSetting), Map.entry(SidebarShortcut.SHIFT_REPORTS, btnShiftReports), Map.entry(SidebarShortcut.BACKUP, btnBackup), Map.entry(SidebarShortcut.DELETE_DATA, btnDeleteData), Map.entry(SidebarShortcut.ABOUT, btnAbout), Map.entry(SidebarShortcut.CLOSE, btnClose), Map.entry(SidebarShortcut.YOUTUBE, btnYouTube));
     }
 

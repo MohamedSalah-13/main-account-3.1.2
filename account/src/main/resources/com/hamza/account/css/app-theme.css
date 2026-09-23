@@ -756,7 +756,8 @@
    dark theme's dark card. */
 .yearly-report .party-stat-card .stat-value,
 .profit-loss .party-stat-card .stat-value,
-.return-reasons .party-stat-card .stat-value {
+.return-reasons .party-stat-card .stat-value,
+.party-payments .party-stat-card .stat-value {
     -fx-text-fill: -app-text-strong;
 }
 
@@ -764,6 +765,7 @@
 .yearly-report .party-stat-card .stat-value:negative-amount,
 .profit-loss .party-stat-card .stat-value:negative-amount,
 .return-reasons .party-stat-card .stat-value:negative-amount,
+.party-payments .party-stat-card .stat-value:negative-amount,
 .party-stat-card .stat-subtitle:negative-amount,
 .party-summary-bar .stat-value:negative-amount {
     -fx-text-fill: -app-danger;
