@@ -14,6 +14,7 @@ import com.hamza.account.features.barcodeprint.BarcodePrintValidationException;
 import com.hamza.account.features.barcodeprint.BarcodePrinterSelection;
 import com.hamza.account.features.barcodeprint.Java2DBarcodePrintEngine;
 import com.hamza.account.features.barcodeprint.LabelPreviewDocument;
+import com.hamza.account.features.barcodeprint.LabelPreviewFit;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.table.ReportPreviewWindow;
 import com.hamza.account.table.TableSetting;
@@ -24,6 +25,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.controlsfx.table.Columns;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -42,6 +44,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -95,6 +99,7 @@ public class PrintBarcode implements AppSettingInterface {
     @FXML private Label labelPreviewStatus;
     @FXML private Label labelOperationStatus;
     @FXML private ImageView previewImage;
+    @FXML private StackPane previewSurface;
     @FXML private ProgressIndicator progress;
 
     public PrintBarcode(ObservableList<PrintBarcodeModel> rows) {
@@ -115,6 +120,7 @@ public class PrintBarcode implements AppSettingInterface {
         configureOptions();
         configureActions();
         configureGraphics();
+        fitPreviewInsideItsCard();
         updateSummary();
         refreshPrinters();
         if (!rows.isEmpty()) {
@@ -192,6 +198,28 @@ public class PrintBarcode implements AppSettingInterface {
         btnPreviewAll.setGraphic(AppIcon.SHOW.graphic(16));
         btnPrint.setGraphic(AppIcon.PRINT.graphic(17));
         btnClose.setGraphic(AppIcon.CLOSE.graphic(16));
+    }
+
+    /**
+     * The label follows its card as the window is resized: inside the card's padding and border, and
+     * no larger than the label itself ({@link LabelPreviewFit}). The clip is for the one frame before
+     * the first layout, when the card has no size yet.
+     */
+    private void fitPreviewInsideItsCard() {
+        previewImage.fitWidthProperty().bind(Bindings.createDoubleBinding(() -> LabelPreviewFit.side(
+                        previewSurface.getWidth() - previewSurface.getInsets().getLeft()
+                                - previewSurface.getInsets().getRight(),
+                        previewImage.getImage() == null ? 0 : previewImage.getImage().getWidth()),
+                previewSurface.widthProperty(), previewSurface.insetsProperty(), previewImage.imageProperty()));
+        previewImage.fitHeightProperty().bind(Bindings.createDoubleBinding(() -> LabelPreviewFit.side(
+                        previewSurface.getHeight() - previewSurface.getInsets().getTop()
+                                - previewSurface.getInsets().getBottom(),
+                        previewImage.getImage() == null ? 0 : previewImage.getImage().getHeight()),
+                previewSurface.heightProperty(), previewSurface.insetsProperty(), previewImage.imageProperty()));
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(previewSurface.widthProperty());
+        clip.heightProperty().bind(previewSurface.heightProperty());
+        previewSurface.setClip(clip);
     }
 
     private void applyQuantityToAll() {
