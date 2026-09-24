@@ -15,6 +15,10 @@ import com.hamza.account.wipe.WipeTarget;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.Task;
+import javafx.concurrent.Worker;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
@@ -77,6 +81,13 @@ public class DeleteDataController implements AppSettingInterface {
     private final Button btnDelete = new Button(text("wipe.button.delete"), AppIcon.DELETE.graphic());
     private final Button btnClose = new Button(text("common.close"), AppIcon.CLOSE.graphic());
 
+    /**
+     * True from the confirmation until the task ends. The overlay stops the mouse and not the
+     * keyboard: Escape closed the window with the backup and the wipe still running and nothing on
+     * screen to say so, and Space on a focused delete button could start a second wipe over the first.
+     */
+    private final BooleanProperty wiping = new SimpleBooleanProperty(false);
+
     private MaskerPaneSetting masker;
     /** Set while the boxes are being made to match the selection, so their listeners stay out. */
     private boolean syncing;
@@ -85,6 +96,7 @@ public class DeleteDataController implements AppSettingInterface {
     public Pane pane() {
         VBox content = new VBox(12, titleBar(), warning(), cardsRow(), summary(), footer());
         content.setPadding(new Insets(16));
+        content.disableProperty().bind(wiping);
 
         StackPane root = new StackPane(content);
         root.getStyleClass().addAll("app-root", "wipe-screen");
@@ -96,7 +108,9 @@ public class DeleteDataController implements AppSettingInterface {
         root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
                 event.consume();
-                close();
+                if (!wiping.get()) {
+                    close();
+                }
             }
         });
         refresh();
@@ -315,6 +329,7 @@ public class DeleteDataController implements AppSettingInterface {
         if (!AllAlerts.confirm_all(text("wipe.confirm.title"), text("wipe.confirm.message", kinds))) {
             return;
         }
+        wiping.set(true);
         masker.showMaskerPane(text("wipe.running"), () -> {
             // A backup that fails aborts the wipe: there would be nothing to go back to.
             SaveDatabaseFile.save(BackupKind.BEFORE_DELETE, false);
@@ -322,7 +337,15 @@ public class DeleteDataController implements AppSettingInterface {
             // onSucceeded and announce a wipe that did not happen.
             new WipeService().run(plan);
         });
-        masker.getVoidTask().setOnSucceeded(event -> {
+        Task<Void> task = masker.getVoidTask();
+        // Every ending, not only success: a failed backup leaves the screen to be used again. No state
+        // change can arrive before this line - they are delivered on this thread, which is busy here.
+        task.stateProperty().addListener((observable, was, state) -> {
+            if (state == Worker.State.SUCCEEDED || state == Worker.State.FAILED || state == Worker.State.CANCELLED) {
+                wiping.set(false);
+            }
+        });
+        task.setOnSucceeded(event -> {
             // Offering to run the same wipe again is the last thing the screen should do.
             selection.clear();
             refresh();
