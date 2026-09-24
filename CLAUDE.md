@@ -371,6 +371,16 @@ Two documents govern work here and are kept current — read them before large c
   **Read it before touching `features/currency`,
   `features/party/currency`, `V80`-`V83`, the foreign half of `InvoiceSaveService`, or adding any column
   that holds an amount in a currency other than the base.**
+- **[`docs/pricing-and-offers-plan.md`](docs/pricing-and-offers-plan.md)** - item 3 of
+  `docs/product-plan.md` §1, written 2026-09-24 at the owner's request and **not started**: the
+  wholesale, retail and piece price tiers, and offers and bundles on items. The two ideas it rests on:
+  **a tier answers who is buying and an offer answers when and how many**, and **an offer never changes
+  a stored price - it writes a discount on the line** (`offer_id`, `offer_discount` beside `discount`),
+  allocated by value across the lines that earned it, so `document_profit`, the returns guards, the
+  receipt and the delegate's commission base need no change. A bundle is an offer over ordinary lines,
+  not a composite item (`items_package` stays dead). §8 holds the owner's decisions, the first of them
+  whether it opens before item 1. **Read it before touching `type_price`, the `sel_price1..3` columns,
+  the discount half of `InvoiceSaveService`, or anything under `features/pricing` or `features/offers`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
