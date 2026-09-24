@@ -312,7 +312,12 @@ Two documents govern work here and are kept current — read them before large c
   that arrives mid-item is written there in one line, not built. Two plans hang off it, **each with
   its phase A built and nothing after it**: [`docs/licensing-server-plan.md`](docs/licensing-server-plan.md) - the licence stays
   verified offline and the server only issues it, the server gets a **second key** because
-  `ReleaseSigningKey` also signs emergency recovery, and an expiry never reaches `failAndExit` - and
+  `ReleaseSigningKey` also signs emergency recovery, and an expiry never reaches `failAndExit`. Since
+  2026-09-24 the server is a private repository of its own, `accountk-license-server`, with its own plan
+  and a dashboard for the vendor; §9 of this plan is what binds this side - the program accepts a **set**
+  of server keys, never one (rotating a single key would send every licensed shop down the trial path
+  and lock it), it sends a technical-only check-in that is not `WorkstationHeartbeat`, and the update is
+  split into a notification that runs nothing and a later installer run - and
   [`docs/delegates-plan.md`](docs/delegates-plan.md) - the dated commission rule, the frozen monthly
   run, and why a collection's delegate is written at entry rather than derived. **Read the first before
   starting any large item, and the matching one before touching `TrialManager` or anything under
