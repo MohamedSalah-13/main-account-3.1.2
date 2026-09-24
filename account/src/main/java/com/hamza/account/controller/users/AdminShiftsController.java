@@ -44,6 +44,7 @@ import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -1041,22 +1042,22 @@ public class AdminShiftsController {
                     new UserValidationException(message("party.error.no.data.export")));
             return;
         }
+        if (!excel) {
+            printPeriodReport(periodReport);
+            return;
+        }
         FileChooser chooser = new FileChooser();
-        chooser.setTitle(message(excel ? "user.shift.report.period.export.excel"
-                : "user.shift.report.period.export.pdf"));
-        String extension = excel ? ".xlsx" : ".pdf";
-        chooser.setInitialFileName(message("user.shift.report.period.file.name") + extension);
+        chooser.setTitle(message("user.shift.report.period.export.excel"));
+        chooser.setInitialFileName(message("user.shift.report.period.file.name") + ".xlsx");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
-                message(excel ? "user.shift.report.period.file.excel" : "user.shift.report.period.file.pdf"),
-                "*" + extension));
+                message("user.shift.report.period.file.excel"), "*.xlsx"));
         File target = chooser.showSaveDialog(periodReportTable.getScene().getWindow());
         if (target == null) return;
         ShiftPeriodReport reportToExport = periodReport;
         setPeriodReportBusy(true);
         CompletableFuture.runAsync(() -> {
             try {
-                if (excel) periodExports.exportExcel(target.toPath(), reportToExport);
-                else periodExports.exportPdf(target.toPath(), reportToExport);
+                periodExports.exportExcel(target.toPath(), reportToExport);
             } catch (Exception error) {
                 throw new CompletionException(error);
             }
@@ -1068,6 +1069,22 @@ public class AdminShiftsController {
             }
             AllAlerts.alertSaveWithMessage(message("party.export.success.saved.at", target.getAbsolutePath()));
         }));
+    }
+
+    /**
+     * The period report's PDF the way every report prints: saved, sent to the printer, looked at first or
+     * asked each time ({@link TablePdfReport#chooseTarget}). It had a save dialog of its own, so it could
+     * be neither printed directly nor previewed. Its page stays A3 on its side - fourteen columns - and a
+     * direct print shrinks it onto the paper the reports are set to.
+     */
+    private void printPeriodReport(ShiftPeriodReport report) {
+        File target = TablePdfReport.chooseTarget(periodReportTable.getScene().getWindow(),
+                message("user.shift.report.period.title"));
+        if (target == null) return;
+        TablePdfReport.write(target, file -> {
+            periodExports.exportPdf(file.toPath(), report);
+            return true;
+        });
     }
 
     private void setPeriodReportBusy(boolean busy) {
@@ -1353,20 +1370,23 @@ public class AdminShiftsController {
         }
         mainProgress.setVisible(true);
         updateReprintState();
-        CompletableFuture.runAsync(() -> {
+        CompletableFuture.supplyAsync(() -> {
             try {
-                printReports.printShiftReportOrThrow(shiftReports.buildZReport(selected.getId()));
+                return printReports.printShiftReportOrThrow(shiftReports.buildZReport(selected.getId()));
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
-        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+        }).whenComplete((sent, error) -> Platform.runLater(() -> {
             mainProgress.setVisible(false);
             updateReprintState();
             if (error != null) {
                 AllAlerts.handleError(message("user.shift.error.print.zreport.title"), rootCause(error));
                 return;
             }
-            AllAlerts.alertSaveWithMessage(message("user.shift.msg.print.z.success"));
+            // Shown in the preview, it is printed from there, which says so itself.
+            if (Boolean.TRUE.equals(sent)) {
+                AllAlerts.alertSaveWithMessage(message("user.shift.msg.print.z.success"));
+            }
         }));
     }
 

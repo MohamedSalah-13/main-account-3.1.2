@@ -3,7 +3,8 @@ package com.hamza.account.table;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.features.export.DirectPdfPrintService;
-import com.hamza.account.features.export.PdfPageRenderer;
+import com.hamza.account.features.export.PdfPreviewDocument;
+import com.hamza.account.features.export.PreviewDocument;
 import com.hamza.account.features.export.PreviewPager;
 import com.hamza.account.features.totals.PageJump;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -51,9 +52,8 @@ import lombok.extern.log4j.Log4j2;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,15 +64,17 @@ import static com.hamza.account.config.PropertiesName.getSettingPrinterNormal;
  * A written report shown page by page before it goes anywhere - printed from here, to a printer and a
  * number of copies chosen here, or saved as a PDF.
  * <p>
- * <b>It shows the file that will be printed, not a second drawing of the report.</b> The PDF is written
+ * <b>It shows what will be printed, not a second drawing of the report.</b> A report's PDF is written
  * once by {@link TablePdfReport#write}, exactly as a saved or directly printed one is, and each page is
- * drawn from it by PDFBox - the library the direct print sends it through. So what is looked at is what
- * the printer is handed.
+ * drawn from it by PDFBox - the library the direct print sends it through. A shift's X or Z report is
+ * the filled Jasper paper, drawn and printed through Java2D as the thermal printer is sent it. Either
+ * way the window asks a {@link PreviewDocument} and knows neither; a paper that cannot be saved as a
+ * PDF has no save button.
  * <p>
- * The file is a temporary one and is this window's: it is deleted when the window closes, after the
- * document holding it open is closed (Windows will not delete an open file). One page is drawn at a
- * time, on a worker, at the size it is shown ({@link PdfPageRenderer}); a page asked for and then
- * replaced by another before it was drawn is thrown away rather than shown late.
+ * A report's file is a temporary one and is this window's: it is deleted when the window closes, after
+ * the document holding it open is closed (Windows will not delete an open file). One page is drawn at a
+ * time, on a worker, at the size it is shown; a page asked for and then replaced by another before it
+ * was drawn is thrown away rather than shown late.
  * <p>
  * The decisions - which page, what size - are {@link PreviewPager}'s, tested without a toolkit; this
  * class is the controls around them.
@@ -84,8 +86,14 @@ public final class ReportPreviewWindow {
     /** Space kept round the page inside the scroll pane, so a fitted page does not touch the edges. */
     private static final double PAGE_MARGIN = 28;
 
-    private final File pdf;
     private final String title;
+    /** Opens what is shown, on the worker; a PDF is read from its file there. */
+    private final Callable<PreviewDocument> opener;
+    /** Runs once the window is closed and the document with it - a report's temporary file goes here. */
+    private final Runnable discard;
+    /** The printer offered first: the normal one for a report, the thermal one for a shift's paper. */
+    private final String defaultPrinter;
+    private final boolean savable;
     private final LanguageManager language = LanguageManager.getInstance();
     private final boolean rightToLeft = language.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     private final Stage stage = new Stage();
@@ -117,7 +125,7 @@ public final class ReportPreviewWindow {
     private final Button fitWidth = new Button();
     private final Button close = new Button();
 
-    private volatile PdfPageRenderer pages;
+    private volatile PreviewDocument pages;
     private PreviewPager pager;
     private float[] pageWidths = new float[0];
     private float[] pageHeights = new float[0];
@@ -128,9 +136,13 @@ public final class ReportPreviewWindow {
     private boolean busy;
     private boolean disposed;
 
-    private ReportPreviewWindow(File pdf, String title) {
-        this.pdf = pdf;
+    private ReportPreviewWindow(String title, Callable<PreviewDocument> opener, Runnable discard,
+                                String defaultPrinter, boolean savable) {
         this.title = title == null ? "" : title;
+        this.opener = opener;
+        this.discard = discard;
+        this.defaultPrinter = defaultPrinter;
+        this.savable = savable;
     }
 
     /**
@@ -140,7 +152,22 @@ public final class ReportPreviewWindow {
      * @param owner the window the report was asked for from, or null
      */
     public static void open(Window owner, String title, File pdf) {
-        new ReportPreviewWindow(pdf, title).show(owner);
+        new ReportPreviewWindow(title, () -> PdfPreviewDocument.open(pdf, TablePdfReport.configuredPaperSize()),
+                () -> {
+                    if (pdf.exists() && !pdf.delete()) {
+                        pdf.deleteOnExit();
+                    }
+                }, getSettingPrinterNormal(), true).show(owner);
+    }
+
+    /**
+     * Opens the preview of a document already in hand - a filled Jasper paper. Call it from the JavaFX
+     * thread; the window closes the document when it closes.
+     *
+     * @param defaultPrinter the printer offered first, as the settings name it
+     */
+    public static void open(Window owner, String title, PreviewDocument document, String defaultPrinter) {
+        new ReportPreviewWindow(title, () -> document, () -> { }, defaultPrinter, document.canSave()).show(owner);
     }
 
     private void show(Window owner) {
@@ -191,6 +218,8 @@ public final class ReportPreviewWindow {
         copiesLabel.getStyleClass().add("form-label");
         button(save, "report.preview.save", AppIcon.SAVE, "report.preview.save.tip", this::save);
         save.getStyleClass().add("neutral-button");
+        save.setVisible(savable);
+        save.setManaged(savable);
 
         // A right-to-left window lays the buttons out mirrored but draws each glyph as it is, so the arrow is
         // picked by the direction: the next page is the arrow pointing left in Arabic, right in English.
@@ -338,12 +367,12 @@ public final class ReportPreviewWindow {
 
     // ----------------------------------------------------------------------------- the document
 
-    /** Opens the file and reads every page's size on the worker; the first page follows. */
+    /** Opens the document and reads every page's size on the worker; the first page follows. */
     private void load() {
-        Task<PdfPageRenderer> open = new Task<>() {
+        Task<PreviewDocument> open = new Task<>() {
             @Override
-            protected PdfPageRenderer call() throws Exception {
-                PdfPageRenderer opened = PdfPageRenderer.open(pdf);
+            protected PreviewDocument call() throws Exception {
+                PreviewDocument opened = opener.call();
                 int count = opened.pageCount();
                 float[] widths = new float[count];
                 float[] heights = new float[count];
@@ -385,7 +414,7 @@ public final class ReportPreviewWindow {
         lookup.setOnSucceeded(event -> {
             List<String> names = lookup.getValue();
             printer.getItems().setAll(names);
-            String configured = getSettingPrinterNormal();
+            String configured = defaultPrinter;
             if (configured != null && !configured.isBlank()) {
                 if (!names.contains(configured)) {
                     // Shown even when it is gone, so the choice the settings made is visible - and fails
@@ -468,12 +497,12 @@ public final class ReportPreviewWindow {
         updateControls();
 
         double density = stage.getOutputScaleX() > 0 ? stage.getOutputScaleX() : 1;
-        float drawScale = (float) Math.min(PdfPageRenderer.MAX_SCALE, scale * density);
+        float drawScale = (float) Math.min(PreviewDocument.MAX_SCALE, scale * density);
         if (index == drawnPage && Math.abs(drawScale - drawnScale) < 0.01f) {
             return;
         }
         long mine = ticket.incrementAndGet();
-        PdfPageRenderer document = pages;
+        PreviewDocument document = pages;
         worker.submit(() -> {
             if (mine != ticket.get()) {
                 return;
@@ -491,7 +520,7 @@ public final class ReportPreviewWindow {
                         }
                     }
                 });
-            } catch (IOException | RuntimeException e) {
+            } catch (Exception e) {
                 log.error("A page of the report preview could not be drawn", e);
                 Platform.runLater(() -> status.setText(language.getString("report.preview.failed")));
             }
@@ -538,11 +567,12 @@ public final class ReportPreviewWindow {
             return;
         }
         int count = copies.getValue() == null ? 1 : copies.getValue();
+        PreviewDocument document = pages;
         setBusy(true, "report.preview.printing");
         Task<Void> send = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                DirectPdfPrintService.print(pdf, chosen, TablePdfReport.configuredPaperSize(), count);
+                document.print(chosen, count);
                 return null;
             }
         };
@@ -556,7 +586,7 @@ public final class ReportPreviewWindow {
     }
 
     private void save() {
-        if (busy || pages == null) {
+        if (busy || pages == null || !savable) {
             return;
         }
         FileChooser chooser = new FileChooser();
@@ -567,11 +597,12 @@ public final class ReportPreviewWindow {
         if (target == null) {
             return;
         }
+        PreviewDocument document = pages;
         setBusy(true, null);
         Task<Void> copy = new Task<>() {
             @Override
             protected Void call() throws IOException {
-                Files.copy(pdf.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                document.saveAs(target.toPath());
                 return null;
             }
         };
@@ -599,7 +630,7 @@ public final class ReportPreviewWindow {
     // ----------------------------------------------------------------------------- closing
 
     /**
-     * Stops drawing, closes the document and deletes the file - on the worker, after any page it is
+     * Stops drawing, closes the document and deletes a report's file - on the worker, after any page it is
      * drawing, so the document is not closed under it. Once only.
      */
     private void dispose() {
@@ -609,23 +640,21 @@ public final class ReportPreviewWindow {
         disposed = true;
         ticket.incrementAndGet();
         settle.stop();
-        PdfPageRenderer document = pages;
+        PreviewDocument document = pages;
         pages = null;
         worker.submit(() -> closeAndDelete(document));
         worker.shutdown();
     }
 
-    private void closeAndDelete(PdfPageRenderer document) {
+    private void closeAndDelete(PreviewDocument document) {
         try {
             if (document != null) {
                 document.close();
             }
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             log.warn("The report preview's document did not close cleanly", e);
         } finally {
-            if (pdf.exists() && !pdf.delete()) {
-                pdf.deleteOnExit();
-            }
+            discard.run();
         }
     }
 }

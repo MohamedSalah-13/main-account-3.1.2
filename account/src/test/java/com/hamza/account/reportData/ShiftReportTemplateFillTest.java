@@ -41,7 +41,7 @@ class ShiftReportTemplateFillTest {
         return fromModule.isFile() ? fromModule : new File("reports/ar/shift-report-80mm.jrxml");
     }
 
-    private static ShiftReportLayout layout(ShiftReportType type) {
+    static ShiftReportLayout layout(ShiftReportType type) {
         UserShift shift = new UserShift();
         shift.setId(2);
         shift.setUsername("admin");
@@ -62,7 +62,7 @@ class ShiftReportTemplateFillTest {
                 LocalDateTime.of(2026, 9, 22, 18, 8, 48), "admin", key -> key);
     }
 
-    private static JasperPrint fill(ShiftReportLayout layout) throws Exception {
+    static JasperPrint fill(ShiftReportLayout layout) throws Exception {
         HashMap<String, Object> parameters = Print_Reports.shiftReportParameters(layout);
         parameters.put("compName", "company");
         parameters.put("REPORT_LOCALE", Locale.forLanguageTag("ar"));
