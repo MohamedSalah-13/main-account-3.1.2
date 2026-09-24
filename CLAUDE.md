@@ -3071,8 +3071,8 @@ pages drawn up front is hundreds of megabytes. Which page and what size are `Pre
 a toolkit. **The page arrows are picked by the language**: a right-to-left window lays its buttons out
 mirrored but draws each glyph as it is, so "next" is the arrow pointing left in Arabic. The default mode is
 still saving a file, so nothing changed on upgrade; the shop turns the preview on in the printers tab.
-**Only reports that go through `TablePdfReport.chooseTarget` have it** - the audit exports, the receipt and
-the labels do not. **The item reports screen goes through it since 2026-09-24**: it had a save
+**Only reports that go through `TablePdfReport.chooseTarget` have it** - the audit exports do not; the
+Jasper papers and the labels reach the same window their own way (below). **The item reports screen goes through it since 2026-09-24**: it had a save
 dialog of its own, so none of its reports could be printed directly or previewed, and it wrote the file on
 the JavaFX thread and always on A4 - an A5 shop's direct print would have sent an A4 page to a printer set
 for A5. It now takes the configured paper on its side (`TablePdfReport.pageSizeFor`, since every item
@@ -3080,15 +3080,27 @@ report has six columns or more). **So does the shift period report** (the admin 
 had a save dialog of its own too); it stays A3 on its side for its fourteen columns, and a direct print
 shrinks it onto the configured paper (`PDFPageable` shrinks to fit). **Every stock-take paper already did** -
 the inventory sheet, the cross-warehouse comparison, the count sheet, the blank sheet and the variance report.
-**The window shows a `PreviewDocument`, not only a PDF**: `PdfPreviewDocument` for a written report, and
-`reportData.JasperPreviewDocument` for the shift's X and Z reports, drawn with
-`JasperPrintManager.printPageToImage` and printed through `JRPrintServiceExporter` - the Java2D road the
-thermal printer is sent - never through a PDF, which is why it has no save button. With the checks tab's
-«عرض قبل الطباعة» on (the default) `Print_Reports.printShiftReportOrThrow` opens it on the thermal printer
-where it opened Jasper's English Swing viewer, and answers whether the paper was sent, so the Z reprint says
-"printed" only when it was. A printer chosen in the window that is not there is refused, never swapped for
-`CheckPrinterSetting`'s PDF fallback. The receipt and the labels still open Jasper's viewer. **Not seen**: a
-real printer (none in the build environment) and the save dialog, which is the system's.
+**The window shows a `PreviewDocument`, not only a PDF**: `PdfPreviewDocument` for a written report,
+`reportData.JasperPreviewDocument` for a Jasper paper and `barcodeprint.LabelPreviewDocument` for a batch of
+labels. A Jasper paper is drawn with `JasperPrintManager.printPageToImage` and printed through
+`JRPrintServiceExporter` - the Java2D road the thermal printer is sent - never through a PDF, which is why
+it has no save button. With the checks tab's «عرض قبل الطباعة» on (the default) **every Jasper paper opens
+there, on the thermal printer, where it opened Jasper's English Swing viewer** (`JasperData.showInPreview`,
+2026-09-24): the receipt (named for its document and number), the totals screen's invoices on the roll, and
+the X and Z reports - `Print_Reports.printShiftReportOrThrow` answers whether the paper was sent, so the Z
+reprint says "printed" only when it was. The roll of invoices had been sent to the printer `""`, which
+`CheckPrinterSetting` answered with its PDF fallback, so «طباعة الحساب طابعة حرارية» never reached the
+thermal printer; it names it now. A printer chosen in the window that is not there is refused, never
+swapped for that fallback. **A roll opens readable, not whole** (`PreviewPager.open`): a page at least twice
+as tall as it is wide that would show under its own size - a receipt of thirty lines at 60%, type four
+pixels high - opens at 150% and scrolls; a sheet opens whole as before, and **no fit shows a page larger than
+it is drawn** (four times its size), or a label fitted to the window is a blur. **The labels never used
+Jasper's viewer** - their screen draws them in Java2D and previews the selected one beside the table - so
+what they gained is «معاينة كل الملصقات»: every item's label, a page per item and not per copy, drawn by
+the engine at the printer's own density (`BarcodePrintEngine.labelDrawer`) and enlarged a dot to a block, so
+the page shown still scans. Its print sends the batch as it stood through `BarcodePrintService.print`, on the
+printer chosen in the window; the window's copies are the whole batch again, a job each. **Not seen**: a
+real printer (none in the build environment), Windows, and the save dialog, which is the system's.
 
 ### Period locks and stock counts
 

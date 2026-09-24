@@ -393,6 +393,11 @@ public final class ReportPreviewWindow {
             }
             pages = open.getValue();
             pager = new PreviewPager(Math.max(1, pageWidths.length));
+            if (pageWidths.length > 0) {
+                pager.open(pageWidths[0], pageHeights[0],
+                        scroll.getViewportBounds().getWidth() - PAGE_MARGIN,
+                        scroll.getViewportBounds().getHeight() - PAGE_MARGIN);
+            }
             setControlsEnabled(true);
             showPage();
         });

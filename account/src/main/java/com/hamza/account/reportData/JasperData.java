@@ -1,14 +1,15 @@
 package com.hamza.account.reportData;
 
+import com.hamza.account.table.ReportPreviewWindow;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.util.CheckPrinterSetting;
+import javafx.application.Platform;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.JRPrintServiceExporter;
 import net.sf.jasperreports.engine.export.JRPrintServiceExporterParameter;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
-import net.sf.jasperreports.view.JasperViewer;
 
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
@@ -151,7 +152,7 @@ public class JasperData {
 
     private void processJasperPrint(String title, JasperPrint jasperPrint, int copies, String printerName) throws JRException {
         if (showBeforePrint) {
-            jasperView(title, jasperPrint);
+            showInPreview(title, jasperPrint, printerName);
         } else {
             printerName = CheckPrinterSetting.checkPrinter(printerName);
             printReportToPrinter(jasperPrint, copies, printerName);
@@ -169,23 +170,22 @@ public class JasperData {
     }
 
     /**
-     * Opens a JasperViewer with the provided JasperPrint object and sets its display properties based on the given title.
-     *
-     * @param title       the title to display on the JasperViewer window.
-     * @param jasperPrint the JasperPrint object that will be displayed in the JasperViewer.
+     * Shows a filled paper in the program's own preview window, offering {@code printerName} first, and
+     * sends nothing - printing is done from the window, to the printer chosen there. Safe from any
+     * thread: the window is opened on the JavaFX one.
+     * <p>
+     * It replaced Jasper's Swing viewer, which «عرض قبل الطباعة» opened for the receipt: an English
+     * window beside an Arabic program, whose print button asked the system which printer rather than
+     * offering the thermal one.
      */
-    private void jasperView(String title, JasperPrint jasperPrint) {
-        JasperViewer jasperViewer = new JasperViewer(jasperPrint, false);
-        jasperViewer.setTitle(title);
-        if (title.equals(LanguageManager.getInstance().getString("barcode"))) {
-            jasperViewer.setZoomRatio(2F);
-            jasperViewer.setSize(350, 400);
-            jasperViewer.setResizable(false);
+    public void showInPreview(String title, JasperPrint jasperPrint, String printerName) {
+        JasperPreviewDocument document = new JasperPreviewDocument(jasperPrint);
+        Runnable open = () -> ReportPreviewWindow.open(null, title, document, printerName);
+        if (Platform.isFxApplicationThread()) {
+            open.run();
         } else {
-            jasperViewer.setZoomRatio(.75F);
-            jasperViewer.setResizable(true);
+            Platform.runLater(open);
         }
-        jasperViewer.setVisible(true);
     }
 
     /**

@@ -107,4 +107,83 @@ class PreviewPagerTest {
             assertEquals(400 / A4_HEIGHT, pager.scale(A4_WIDTH, A4_HEIGHT, 1000, 400), 1e-9);
         }
     }
+
+    /** How a document opens: the whole page, unless that is too small to read. */
+    @Nested
+    class Opening {
+
+        /** An 80mm roll in points, and a window of about 1366x768 less its bars. */
+        private static final double ROLL_WIDTH = 226;
+        private static final double VIEW_WIDTH = 1300;
+        private static final double VIEW_HEIGHT = 600;
+
+        @Test
+        void aSheetOfPaperOpensWholeAsItAlwaysDid() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(A4_WIDTH, A4_HEIGHT, VIEW_WIDTH, VIEW_HEIGHT);
+            assertEquals(PreviewPager.Fit.PAGE, pager.fit());
+
+            pager.open(1191, 842, VIEW_WIDTH, VIEW_HEIGHT);
+            assertEquals(PreviewPager.Fit.PAGE, pager.fit(), "an A3 on its side too");
+        }
+
+        @Test
+        void aShortReceiptOpensWhole() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(ROLL_WIDTH, 520, VIEW_WIDTH, VIEW_HEIGHT);
+            assertEquals(PreviewPager.Fit.PAGE, pager.fit());
+        }
+
+        @Test
+        void aLongReceiptOpensAtASizeItCanBeReadAtAndScrolls() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(ROLL_WIDTH, 920, VIEW_WIDTH, VIEW_HEIGHT);
+
+            double scale = pager.scale(ROLL_WIDTH, 920, VIEW_WIDTH, VIEW_HEIGHT);
+            assertEquals(PreviewPager.ROLL_SCALE, scale, 1e-9,
+                    "not the 0.65 the whole of thirty lines would take, and not stretched across 1,300 pixels");
+            assertEquals(PreviewPager.Fit.ZOOM, pager.fit());
+        }
+
+        @Test
+        void inANarrowWindowItOpensAcrossTheWidthInstead() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(ROLL_WIDTH, 3000, 300, VIEW_HEIGHT);
+
+            assertEquals(PreviewPager.Fit.WIDTH, pager.fit());
+            assertEquals(300 / ROLL_WIDTH, pager.scale(ROLL_WIDTH, 3000, 300, VIEW_HEIGHT), 1e-9);
+        }
+
+        @Test
+        void aSheetOpensWholeHoweverSmallTheWindowMakesIt() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(A4_WIDTH, A4_HEIGHT, VIEW_WIDTH, 300);
+            assertEquals(PreviewPager.Fit.PAGE, pager.fit(), "a sheet's type is read smaller than a roll's");
+        }
+
+        @Test
+        void aRollSmallOnlyBecauseTheWindowIsNarrowOpensWhole() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(ROLL_WIDTH, 700, 120, VIEW_HEIGHT);
+            assertEquals(PreviewPager.Fit.PAGE, pager.fit(), "fitting its width would not make it larger");
+        }
+
+        /** A 41x28mm label fitted to the window would be eight times its size, drawn at four and blurred. */
+        @Test
+        void aSmallPageIsNotFittedLargerThanItCanBeDrawn() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(116, 79, VIEW_WIDTH, VIEW_HEIGHT);
+
+            assertEquals(PreviewDocument.MAX_SCALE, pager.scale(116, 79, VIEW_WIDTH, VIEW_HEIGHT), 1e-9);
+            pager.fitWidth();
+            assertEquals(PreviewDocument.MAX_SCALE, pager.scale(116, 79, VIEW_WIDTH, VIEW_HEIGHT), 1e-9);
+        }
+
+        @Test
+        void aWindowNotLaidOutYetLeavesTheWholePage() {
+            PreviewPager pager = new PreviewPager(1);
+            pager.open(ROLL_WIDTH, 3000, 0, 0);
+            assertEquals(PreviewPager.Fit.PAGE, pager.fit());
+        }
+    }
 }

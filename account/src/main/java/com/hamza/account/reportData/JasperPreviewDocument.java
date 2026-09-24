@@ -16,7 +16,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * A filled Jasper paper in the preview window - the shift's X and Z reports on the 80mm roll.
+ * A filled Jasper paper in the preview window - the 80mm roll: an invoice's receipt, the totals screen's
+ * invoices on the thermal printer, and the shift's X and Z reports ({@link JasperData#showInPreview}).
  * <p>
  * <b>It is drawn and printed the way the thermal printer is sent it, through Java2D</b>
  * ({@link JasperPrintManager#printPageToImage}, {@link JasperData#printReportToPrinter}), never by way
@@ -24,7 +25,7 @@ import java.util.Objects;
  * label blank, and a roll printed from a PDF has to have its length worked out for the driver. So it
  * cannot be saved; the paper is a printout, and the shift's figures are kept in the database.
  * <p>
- * It replaced Jasper's own Swing viewer for these papers, which the checks tab's «عرض قبل الطباعة»
+ * It replaced Jasper's own Swing viewer for every one of them, which the checks tab's «عرض قبل الطباعة»
  * opened: an English window beside an Arabic program, whose print button asked the system which
  * printer rather than offering the thermal one.
  */

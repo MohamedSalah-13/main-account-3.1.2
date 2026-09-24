@@ -4,7 +4,6 @@ import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
-import com.hamza.account.table.ReportPreviewWindow;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.features.invoice.InvoicePdfLayout;
 import com.hamza.account.features.invoice.InvoicePrintDocument;
@@ -17,7 +16,6 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.itextpdf.kernel.geom.PageSize;
-import javafx.application.Platform;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
@@ -45,9 +43,10 @@ public class Print_Reports extends ReportCompany {
             company.put("date_from", from);
             company.put("date_to", to);
             addHeaderToReports(company, reportName);
+            // The thermal printer: it was sent to "", which is no printer, so the paper went to the PDF
+            // printer CheckPrinterSetting falls back to, and a preview would have offered neither.
             Thread thread = new Thread(() -> jasperData.printJasperPrint(
-                    JasperReportPaths.Invoice.MULTI_80mm,
-                    LanguageManager.getInstance().getString("total"), company, 1, ""));
+                    JasperReportPaths.Invoice.MULTI_80mm, reportName, company, 1, printerNameThermal));
             thread.start();
             return;
         }
@@ -106,7 +105,8 @@ public class Print_Reports extends ReportCompany {
     }
 
     /**
-     * One invoice or return on the 80mm thermal printer, straight to the printer by name.
+     * One invoice or return on the 80mm thermal printer, straight to the printer by name - or, with
+     * «عرض قبل الطباعة» on, shown in the program's preview window with that printer offered first.
      * <p>
      * The figures are the ones the A4 page prints - {@link InvoiceReceiptLayout} reads the same
      * {@link InvoicePrintDocument} - so a deferred sale's receipt now says what was paid, what is
@@ -116,11 +116,17 @@ public class Print_Reports extends ReportCompany {
      */
     public void printReceiptInvoice(@NotNull InvoicePrintDocument document, String enteredAt) {
         Users user = CurrentUser.get();
+        LanguageManager language = LanguageManager.getInstance();
         HashMap<String, Object> map = getCompany();
         map.putAll(receiptParameters(document, enteredAt, user == null ? "admin" : user.getUsername(),
-                getCount(), LanguageManager.getInstance()::getString));
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL,
-                LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
+                getCount(), language::getString));
+        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, receiptTitle(document, language::getString),
+                map, 1, printerNameThermal);
+    }
+
+    /** What the preview window is called: the document and its number, as the A4 page's file is named. */
+    static String receiptTitle(InvoicePrintDocument document, InvoicePdfLayout.Labels labels) {
+        return labels.text(document.type().periodLock().labelKey()) + " " + document.number();
     }
 
     /**
@@ -167,9 +173,7 @@ public class Print_Reports extends ReportCompany {
      * says what a failure means where it is (see {@link JasperData#printJasperPrintOrThrow}).
      * <p>
      * With «عرض قبل الطباعة» on it is shown in the program's own preview window, offering the thermal
-     * printer, instead of being sent - that setting opened Jasper's Swing viewer until the preview
-     * window could show a Jasper paper ({@link JasperPreviewDocument}). Safe from any thread: the window
-     * is opened on the JavaFX one.
+     * printer, instead of being sent ({@link JasperData#showInPreview}). Safe from any thread.
      *
      * @return whether it was sent to the printer; false when it was shown to be printed from the preview
      */
@@ -182,8 +186,7 @@ public class Print_Reports extends ReportCompany {
         JasperPrint filled = jasperData.fillResource(JasperReportPaths.Shift.REPORT_80_RESOURCE, map,
                 new JRBeanCollectionDataSource(layout.rows()));
         if (jasperData.showsBeforePrint()) {
-            JasperPreviewDocument document = new JasperPreviewDocument(filled);
-            Platform.runLater(() -> ReportPreviewWindow.open(null, layout.title(), document, printerNameThermal));
+            jasperData.showInPreview(layout.title(), filled, printerNameThermal);
             return false;
         }
         jasperData.printFilledOrThrow(filled, 1, printerNameThermal);

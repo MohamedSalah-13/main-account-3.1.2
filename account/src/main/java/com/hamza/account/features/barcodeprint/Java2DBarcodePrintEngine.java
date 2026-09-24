@@ -80,6 +80,15 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
         }
     }
 
+    /** Every line at the batch printer's density, the one lookup of the printer made here rather than per page. */
+    @Override
+    public Function<BarcodePrintLine, BufferedImage> labelDrawer(BarcodePrintBatch batch) throws Exception {
+        int dpi = BarcodePrinterResolution.of(printerLookup.apply(batch.printerName()));
+        requireDrawable(batch.lines(), batch.options(), dpi);
+        BarcodeLabelOptions options = batch.options();
+        return line -> render(line, options, dpi);
+    }
+
     @Override
     public void print(BarcodePrintBatch batch) throws Exception {
         PrintService printer = printerLookup.apply(batch.printerName());
