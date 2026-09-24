@@ -150,6 +150,23 @@ class Java2DBarcodePrintEngineTest {
     }
 
     @Test
+    void theWholeBatchIsDrawnLineByLineAsItPrintsAndRefusedBeforeAnyIsDrawn() throws Exception {
+        var engine = new Java2DBarcodePrintEngine(ignored -> BarcodePrintCalibration.NONE, ignored -> null);
+        var batch = new BarcodePrintBatch(List.of(line(BARCODE), line("6221234567891")), "",
+                options(41, 28, false));
+
+        BufferedImage second = engine.labelDrawer(batch).apply(batch.lines().get(1));
+
+        assertEquals(Java2DBarcodePrintEngine.dots(41, BarcodePrinterResolution.DEFAULT_DPI), second.getWidth());
+        assertEquals("6221234567891", decode(second));
+
+        var unprintable = new BarcodePrintBatch(List.of(line(BARCODE), line("صنف")), "", options(41, 28, false));
+        var refusal = assertThrows(BarcodePrintValidationException.class, () -> engine.labelDrawer(unprintable));
+        assertEquals(List.of(BarcodePrintProblem.row(BarcodePrintProblem.Type.UNSUPPORTED_BARCODE, 2)),
+                refusal.problems());
+    }
+
+    @Test
     void anUnknownPrinterIsAFailureNotASilentlyEmptyJob() {
         var engine = new Java2DBarcodePrintEngine(ignored -> BarcodePrintCalibration.NONE, ignored -> null);
         var batch = new BarcodePrintBatch(List.of(line(BARCODE)), "Missing printer", options(41, 28, false));

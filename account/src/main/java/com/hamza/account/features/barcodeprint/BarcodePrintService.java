@@ -16,6 +16,20 @@ public final class BarcodePrintService {
         return engine.previewPng(batch);
     }
 
+    /**
+     * The whole batch for the preview window, a page per item - the preview beside the table shows the
+     * label of one; this is every one of them, drawn as {@link #print} draws them for the batch's
+     * printer. It refuses what that preview refuses and every line the printer could not draw, before
+     * anything is shown.
+     *
+     * @param printing how the window sends the batch, on the printer chosen there - through {@link #print}
+     */
+    public LabelPreviewDocument previewAll(BarcodePrintBatch batch, LabelPreviewDocument.Printing printing)
+            throws Exception {
+        requireValid(BarcodePrintValidation.forPreview(batch));
+        return new LabelPreviewDocument(batch, engine.labelDrawer(batch), printing);
+    }
+
     public BarcodePrintResult print(BarcodePrintBatch batch) throws Exception {
         requireValid(BarcodePrintValidation.forPrint(batch));
         engine.print(batch);

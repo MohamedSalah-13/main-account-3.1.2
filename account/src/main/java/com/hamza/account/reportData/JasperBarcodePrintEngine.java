@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /** JasperReports adapter for a whole barcode batch: one compile and one spool job. */
 public final class JasperBarcodePrintEngine implements BarcodePrintEngine {
@@ -50,8 +51,26 @@ public final class JasperBarcodePrintEngine implements BarcodePrintEngine {
 
     @Override
     public byte[] previewPng(BarcodePrintBatch batch) throws Exception {
-        JasperPrint preview = renderLine(batch.lines().getFirst(), batch.options());
-        Image pageImage = JasperPrintManager.printPageToImage(preview, 0, PREVIEW_ZOOM);
+        BufferedImage image = image(renderLine(batch.lines().getFirst(), batch.options()));
+        var output = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", output);
+        return output.toByteArray();
+    }
+
+    @Override
+    public Function<BarcodePrintLine, BufferedImage> labelDrawer(BarcodePrintBatch batch) {
+        BarcodeLabelOptions options = batch.options();
+        return line -> {
+            try {
+                return image(renderLine(line, options));
+            } catch (JRException failure) {
+                throw new IllegalStateException("Barcode label could not be drawn: " + line.barcode(), failure);
+            }
+        };
+    }
+
+    private static BufferedImage image(JasperPrint label) throws JRException {
+        Image pageImage = JasperPrintManager.printPageToImage(label, 0, PREVIEW_ZOOM);
         BufferedImage image = new BufferedImage(pageImage.getWidth(null), pageImage.getHeight(null),
                 BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
@@ -62,9 +81,7 @@ public final class JasperBarcodePrintEngine implements BarcodePrintEngine {
         } finally {
             graphics.dispose();
         }
-        var output = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", output);
-        return output.toByteArray();
+        return image;
     }
 
     @Override

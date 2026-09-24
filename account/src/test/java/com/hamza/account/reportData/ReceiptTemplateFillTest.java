@@ -126,4 +126,32 @@ class ReceiptTemplateFillTest {
         assertFalse(texts.contains("invoice.pdf.balance.after"), texts.toString());
         assertTrue(texts.contains("cash"), texts.toString());
     }
+
+    /**
+     * With «عرض قبل الطباعة» on the receipt opens in the program's preview window, where Jasper's Swing
+     * viewer used to open: the preview draws the filled receipt as the thermal printer is sent it - one
+     * page, the roll's width, as long as what is on it.
+     */
+    @Test
+    void theReceiptIsShownInThePreviewAsTheRollItPrintsOn() throws Exception {
+        JasperPrint receipt = fill(40, InvoiceType.CASH, null);
+        JasperPreviewDocument preview = new JasperPreviewDocument(receipt);
+
+        assertEquals(1, preview.pageCount());
+        assertEquals(receipt.getPageWidth(), preview.pageWidth(0));
+        assertEquals(receipt.getPageHeight(), preview.pageHeight(0));
+        assertTrue(preview.pageHeight(0) > 4 * preview.pageWidth(0), "a strip: " + preview.pageHeight(0));
+        var drawn = preview.render(0, 1.5f);
+        assertEquals(Math.round(receipt.getPageWidth() * 1.5f), drawn.getWidth(), 1);
+        assertFalse(preview.canSave(), "a printout, not a file");
+    }
+
+    @Test
+    void thePreviewIsNamedForTheDocumentAndItsNumber() {
+        InvoicePrintDocument sale = new InvoicePrintDocument(InvoicePrintDocument.Letterhead.EMPTY,
+                DocumentType.SALES, 1227, "2026-09-14", "customer", InvoiceType.CASH, "", "", 0, "", "",
+                List.of(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "now", null);
+
+        assertEquals(DocumentType.SALES.periodLock().labelKey() + " 1227", Print_Reports.receiptTitle(sale, key -> key));
+    }
 }

@@ -27,6 +27,18 @@ public final class PreviewPager {
     /** The zoom steps, as scales of the page's own size in points. */
     static final double[] ZOOM_STEPS = {0.5, 0.67, 0.75, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0};
 
+    /** A page at least this many times as tall as it is wide is a roll - an 80mm receipt - not a sheet. */
+    static final double ROLL_RATIO = 2.0;
+
+    /**
+     * Below its own size a roll is not read: its type is seven or eight points, where a sheet's is ten or
+     * more, so a receipt shown whole at 60% is text four pixels high while an A4 at 70% is still read.
+     */
+    static final double ROLL_WHOLE_SCALE = 1.0;
+
+    /** What a roll too long to read whole opens at when the window leaves room: a little over its paper size. */
+    static final double ROLL_SCALE = 1.5;
+
     private final int pageCount;
     private int page;
     private Fit fit = Fit.PAGE;
@@ -91,6 +103,32 @@ public final class PreviewPager {
         return changed;
     }
 
+    /**
+     * How the document opens, from its first page and the room the window has: the whole page - unless
+     * it is a roll that shown whole would be too small to read. A receipt of thirty lines is a strip four
+     * times as long as it is wide, and the whole of it in a window 600 pixels tall is type four pixels
+     * high. Such a page opens at {@link #ROLL_SCALE}, or across the window when the window is narrower
+     * than that needs - a roll stretched over a whole screen is as hard to read as one squeezed - and
+     * scrolls. A sheet opens whole whatever the window, as it always did.
+     */
+    public void open(double pageWidth, double pageHeight, double viewportWidth, double viewportHeight) {
+        fit = Fit.PAGE;
+        if (pageWidth <= 0 || pageHeight < ROLL_RATIO * pageWidth || viewportWidth <= 1 || viewportHeight <= 1) {
+            return;
+        }
+        double whole = Math.min(viewportWidth / pageWidth, viewportHeight / pageHeight);
+        double across = viewportWidth / pageWidth;
+        if (whole >= ROLL_WHOLE_SCALE || across <= whole) {
+            return;
+        }
+        if (across <= ROLL_SCALE) {
+            fit = Fit.WIDTH;
+        } else {
+            zoom = ROLL_SCALE;
+            fit = Fit.ZOOM;
+        }
+    }
+
     public void fitPage() {
         fit = Fit.PAGE;
     }
@@ -141,9 +179,11 @@ public final class PreviewPager {
         }
         double width = Math.max(1, viewportWidth);
         double height = Math.max(1, viewportHeight);
+        // A fit never shows a page larger than it can be drawn: a 38x25mm label fitted to a window is
+        // eight times its size, and a page drawn at four and stretched to eight is a blur.
         return switch (fit) {
-            case PAGE -> Math.min(width / pageWidth, height / pageHeight);
-            case WIDTH -> width / pageWidth;
+            case PAGE -> Math.min(PreviewDocument.MAX_SCALE, Math.min(width / pageWidth, height / pageHeight));
+            case WIDTH -> Math.min(PreviewDocument.MAX_SCALE, width / pageWidth);
             case ZOOM -> zoom;
         };
     }

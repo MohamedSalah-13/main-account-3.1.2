@@ -115,6 +115,8 @@
                                    minHeight="24.0" minWidth="24.0" visible="false" managed="false"/>
                 <Button fx:id="btnPreview" mnemonicParsing="false"
                         styleClass="neutral-button" text="%barcode.print.preview.action"/>
+                <Button fx:id="btnPreviewAll" mnemonicParsing="false"
+                        styleClass="neutral-button" text="%barcode.print.preview.all"/>
                 <Button fx:id="btnPrint" defaultButton="true" mnemonicParsing="false"
                         styleClass="primary-button" text="%barcode.print.action"/>
                 <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false"

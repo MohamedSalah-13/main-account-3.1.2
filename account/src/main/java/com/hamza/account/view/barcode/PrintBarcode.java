@@ -13,7 +13,9 @@ import com.hamza.account.features.barcodeprint.BarcodePrintValidation;
 import com.hamza.account.features.barcodeprint.BarcodePrintValidationException;
 import com.hamza.account.features.barcodeprint.BarcodePrinterSelection;
 import com.hamza.account.features.barcodeprint.Java2DBarcodePrintEngine;
+import com.hamza.account.features.barcodeprint.LabelPreviewDocument;
 import com.hamza.account.finance.MoneyMath;
+import com.hamza.account.table.ReportPreviewWindow;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -81,6 +83,7 @@ public class PrintBarcode implements AppSettingInterface {
     @FXML private Button btnRemoveSelected;
     @FXML private Button btnRefreshPrinters;
     @FXML private Button btnPreview;
+    @FXML private Button btnPreviewAll;
     @FXML private Button btnPrint;
     @FXML private Button btnClose;
     @FXML private Label labelTitle;
@@ -168,6 +171,7 @@ public class PrintBarcode implements AppSettingInterface {
         btnRemoveSelected.setOnAction(event -> removeSelected());
         btnRefreshPrinters.setOnAction(event -> refreshPrinters());
         btnPreview.setOnAction(event -> requestPreview(true));
+        btnPreviewAll.setOnAction(event -> previewAll());
         btnPrint.setOnAction(event -> printBatch());
         btnClose.setOnAction(event -> btnClose.getScene().getWindow().hide());
         comboPrinter.valueProperty().addListener((observable, oldValue, value) -> {
@@ -185,6 +189,7 @@ public class PrintBarcode implements AppSettingInterface {
         btnRemoveSelected.setGraphic(AppIcon.DELETE.graphic(15));
         btnRefreshPrinters.setGraphic(AppIcon.REFRESH.graphic(15));
         btnPreview.setGraphic(AppIcon.SHOW.graphic(16));
+        btnPreviewAll.setGraphic(AppIcon.SHOW.graphic(16));
         btnPrint.setGraphic(AppIcon.PRINT.graphic(17));
         btnClose.setGraphic(AppIcon.CLOSE.graphic(16));
     }
@@ -302,6 +307,49 @@ public class PrintBarcode implements AppSettingInterface {
         Thread.ofVirtual().name("barcode-print-batch").start(task);
     }
 
+    /**
+     * Every item's label in the program's preview window, as the printer chosen here will burn it - the
+     * preview beside the table shows the selected one. Printing from the window sends the batch as it
+     * stands now, on the printer chosen there; a quantity changed afterwards reaches the window only if
+     * it is opened again.
+     */
+    private void previewAll() {
+        BarcodePrintBatch batch = batch(rows);
+        List<BarcodePrintProblem> problems = BarcodePrintValidation.forPreview(batch);
+        if (!problems.isEmpty()) {
+            showProblem(problems.getFirst());
+            return;
+        }
+        String title = text("barcode.print.preview.all.title", batch.lines().size(), batch.totalLabels());
+        Task<LabelPreviewDocument> task = new Task<>() {
+            @Override
+            protected LabelPreviewDocument call() throws Exception {
+                return printService.previewAll(batch, printer -> printFromPreview(batch, printer));
+            }
+        };
+        task.setOnSucceeded(event -> ReportPreviewWindow.open(btnPreviewAll.getScene().getWindow(), title,
+                task.getValue(), batch.printerName()));
+        task.setOnFailed(event -> handleFailure(task.getException()));
+        Thread.ofVirtual().name("barcode-label-preview-all").start(task);
+    }
+
+    /**
+     * The preview window's print, on its worker: this screen's batch on the printer chosen there, through
+     * the same validation as the print button. What refuses it is said in this screen's words - the
+     * window shows a sentence it is handed and a reference code for anything else.
+     */
+    private void printFromPreview(BarcodePrintBatch batch, String printerName) throws Exception {
+        List<String> printers = Printer.getAllPrinters().stream().map(Printer::getName).toList();
+        if (!BarcodePrinterSelection.isAvailable(printers, printerName)) {
+            throw new UserValidationException(text("barcode.print.validation.printer.unavailable"));
+        }
+        try {
+            printService.print(new BarcodePrintBatch(batch.lines(), printerName, batch.options()));
+        } catch (BarcodePrintValidationException refused) {
+            throw new UserValidationException(BarcodePrintProblemMessage.of(refused.problems().getFirst()));
+        }
+    }
+
     private void requestPreview(boolean reportFailure) {
         PrintBarcodeModel row = tableView == null ? null : tableView.getSelectionModel().getSelectedItem();
         if (row == null && !rows.isEmpty()) {
@@ -377,6 +425,7 @@ public class PrintBarcode implements AppSettingInterface {
         }
         btnPrint.setDisable(printing || rows.isEmpty() || !printerReady());
         btnPreview.setDisable(printing || rows.isEmpty());
+        btnPreviewAll.setDisable(printing || rows.isEmpty());
         btnApplyQuantity.setDisable(printing || rows.isEmpty());
         btnRemoveSelected.setDisable(printing || rows.isEmpty());
         btnRefreshPrinters.setDisable(printing || printerLoading);
