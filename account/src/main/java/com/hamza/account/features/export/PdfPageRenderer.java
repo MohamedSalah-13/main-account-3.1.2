@@ -25,8 +25,8 @@ import java.io.IOException;
  */
 public final class PdfPageRenderer implements AutoCloseable {
 
-    /** Pixels per point beyond which a page is not drawn larger - four times A4 is already 2,400 pixels wide. */
-    public static final float MAX_SCALE = 4f;
+    /** Pixels per point beyond which a page is not drawn larger - the preview's one limit. */
+    public static final float MAX_SCALE = PreviewDocument.MAX_SCALE;
 
     private final PDDocument document;
     private final PDFRenderer renderer;
@@ -64,7 +64,7 @@ public final class PdfPageRenderer implements AutoCloseable {
      * @param scale pixels per point, held at {@link #MAX_SCALE} and above a tenth
      */
     public synchronized BufferedImage render(int index, float scale) throws IOException {
-        return renderer.renderImage(index, Math.clamp(scale, 0.1f, MAX_SCALE));
+        return renderer.renderImage(index, PreviewDocument.drawable(scale));
     }
 
     @Override

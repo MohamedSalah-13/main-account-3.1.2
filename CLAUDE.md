@@ -3071,13 +3071,24 @@ pages drawn up front is hundreds of megabytes. Which page and what size are `Pre
 a toolkit. **The page arrows are picked by the language**: a right-to-left window lays its buttons out
 mirrored but draws each glyph as it is, so "next" is the arrow pointing left in Arabic. The default mode is
 still saving a file, so nothing changed on upgrade; the shop turns the preview on in the printers tab.
-**Only reports that go through `TablePdfReport.chooseTarget` have it** - the shift and the audit exports and
-the Jasper receipt do not. **The item reports screen goes through it since 2026-09-24**: it had a save
+**Only reports that go through `TablePdfReport.chooseTarget` have it** - the audit exports, the receipt and
+the labels do not. **The item reports screen goes through it since 2026-09-24**: it had a save
 dialog of its own, so none of its reports could be printed directly or previewed, and it wrote the file on
 the JavaFX thread and always on A4 - an A5 shop's direct print would have sent an A4 page to a printer set
 for A5. It now takes the configured paper on its side (`TablePdfReport.pageSizeFor`, since every item
-report has six columns or more). **Not seen**: a real printer (none in the build environment) and the
-save dialog, which is the system's.
+report has six columns or more). **So does the shift period report** (the admin shifts screen's PDF, which
+had a save dialog of its own too); it stays A3 on its side for its fourteen columns, and a direct print
+shrinks it onto the configured paper (`PDFPageable` shrinks to fit). **Every stock-take paper already did** -
+the inventory sheet, the cross-warehouse comparison, the count sheet, the blank sheet and the variance report.
+**The window shows a `PreviewDocument`, not only a PDF**: `PdfPreviewDocument` for a written report, and
+`reportData.JasperPreviewDocument` for the shift's X and Z reports, drawn with
+`JasperPrintManager.printPageToImage` and printed through `JRPrintServiceExporter` - the Java2D road the
+thermal printer is sent - never through a PDF, which is why it has no save button. With the checks tab's
+«عرض قبل الطباعة» on (the default) `Print_Reports.printShiftReportOrThrow` opens it on the thermal printer
+where it opened Jasper's English Swing viewer, and answers whether the paper was sent, so the Z reprint says
+"printed" only when it was. A printer chosen in the window that is not there is refused, never swapped for
+`CheckPrinterSetting`'s PDF fallback. The receipt and the labels still open Jasper's viewer. **Not seen**: a
+real printer (none in the build environment) and the save dialog, which is the system's.
 
 ### Period locks and stock counts
 

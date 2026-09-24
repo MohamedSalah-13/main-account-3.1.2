@@ -4,6 +4,7 @@ import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.table.ReportPreviewWindow;
 import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.features.invoice.InvoicePdfLayout;
 import com.hamza.account.features.invoice.InvoicePrintDocument;
@@ -16,7 +17,9 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.itextpdf.kernel.geom.PageSize;
+import javafx.application.Platform;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -162,15 +165,29 @@ public class Print_Reports extends ReportCompany {
      * It throws rather than telling the user, because it is also printed as a consequence of a close
      * that has already committed: a failure there must not read as a failed close, so every caller
      * says what a failure means where it is (see {@link JasperData#printJasperPrintOrThrow}).
+     * <p>
+     * With «عرض قبل الطباعة» on it is shown in the program's own preview window, offering the thermal
+     * printer, instead of being sent - that setting opened Jasper's Swing viewer until the preview
+     * window could show a Jasper paper ({@link JasperPreviewDocument}). Safe from any thread: the window
+     * is opened on the JavaFX one.
+     *
+     * @return whether it was sent to the printer; false when it was shown to be printed from the preview
      */
-    public void printShiftReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
+    public boolean printShiftReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
         Users user = CurrentUser.getOrNull();
         ShiftReportLayout layout = ShiftReportLayout.of(data, LocalDateTime.now(),
                 user == null ? "" : user.getUsername(), LanguageManager.getInstance()::getString);
         HashMap<String, Object> map = getCompany();
         map.putAll(shiftReportParameters(layout));
-        jasperData.printJasperResourceOrThrow(JasperReportPaths.Shift.REPORT_80_RESOURCE, layout.title(), map,
-                new JRBeanCollectionDataSource(layout.rows()), 1, printerNameThermal);
+        JasperPrint filled = jasperData.fillResource(JasperReportPaths.Shift.REPORT_80_RESOURCE, map,
+                new JRBeanCollectionDataSource(layout.rows()));
+        if (jasperData.showsBeforePrint()) {
+            JasperPreviewDocument document = new JasperPreviewDocument(filled);
+            Platform.runLater(() -> ReportPreviewWindow.open(null, layout.title(), document, printerNameThermal));
+            return false;
+        }
+        jasperData.printFilledOrThrow(filled, 1, printerNameThermal);
+        return true;
     }
 
     /**

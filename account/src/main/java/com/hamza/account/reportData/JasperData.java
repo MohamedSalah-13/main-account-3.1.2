@@ -83,6 +83,28 @@ public class JasperData {
     }
 
     /**
+     * A packaged template filled from {@code rows} and not yet sent anywhere - for a paper the program
+     * previews in its own window rather than in Jasper's ({@link JasperPreviewDocument}).
+     */
+    public JasperPrint fillResource(String resourcePath, HashMap<String, Object> parameters, JRDataSource rows)
+            throws JRException {
+        return JasperFillManager.fillReport(CompiledReports.resource(resourcePath), parameters, rows);
+    }
+
+    /** Whether a paper is shown before it is printed - the checks tab's «عرض قبل الطباعة». */
+    public boolean showsBeforePrint() {
+        return showBeforePrint;
+    }
+
+    /**
+     * Sends a filled report to the printer the settings name, or the one {@link CheckPrinterSetting}
+     * falls back to - the road every Jasper paper that is not shown first takes.
+     */
+    public void printFilledOrThrow(JasperPrint jasperPrint, int copies, String printerName) throws JRException {
+        printReportToPrinter(jasperPrint, copies, CheckPrinterSetting.checkPrinter(printerName));
+    }
+
+    /**
      * Sends an already prepared report to exactly the named printer.
      * Unlike the legacy route, this never substitutes the PDF printer when a label
      * printer is unavailable; callers can report that operational problem explicitly.
@@ -175,7 +197,7 @@ public class JasperData {
      * @throws JRException If there is an error during the printing process
      */
     @SuppressWarnings("deprecation")
-    private void printReportToPrinter(JasperPrint jasperPrint, int copies, String printerName) throws JRException {
+    static void printReportToPrinter(JasperPrint jasperPrint, int copies, String printerName) throws JRException {
         PrintRequestAttributeSet printRequestAttributes = new HashPrintRequestAttributeSet();
         printRequestAttributes.add(new Copies(copies));
         PrinterName printer = new PrinterName(printerName, null);
