@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -367,6 +368,63 @@ class PdfExportServiceLayoutTest {
                     List.<String[]>of(new String[]{"11", LONG, "33"}), null, List.of(), "", "", "", "");
             assertTrue(new PdfExportService(ReportSetup.plain()).exportDocument(pdf, page, PageSize.A4));
             assertBeginsAboveItsEnd(pageText(pdf, 1));
+        }
+
+        /**
+         * A word no line can break - a heading in English, a barcode - widens its column, and the room
+         * comes out of the others. The lines were measured against the widths the report asked for, so
+         * a cell in a column that had given its room away was kept on lines too long for it, and iText
+         * wrapped each of them again after it was shaped - printing its end first. Found on an English
+         * item report: "Shortfall" widened its column, and "أقل من الحد" printed "من" / "أقل" / "الحد".
+         */
+        @Test
+        void aColumnThatGaveItsRoomToAnUnbreakableWordStillWrapsInOrder() throws Exception {
+            // Numbers no date or time on the page can hold: the line under the title prints the clock.
+            String numbered = "بند 701 بند 702 بند 703 بند 704 بند 705 بند 706";
+            ReportSetup english = new ReportSetup(ReportStyle.DEFAULT, ReportLetterhead.EMPTY, ReportLabels.NONE,
+                    "", false);
+            for (ReportSetup setup : List.of(ReportSetup.plain(), english)) {
+                String pdf = dir.resolve("narrowed-" + setup.rightToLeft() + ".pdf").toString();
+                assertTrue(new PdfExportService(setup).exportGroupedReport(pdf, "1", "",
+                        new String[]{"W".repeat(30), "202", "303"}, new float[]{1, 1, 1},
+                        List.<String[]>of(new String[]{"", numbered, ""}), null, PageSize.A4));
+                assertLinesInOrder(pageText(pdf, 1), "701", "702", "703", "704", "705", "706");
+            }
+        }
+
+        /**
+         * No column is narrower than its widest word; one held there takes that much, the others share
+         * what is left by their weights, and one that falls below its own narrowest in turn is held too.
+         */
+        @Test
+        void aColumnHeldAtItsNarrowestLeavesTheRestToTheOthersByWeight() {
+            assertArrayEquals(new float[]{100, 100, 100},
+                    PdfExportService.fitted(new float[]{1, 1, 1}, new float[]{0, 0, 0}, 300), 0.01f);
+            assertArrayEquals(new float[]{60, 120, 120},
+                    PdfExportService.fitted(new float[]{1, 1, 2}, new float[]{0, 120, 0}, 300), 0.01f);
+            assertArrayEquals(new float[]{140, 70, 90},
+                    PdfExportService.fitted(new float[]{1, 1, 1}, new float[]{140, 0, 90}, 300), 0.01f,
+                    "held at 140, the third falls to 80 and is held at its 90");
+            assertArrayEquals(new float[]{150, 150, 0},
+                    PdfExportService.fitted(new float[]{1, 1, 1}, new float[]{200, 200, 0}, 300), 0.01f,
+                    "narrowest widths that cannot fit share the page by what they need");
+        }
+
+        /** Each token on the same line as the one before it or below it. */
+        private void assertLinesInOrder(String text, String... tokens) {
+            String[] lines = text.split("\n");
+            int previous = -1;
+            for (String token : tokens) {
+                int line = -1;
+                for (int i = 0; i < lines.length && line < 0; i++) {
+                    if (lines[i].contains(token)) {
+                        line = i;
+                    }
+                }
+                assertTrue(line >= 0, token + " should be on the page: " + text);
+                assertTrue(line >= previous, token + " should not print above the text before it: " + text);
+                previous = line;
+            }
         }
 
         private void assertBeginsAboveItsEnd(String text) {
