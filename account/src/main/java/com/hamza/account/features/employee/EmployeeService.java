@@ -124,12 +124,31 @@ public final class EmployeeService {
      * @return the generated code
      */
     public int create(EmployeeDraft draft) throws DaoException {
+        return create(draft, null);
+    }
+
+    /**
+     * Creates the employee with their picture, in the same transaction.
+     * <p>
+     * The picture is part of what is being created, so it asks the create key and nothing else. It
+     * used to be written after the save through {@link #updatePhoto}, which asks the update key: a
+     * clerk who may add employees but not edit them picked a picture, the employee was created, the
+     * picture was refused - and the dialog reported the whole save as failed and stayed open over
+     * an employee that now existed, where saving again met "this name is taken".
+     *
+     * @param photo the picture, or {@code null} for none
+     * @return the generated code
+     */
+    public int create(EmployeeDraft draft, byte[] photo) throws DaoException {
         AuthorizationGuard.require(AppPermissions.EMPLOYEE_CREATE);
         requireNameFree(draft.name(), 0);
         return TransactionTemplate.execute(() -> {
             int id = repository.insert(draft, currentUserId());
             repository.saveCompensation(id, draft.hireDate(), draft.salaryKind(), draft.rate(),
                     null, currentUserId());
+            if (photo != null && photo.length > 0) {
+                repository.updatePhoto(id, photo);
+            }
             return id;
         });
     }
@@ -141,13 +160,24 @@ public final class EmployeeService {
      * never carried through here - see {@link EmployeeQuery#UPDATE_SQL}. The salary is a dated
      * row, and this method will move it only while {@link SalaryChangeGuard} still calls that a
      * correction.
+     * <p>
+     * <b>And only for a reader who may see it.</b> The form sends back the salary it was shown, and
+     * a reader without {@code employees.show.salary} was shown none - {@link #find} does not select
+     * it - so their draft carries the empty box as a zero. Read as a correction, that zero was
+     * refused without {@code employee.salary.change}, so correcting a telephone number could not be
+     * saved at all; and with it - which V57 grants to whoever holds {@code employee.update} - it was
+     * <b>written</b>, and the employee's salary became zero. A figure this reader was never shown is
+     * not theirs to move.
      */
     public int update(EmployeeDraft draft) throws DaoException {
         AuthorizationGuard.require(AppPermissions.EMPLOYEE_UPDATE);
         requireNameFree(draft.name(), draft.id());
+        boolean salaryOnTheForm = salaryVisible();
         return TransactionTemplate.execute(() -> {
             int rows = repository.update(draft);
-            correctHireRateIfAsked(draft);
+            if (salaryOnTheForm) {
+                correctHireRateIfAsked(draft);
+            }
             return rows;
         });
     }
@@ -227,6 +257,31 @@ public final class EmployeeService {
     public List<Job> jobs(EmployeeScope scope) throws DaoException {
         AuthorizationGuard.require(AppPermissions.JOB_SHOW);
         return jobs.jobs(scope == EmployeeScope.ACTIVE_ONLY);
+    }
+
+    /**
+     * The jobs the employee form offers.
+     * <p>
+     * Whoever may add or edit an employee may file one under a job, so this asks for either of those
+     * keys - or the jobs screen's own. The form used to read {@link #jobs}, which asks
+     * {@code job.show} alone: V57 grants it to whoever held {@code employee.show}, but a role built
+     * later with the form and without it opened on a refusal and an empty job list, under a save
+     * button that could never enable.
+     * <p>
+     * A job's suggested salary is a salary, so a reader who may not see one gets the jobs without it.
+     */
+    public List<Job> jobsForPicker(EmployeeScope scope) throws DaoException {
+        if (!AuthorizationGuard.isGranted(AppPermissions.EMPLOYEE_CREATE)
+                && !AuthorizationGuard.isGranted(AppPermissions.EMPLOYEE_UPDATE)) {
+            AuthorizationGuard.require(AppPermissions.JOB_SHOW);
+        }
+        List<Job> rows = jobs.jobs(scope == EmployeeScope.ACTIVE_ONLY);
+        if (salaryVisible()) {
+            return rows;
+        }
+        return rows.stream()
+                .map(job -> new Job(job.id(), job.name(), job.delegate(), job.active(), null, job.notes()))
+                .toList();
     }
 
     public int saveJob(Job job) throws DaoException {

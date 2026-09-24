@@ -54,10 +54,15 @@ public final class LicenseFiles {
      * rather than half of the new one.
      */
     public Path write(String licenceText) throws IOException {
+        return write(licenceText.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** {@link #write(String)}, for a file read as it is - the licence somebody chose on the About screen. */
+    public Path write(byte[] licence) throws IOException {
         Path target = writeTarget();
         Files.createDirectories(target.getParent());
         Path partial = target.resolveSibling(FILE_NAME + ".partial");
-        Files.writeString(partial, licenceText, StandardCharsets.UTF_8);
+        Files.write(partial, licence);
         try {
             Files.move(partial, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException sameResultLessSafely) {

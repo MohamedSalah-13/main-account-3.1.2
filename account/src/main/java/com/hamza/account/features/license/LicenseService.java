@@ -45,6 +45,17 @@ public final class LicenseService {
                 () -> MachineId.current().orElse(null));
     }
 
+    /**
+     * The same service over one folder alone: how a file somebody has chosen is read before it is
+     * put where the start-up reads, without the files already installed answering for it.
+     */
+    public static LicenseService forFolder(Path folder) {
+        return new LicenseService(
+                new LicenseFiles(folder, folder),
+                new LicenseEvaluator(LicenseServerKey::verifies, LicenseServerKey.isConfigured()),
+                () -> MachineId.current().orElse(null));
+    }
+
     public LicenseFiles files() {
         return files;
     }

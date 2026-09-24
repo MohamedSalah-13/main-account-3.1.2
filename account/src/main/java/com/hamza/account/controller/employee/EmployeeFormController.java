@@ -18,17 +18,23 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.others.DateSetting;
+import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Control;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -37,11 +43,14 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -58,43 +67,52 @@ import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 /**
  * Adding an employee, and editing one.
  * <p>
- * Built in code. The file it replaces declared nine labels reading "Code", "Name", "Salary" in
- * English and let the controller overwrite each one at startup - two files that have to agree about
- * one screen, where a caption the controller forgets ships in the wrong language. It also declared
- * a box for the employee's picture that nothing ever filled, and the one line that would have
- * cleared it was commented out.
+ * Built in code, and laid out for a 1366x768 display: a header saying whose record this is, then
+ * two cards side by side - the person, with their picture, and the job with its salary - and a short
+ * card under them for the address and the notes. It opened as one grid of fourteen fields in two
+ * columns with nothing saying which belonged together, date pickers half again the height of the fields
+ * beside them, and a picture column that stood empty down the whole height of the form.
  * <p>
- * Three things it does that the old form could not:
+ * What the form sends is decided with the service, not only by what is on screen:
  * <ul>
- *   <li><b>The job is a row</b>, read from {@code jobs}. It used to be a combo over four constants
- *       whose ids were matched to that table by hand, so a fifth row broke the screen.</li>
- *   <li><b>The salary is dated.</b> On a new employee this box writes the first
- *       {@code employee_compensation} row. On an existing one it may still correct that row while
- *       it is the only one there is - after that {@code SalaryChangeGuard} refuses it and the
- *       message points at the salary screen, which exists.</li>
- *   <li><b>The picture is wired.</b></li>
+ *   <li><b>The job is a row</b>, read through {@link EmployeeService#jobsForPicker}: whoever may add
+ *       or edit an employee may file one under a job. It read the jobs screen's own list, so a role
+ *       given this form without {@code job.show} opened on a refusal and an empty combo, under a save
+ *       button that could never enable.</li>
+ *   <li><b>The salary is on the form only for a reader who may see one.</b> The two rows are left out
+ *       for anybody else, and {@link EmployeeService#update} leaves the salary alone for them - the
+ *       empty box used to be read as a salary of zero and written.</li>
+ *   <li><b>The picture is saved with a new employee</b>, in the same transaction and under the create
+ *       key ({@link EmployeeService#create(EmployeeDraft, byte[])}).</li>
+ *   <li><b>A column the form has no control for is carried forward</b>: the default treasury, which
+ *       the update names and the form used to send as nothing.</li>
  * </ul>
  */
 @Log4j2
 @FxmlPath(pathFile = "employee-form.fxml")
 public class EmployeeFormController implements AddInterface {
 
-    private static final int PHOTO_SIZE = 120;
+    private static final double PHOTO_SIZE = 104;
 
     /** A picture is stored in a LONGBLOB and read back on a profile; it is not a place for a scan. */
     private static final long PHOTO_MAX_BYTES = 2L * 1024 * 1024;
+
+    /** The width of a card's field column; two cards and the gaps between them decide the dialog's width. */
+    private static final double FIELD_WIDTH = 230;
+
+    /** Leaves room for the title bar and the dialog's own buttons on a 768-tall display. */
+    private static final double MAX_FORM_HEIGHT = 600;
 
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final int employeeId;
 
-    private final TextField txtCode = new TextField();
     private final TextField txtName = new TextField();
     private final ComboBox<Job> comboJob = new ComboBox<>();
     private final ComboBox<EmploymentType> comboEmployment = new ComboBox<>();
     private final ComboBox<SalaryKind> comboSalaryKind = new ComboBox<>();
     private final TextField txtRate = new TextField();
-    private final DatePicker hireDate = new DatePicker(LocalDate.now());
+    private final DatePicker hireDate = new DatePicker();
     private final DatePicker birthDate = new DatePicker();
     private final DatePicker endDate = new DatePicker();
     private final TextField txtNationalId = new TextField();
@@ -103,7 +121,8 @@ public class EmployeeFormController implements AddInterface {
     private final TextArea txtAddress = new TextArea();
     private final TextArea txtNotes = new TextArea();
     private final ImageView photoView = new ImageView();
-    private final Label salaryLockNote = new Label();
+    private final Label codeValue = new Label();
+    private final Label salaryNote = new Label();
 
     @FXML
     private VBox box;
@@ -112,6 +131,9 @@ public class EmployeeFormController implements AddInterface {
 
     private byte[] photo;
     private boolean photoChanged;
+    private boolean salaryVisible;
+    /** Not on the form, and named by the update - so it goes back as it was read. */
+    private Integer defaultTreasuryId;
 
     public EmployeeFormController(int employeeId) {
         this.employeeId = employeeId;
@@ -127,20 +149,27 @@ public class EmployeeFormController implements AddInterface {
 
     @Override
     public void otherSetting() {
-        stackPane.getStyleClass().add("screen-employees");
+        stackPane.getStyleClass().addAll("screen-employees", "employee-form");
+        salaryVisible = employeeService.salaryVisible();
 
-        txtCode.setEditable(false);
-        txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
+        codeValue.setText(text("item.code.generate"));
         txtName.setPromptText(text("name"));
         txtNationalId.setPromptText(text("employee.column.national"));
         txtPhone.setPromptText(text("column.tel"));
         txtEmail.setPromptText(text("column.email"));
         txtAddress.setPromptText(text("column.address"));
         txtAddress.setPrefRowCount(2);
+        txtAddress.setWrapText(true);
         txtNotes.setPromptText(text("column.notes"));
         txtNotes.setPrefRowCount(2);
+        txtNotes.setWrapText(true);
+        // A text area asks for forty columns by default, and two of them side by side decided the
+        // dialog's width. They take what the cards above leave them instead.
+        txtAddress.setPrefColumnCount(12);
+        txtNotes.setPrefColumnCount(12);
 
         comboJob.setConverter(converter(job -> job == null ? "" : job.name()));
+        comboJob.setPromptText(text("employee.column.job"));
         comboEmployment.getItems().setAll(EmploymentType.values());
         comboEmployment.setConverter(converter(type -> type == null ? "" : text(type.messageKey())));
         comboEmployment.getSelectionModel().select(EmploymentType.FULL_TIME);
@@ -148,120 +177,232 @@ public class EmployeeFormController implements AddInterface {
         comboSalaryKind.setConverter(converter(kind -> kind == null ? "" : text(kind.messageKey())));
         comboSalaryKind.getSelectionModel().select(SalaryKind.MONTHLY);
 
+        // The format every other screen writes a date in. The hire date is being entered, so it
+        // starts on today; a birth date and a leaving date are not known until somebody says so.
+        // All three stay typeable: a birth date forty years back is not found by paging a calendar.
+        DateSetting.dateAction(hireDate);
+        DateSetting.dateFilter(birthDate);
+        DateSetting.dateFilter(endDate);
+        for (DatePicker picker : List.of(hireDate, birthDate, endDate)) {
+            picker.setEditable(true);
+            picker.setMaxWidth(Double.MAX_VALUE);
+        }
+
         // An amount being entered, so this one does take the number formatter that seeds 0.0.
         setTextFormatter(txtRate);
 
-        salaryLockNote.getStyleClass().add("form-hint");
-        salaryLockNote.setWrapText(true);
-        salaryLockNote.setVisible(false);
-        salaryLockNote.setManaged(false);
+        salaryNote.getStyleClass().add("form-hint");
+        salaryNote.setWrapText(true);
+        salaryNote.setMaxWidth(FIELD_WIDTH + 110);
+        showNote(salaryVisible ? null : text("employee.form.salary.hidden"));
 
-        // The picture is only offered to somebody who may edit the employee; on a new one it is
-        // kept until the row exists, because a photo needs an id to belong to.
+        // The picture is only offered to somebody who may write it: on a new employee that is the
+        // create key, since the picture is saved with the row; on an existing one, the update key.
         boolean mayEdit = AuthorizationGuard.isGranted(employeeId > 0
                 ? AppPermissions.EMPLOYEE_UPDATE : AppPermissions.EMPLOYEE_CREATE);
 
-        boolean salaryVisible = employeeService.salaryVisible();
-        comboSalaryKind.setDisable(!salaryVisible);
-        txtRate.setDisable(!salaryVisible);
+        ScrollPane scroll = new ScrollPane(body(mayEdit));
+        scroll.setFitToWidth(true);
+        scroll.getStyleClass().add("edge-to-edge");
+        // A ceiling, not a floor: only a display shorter than the form scrolls it.
+        scroll.setMaxHeight(MAX_FORM_HEIGHT);
+        box.getChildren().setAll(header(), scroll);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
 
-        box.getChildren().setAll(form(mayEdit));
-
-        // The Enter order, declared once, in the order the form is actually filled - rule ق-ل9.
-        whenEnterPressed(txtName, txtRate, txtNationalId, txtPhone, txtEmail);
+        // The Enter order, declared once, through every control on the form in the order it is read -
+        // the person, then the job - rule ق-ل9. The address and notes are left out: Enter in a text
+        // area is a new line.
+        List<Control> order = new ArrayList<>(List.of(txtName, txtNationalId, birthDate, txtPhone, txtEmail,
+                comboJob, comboEmployment, hireDate, endDate));
+        if (salaryVisible) {
+            order.add(comboSalaryKind);
+            order.add(txtRate);
+        }
+        whenEnterPressed(order.toArray(Control[]::new));
         Platform.runLater(txtName::requestFocus);
         loadJobs();
     }
 
-    private HBox form(boolean mayEdit) {
+    // ---- the layout -----------------------------------------------------------------------------
+
+    /** Whose record this is: a new one, or which code. */
+    private HBox header() {
+        HBox iconBox = new HBox(AppIcon.EMPLOYEES.graphic(28));
+        iconBox.setAlignment(Pos.CENTER);
+        iconBox.getStyleClass().add("party-screen-icon-box");
+
+        Label title = new Label(text(employeeId > 0 ? "employee.form.title.edit" : "employee.form.title.new"));
+        title.getStyleClass().add("party-screen-title");
+        Label subtitle = new Label(text("employee.form.subtitle"));
+        subtitle.getStyleClass().add("party-screen-subtitle");
+        subtitle.setWrapText(true);
+        VBox titles = new VBox(2, title, subtitle);
+        titles.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(titles, Priority.ALWAYS);
+
+        // The code is a label of its own rather than part of a sentence: a number after an Arabic
+        // word is drawn on whichever side the paragraph decides.
+        Label codeCaption = new Label(text("code"));
+        codeCaption.getStyleClass().add("party-screen-subtitle");
+        codeValue.getStyleClass().add("employee-form-code");
+        VBox code = new VBox(0, codeCaption, codeValue);
+        code.setAlignment(Pos.CENTER);
+        code.getStyleClass().add("employee-form-code-box");
+
+        HBox header = new HBox(12, iconBox, titles, code);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setMaxWidth(Double.MAX_VALUE);
+        header.getStyleClass().addAll("party-screen-header", "employee-form-header");
+        return header;
+    }
+
+    private VBox body(boolean mayEdit) {
+        GridPane personalFields = grid(
+                row("name", txtName, true),
+                row("employee.column.national", txtNationalId, false),
+                row("employee.column.birth", birthDate, false),
+                row("column.tel", txtPhone, false),
+                row("column.email", txtEmail, false));
+        HBox personalBody = new HBox(14, personalFields, photoBox(mayEdit));
+        HBox.setHgrow(personalFields, Priority.ALWAYS);
+        VBox personal = card(text("employee.form.section.personal"), personalBody);
+
+        List<Node[]> workRows = new ArrayList<>(List.of(
+                row("employee.column.job", comboJob, true),
+                row("employee.column.employment", comboEmployment, false),
+                row("employee.column.hire", hireDate, true),
+                row("employee.column.end", endDate, false)));
+        if (salaryVisible) {
+            workRows.add(row("employee.column.salary.kind", comboSalaryKind, false));
+            workRows.add(row("employee.column.rate", txtRate, false));
+        }
+        GridPane workFields = grid(workRows.toArray(Node[][]::new));
+        workFields.add(salaryNote, 0, workRows.size(), 2, 1);
+        VBox work = card(text(salaryVisible ? "employee.form.section.work" : "employee.form.section.job"),
+                workFields);
+
+        HBox columns = new HBox(12, personal, work);
+        HBox.setHgrow(personal, Priority.ALWAYS);
+        HBox.setHgrow(work, Priority.ALWAYS);
+
+        // One row, the captions beside their boxes: the card is two lines of text tall, not four.
+        GridPane more = new GridPane();
+        more.setHgap(10);
+        more.addRow(0, caption("column.address"), txtAddress, caption("column.notes"), txtNotes);
+        ColumnConstraints side = new ColumnConstraints();
+        side.setMinWidth(Region.USE_PREF_SIZE);
+        ColumnConstraints wide = new ColumnConstraints();
+        wide.setHgrow(Priority.ALWAYS);
+        more.getColumnConstraints().addAll(side, wide, side, wide);
+
+        // No heading of its own: its two captions already say what it holds, and a heading is a
+        // line of height the form cannot spare on a 768-tall display.
+        VBox moreCard = new VBox(more);
+        moreCard.getStyleClass().addAll("app-card", "party-form-card");
+        moreCard.setPadding(new Insets(12));
+
+        VBox body = new VBox(10, columns, moreCard);
+        body.setPadding(new Insets(10, 2, 2, 2));
+        return body;
+    }
+
+    private VBox card(String title, Node content) {
+        Label heading = new Label(title);
+        heading.getStyleClass().add("app-section-title");
+        VBox card = new VBox(8, heading, content);
+        card.getStyleClass().addAll("app-card", "party-form-card");
+        card.setPadding(new Insets(10, 12, 12, 12));
+        return card;
+    }
+
+    private static GridPane grid(Node[]... rows) {
         GridPane grid = new GridPane();
         grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setVgap(8);
+        for (int index = 0; index < rows.length; index++) {
+            grid.add(rows[index][0], 0, index);
+            grid.add(rows[index][1], 1, index);
+        }
         ColumnConstraints captions = new ColumnConstraints();
-        captions.setMinWidth(110);
-        ColumnConstraints values = new ColumnConstraints();
-        values.setPrefWidth(260);
-        values.setHgrow(Priority.SOMETIMES);
-        grid.getColumnConstraints().addAll(captions, values, captions, values);
+        captions.setMinWidth(Region.USE_PREF_SIZE);
+        ColumnConstraints fields = new ColumnConstraints();
+        fields.setPrefWidth(FIELD_WIDTH);
+        fields.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().addAll(captions, fields);
+        return grid;
+    }
 
-        int row = 0;
-        addRow(grid, row, "code", txtCode, "name", txtName);
-        row++;
-        addRow(grid, row, "employee.column.job", comboJob, "employee.column.employment", comboEmployment);
-        row++;
-        addRow(grid, row, "employee.column.salary.kind", comboSalaryKind, "employee.column.rate", txtRate);
-        row++;
-        addRow(grid, row, "employee.column.hire", hireDate, "employee.column.birth", birthDate);
-        row++;
-        addRow(grid, row, "employee.column.end", endDate, "employee.column.national", txtNationalId);
-        row++;
-        addRow(grid, row, "column.tel", txtPhone, "column.email", txtEmail);
-        row++;
-        addRow(grid, row, "column.address", txtAddress, "column.notes", txtNotes);
-        row++;
-        grid.add(salaryLockNote, 1, row, 3, 1);
+    /** A caption and its control, the caption marked when the save cannot do without it. */
+    private static Node[] row(String key, Control control, boolean required) {
+        control.setMaxWidth(Double.MAX_VALUE);
+        Label caption = caption(key);
+        if (!required) {
+            return new Node[]{caption, control};
+        }
+        Label mark = new Label("*");
+        mark.getStyleClass().add("form-required-mark");
+        HBox captioned = new HBox(3, caption, mark);
+        captioned.setAlignment(Pos.CENTER_LEFT);
+        return new Node[]{captioned, control};
+    }
 
-        comboJob.setMaxWidth(Double.MAX_VALUE);
-        comboEmployment.setMaxWidth(Double.MAX_VALUE);
-        comboSalaryKind.setMaxWidth(Double.MAX_VALUE);
-        hireDate.setMaxWidth(Double.MAX_VALUE);
-        birthDate.setMaxWidth(Double.MAX_VALUE);
-        endDate.setMaxWidth(Double.MAX_VALUE);
-
-        VBox fields = new VBox(10, grid);
-        fields.getStyleClass().addAll("app-card", "party-form-card");
-        HBox.setHgrow(fields, Priority.ALWAYS);
-
-        HBox shell = new HBox(12, fields, photoBox(mayEdit));
-        shell.setAlignment(Pos.TOP_CENTER);
-        return shell;
+    private static Label caption(String key) {
+        Label caption = new Label(text(key));
+        caption.getStyleClass().add("form-label");
+        return caption;
     }
 
     private VBox photoBox(boolean mayEdit) {
         photoView.setFitWidth(PHOTO_SIZE);
         photoView.setFitHeight(PHOTO_SIZE);
         photoView.setPreserveRatio(true);
+        Rectangle clip = new Rectangle(PHOTO_SIZE, PHOTO_SIZE);
+        clip.setArcWidth(16);
+        clip.setArcHeight(16);
+        photoView.setClip(clip);
+
+        Node placeholder = AppIcon.EMPLOYEES.graphic(40);
+        placeholder.visibleProperty().bind(photoView.imageProperty().isNull());
+        StackPane frame = new StackPane(placeholder, photoView);
+        frame.getStyleClass().add("employee-photo-frame");
+        frame.setMinSize(PHOTO_SIZE + 8, PHOTO_SIZE + 8);
+        frame.setMaxSize(PHOTO_SIZE + 8, PHOTO_SIZE + 8);
 
         Button choose = new Button(text("employee.photo.choose"), AppIcon.ADD.graphic());
         choose.getStyleClass().add("app-neutral-button");
+        choose.setMaxWidth(Double.MAX_VALUE);
         choose.setOnAction(event -> choosePhoto());
+        choose.setDisable(!mayEdit);
         Button clear = new Button(text("employee.photo.clear"), AppIcon.DELETE.graphic());
         clear.getStyleClass().add("app-neutral-button");
+        clear.setMaxWidth(Double.MAX_VALUE);
         clear.setOnAction(event -> {
             photo = null;
             photoChanged = true;
             photoView.setImage(null);
         });
-        choose.setDisable(!mayEdit);
-        clear.setDisable(!mayEdit);
+        clear.disableProperty().bind(photoView.imageProperty().isNull().or(Bindings.createBooleanBinding(() -> !mayEdit)));
 
-        Label caption = new Label(text("employee.photo"));
-        caption.getStyleClass().add("form-label");
-        VBox pane = new VBox(8, caption, photoView, choose, clear);
+        VBox pane = new VBox(8, frame, choose, clear);
         pane.setAlignment(Pos.TOP_CENTER);
-        pane.getStyleClass().addAll("app-card", "party-form-card");
-        pane.setMinWidth(PHOTO_SIZE + 40);
+        pane.setMinWidth(PHOTO_SIZE + 24);
+        pane.setMaxWidth(PHOTO_SIZE + 40);
         return pane;
     }
 
-    private void addRow(GridPane grid, int row, String firstKey, javafx.scene.Node first,
-                        String secondKey, javafx.scene.Node second) {
-        grid.add(label(firstKey), 0, row);
-        grid.add(first, 1, row);
-        grid.add(label(secondKey), 2, row);
-        grid.add(second, 3, row);
+    /** The one line under the salary: why it cannot be changed here, why it is not shown, or nothing. */
+    private void showNote(String note) {
+        salaryNote.setText(note == null ? "" : note);
+        salaryNote.setVisible(note != null);
+        salaryNote.setManaged(note != null);
     }
 
-    private static Label label(String key) {
-        Label label = new Label(text(key));
-        label.getStyleClass().add("form-label");
-        return label;
-    }
+    // ---- the data -------------------------------------------------------------------------------
 
     private void loadJobs() {
         try {
-            List<Job> options = new ArrayList<>(employeeService.jobs(EmployeeScope.ACTIVE_ONLY));
-            comboJob.setItems(FXCollections.observableArrayList(options));
+            comboJob.setItems(FXCollections.observableArrayList(
+                    employeeService.jobsForPicker(EmployeeScope.ACTIVE_ONLY)));
             // The job carries a suggested salary, and it is only ever a suggestion: it fills an
             // empty box on a new employee and never overwrites a figure somebody has typed.
             comboJob.getSelectionModel().selectedItemProperty().addListener((source, was, now) -> {
@@ -271,7 +412,7 @@ public class EmployeeFormController implements AddInterface {
                 }
             });
         } catch (Exception e) {
-            AllAlerts.handleError(text("employee.error.operation"), asException(e));
+            AllAlerts.handleError(text("employee.error.operation"), e);
         }
     }
 
@@ -279,7 +420,7 @@ public class EmployeeFormController implements AddInterface {
         if (value == null || value.isBlank()) {
             return true;
         }
-        return com.hamza.controlsfx.others.DoubleSetting.parseDoubleOrDefault(value) == 0;
+        return DoubleSetting.parseDoubleOrDefault(value) == 0;
     }
 
     private void choosePhoto() {
@@ -295,11 +436,17 @@ public class EmployeeFormController implements AddInterface {
             if (file.length() > PHOTO_MAX_BYTES) {
                 throw new UserValidationException(text("employee.error.photo.size"));
             }
-            photo = Files.readAllBytes(file.toPath());
+            byte[] chosen = Files.readAllBytes(file.toPath());
+            // A file named .png that is not a picture drew nothing and was stored all the same.
+            Image image = new Image(new ByteArrayInputStream(chosen));
+            if (image.isError() || image.getWidth() <= 0) {
+                throw new UserValidationException(text("employee.error.photo.invalid"));
+            }
+            photo = chosen;
             photoChanged = true;
-            photoView.setImage(new Image(new ByteArrayInputStream(photo)));
+            photoView.setImage(image);
         } catch (Exception e) {
-            AllAlerts.handleError(text("employee.error.operation"), asException(e));
+            AllAlerts.handleError(text("employee.error.operation"), e);
         }
     }
 
@@ -313,14 +460,13 @@ public class EmployeeFormController implements AddInterface {
     @Override
     public int insertData() throws Exception {
         EmployeeDraft draft = readForm();
-        int id = employeeId;
         if (employeeId == 0) {
-            id = employeeService.create(draft);
-        } else {
-            employeeService.update(draft);
+            employeeService.create(draft, photo);
+            return 1;
         }
-        if (photoChanged && id > 0) {
-            employeeService.updatePhoto(id, photo);
+        employeeService.update(draft);
+        if (photoChanged) {
+            employeeService.updatePhoto(employeeId, photo);
         }
         return 1;
     }
@@ -330,7 +476,7 @@ public class EmployeeFormController implements AddInterface {
         return EmployeeDraft.parse(employeeId, txtName.getText(), job == null ? 0 : job.id(),
                 birthDate.getValue(), hireDate.getValue(), endDate.getValue(),
                 comboEmployment.getValue(), txtNationalId.getText(), txtEmail.getText(),
-                txtPhone.getText(), txtAddress.getText(), txtNotes.getText(), null,
+                txtPhone.getText(), txtAddress.getText(), txtNotes.getText(), defaultTreasuryId,
                 comboSalaryKind.getValue(), amount(txtRate));
     }
 
@@ -348,7 +494,7 @@ public class EmployeeFormController implements AddInterface {
             if (employee == null) {
                 return;
             }
-            txtCode.setText(String.valueOf(employee.id()));
+            codeValue.setText(String.valueOf(employee.id()));
             txtName.setText(employee.name());
             comboEmployment.getSelectionModel().select(employee.employmentType());
             hireDate.setValue(employee.hireDate());
@@ -359,6 +505,7 @@ public class EmployeeFormController implements AddInterface {
             txtEmail.setText(employee.email());
             txtAddress.setText(employee.address());
             txtNotes.setText(employee.notes());
+            defaultTreasuryId = employee.defaultTreasuryId();
             if (employee.salaryKind() != null) {
                 comboSalaryKind.getSelectionModel().select(employee.salaryKind());
             }
@@ -369,7 +516,7 @@ public class EmployeeFormController implements AddInterface {
             showSalaryLock(employee);
             loadPhoto();
         } catch (Exception e) {
-            AllAlerts.handleError(text("employee.error.operation"), asException(e));
+            AllAlerts.handleError(text("employee.error.operation"), e);
         }
     }
 
@@ -399,17 +546,16 @@ public class EmployeeFormController implements AddInterface {
      * {@code opening.correction.customers} named for months and did not.
      */
     private void showSalaryLock(Employee employee) {
+        if (!salaryVisible) {
+            return;
+        }
         try {
-            boolean locked = employeeService.salaryVisible()
-                    && employeeService.salaryHistory(employee.id()).size() > 1;
-            salaryLockNote.setText(text("employee.salary.locked.note"));
-            salaryLockNote.setVisible(locked);
-            salaryLockNote.setManaged(locked);
-            comboSalaryKind.setDisable(comboSalaryKind.isDisable() || locked);
+            boolean locked = employeeService.salaryHistory(employee.id()).size() > 1;
+            comboSalaryKind.setDisable(locked);
             txtRate.setEditable(!locked);
-        } catch (Exception ignored) {
-            // A reader without the salary permission cannot count the history, and does not need
-            // to: their salary controls are already disabled.
+            showNote(locked ? text("employee.salary.locked.note") : null);
+        } catch (Exception e) {
+            log.warn("Could not read the salary history", e);
         }
     }
 
@@ -430,17 +576,18 @@ public class EmployeeFormController implements AddInterface {
         Utils.clearAll(txtName, txtNationalId, txtPhone, txtEmail, txtRate);
         txtAddress.clear();
         txtNotes.clear();
-        txtCode.setText(text("item.code.generate"));
+        codeValue.setText(text("item.code.generate"));
         birthDate.setValue(null);
         endDate.setValue(null);
         hireDate.setValue(LocalDate.now());
+        defaultTreasuryId = null;
         photo = null;
         photoChanged = false;
         photoView.setImage(null);
     }
 
     @Override
-    public @org.jetbrains.annotations.NotNull BooleanBinding checkDataToEnableButton() {
+    public @NotNull BooleanBinding checkDataToEnableButton() {
         // Bindings.createBooleanBinding, not a chain of or() calls whose result is thrown away -
         // which is what AddNameController did, leaving the save button asking about the name alone.
         return Bindings.createBooleanBinding(
@@ -463,8 +610,7 @@ public class EmployeeFormController implements AddInterface {
         String value = field.getText();
         return value == null || value.isBlank()
                 ? BigDecimal.ZERO
-                : BigDecimal.valueOf(com.hamza.controlsfx.others.DoubleSetting
-                .parseDoubleOrDefault(value));
+                : BigDecimal.valueOf(DoubleSetting.parseDoubleOrDefault(value));
     }
 
     private static <T> StringConverter<T> converter(Function<T, String> label) {
@@ -479,10 +625,6 @@ public class EmployeeFormController implements AddInterface {
                 return null;
             }
         };
-    }
-
-    private static Exception asException(Throwable e) {
-        return e instanceof Exception exception ? exception : new RuntimeException(e);
     }
 
     private static String text(String key) {

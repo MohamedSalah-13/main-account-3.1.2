@@ -1,268 +1,403 @@
 package com.hamza.account.view;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.AppIcon;
-import com.hamza.account.config.PropertiesName;
-import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.about.AboutBuild;
+import com.hamza.account.features.about.AboutLicense;
 import com.hamza.account.features.productprofile.ProductFeatureCatalog;
 import com.hamza.account.features.productprofile.ProductProfile;
 import com.hamza.account.service.version.SystemInfoDialog;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.ConnectionManager;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.others.ChangeOrientation;
+import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
-import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.Properties;
+import java.util.Optional;
 
+/**
+ * The About window: which build this is, what the licence amounts to, which edition this shop has.
+ * <p>
+ * It used to be a column 347 points wide and 680 tall - a stack of centred sentences in fonts the
+ * program does not ship ({@code Grand Hotel}, {@code Gafata}), coloured green, orange and red by
+ * name, so the dark theme could not answer for them - with each figure inside an Arabic sentence
+ * that moved its parts: the version's colon landed after the number, the build's timestamp was
+ * Maven's {@code 2026-09-24T04:46:00Z}. The version it showed was the one this computer last ran,
+ * a preference answering {@code 1.0.0} until it is first written.
+ * <p>
+ * Now it is one wide, short window: a header with the product and its build, two cards side by
+ * side - the licence and the edition - and a footer. Every line is a caption and a value of its
+ * own, and a value in Latin is laid out left to right.
+ * <p>
+ * <b>Activating a licence checks the file before it replaces anything</b> -
+ * {@link TrialManager#install}: the start-up reads {@code license.dat} strictly, and a wrong file
+ * copied over a working licence used to end the install at the next start.
+ */
 @Log4j2
 public class AboutApplication extends Application {
-    private static final String GAFATA = "Gafata";
-    private static final String GRAND_HOTEL = "Grand Hotel";
-    private static final String NEW_ROCKER = "New Rocker";
-    private final VBox box;
-    private Text statusText;
-    private Text remainingText;
-    private Text licenseText;
 
-    public AboutApplication() {
-        LanguageManager language = LanguageManager.getInstance();
-        Button button = new Button(language.getString("about.system.info"));
-        button.getStyleClass().add("app-neutral-button");
-        button.setOnAction(event -> new SystemInfoDialog().show());
-        button.setGraphic(AppIcon.INFO.graphic());
+    private static final double CARD_WIDTH = 300;
+    /** What {@code TrialManager.install} accepts; anything larger is refused before it is read. */
+    private static final long LICENSE_FILE_MAX_BYTES = 64 * 1024;
 
-        box = new VBox(20);
-        box.getChildren().addAll(AppIcon.INFO.graphic(80), getLabel(),
-                buildProductProfileCard(), buildLicenseActions(), button);
-        box.setPadding(new Insets(30));
-        box.setAlignment(Pos.TOP_CENTER);
-    }
+    private final LanguageManager language = LanguageManager.getInstance();
+    private final AboutBuild build = AboutBuild.current();
+
+    private final Label status = new Label();
+    private final Label remaining = new Label();
+    private final Label licenseFile = new Label();
+    private Optional<Image> programImage;
 
     public static void main(String[] args) {
         launch(args);
     }
 
-    private static String getBuildDate() {
-        try (var is = MainScreenApplication.class.getResourceAsStream("/version.properties")) {
-            if (is != null) {
-                Properties props = new Properties();
-                props.load(is);
-                String pv = props.getProperty("build.date");
-                if (pv != null && !pv.isBlank() && !pv.contains("${")) {
-                    return pv;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        return LanguageManager.getInstance().getString("about.build.development");
-    }
-
     @Override
     public void start(Stage stage) throws Exception {
-        Scene scene = new SceneAll(box);
+        VBox body = new VBox(12, header(), cards(), footer(stage));
+        body.setPadding(new Insets(16));
+        body.getStyleClass().add("app-container");
+
+        StackPane root = new StackPane(body);
+        root.getStyleClass().addAll("app-root", "about-screen");
+
+        Scene scene = new SceneAll(root);
         stage.setScene(scene);
-        stage.setTitle(LanguageManager.getInstance().getString("nav.about"));
+        stage.setTitle(text("nav.about"));
+        programImage().ifPresent(stage.getIcons()::add);
         stage.setResizable(false);
-        stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        stage.initModality(Modality.APPLICATION_MODAL);
         stage.show();
 
-        ChangeOrientation.sceneOrientation(scene);
-        ThemeManager.apply(scene);
-    }
-
-    private TextFlow getLabel() {
-        TextFlow flow = new TextFlow();
-        flow.setTextAlignment(TextAlignment.CENTER);
-        flow.setLineSpacing(5);
-        double size = 20;
-        String color = "green";
-
-        LanguageManager language = LanguageManager.getInstance();
-        extracted(language.getString("about.version", PropertiesName.getAppLastRunVersion()) + "\n",
-                GRAND_HOTEL, size, color, flow);
-        extracted(language.getString("about.build.date", getBuildDate()) + "\n", GAFATA, size, color, flow);
-
-        statusText = createText("", GAFATA, size, color);
-        remainingText = createText("", GAFATA, size, color);
-        licenseText = createText("", GAFATA, size, color);
-        flow.getChildren().addAll(statusText, remainingText, licenseText);
-
-        extracted(language.getString("about.powered.by") + "\n", GAFATA, size, color, flow);
-        extracted(language.getString("about.copyright") + "\n", GAFATA, size, color, flow);
-        extracted(com.hamza.controlsfx.language.Setting_Language.PROGRAM_NAME_EN + "\n",
-                GAFATA, size + 5, "red", flow);
-        extracted(com.hamza.controlsfx.language.Setting_Language.PROGRAM_TEL,
-                GAFATA, size + 5, "red", flow);
-
         refreshStatus();
-        return flow;
     }
 
-    private void extracted(String text, String fontName, double fontSize, String color, TextFlow flow) {
-        final Text t1 = new Text(text);
-        t1.setStyle("-fx-font-family: '" + fontName + "'; -fx-font-size: " + fontSize + "; -fx-fill: " + color + " ");
-        flow.getChildren().add(t1);
+    // ---- the header -----------------------------------------------------------------------------
+
+    private HBox header() {
+        Label product = new Label(text("startup.app.name"));
+        product.getStyleClass().add("about-product-name");
+
+        String development = text("about.build.development");
+        HBox facts = new HBox(18,
+                fact("about.caption.version", build.version().orElse(development), true),
+                fact("about.caption.build", build.built().map(this::longDate).orElse(development), false));
+        facts.setAlignment(Pos.CENTER_LEFT);
+
+        VBox titles = new VBox(4, product, facts);
+        titles.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(titles, Priority.ALWAYS);
+
+        HBox header = new HBox(14, logo(), titles);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("about-header");
+        return header;
     }
 
-    private Text createText(String text, String fontName, double fontSize, String color) {
-        final Text t1 = new Text(text);
-        t1.setStyle("-fx-font-family: '" + fontName + "'; -fx-font-size: " + fontSize + "; -fx-fill: " + color + " ");
-        return t1;
-    }
-
-    private void applyStyle(Text text, String fontName, double fontSize, String color) {
-        text.setStyle("-fx-font-family: '" + fontName + "'; -fx-font-size: " + fontSize + "; -fx-fill: " + color + " ");
-    }
-
-    private HBox buildLicenseActions() {
-        LanguageManager language = LanguageManager.getInstance();
-        Button activate = new Button(language.getString("about.license.activate"));
-        activate.getStyleClass().add("app-neutral-button");
-        activate.setGraphic(AppIcon.SECURITY.graphic());
-        activate.setOnAction(event -> {
-            FileChooser chooser = new FileChooser();
-            chooser.setTitle(language.getString("about.license.choose"));
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
-                    language.getString("about.license.file.type"), "*.dat"));
-            var file = chooser.showOpenDialog(activate.getScene().getWindow());
-            if (file == null) {
-                return;
-            }
-            try {
-                Files.copy(file.toPath(), TrialManager.getLicensePath(), StandardCopyOption.REPLACE_EXISTING);
-                AllAlerts.alertSaveWithMessage(language.getString("about.license.activated"));
-                refreshStatus();
-            } catch (Exception e) {
-                AllAlerts.handleError(language.getString("about.license.activate"), e);
-            }
-        });
-
-        HBox box = new HBox(10);
-        box.setAlignment(Pos.CENTER);
-        box.getChildren().addAll(activate);
-        return box;
-    }
-
-    private VBox buildProductProfileCard() {
-        LanguageManager language = LanguageManager.getInstance();
-        VBox card = new VBox(6);
-        card.getStyleClass().add("app-card");
-        card.setMaxWidth(520);
-        Label heading = new Label(language.getString("product.profile.about.heading"));
-        heading.getStyleClass().add("app-section-title");
-        card.getChildren().add(heading);
-
-        ProductProfile profile = ServiceRegistry.get(ProductProfile.class);
-        if (profile == null) {
-            card.getChildren().add(new Label(language.getString("product.profile.about.unavailable")));
-            return card;
+    /** A caption and its value on one line, the value its own label so the paragraph cannot move it. */
+    private HBox fact(String captionKey, String value, boolean latin) {
+        Label caption = new Label(text(captionKey));
+        caption.getStyleClass().add("about-header-caption");
+        Label shown = new Label(value);
+        shown.getStyleClass().add("about-header-value");
+        if (latin) {
+            shown.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         }
-        String customer = profile.legacyFallback()
-                ? language.getString("product.profile.about.legacy.customer") : profile.customerName();
-        String edition = profile.legacyFallback()
-                ? language.getString("product.profile.about.legacy.edition") : profile.profileName();
-        card.getChildren().addAll(
-                new Label(language.getString("product.profile.about.customer", customer)),
-                new Label(language.getString("product.profile.about.edition", edition)),
-                new Label(language.getString("product.profile.about.features",
-                        profile.enabledFeatures().size(), ProductFeatureCatalog.standard().keys().size())));
-        if (!profile.legacyFallback()) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-                    .withLocale(language.getCurrentLocale())
-                    .withZone(ZoneId.systemDefault());
-            card.getChildren().add(new Label(language.getString(
-                    "product.profile.about.issued", formatter.format(profile.issuedAt()))));
-        }
-        return card;
+        HBox fact = new HBox(6, caption, shown);
+        fact.setAlignment(Pos.BASELINE_LEFT);
+        return fact;
+    }
+
+    private Node logo() {
+        return programImage().<Node>map(image -> {
+            ImageView view = new ImageView(image);
+            view.setFitWidth(52);
+            view.setFitHeight(52);
+            view.setPreserveRatio(true);
+            StackPane box = new StackPane(view);
+            box.getStyleClass().add("about-logo");
+            return box;
+        }).orElseGet(() -> AppIcon.INFO.graphic(44));
     }
 
     /**
-     * Reads the trial state against a pooled connection and returns that
-     * connection as soon as the read is done. Keeping a TrialManager - and with it
-     * an open connection - for the lifetime of this window leaked one pooled
-     * connection every time the window was opened, and opened a second
-     * ConnectionToDatabase, re-reading and decrypting config.xml, to get it.
+     * The program's own picture, read once and the stream closed. Not {@code new Image_Setting()},
+     * which opens every one of its forty-odd resource streams to hand out one and closes none.
      */
-    private TrialManager.TrialDisplayInfo loadDisplayInfo() {
+    private Optional<Image> programImage() {
+        if (programImage == null) {
+            try (InputStream icon = Main.class.getResourceAsStream("image/tools.png")) {
+                programImage = icon == null ? Optional.empty() : Optional.of(new Image(icon));
+            } catch (Exception e) {
+                log.debug("No picture for the About window", e);
+                programImage = Optional.empty();
+            }
+        }
+        return programImage;
+    }
+
+    // ---- the two cards --------------------------------------------------------------------------
+
+    private HBox cards() {
+        VBox licence = licenceCard();
+        VBox profile = profileCard();
+        HBox cards = new HBox(12, licence, profile);
+        HBox.setHgrow(licence, Priority.ALWAYS);
+        HBox.setHgrow(profile, Priority.ALWAYS);
+        return cards;
+    }
+
+    private VBox licenceCard() {
+        Label heading = new Label(text("about.license.heading"));
+        heading.getStyleClass().add("app-section-title");
+        status.getStyleClass().add("about-badge");
+        HBox top = new HBox(10, heading, spacer(), status);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        GridPane rows = rows();
+        addRow(rows, 0, "about.caption.remaining", remaining);
+        addRow(rows, 1, "about.caption.license", licenseFile);
+
+        Button activate = new Button(text("about.license.activate"), AppIcon.SECURITY.graphic());
+        activate.getStyleClass().add("app-neutral-button");
+        activate.setOnAction(event -> activate(activate));
+
+        return card(top, rows, activate);
+    }
+
+    private VBox profileCard() {
+        Label heading = new Label(text("product.profile.about.heading"));
+        heading.getStyleClass().add("app-section-title");
+        GridPane rows = rows();
+
+        ProductProfile profile = ServiceRegistry.get(ProductProfile.class);
+        if (profile == null) {
+            Label unavailable = new Label(text("product.profile.about.unavailable"));
+            unavailable.getStyleClass().add("form-hint");
+            unavailable.setWrapText(true);
+            return card(heading, unavailable);
+        }
+        boolean legacy = profile.legacyFallback();
+        addRow(rows, 0, "product.profile.about.customer",
+                value(legacy ? text("product.profile.about.legacy.customer") : profile.customerName()));
+        addRow(rows, 1, "product.profile.about.edition",
+                value(legacy ? text("product.profile.about.legacy.edition") : profile.profileName()));
+        addRow(rows, 2, "product.profile.about.features", value(language.getString(
+                "product.profile.about.features.value",
+                profile.enabledFeatures().size(), ProductFeatureCatalog.standard().keys().size())));
+        if (!legacy) {
+            addRow(rows, 3, "product.profile.about.issued",
+                    value(longDate(profile.issuedAt().atZone(ZoneId.systemDefault()).toLocalDate())));
+        }
+        return card(heading, rows);
+    }
+
+    private VBox card(Node... children) {
+        VBox card = new VBox(10, children);
+        card.getStyleClass().add("app-card");
+        card.setPadding(new Insets(12, 14, 14, 14));
+        card.setPrefWidth(CARD_WIDTH);
+        return card;
+    }
+
+    private static GridPane rows() {
+        GridPane rows = new GridPane();
+        rows.setHgap(12);
+        rows.setVgap(8);
+        ColumnConstraints captions = new ColumnConstraints();
+        captions.setMinWidth(Region.USE_PREF_SIZE);
+        ColumnConstraints values = new ColumnConstraints();
+        values.setHgrow(Priority.ALWAYS);
+        rows.getColumnConstraints().addAll(captions, values);
+        return rows;
+    }
+
+    private void addRow(GridPane rows, int row, String captionKey, Label value) {
+        Label caption = new Label(text(captionKey));
+        caption.getStyleClass().add("form-label");
+        value.getStyleClass().add("about-value");
+        rows.add(caption, 0, row);
+        rows.add(value, 1, row);
+    }
+
+    private static Label value(String text) {
+        Label value = new Label(text);
+        value.setWrapText(true);
+        return value;
+    }
+
+    // ---- the footer -----------------------------------------------------------------------------
+
+    private HBox footer(Stage stage) {
+        VBox credits = new VBox(2,
+                credit("about.caption.developer",
+                        language.getString("about.copyright.line", build.copyrightYear(LocalDate.now()))),
+                credit("about.caption.support",
+                        Setting_Language.PROGRAM_NAME_EN + "  ·  " + Setting_Language.PROGRAM_TEL));
+        HBox.setHgrow(credits, Priority.ALWAYS);
+
+        Button systemInfo = new Button(text("about.system.info"), AppIcon.INFO.graphic());
+        systemInfo.getStyleClass().add("app-neutral-button");
+        systemInfo.setOnAction(event -> new SystemInfoDialog().show());
+        Button close = new Button(text("close"), AppIcon.CLOSE.graphic());
+        close.getStyleClass().add("app-neutral-button");
+        close.setCancelButton(true);
+        close.setOnAction(event -> stage.close());
+
+        HBox footer = new HBox(10, credits, systemInfo, close);
+        footer.setAlignment(Pos.CENTER_LEFT);
+        return footer;
+    }
+
+    /** The developer and the support line: Latin text, laid out left to right beside an Arabic caption. */
+    private HBox credit(String captionKey, String latin) {
+        Label caption = new Label(text(captionKey));
+        caption.getStyleClass().add("about-credit-caption");
+        Label value = new Label(latin);
+        value.getStyleClass().add("about-credit");
+        value.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        HBox line = new HBox(6, caption, value);
+        line.setAlignment(Pos.BASELINE_LEFT);
+        return line;
+    }
+
+    // ---- the licence ----------------------------------------------------------------------------
+
+    /** Reads the trial state off the JavaFX thread, on a pooled connection it gives straight back. */
+    private void refreshStatus() {
+        show(null, true);
+        Task<TrialManager.TrialDisplayInfo> read = new Task<>() {
+            @Override
+            protected TrialManager.TrialDisplayInfo call() {
+                return withTrialManager(TrialManager::getDisplayInfo);
+            }
+        };
+        read.setOnSucceeded(event -> show(read.getValue(), false));
+        read.setOnFailed(event -> show(null, false));
+        Thread thread = new Thread(read, "about-licence");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void show(TrialManager.TrialDisplayInfo info, boolean loading) {
+        if (loading) {
+            status.setText("…");
+            remaining.setText("…");
+            licenseFile.setText("…");
+            return;
+        }
+        AboutLicense license = AboutLicense.of(info);
+        status.setText(text(license.statusKey()));
+        remaining.setText(license.remainingDays() == null
+                ? text(license.remainingKey())
+                : language.getString(license.remainingKey(), license.remainingDays()));
+        licenseFile.setText(text(license.fileKey()));
+        status.getStyleClass().removeAll("about-badge-good", "about-badge-warning", "about-badge-bad");
+        status.getStyleClass().add(switch (license.tone()) {
+            case GOOD -> "about-badge-good";
+            case WARNING -> "about-badge-warning";
+            case BAD -> "about-badge-bad";
+        });
+    }
+
+    private void activate(Button activate) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(text("about.license.choose"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(text("about.license.file.type"), "*.dat"));
+        File file = chooser.showOpenDialog(activate.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        try {
+            // Judged by its size before a byte of it is read: a licence is a line of text, and a
+            // renamed file of gigabytes read whole would freeze this window or exhaust the heap.
+            if (file.length() > LICENSE_FILE_MAX_BYTES) {
+                log.warn("The licence file {} was not installed: {} bytes", file, file.length());
+                throw new UserValidationException(text("about.license.refused"));
+            }
+            byte[] chosen = Files.readAllBytes(file.toPath());
+            Optional<String> refused = withTrialManager(trial -> {
+                try {
+                    return trial.install(chosen);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+            if (refused.isPresent()) {
+                log.warn("The licence file {} was not installed: {}", file, refused.get());
+                throw new UserValidationException(text("about.license.refused"));
+            }
+            AllAlerts.alertSaveWithMessage(text("about.license.activated"));
+            refreshStatus();
+        } catch (Exception e) {
+            AllAlerts.handleError(text("about.license.activate"), e);
+        }
+    }
+
+    /**
+     * A TrialManager on a pooled connection, returned as soon as the work is done. Keeping one - and
+     * with it an open connection - for the life of this window leaked a pooled connection each time
+     * the window was opened.
+     */
+    private static <T> T withTrialManager(java.util.function.Function<TrialManager, T> work) {
         Connection connection = null;
         try {
             connection = ConnectionManager.acquire();
-            return new TrialManager(connection).getDisplayInfo();
+            return work.apply(new TrialManager(connection));
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Error reading the trial status", e);
-            return null;
+            throw new IllegalStateException(e);
         } finally {
             ConnectionManager.release(connection);
         }
     }
 
-    private void refreshStatus() {
-        LanguageManager language = LanguageManager.getInstance();
-        double size = 20;
-        String ok = "green";
-        String warn = "orange";
-        String bad = "red";
+    // ---- small things ---------------------------------------------------------------------------
 
-        TrialManager.TrialDisplayInfo info = loadDisplayInfo();
-        if (info == null) {
-            statusText.setText(language.getString("about.status.unavailable") + "\n");
-            remainingText.setText(language.getString("about.remaining.unavailable") + "\n");
-            licenseText.setText(language.getString("about.license.unavailable") + "\n");
-            applyStyle(statusText, GAFATA, size, bad);
-            applyStyle(remainingText, GAFATA, size, bad);
-            applyStyle(licenseText, GAFATA, size, bad);
-            return;
-        }
+    /** "24 سبتمبر 2026": a date after an Arabic word is never written 2026-09-24, which the paragraph reverses. */
+    private String longDate(LocalDate day) {
+        return DateTimeFormatter.ofPattern("d MMMM yyyy", language.getCurrentLocale()).format(day);
+    }
 
-        if (info.licenseValid) {
-            statusText.setText(language.getString("about.status.activated") + "\n");
-            remainingText.setText(language.getString("about.remaining.unlimited") + "\n");
-            licenseText.setText(language.getString("about.license.valid") + "\n");
-            applyStyle(statusText, GAFATA, size, ok);
-            applyStyle(remainingText, GAFATA, size, ok);
-            applyStyle(licenseText, GAFATA, size, ok);
-            return;
-        }
+    private static Region spacer() {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        return spacer;
+    }
 
-        statusText.setText(language.getString("about.status.trial") + "\n");
-        if (info.daysRemaining != null) {
-            long days = Math.max(0, info.daysRemaining);
-            remainingText.setText(language.getString("about.remaining.days", days) + "\n");
-        } else {
-            remainingText.setText(language.getString("about.remaining.unavailable") + "\n");
-        }
-
-        if (info.licensePresent) {
-            licenseText.setText(language.getString("about.license.invalid") + "\n");
-        } else {
-            licenseText.setText(language.getString("about.license.missing") + "\n");
-        }
-
-        String statusColor = info.trialExpired ? bad : warn;
-        applyStyle(statusText, GAFATA, size, statusColor);
-        applyStyle(remainingText, GAFATA, size, statusColor);
-        applyStyle(licenseText, GAFATA, size, statusColor);
+    private String text(String key) {
+        return language.getString(key);
     }
 }
