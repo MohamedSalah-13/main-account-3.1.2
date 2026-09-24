@@ -27,10 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,026 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-24 after the glass theme was removed (two cases went with
-it, two came with its fallback), and the same after the employee form and the About window were
-reviewed. The 4,033 written here before was not what the build ran: `main` measured 4,007 with 342
+**4,038 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-24 after the delete-data screen was rebuilt over
+`features/wipe` (twelve tests); 4,026 after the glass theme was removed (two cases went with it, two
+came with its fallback), and the same after the employee form and the About window were reviewed. The 4,033 written here before was not what the build ran: `main` measured 4,007 with 342
 skipped that day, and the review added nineteen, four of them gated on MySQL. The figure before
 that followed the exchange differences being named (phase E of the currencies),
 an invoice learned to be typed in its party's currency, the profit and loss became a statement, the
@@ -3416,6 +3416,22 @@ per option (its tables in delete order, its seed rows, and the targets that must
 resolves the closure into an ordered list of statements, and `WipeService` runs them **inside one
 transaction with the foreign keys left on**. `DeleteDataController` generates its checkbox tree from
 `requires`; there is no dependency graph written out in the controller and none in SQL.
+
+**The screen is built in code over `features/wipe`, and was rebuilt on 2026-09-24**
+(`DeleteDataController.review.md` beside it holds the fifteen findings). `WipeSelection` is what is
+ticked and the rules for ticking - a target takes its closure, unticking one unticks whatever needed it,
+and what is ticked is always closed under `requires` (a test drives two thousand random ticks against
+that) - so the boxes only mirror it; `WipeSections` is the four cards, and `WipeSectionsTest` fails when a
+catalog target has no card. **The stock counts had none**: the screen put them under "other", logged a
+warning on every open, and their row sat below the card's edge. The plan is built on the JavaFX thread
+before the task starts - the worker used to read the check boxes itself. Two things the old screen got
+wrong were in the stylesheet: `.dialog-pane .button` paints **every** button inside a dialog blue, so the delete and
+the close were one colour, and `.dialog-pane .label` wrote its summary navy on a navy strip. Every rule
+for the screen now names `.wipe-screen` and sits after the dialog rules; its red is a palette class like
+the employees' violet. Driven end to end on a scratch copy of the demo data: the customers ticked
+erased the sales, their lines, the returns and the movements and left the cash-sale seed, the suppliers,
+the purchases and the audit log; a `before-delete_` backup was written first; and with no backup password
+set the wipe stopped at the backup with nothing erased.
 
 **The rule that governs both catalogs: only declare a foreign key that is not `ON DELETE CASCADE`.** A
 cascading key takes its rows with it, so declaring it refuses a delete the database performs happily —
