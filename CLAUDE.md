@@ -379,8 +379,10 @@ Two documents govern work here and are kept current — read them before large c
   a stored price - it writes a discount on the line** (`offer_id`, `offer_discount` beside `discount`),
   allocated by value across the lines that earned it, so `document_profit`, the returns guards, the
   receipt and the delegate's commission base need no change. A bundle is an offer over ordinary lines,
-  not a composite item (`items_package` stays dead). §8 holds the owner's decisions, the first of them
-  whether it opens before item 1. **Read it before touching `type_price`, the `sel_price1..3` columns,
+  not a composite item (`items_package` stays dead). §8 records the owner's decisions of the same day -
+  every recommendation taken, and **offers are a paid add-on** (`ProductFeatures.OFFERS`; §6.1 shows that a
+  version-1 profile and `LEGACY_FULL` would each hand a new feature out free, so both must leave add-ons
+  out) - and the one still open: whether it opens before item 1. **Read it before touching `type_price`, the `sel_price1..3` columns,
   the discount half of `InvoiceSaveService`, or anything under `features/pricing` or `features/offers`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
