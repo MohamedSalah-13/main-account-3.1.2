@@ -20,18 +20,43 @@ import java.util.Set;
  * <p>
  * The catalog is an argument so a test can hand it a small one; the screen hands it
  * {@link WipeCatalog#TARGETS}.
+ * <p>
+ * A target may also be <b>locked</b> - not offered by the screen at all, whatever it depends on.
+ * Wiping {@link WipeCatalog#USERS} keeps only {@code id = 1}, so a signed-in user who is not that
+ * row would erase their own account by ticking it; the screen locks it out for anyone else, rather
+ * than let them tick a box that deletes the session reading it.
  */
 public final class WipeSelection {
 
     private final List<WipeTarget> catalog;
+    private final Set<WipeTarget> locked;
     private final Set<WipeTarget> selected = new LinkedHashSet<>();
 
     public WipeSelection(List<WipeTarget> catalog) {
-        this.catalog = List.copyOf(catalog);
+        this(catalog, Set.of());
     }
 
-    /** Ticks the target and everything erased with it. */
+    public WipeSelection(List<WipeTarget> catalog, Set<WipeTarget> locked) {
+        this.catalog = List.copyOf(catalog);
+        this.locked = Set.copyOf(locked);
+    }
+
+    /** Whether this target itself is locked - what a box's own explanation reads. */
+    public boolean isLocked(WipeTarget target) {
+        return locked.contains(target);
+    }
+
+    /** Whether ticking this target is possible at all - itself and everything it would take with it. */
+    public boolean isSelectable(WipeTarget target) {
+        return WipeCatalog.closureOf(List.of(target)).stream().noneMatch(locked::contains);
+    }
+
+    /** Ticks the target and everything erased with it. A locked target, or one that would take a locked
+     * target with it, is left alone. */
     public void tick(WipeTarget target) {
+        if (!isSelectable(target)) {
+            return;
+        }
         selected.addAll(WipeCatalog.closureOf(List.of(target)));
     }
 
@@ -51,8 +76,9 @@ public final class WipeSelection {
         }
     }
 
+    /** Ticks everything selectable. A locked target is left off, silently - the box is disabled too. */
     public void selectAll() {
-        selected.addAll(catalog);
+        catalog.forEach(this::tick);
     }
 
     public void clear() {
@@ -67,9 +93,10 @@ public final class WipeSelection {
         return selected.isEmpty();
     }
 
-    /** Whether every target is ticked - what the "select all" toggle shows. */
+    /** Whether every selectable target is ticked - what the "select all" toggle shows. A locked
+     * target is not counted against it, since nothing can ever tick it. */
     public boolean isAll() {
-        return selected.containsAll(catalog);
+        return catalog.stream().filter(this::isSelectable).allMatch(selected::contains);
     }
 
     /** What is ticked, in the catalog's order - which is the order the wipe runs in. */

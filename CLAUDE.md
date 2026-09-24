@@ -27,8 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,038 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-24 after the delete-data screen was rebuilt over
+**4,043 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-24 after wiping the users was locked to the administrator
+(five tests); 4,038 after the delete-data screen was rebuilt over
 `features/wipe` (twelve tests); 4,026 after the glass theme was removed (two cases went with it, two
 came with its fallback), and the same after the employee form and the About window were reviewed. The 4,033 written here before was not what the build ran: `main` measured 4,007 with 342
 skipped that day, and the review added nineteen, four of them gated on MySQL. The figure before
@@ -3432,6 +3433,19 @@ the employees' violet. Driven end to end on a scratch copy of the demo data: the
 erased the sales, their lines, the returns and the movements and left the cash-sale seed, the suppliers,
 the purchases and the audit log; a `before-delete_` backup was written first; and with no backup password
 set the wipe stopped at the backup with nothing erased.
+
+**Wiping `WipeCatalog.USERS` keeps only `id = 1`, so a signed-in user who is not that row would erase
+their own account** - a decision the rebuild had left open, closed 2026-09-24: the box is locked out
+rather than the session ended afterwards. `WipeSelection` now takes an optional `locked` set alongside
+the catalog - a locked target, and anything that would take it along through `requires`, can never be
+ticked, not directly and not through "select all" - and the controller builds it from
+`CurrentUser.isSystemAdministrator()`, asked here rather than a fresh `id == 1` written into the screen
+(`PermissionCatalogArchitectureTest.theAdministratorIdIsAskedInOnePlace` is what would catch that).
+**A disabled `CheckBox` does not show its `Tooltip` in this toolkit** - checked with a screenshot - so
+the locked box carries a label that stays visible instead, styled `.wipe-locked-note`. Five tests drive
+the locking through `WipeSelection`; the screen was photographed signed in as a non-administrator in
+Arabic and English, light and dark, with the box disabled and the note readable, and again as the
+administrator with neither.
 
 **The rule that governs both catalogs: only declare a foreign key that is not `ON DELETE CASCADE`.** A
 cascading key takes its rows with it, so declaring it refuses a delete the database performs happily —

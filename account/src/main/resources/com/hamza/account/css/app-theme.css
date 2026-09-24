@@ -4067,6 +4067,12 @@
     -fx-font-weight: bold;
 }
 
+.wipe-screen .wipe-locked-note {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.818em;
+    -fx-font-style: italic;
+}
+
 .wipe-screen .wipe-summary {
     -fx-background-color: -app-surface-2;
     -fx-border-color: -app-border;
