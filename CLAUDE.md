@@ -28,7 +28,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
 **4,026 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-24 after the employee form and the About window were
+`mvn clean test` reports, measured on 2026-09-24 after the glass theme was removed (two cases went with
+it, two came with its fallback), and the same after the employee form and the About window were
 reviewed. The 4,033 written here before was not what the build ran: `main` measured 4,007 with 342
 skipped that day, and the review added nineteen, four of them gated on MySQL. The figure before
 that followed the exchange differences being named (phase E of the currencies),
@@ -2412,8 +2413,7 @@ The `-fx-text-fill` the input and button rules set on the control never got ther
 theme every report bar's period preset and «العرض» menu, the invoices list's print menu and the
 statement's two combos were dark on dark (2026-09-23). `app-theme.css` now gives `.combo-box >
 .list-cell` the input's `-app-text-strong` and `.menu-button > .label` `inherit`, so a menu button reads
-like the button class it wears and a plain one keeps Modena's. The glass theme colours its combos itself
-and loads after, so it keeps its white. Seen on the dark and light themes on the profit and loss, the
+like the button class it wears and a plain one keeps Modena's. Seen on the dark and light themes on the profit and loss, the
 exchange differences, the currencies, a sales invoice and the invoices list; the inventory screen's two
 `ChoiceBox`es keep Modena's light box and were left alone.
 
@@ -2428,19 +2428,25 @@ picker, an editable combo and a spinner 50, drawn as a box inside a box beside M
 glaring white on the dark theme. `.combo-box-base > .text-field` and `.spinner > .text-field` are now
 the control's text and nothing more, `.combo-box > .list-cell` carries no padding, and the arrow
 buttons are transparent with their arrows in `-app-text-muted`: every one of them 36, in light and dark.
-**The glass theme pads a text field 8 by 12 at 14px**, and the base theme's padding had been lining up
-with it only by accident of the nested box, so `glass-theme.css` gives the four controls its own
-padding (41-43 beside a 43-point field), its white for their arrows - **it defines none of the `-app-*`
-tokens**, so a base rule that names one does nothing there - and the spinner the box it gives a date
-picker, since the spinner's only box under glass had been the field inside it. Two things seen under
-glass on `main` as well and left alone: a combo's value drawn as a light block, and a focused combo
-losing its border (the base theme's focus rule names tokens glass does not have). Seen by photographing the manual's 49 screens before and after
+Seen by photographing the manual's 49 screens before and after
 through `ManualCapture`: 31 changed, the 18 unchanged are the ones with no such control in view, and
 the dialogs got shorter (the customer form 612 to 583 points). A rule that styles `.text-field` more
 specifically than this one - the invoices' summary cards, the item picker's search, the sign-in box -
 reaches only plain text fields today; one that reaches inside a date picker would bring the second box
 back on that screen. **A `ChoiceBox` is not in it**: it has no editor, and the inventory screen's two
 keep Modena's look on purpose.
+
+**There are two themes, light and dark; the glass theme is gone** (2026-09-24). No screen ever offered
+it - the settings have a light and a dark button, and no commit in this history had a third - so it was
+reached only through a `currentTheme=GLASS` preference written by hand. And it did not work where it
+was reached: it defined none of the `-app-*` tokens, and a colour that does not resolve is not a
+fallback - the base rule still wins the cascade and paints nothing - so a focused combo, date picker or
+spinner lost its whole box and a field marked `validation-error` lost the red border that says it is
+wrong; and its `.root` was transparent with white fields and white text, so **every dialog was a white
+window with invisible fields** (the employee form, photographed). `glass-theme.css` and `Theme.GLASS`
+are deleted, and a computer with `GLASS` saved opens light (`Theme.fromStored`, `ThemeManagerTest`). A
+third theme, if one is ever wanted, starts from the tokens `theme-light.css` defines - which is what
+`ThemeTokenArchitectureTest` checks every stylesheet against.
 
 The same pictures found **the price check's warehouse reading `com.hamza.account.model.domain.Stock@…`**
 on a device's first setup: with nothing remembered it selected `StockService.getDefaultStock()` - a

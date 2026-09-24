@@ -48,12 +48,7 @@ public final class ThemeManager {
         AlertSetting.setStylesheets(getBaseStylesheet(), getStylesheet());
     }
     public static Theme getCurrentTheme() {
-        String name = PREFS.get(KEY_THEME, Theme.LIGHT.name());
-        try {
-            return Theme.valueOf(name);
-        } catch (IllegalArgumentException ex) {
-            return Theme.LIGHT;
-        }
+        return Theme.fromStored(PREFS.get(KEY_THEME, Theme.LIGHT.name()));
     }
 
     public static void setCurrentTheme(Theme theme) {
@@ -152,15 +147,29 @@ public final class ThemeManager {
         node.setStyle(styleToStamp + (stripped.isEmpty() ? "" : " " + stripped));
     }
 
+    /**
+     * The themes a computer may be set to. There was a third, {@code GLASS}, which no screen ever
+     * offered: it could only be reached through a preference written by hand, and its dialogs were
+     * white fields on a white window. A computer that still has it saved opens in the light theme.
+     */
     public enum Theme {
         LIGHT("theme-light.css"),
-        DARK("theme-dark.css"),
-        GLASS("glass-theme.css");
+        DARK("theme-dark.css");
 
         private final String cssFileName;
 
         Theme(String cssFileName) {
             this.cssFileName = cssFileName;
+        }
+
+        /** The theme a stored preference names, or the light theme for one this build does not have. */
+        static Theme fromStored(String name) {
+            for (Theme theme : values()) {
+                if (theme.name().equals(name)) {
+                    return theme;
+                }
+            }
+            return LIGHT;
         }
 
         public String getCssExternalForm() {
