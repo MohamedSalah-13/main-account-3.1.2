@@ -21,6 +21,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
 
     public static final String TABLE_NAME = SPEC.lineTable();
     public static final String INVOICE_NUMBER = DocumentTableSpec.LINE_DOCUMENT;
+    /** The price tier's list price behind a sales line (V84), read off {@code sales_names_table}. */
+    static final String LIST_PRICE = "list_price";
     // for returned
     private final String TABLE_VIEW = SPEC.lineView();
     // for sales
@@ -92,7 +94,7 @@ public class SalesDao extends DocumentLineDao<Sales> {
                 , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getTotalSelPrice()
                 , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
                 , sales.getUnitsType().getValue(), sales.getExpiration_date()
-                , sales.getPriceForeign(), sales.getDiscountForeign()};
+                , sales.getPriceForeign(), sales.getDiscountForeign(), sales.getListPrice()};
     }
 
     @Override
@@ -145,6 +147,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
             }
             sales.setPriceForeign(rs.getBigDecimal(ForeignLineColumns.PRICE));
             sales.setDiscountForeign(rs.getBigDecimal(ForeignLineColumns.DISCOUNT));
+            // What the price tier said for the line (V84); null on every line saved before it.
+            sales.setListPrice(rs.getBigDecimal(LIST_PRICE));
 
 
         } catch (SQLException e) {

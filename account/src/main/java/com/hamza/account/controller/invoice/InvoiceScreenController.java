@@ -20,6 +20,10 @@ import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.invoice.*;
+import com.hamza.account.features.pricing.PriceTier;
+import com.hamza.account.features.pricing.PriceTierCatalog;
+import com.hamza.account.features.pricing.PriceTierService;
+import com.hamza.account.features.pricing.PriceTiers;
 import com.hamza.account.features.party.statement.PartyStatementService;
 import com.hamza.account.features.returns.JdbcReturnableRepository;
 import com.hamza.account.features.notification.StockLevelAlert;
@@ -126,7 +130,21 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
     protected final InvoiceScreenMode screenMode;
     private final InvoiceLineEntry lineEntry;
     protected InvoiceLineEditService lineEditService;
-    protected int priceTypeByNameId = 1; // use a first price type
+    /** The invoice's price tier: the customer's, or another for whoever may change it (V84, ق-س٢). */
+    protected int priceTypeByNameId = PriceTiers.FIRST;
+    private final PriceTierService priceTierService = ServiceRegistry.get(PriceTierService.class);
+    /** The tiers as they stood when the screen opened - the tier box and every tier's name. */
+    private PriceTierCatalog priceTiers = new PriceTierCatalog(List.of());
+    /** Beside the party: which tier the invoice is priced at, changeable with sales.price.tier.change. */
+    private final ComboBox<PriceTier> comboPriceTier = new ComboBox<>();
+    /** What the last tier change, or a line priced at tier 1, did - beside the badges; hidden when empty. */
+    private final Label pricingNote = new Label();
+    /** True while the screen, not the user, moves the tier box. */
+    private boolean settingTier;
+    /** The tier a reopened document was saved at, or null - a new document, or one saved before V84. */
+    private Integer storedTier;
+    /** Whether somebody chose a tier in the box since the document was opened. */
+    private boolean tierChosenOnScreen;
     /**
      * The invoice stock context; kept at the legacy default until warehouse selection is exposed.
      */
@@ -208,6 +226,9 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         this.invoiceLineService = new InvoiceLineService<>(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
                 dataInterface.invoiceBuy()::object_TableData, () -> documentPricing);
+        // A hint said as the line is added; the save asks the permission itself (V84).
+        this.invoiceLineService.undercutAllowedWhen(
+                () -> AuthorizationGuard.isGranted(AppPermissions.SALES_PRICE_BELOW_LIST));
         CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
         this.invoiceExpiryService = new InvoiceExpiryService(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
@@ -596,7 +617,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             return;
         }
         textSearchName = nameSearchField.chosenNameProperty();
-        placePartyField(nameSearchField);
+        placePartyField(carriesTier() ? partyWithTier(nameSearchField) : nameSearchField);
 
         textSearchName.addListener((observableValue, s, string) -> {
             try {
@@ -609,12 +630,150 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                     applyPartyCurrency(party);
                 }
                 focusItemEntry();
-                priceTypeByNameId = t3NameData.priceId(party);
-                priceTierChanged(priceTypeByNameId);
+                if (!carriesTier()) {
+                    priceTypeByNameId = t3NameData.priceId(party);
+                    priceTierChanged(priceTypeByNameId);
+                } else if (!restoringDocument) {
+                    // The customer brings their tier, or tier 1 when theirs is switched off (V84); the
+                    // lines already on the invoice follow it. A reopened document keeps its own.
+                    applyTier(priceTiers.forCustomer(party == null ? PriceTiers.FIRST : t3NameData.priceId(party)),
+                            false);
+                }
             } catch (Exception e) {
                 logError(e);
             }
         });
+    }
+
+    // ---- the price tier (V84, docs/pricing-and-offers-plan.md ق-س٢ and ق-س٣) -----------------
+
+    /** Whether this document is priced from a tier at all: a sale and a sales return. */
+    private boolean carriesTier() {
+        return InvoicePriceTier.carriesTier(documentType());
+    }
+
+    /**
+     * The party field with the tier box beside it. The box is shown to everybody - the cashier should
+     * see that an invoice is at the wholesale price - and changed only by whoever holds
+     * {@code sales.price.tier.change}; the save asks that permission itself.
+     */
+    private Node partyWithTier(Node partyField) {
+        try {
+            priceTiers = priceTierService.catalog();
+        } catch (DaoException e) {
+            logError(e);
+        }
+        comboPriceTier.setItems(FXCollections.observableArrayList(priceTiers.active()));
+        priceTiers.find(PriceTiers.FIRST).ifPresent(comboPriceTier.getSelectionModel()::select);
+        comboPriceTier.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SALES_PRICE_TIER_CHANGE));
+        comboPriceTier.setTooltip(new Tooltip(LanguageManager.getInstance().getString("invoice.tier.tooltip")));
+        comboPriceTier.getStyleClass().add("invoice-price-tier");
+        comboPriceTier.setMinWidth(Region.USE_PREF_SIZE);
+        comboPriceTier.valueProperty().addListener((observable, before, now) -> {
+            if (!settingTier && now != null && now.id() != priceTypeByNameId) {
+                applyTier(now.id(), true);
+            }
+        });
+        javafx.scene.layout.HBox box = new javafx.scene.layout.HBox(6, partyField, comboPriceTier);
+        box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        javafx.scene.layout.HBox.setHgrow(partyField, javafx.scene.layout.Priority.ALWAYS);
+        return box;
+    }
+
+    /**
+     * Prices the invoice at {@code tier}: the box shows it, the entry surface quotes it, and every line
+     * still at its list price is restated at it - a line whose price was typed over is left, and the
+     * note says how many.
+     *
+     * @param chosenOnScreen whether somebody chose it in the box, rather than the customer bringing it
+     */
+    private void applyTier(int tier, boolean chosenOnScreen) {
+        priceTypeByNameId = tier;
+        showTierInBox(tier);
+        if (chosenOnScreen) {
+            tierChosenOnScreen = true;
+        }
+        PriceTierRepricing.Result result = PriceTierRepricing.restate(
+                editor.lines(), tier, invoiceBuy::getItemsPrice, documentPricing);
+        if (result.repriced() > 0) {
+            editor.refreshTotals();
+        }
+        table.refresh();
+        priceTierChanged(tier);
+        if (result.touchedAnything()) {
+            var lm = LanguageManager.getInstance();
+            showPricingNote(result.kept() == 0
+                    ? lm.getString("invoice.tier.repriced", priceTiers.name(tier), result.repriced())
+                    : lm.getString("invoice.tier.repriced.kept", priceTiers.name(tier), result.repriced(),
+                            result.kept()));
+        }
+    }
+
+    /** Selects {@code tier} in the box without it counting as a choice - adding it if it is switched off. */
+    private void showTierInBox(int tier) {
+        settingTier = true;
+        try {
+            if (priceTiers.find(tier).isPresent()
+                    && comboPriceTier.getItems().stream().noneMatch(offered -> offered.id() == tier)) {
+                comboPriceTier.setItems(FXCollections.observableArrayList(priceTiers.choicesIncluding(tier)));
+            }
+            comboPriceTier.getItems().stream().filter(offered -> offered.id() == tier).findFirst()
+                    .ifPresent(comboPriceTier.getSelectionModel()::select);
+        } finally {
+            settingTier = false;
+        }
+    }
+
+    /**
+     * A reopened document at the tier it was saved at, with nothing repriced. One saved before V84 has
+     * none: the box shows its customer's tier, and the save keeps it at none unless somebody chooses.
+     */
+    private void restorePriceTier(int number) {
+        if (!carriesTier()) {
+            return;
+        }
+        try {
+            storedTier = InvoicePriceTier.jdbc().storedTier(documentType(), number);
+        } catch (DaoException e) {
+            logError(e);
+            storedTier = null;
+        }
+        T3 party = selectedParty();
+        int tier = storedTier != null ? storedTier
+                : priceTiers.forCustomer(party == null ? PriceTiers.FIRST : t3NameData.priceId(party));
+        priceTypeByNameId = tier;
+        showTierInBox(tier);
+        tierChosenOnScreen = false;
+        priceTierChanged(tier);
+    }
+
+    /** The tier the save stores - none for a document from before V84 that nobody re-tiered. */
+    private Integer tierForSave() {
+        if (!carriesTier()) {
+            return null;
+        }
+        if (num_invoice_update > 0 && storedTier == null && !tierChosenOnScreen) {
+            return null;
+        }
+        return priceTypeByNameId;
+    }
+
+    /** The sentence a line priced at tier 1 in place of the invoice's tier is marked with, or null. */
+    private String firstTierNote(BasePurchasesAndSales line) {
+        if (!line.isFromFirstTier()) {
+            return null;
+        }
+        return LanguageManager.getInstance().getString("invoice.line.first.tier",
+                priceTiers.name(PriceTiers.FIRST), priceTiers.name(priceTypeByNameId));
+    }
+
+    /**
+     * Says what pricing did without stopping anybody: the standard screen beside the badges, the
+     * quick screen in its status line. A dialog would be dismissed unread by the next scan's Enter.
+     */
+    protected void showPricingNote(String text) {
+        pricingNote.setText(text == null ? "" : text);
+        pricingNote.setVisible(text != null && !text.isBlank());
     }
 
 
@@ -781,7 +940,8 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             throw new UserValidationException(
                     LanguageManager.getInstance().getString("invoice.error.name.not.found"));
         }
-        priceTypeByNameId = t3NameData.priceId(party);
+        // The invoice's tier, which the party chose when it was picked and the tier box may have
+        // changed since (V84) - not the party's tier read again, which would undo that change.
         return priceTypeByNameId;
     }
 
@@ -810,7 +970,21 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
      * expiry dialog - the only step that can decline without an error.
      */
     protected BasePurchasesAndSales addLine(InvoiceLineDraft draft) throws Exception {
-        return lineEntry.add(editor.lines(), draft);
+        BasePurchasesAndSales added = lineEntry.add(editor.lines(), draft);
+        // A line priced at tier 1 because the invoice's tier has no price for the item (V84, ق-س٣):
+        // sold, not refused, and said - the gap is in the data, and the report of missing prices is
+        // where it is mended.
+        if (added != null && added.isFromFirstTier() && added.getItems() != null) {
+            noteAddedLine(LanguageManager.getInstance().getString("invoice.line.first.tier.added",
+                    added.getItems().getNameItem(), priceTiers.name(PriceTiers.FIRST),
+                    priceTiers.name(priceTypeByNameId)));
+        }
+        return added;
+    }
+
+    /** Says something about the line just added - on this screen, as any pricing note is said. */
+    protected void noteAddedLine(String text) {
+        showPricingNote(text);
     }
 
 
@@ -845,6 +1019,8 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             // Before the return is linked back to its invoice: the invoice is shown in the currency this
             // document was written in.
             restoreDocumentCurrency(id, header.partyId(), collection, dataById.getTreasuryModel());
+            // The tier it was priced at (V84), not the tier its customer is on today.
+            restorePriceTier(id);
             // Before the guards can check an edit they have to know what this return
             // was linked to - without it ReturnGuard reads a source of 0 and treats the
             // whole document as a free return it has nothing to compare against.
@@ -986,7 +1162,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                 getSelWithoutBalance(), returnEntry.sourceInvoiceNumber(),
                 returnEntry.selectedReturnReason(),
                 List.copyOf(linesForSave()), invoiceStockId, correctionReason, loadedUpdatedAt,
-                documentPricing.currencyId());
+                documentPricing.currencyId(), tierForSave());
     }
 
     private void saveInBackground(boolean print, boolean paymentTaken, InvoiceSaveCommand command) {
@@ -1250,6 +1426,14 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         returnEntry.reset();
         applyPinnedDefaults();
         applyPartyCurrency(selectedParty());
+        // The next invoice starts at its customer's tier, whatever the last one was changed to.
+        storedTier = null;
+        tierChosenOnScreen = false;
+        showPricingNote(null);
+        if (carriesTier()) {
+            T3 party = selectedParty();
+            applyTier(priceTiers.forCustomer(party == null ? PriceTiers.FIRST : t3NameData.priceId(party)), false);
+        }
         resetItemEntry();
     }
 
@@ -1406,7 +1590,8 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         lineEditService = new InvoiceLineEditService(
                 documentType, catalogService, () -> invoiceStockId,
                 sourceLineId -> returnEntry.sourceLineTerms(sourceLineId))
-                .pricedBy(() -> documentPricing);
+                .pricedBy(() -> documentPricing)
+                .undercutAllowedWhen(() -> AuthorizationGuard.isGranted(AppPermissions.SALES_PRICE_BELOW_LIST));
         // The column menu on the lines table is the administrator's alone, which is how it has always
         // been - through CurrentUser.get().getId() == 1 written out here. It asks CurrentUser now, so
         // the one place that knows what "the administrator" means is UserSessionContext.
@@ -1415,6 +1600,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
                 editor::refreshTotals, getClass(), CurrentUser.isSystemAdministrator(),
                 AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE),
                 invoiceItemSelectionService::selectUnit)
+                .notePrices(this::firstTierNote)
                 .configure();
     }
 
@@ -1522,9 +1708,16 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         currencyBadge.setWrapText(false);
         currencyBadge.managedProperty().bind(currencyBadge.visibleProperty());
         currencyBadge.setVisible(false);
+        // Beside it, what pricing last did (V84): a tier change and how many lines it left, or a line
+        // priced at tier 1 - said without stopping anybody.
+        pricingNote.getStyleClass().add("warning-button");
+        pricingNote.setWrapText(false);
+        pricingNote.managedProperty().bind(pricingNote.visibleProperty());
+        pricingNote.setVisible(false);
         if (labelReturnedBadge != null && labelReturnedBadge.getParent() instanceof Pane bar) {
             int at = bar.getChildren().indexOf(labelReturnedBadge);
             bar.getChildren().add(at < 0 ? bar.getChildren().size() : at + 1, currencyBadge);
+            bar.getChildren().add(bar.getChildren().indexOf(currencyBadge) + 1, pricingNote);
         }
         date.valueProperty().addListener((observable, before, now) -> {
             if (!restoringDocument && documentPricing.foreign() && now != null) {

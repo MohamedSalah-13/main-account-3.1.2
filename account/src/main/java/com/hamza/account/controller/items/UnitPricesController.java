@@ -138,6 +138,7 @@ public final class UnitPricesController {
     public void initialize() {
         costVisible = service != null && service.costVisible();
         filter = UnitPriceFilter.EMPTY.withItemIds(openedOn);
+        loadTierNames();
         configureFilters();
         configureTree();
         configureActions();
@@ -319,6 +320,17 @@ public final class UnitPricesController {
         return fields;
     }
 
+    /** The tiers' names, read once before the columns are headed with them (V84). */
+    private void loadTierNames() {
+        var tiers = ServiceRegistry.get(com.hamza.account.features.pricing.PriceTierService.class);
+        if (tiers == null) return;
+        try {
+            UnitPricingDialog.useTierNames(tiers.catalog());
+        } catch (Exception e) {
+            AllAlerts.handleError(text("unit.prices.title"), e);
+        }
+    }
+
     private void buildTree() {
         TreeItem<Row> top = new TreeItem<>(new Row(0, PriceChange.ITEM));
         for (UnitPriceItem item : draft.items()) {
@@ -351,12 +363,8 @@ public final class UnitPricesController {
     }
 
     private TreeTableColumn<Row, Row> priceColumn(PriceField field) {
-        TreeTableColumn<Row, Row> column = new TreeTableColumn<>(switch (field) {
-            case BUY -> text("unit.prices.column.buy");
-            case SELL_1 -> text("unit.prices.column.sell1");
-            case SELL_2 -> text("unit.prices.column.sell2");
-            case SELL_3 -> text("unit.prices.column.sell3");
-        });
+        // A sale price is headed by its tier's name (V84), as on the items list and the item form.
+        TreeTableColumn<Row, Row> column = new TreeTableColumn<>(UnitPricingDialog.fieldName(field));
         column.setId("unit_prices_" + field.name().toLowerCase());
         column.setPrefWidth(120);
         column.setSortable(false);

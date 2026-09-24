@@ -17,4 +17,9 @@ public enum PriceField {
     public boolean isSell() {
         return this != BUY;
     }
+
+    /** The price tier a sale price is (V84): {@code SELL_1} is tier 1. Zero for the cost. */
+    public int tier() {
+        return isSell() ? ordinal() : 0;
+    }
 }

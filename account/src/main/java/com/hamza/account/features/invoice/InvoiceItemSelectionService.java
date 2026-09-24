@@ -2,6 +2,8 @@ package com.hamza.account.features.invoice;
 
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.pricing.ListedPrice;
+import com.hamza.account.features.pricing.PriceResolver;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
@@ -112,8 +114,9 @@ public final class InvoiceItemSelectionService {
         if (unit == null) {
             throw new UserValidationException(text("invoice.entry.error.unit.missing"));
         }
-        return new UnitSelection(unit, unitPrice(validItem, unit, priceTier),
-                ItemUnits.fromBase(validItem.getSumAllBalance(), unit));
+        ScreenPrice price = unitPrice(validItem, unit, priceTier);
+        return new UnitSelection(unit, price.price(),
+                ItemUnits.fromBase(validItem.getSumAllBalance(), unit), price.listed());
     }
 
     private InvoiceItemSelection selection(ItemsModel item, UnitsModel preferredUnit,
@@ -128,16 +131,28 @@ public final class InvoiceItemSelectionService {
         UnitSelection selected = selectUnit(item, unit.getUnit_name(), priceTier);
         double total = MoneyMath.asDouble(MoneyMath.multiply(selected.price(), quantity));
         return new InvoiceItemSelection(item, units, selected.unit(), item.getBarcode(),
-                selected.price(), quantity, total, selected.balance(), scaleBarcode);
+                selected.price(), quantity, total, selected.balance(), scaleBarcode,
+                selected.listed());
     }
 
-    /** The unit's price on this screen: kept in the base, offered in the screen's currency. */
-    private double unitPrice(ItemsModel item, UnitsModel unit, int priceTier) {
-        double basePrice = priceResolver.resolve(item, priceTier);
-        double inTheBase = documentType.side() == InvoiceSide.PURCHASE
-                ? ItemUnits.buyPrice(item, unit, basePrice)
-                : ItemUnits.sellPrice(item, unit, priceTier, basePrice);
-        return pricing.get().fromBase(inTheBase);
+    /**
+     * The unit's price on this screen: kept in the base, offered in the screen's currency. A sale takes
+     * the tier's list price, and tier 1's where the tier has none (docs/pricing-and-offers-plan.md
+     * ق-س٣) - it used to come out at zero and be refused as an invalid line.
+     */
+    private ScreenPrice unitPrice(ItemsModel item, UnitsModel unit, int priceTier) {
+        if (documentType.side() == InvoiceSide.PURCHASE) {
+            double inTheBase = ItemUnits.buyPrice(item, unit, priceResolver.resolve(item, priceTier));
+            return new ScreenPrice(pricing.get().fromBase(inTheBase), null);
+        }
+        ListedPrice listed = PriceResolver.resolve(item, unit, priceTier, priceResolver::resolve);
+        double price = pricing.get().fromBase(listed.price());
+        return new ScreenPrice(price, InvoicePriceTier.carriesTier(documentType)
+                ? new InvoiceLineDraft.Listed(price, listed.fromFirstTier())
+                : null);
+    }
+
+    private record ScreenPrice(double price, InvoiceLineDraft.Listed listed) {
     }
 
     private static ScaleBarcodeReader scaleReader(ItemsService itemsService) {
@@ -206,6 +221,19 @@ public final class InvoiceItemSelectionService {
         }
     }
 
-    public record UnitSelection(UnitsModel unit, double price, double balance) {
+    /**
+     * @param price  the unit's price on the screen's tier, in the screen's currency
+     * @param listed the list price behind it, and whether it is tier 1's standing in for a tier with
+     *               none - null on a purchase, where no tier stands behind a price
+     */
+    public record UnitSelection(UnitsModel unit, double price, double balance, InvoiceLineDraft.Listed listed) {
+
+        public UnitSelection(UnitsModel unit, double price, double balance) {
+            this(unit, price, balance, null);
+        }
+
+        public boolean fromFirstTier() {
+            return listed != null && listed.fromFirstTier();
+        }
     }
 }

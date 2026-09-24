@@ -470,7 +470,7 @@ public final class ShowInvoiceController<T3 extends BaseNames, T4 extends BaseAc
         sourceLines.stream()
                 .map(BasePurchasesAndSales::getItems)
                 .filter(item -> item != null)
-                .map(item -> new PrintBarcodeModel(item.getBarcode(), item.getNameItem(), item.getSelPrice1()))
+                .map(PrintBarcodeModel::of)
                 .forEach(rows::add);
         if (rows.isEmpty()) {
             AllAlerts.alertError(text("invoice.details.empty"));

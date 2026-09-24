@@ -2,6 +2,8 @@ package com.hamza.account.features.invoice;
 
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.pricing.ListedPrice;
+import com.hamza.account.features.pricing.PriceResolver;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.service.ItemUnits;
@@ -62,12 +64,20 @@ public final class InvoiceItemPickerService {
             return Optional.empty();
         }
 
-        double itemPrice = priceResolver.resolve(item, priceTier);
-        double price = documentType.side() == InvoiceSide.PURCHASE
-                ? ItemUnits.buyPrice(item, unit, item.getBuyPrice())
-                : ItemUnits.sellPrice(item, unit, priceTier, itemPrice);
+        if (documentType.side() == InvoiceSide.PURCHASE) {
+            double price = ItemUnits.buyPrice(item, unit, item.getBuyPrice());
+            return Optional.of(new InvoiceLineDraft(
+                    item, unit, request.quantity(), pricing.get().fromBase(price), 0, null));
+        }
+        // The tier's list price, and tier 1's where the tier has none - the same answer the entry
+        // form gets from InvoiceItemSelectionService (docs/pricing-and-offers-plan.md ق-س٣).
+        ListedPrice listed = PriceResolver.resolve(item, unit, priceTier, priceResolver::resolve);
+        double price = pricing.get().fromBase(listed.price());
+        InvoiceLineDraft.Listed behind = InvoicePriceTier.carriesTier(documentType)
+                ? new InvoiceLineDraft.Listed(price, listed.fromFirstTier())
+                : null;
         return Optional.of(new InvoiceLineDraft(
-                item, unit, request.quantity(), pricing.get().fromBase(price), 0, null));
+                item, unit, request.quantity(), price, 0, null, behind));
     }
 
     @FunctionalInterface

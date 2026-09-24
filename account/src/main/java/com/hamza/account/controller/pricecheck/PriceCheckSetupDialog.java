@@ -9,7 +9,9 @@ import com.hamza.account.features.invoice.InvoiceItemSelectionService.ScaleBarco
 import com.hamza.account.features.pricecheck.PriceCheckSettings;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.model.domain.Stock;
-import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.features.pricing.PriceTier;
+import com.hamza.account.features.pricing.PriceTierCatalog;
+import com.hamza.account.features.pricing.PriceTierService;
 import com.hamza.account.service.StockService;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
@@ -28,7 +30,6 @@ import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,13 +55,13 @@ public class PriceCheckSetupDialog {
     public Optional<PriceCheckSettings> ask() throws Exception {
         var lm = LanguageManager.getInstance();
         var stockService = ServiceRegistry.get(StockService.class);
-        var priceNames = ServiceRegistry.get(SelPriceItemService.class);
+        var priceTiers = ServiceRegistry.get(PriceTierService.class);
 
         List<Stock> stocks = stockService.stocksForPicker(StockScope.ACTIVE_ONLY);
         if (stocks.isEmpty()) {
             return Optional.empty();
         }
-        Map<Integer, String> tierNames = priceNames.getIntegerStringHashMap();
+        PriceTierCatalog tiers = priceTiers.catalog();
 
         ComboBox<Stock> comboStock = new ComboBox<>(FXCollections.observableArrayList(stocks));
         comboStock.setButtonCell(stockCell());
@@ -81,10 +82,14 @@ public class PriceCheckSetupDialog {
         });
         comboStock.getSelectionModel().select(selectedStock(stocks, stockService));
 
-        ComboBox<Integer> comboTier = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3));
-        comboTier.setButtonCell(tierCell(tierNames));
-        comboTier.setCellFactory(list -> tierCell(tierNames));
-        comboTier.getSelectionModel().select(Integer.valueOf(PropertiesName.getPriceCheckPriceTier()));
+        // The tiers the shop sells at (V84), and the one this screen was set to even if it has since
+        // been switched off - so the box says what the wall display answers with, not nothing.
+        int remembered = PropertiesName.getPriceCheckPriceTier();
+        ComboBox<Integer> comboTier = new ComboBox<>(FXCollections.observableArrayList(
+                tiers.choicesIncluding(remembered).stream().map(PriceTier::id).toList()));
+        comboTier.setButtonCell(tierCell(tiers));
+        comboTier.setCellFactory(list -> tierCell(tiers));
+        comboTier.getSelectionModel().select(Integer.valueOf(remembered));
 
         CheckBox showBalance = new CheckBox(lm.getString("pricecheck.setup.show.balance"));
         showBalance.setSelected(PropertiesName.getPriceCheckShowBalance());
@@ -230,12 +235,12 @@ public class PriceCheckSetupDialog {
         };
     }
 
-    private static ListCell<Integer> tierCell(Map<Integer, String> names) {
+    private static ListCell<Integer> tierCell(PriceTierCatalog tiers) {
         return new ListCell<>() {
             @Override
             protected void updateItem(Integer tier, boolean empty) {
                 super.updateItem(tier, empty);
-                setText(empty || tier == null ? null : names.getOrDefault(tier, String.valueOf(tier)));
+                setText(empty || tier == null ? null : tiers.name(tier));
             }
         };
     }

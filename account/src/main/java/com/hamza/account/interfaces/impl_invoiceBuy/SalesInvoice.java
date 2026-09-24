@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_invoiceBuy;
 
+import com.hamza.account.features.pricing.PriceTiers;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.document.InvoiceBuy;
 import com.hamza.account.model.domain.*;
@@ -83,32 +84,12 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
 
     @Override
     public double getItemsPrice(ItemsModel itemsModel, int idForCustomerForSales) {
-        switch (idForCustomerForSales) {
-            case 2 -> {
-                return itemsModel.getSelPrice2();
-            }
-            case 3 -> {
-                return itemsModel.getSelPrice3();
-            }
-            default -> {
-                return itemsModel.getSelPrice1();
-            }
-        }
+        return PriceTiers.itemPrice(itemsModel, idForCustomerForSales);
     }
 
     @Override
     public boolean updateItemPrice(ItemsModel itemsModel, double price, int idForCustomerForSales) {
-        switch (idForCustomerForSales) {
-            case 2 -> {
-                itemsModel.setSelPrice2(price);
-                return true;
-            }
-            case 3 -> {
-                itemsModel.setSelPrice3(price);
-                return true;
-            }
-            default -> itemsModel.setSelPrice1(price);
-        }
+        PriceTiers.setItemPrice(itemsModel, idForCustomerForSales, price);
         return true;
     }
 

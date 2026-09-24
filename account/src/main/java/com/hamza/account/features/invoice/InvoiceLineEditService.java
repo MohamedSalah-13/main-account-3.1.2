@@ -20,6 +20,16 @@ public final class InvoiceLineEditService {
     private final IntSupplier stockId;
     private final SourceLineTerms sourceLineTerms;
     private Supplier<DocumentPricing> pricing = () -> DocumentPricing.BASE;
+    private java.util.function.BooleanSupplier undercutAllowed = () -> true;
+
+    /**
+     * Whether this user may type a sale's price below its tier's list (V84, {@code sales.price.below.list}).
+     * A hint said at the cell - the save asks the permission itself - so it answers yes until told otherwise.
+     */
+    public InvoiceLineEditService undercutAllowedWhen(java.util.function.BooleanSupplier allowed) {
+        this.undercutAllowed = Objects.requireNonNull(allowed, "allowed");
+        return this;
+    }
 
     /**
      * The currency the screen's figures are typed in (V83): a sale is held above its cost by the base
@@ -104,6 +114,7 @@ public final class InvoiceLineEditService {
         requirePositiveFinite(price, text("invoice.line.error.price.positive"));
 
         requireNotBelowCost(line, line.getUnitsType(), price);
+        requireListUnlessAllowed(line, price);
 
         if (updateCatalogPrice && pricing.get().hasRate()) {
             catalogService.updateBasePrice(line.getItems().getId(), stockId.getAsInt(),
@@ -137,7 +148,24 @@ public final class InvoiceLineEditService {
         requireNotBelowCost(line, selection.unit(), selection.price());
         line.setUnitsType(selection.unit());
         line.setPrice(selection.price());
+        // A new unit has a list price of its own on the tier (V84): the line is at it again.
+        InvoiceLineService.applyListed(line, selection.listed());
         InvoiceLineService.recalculate(line);
+    }
+
+    /**
+     * A typed price below the line's list price, for a user who may not sell below it (V84,
+     * docs/pricing-and-offers-plan.md ق-س٤) - the same rule adding a line applies.
+     */
+    private void requireListUnlessAllowed(BasePurchasesAndSales line, double price) throws BusinessRuleException {
+        if (documentType != DocumentType.SALES || line.getListPrice() == null || undercutAllowed.getAsBoolean()) {
+            return;
+        }
+        double listPrice = line.getListPrice().doubleValue();
+        if (price < listPrice - InvoiceLineService.LIST_TOLERANCE) {
+            throw new BusinessRuleException(text("invoice.line.error.below.list",
+                    line.getListPrice().toPlainString()));
+        }
     }
 
     /** A sale is never priced below what the unit cost - the same floor adding a line applies. */

@@ -161,13 +161,19 @@ final class UnitPricingDialog extends Dialog<UnitPricingDialog.Options> {
         return automatic ? LanguageManager.getInstance().getString("unit.prices.preview.automatic", amount) : amount;
     }
 
+    /**
+     * The tiers' names as the unit prices screen read them when it opened (V84) - a sale price is
+     * labelled with its tier's name, as every other screen labels it, not "sell price 2".
+     */
+    private static volatile com.hamza.account.features.pricing.PriceTierCatalog tierNames =
+            new com.hamza.account.features.pricing.PriceTierCatalog(List.of());
+
+    static void useTierNames(com.hamza.account.features.pricing.PriceTierCatalog names) {
+        tierNames = names;
+    }
+
     static String fieldName(PriceField field) {
-        return switch (field) {
-            case BUY -> text("unit.prices.column.buy");
-            case SELL_1 -> text("unit.prices.column.sell1");
-            case SELL_2 -> text("unit.prices.column.sell2");
-            case SELL_3 -> text("unit.prices.column.sell3");
-        };
+        return field.isSell() ? tierNames.name(field.tier()) : text("unit.prices.column.buy");
     }
 
     private static RadioButton radio(ToggleGroup group, String label, Object value) {

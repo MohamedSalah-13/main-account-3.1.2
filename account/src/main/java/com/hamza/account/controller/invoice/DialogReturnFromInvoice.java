@@ -28,9 +28,8 @@ import java.util.Optional;
  * Picks which lines of a source invoice, and how much of each, a return should
  * reverse - the entry point {@code ReturnLineSelectionService} was built for.
  * <p>
- * A plain {@link Dialog}, not FXML, in the shape {@code DialogCashPaid} already
- * established for this kind of one-off picker: no separate view file, no controller
- * class, everything built and torn down with the dialog itself.
+ * A plain {@link Dialog}, not FXML, as a one-off picker is: no separate view file, no
+ * controller class, everything built and torn down with the dialog itself.
  */
 public final class DialogReturnFromInvoice {
 

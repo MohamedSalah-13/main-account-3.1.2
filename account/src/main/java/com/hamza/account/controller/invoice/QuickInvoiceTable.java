@@ -335,8 +335,8 @@ public final class QuickInvoiceTable {
         BasePurchasesAndSales entryRow = removeEntryRow();
         BasePurchasesAndSales added;
         try {
-            added = host.addLine(new InvoiceLineDraft(selection.item(), selection.selectedUnit(),
-                    selection.quantity(), selection.price(), 0, null));
+            // The selection's own line: its price, and the tier's list price behind it (V84).
+            added = host.addLine(selection.draft());
         } catch (Exception e) {
             restoreEntryRow(entryRow);
             throw e;

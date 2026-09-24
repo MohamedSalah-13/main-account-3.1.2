@@ -24,7 +24,9 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.AreaService;
 import com.hamza.account.features.employee.EmployeeScope;
 import com.hamza.account.features.employee.EmployeeService;
-import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.features.pricing.PriceTier;
+import com.hamza.account.features.pricing.PriceTierCatalog;
+import com.hamza.account.features.pricing.PriceTierService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
@@ -100,7 +102,9 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
     private final int id;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final AreaService areaService = ServiceRegistry.get(AreaService.class);
-    private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
+    private final PriceTierService priceTierService = ServiceRegistry.get(PriceTierService.class);
+    /** The tiers as they stood when the form opened - the combo offers the ones in use. */
+    private PriceTierCatalog priceTiers = new PriceTierCatalog(List.of());
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
     private LocalDateTime loadedUpdatedAt;
@@ -340,12 +344,25 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
     // ---- filling the pickers --------------------------------------------------------
 
+    /**
+     * The tiers the shop sells at (V84): a tier switched off is not offered for a new customer. By
+     * name, as the combo has always held them - the name is unique ({@code items_price_pk}).
+     */
     private void fillPriceTiers() {
-        List<SelPriceTypeModel> tiers = getPriceType();
-        comboSelPrice.getItems().setAll(tiers.stream().map(SelPriceTypeModel::getName).toList());
-        tiers.stream().filter(tier -> tier.getId() == 1).map(SelPriceTypeModel::getName)
-                .findFirst()
-                .ifPresent(name -> comboSelPrice.getSelectionModel().select(name));
+        priceTiers = getPriceType();
+        comboSelPrice.getItems().setAll(priceTiers.active().stream().map(PriceTier::toString).toList());
+        comboSelPrice.getSelectionModel().select(priceTiers.name(com.hamza.account.features.pricing.PriceTiers.FIRST));
+    }
+
+    /**
+     * A customer already on a tier since switched off keeps showing it rather than an empty box - their
+     * invoices open at tier 1 meanwhile, and their own tier comes back with the tier.
+     */
+    private void offerTier(int tierId) {
+        String name = priceTiers.name(tierId);
+        if (priceTiers.find(tierId).isPresent() && !comboSelPrice.getItems().contains(name)) {
+            comboSelPrice.getItems().add(name);
+        }
     }
 
     private void fillAreas() {
@@ -507,6 +524,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         }
 
         if (dataInterface.designInterface().showDataForCustomer()) {
+            offerTier(nameData.priceId(party));
             comboSelPrice.getSelectionModel().select(nameData.getPriceType(party));
             selectDelegate(party);
         }
@@ -719,12 +737,12 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         }
     }
 
-    private List<SelPriceTypeModel> getPriceType() {
+    private PriceTierCatalog getPriceType() {
         try {
-            return selPriceItemService.getSelPriceTypeList();
+            return priceTierService.catalog();
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
-            return List.of();
+            return new PriceTierCatalog(List.of());
         }
     }
 }

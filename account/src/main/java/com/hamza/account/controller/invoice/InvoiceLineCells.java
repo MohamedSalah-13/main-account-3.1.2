@@ -43,6 +43,33 @@ final class InvoiceLineCells {
         };
     }
 
+    /**
+     * The price cell: a {@link #text} cell that also says when a line's price is tier 1's standing in
+     * for the invoice's tier (docs/pricing-and-offers-plan.md ق-س٣) - the figure in the warning colour,
+     * and the sentence why on hover. {@code note} answers that sentence for a line, or null.
+     */
+    static <T extends BasePurchasesAndSales, V> Callback<TableColumn<T, V>, TableCell<T, V>> price(
+            StringConverter<V> converter, java.util.function.Function<BasePurchasesAndSales, String> note) {
+        javafx.css.PseudoClass firstTier = javafx.css.PseudoClass.getPseudoClass("first-tier");
+        return column -> new TextFieldTableCell<>(converter) {
+            @Override
+            public void startEdit() {
+                if (isLine(getTableRow() == null ? null : getTableRow().getItem())) {
+                    super.startEdit();
+                }
+            }
+
+            @Override
+            public void updateItem(V value, boolean empty) {
+                super.updateItem(value, empty);
+                BasePurchasesAndSales line = empty || getTableRow() == null ? null : getTableRow().getItem();
+                String sentence = line == null || !isLine(line) ? null : note.apply(line);
+                pseudoClassStateChanged(firstTier, sentence != null);
+                setTooltip(sentence == null ? null : new javafx.scene.control.Tooltip(sentence));
+            }
+        };
+    }
+
     /** The unit cell: a list of the line's own item's units, opened only when there is a choice. */
     static <T extends BasePurchasesAndSales> Callback<TableColumn<T, String>, TableCell<T, String>> unit() {
         return column -> new UnitCell<>();

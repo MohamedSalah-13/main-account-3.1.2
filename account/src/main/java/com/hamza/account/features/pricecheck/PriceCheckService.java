@@ -1,5 +1,6 @@
 package com.hamza.account.features.pricecheck;
 
+import com.hamza.account.features.pricing.PriceTiers;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.document.DocumentType;
@@ -103,13 +104,9 @@ public final class PriceCheckService {
         return balances.keySet().stream().filter(Objects::nonNull).min(LocalDate::compareTo).orElse(null);
     }
 
-    /** The item's price for a tier, exactly as {@code SalesInvoice} reads it. */
+    /** The item's price for a tier, exactly as {@code SalesInvoice} reads it - both ask {@link PriceTiers}. */
     private static double sellPriceOf(ItemsModel item, int priceTier) {
-        return switch (priceTier) {
-            case 2 -> item.getSelPrice2();
-            case 3 -> item.getSelPrice3();
-            default -> item.getSelPrice1();
-        };
+        return PriceTiers.itemPrice(item, priceTier);
     }
 
     /** Remaining stock per expiry date for one item in one warehouse, in base units. */

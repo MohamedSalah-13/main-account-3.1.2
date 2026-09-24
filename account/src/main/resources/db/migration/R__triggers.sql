@@ -907,3 +907,43 @@ BEGIN
         'Exchange rate deleted');
 END|
 DELIMITER ;
+
+
+-- ---------------------------------------------------------------------------------------------
+-- price tiers (V84)
+--
+-- Tier 1 is the price every item carries, and the one an item missing a price on the customer's
+-- tier falls back to (docs/pricing-and-offers-plan.md ق-س٣) - so it can never be switched off. The
+-- plan asked for a CHECK on id = 1, which MySQL refuses on an AUTO_INCREMENT column (error 3818), so
+-- the rule is here and in PriceTierService. A fill rule may not copy a tier from itself either.
+-- Who renamed a tier, switched one off, or changed how one is filled is recorded, since a tier's
+-- name is what every price on screen is labelled with. After the currencies, being newer.
+
+DROP TRIGGER IF EXISTS type_price_rules_update;
+DROP TRIGGER IF EXISTS audit_type_price_update;
+
+DELIMITER |
+CREATE TRIGGER type_price_rules_update BEFORE UPDATE ON type_price FOR EACH ROW
+BEGIN
+    IF NEW.id = 1 AND NEW.is_active = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'type_price 1 cannot be switched off';
+    END IF;
+    IF NEW.rule_tier_id IS NOT NULL AND NEW.rule_tier_id = NEW.id THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'a price tier cannot be filled from itself';
+    END IF;
+END|
+
+CREATE TRIGGER audit_type_price_update AFTER UPDATE ON type_price FOR EACH ROW
+BEGIN
+    CALL write_audit_log('type_price', NEW.id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('name', OLD.name, 'is_active', OLD.is_active, 'rule_source', OLD.rule_source,
+                    'rule_tier_id', OLD.rule_tier_id, 'rule_percent', OLD.rule_percent,
+                    'rule_rounding', OLD.rule_rounding),
+        JSON_OBJECT('name', NEW.name, 'is_active', NEW.is_active, 'rule_source', NEW.rule_source,
+                    'rule_tier_id', NEW.rule_tier_id, 'rule_percent', NEW.rule_percent,
+                    'rule_rounding', NEW.rule_rounding),
+        IF(OLD.is_active <> NEW.is_active,
+           IF(NEW.is_active = 1, 'Price tier switched on', 'Price tier switched off'),
+           'Price tier updated'));
+END|
+DELIMITER ;

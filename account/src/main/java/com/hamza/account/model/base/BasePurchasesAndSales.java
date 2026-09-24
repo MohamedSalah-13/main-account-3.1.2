@@ -54,6 +54,36 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     private java.math.BigDecimal priceForeign;
     private java.math.BigDecimal discountForeign;
 
+    /**
+     * What the price tier's list said one of this line's unit sells for, beside the {@link #price}
+     * actually charged (V84, docs/pricing-and-offers-plan.md ق-س٤) - in the screen's currency while
+     * the line is on the screen, in the base once saved, like the price. A price typed below it is a
+     * discount no report used to see. Null on a line with no list behind it: every line before V84,
+     * every purchase and return line, and a line reopened from a saved document before V84.
+     * <p>
+     * {@link #fromFirstTier} says the list price is tier 1's standing in for a tier that had none
+     * (ق-س٣). It is the screen's to show and is not stored: the saved document keeps the tier and the
+     * list price, and the tier-1 figure is what was charged.
+     */
+    private java.math.BigDecimal listPrice;
+    private boolean fromFirstTier;
+
+    public java.math.BigDecimal getListPrice() {
+        return listPrice;
+    }
+
+    public void setListPrice(java.math.BigDecimal listPrice) {
+        this.listPrice = listPrice;
+    }
+
+    public boolean isFromFirstTier() {
+        return fromFirstTier;
+    }
+
+    public void setFromFirstTier(boolean fromFirstTier) {
+        this.fromFirstTier = fromFirstTier;
+    }
+
     public java.math.BigDecimal getPriceForeign() {
         return priceForeign;
     }

@@ -67,6 +67,19 @@ public final class AppPermissions {
      * screen the owner may give a cashier or keep from one. V79 grants it to whoever may create.
      */
     public static final PermissionKey SALES_QUICK = key("sales.quick");
+    /**
+     * Typing a line's price below what its tier's list says (V84, docs/pricing-and-offers-plan.md
+     * ق-س٤). V84 grants it to whoever may create a sale, who could do it yesterday without a name for
+     * it. Its risk is a price's, not the LOW its last word derives: a price under the list is a
+     * discount no report showed.
+     */
+    public static final PermissionKey SALES_PRICE_BELOW_LIST = key("sales.price.below.list", PermissionRisk.MEDIUM);
+    /**
+     * Pricing an invoice at a tier other than its customer's (V84, ق-س٢). New, so V84 grants it to
+     * nobody; and a whole invoice at the wholesale tier is a discount on every line of it, so its risk
+     * is a price's rather than the LOW its last word derives.
+     */
+    public static final PermissionKey SALES_PRICE_TIER_CHANGE = key("sales.price.tier.change", PermissionRisk.MEDIUM);
     public static final PermissionKey TOTAL_SALES_SHOW = key("total.sales.show");
     public static final PermissionKey TOTAL_SALES_SHOW_INVOICE = key("total.sales.show.invoice");
     public static final PermissionKey SALES_RE_SHOW = key("sales.re.show");
@@ -144,7 +157,10 @@ public final class AppPermissions {
     public static final PermissionKey UNITS_CREATE = key("units.create");
     public static final PermissionKey UNITS_UPDATE = key("units.update");
     public static final PermissionKey UNITS_DELETE = key("units.delete");
-    /** The price tiers. There is no show or delete key: {@code SelPriceItemService} asks this one. */
+    /**
+     * Naming a price tier, switching it off and setting its fill rule (V84). There is no show or
+     * delete key: the names are on every price a screen shows, and there are always three tiers.
+     */
     public static final PermissionKey SEL_PRICE_UPDATE = key("sel.price.update");
     public static final PermissionKey CUSTOMER_SHOW = key("customer.show");
     public static final PermissionKey CUSTOMER_CREATE = key("customer.create");
