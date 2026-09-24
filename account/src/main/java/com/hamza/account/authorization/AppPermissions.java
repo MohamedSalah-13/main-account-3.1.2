@@ -162,6 +162,16 @@ public final class AppPermissions {
      * delete key: the names are on every price a screen shows, and there are always three tiers.
      */
     public static final PermissionKey SEL_PRICE_UPDATE = key("sel.price.update");
+    /**
+     * The offers (V85, docs/pricing-and-offers-plan.md §6): seeing them and what they gave, writing one,
+     * switching it on and off - and deleting one nothing has used, the one write a used offer refuses
+     * whoever asks. V85 grants each to whoever held the matching item key. Selling with an offer asks
+     * none of them: the engine reads the offers in force for every cashier, as the tier names are read.
+     */
+    public static final PermissionKey OFFER_SHOW = key("offer.show");
+    public static final PermissionKey OFFER_CREATE = key("offer.create");
+    public static final PermissionKey OFFER_UPDATE = key("offer.update");
+    public static final PermissionKey OFFER_DELETE = key("offer.delete");
     public static final PermissionKey CUSTOMER_SHOW = key("customer.show");
     public static final PermissionKey CUSTOMER_CREATE = key("customer.create");
     public static final PermissionKey CUSTOMER_UPDATE = key("customer.update");

@@ -18,7 +18,10 @@ import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.account.features.events.OffersChanged;
 import com.hamza.account.features.events.StocksChanged;
+import com.hamza.account.features.offers.OfferEngine;
+import com.hamza.account.features.offers.OfferService;
 import com.hamza.account.features.invoice.*;
 import com.hamza.account.features.pricing.PriceTier;
 import com.hamza.account.features.pricing.PriceTierCatalog;
@@ -91,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
@@ -273,11 +277,128 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         configureInvoiceTopBar();
         configurePinButtons();
         installCurrencyBadge();
+        installOffers();
 
         if (num_invoice_update > 0) {
             selectData();
         } else {
             getSavedCustomerAndDelegate();
+        }
+    }
+
+    // ---- the offers (V85, docs/pricing-and-offers-plan.md ق-ع٤ and ق-ع١٤) --------------------
+
+    private final OfferService offerService = ServiceRegistry.get(OfferService.class);
+    /** Null where the engine does not run: anything but a sale, or an edition without the add-on. */
+    private InvoiceOfferPreview offerPreview;
+    private boolean offersPending;
+    private final Label offersCaption = new Label();
+    private final Label offersFigure = new Label();
+
+    /**
+     * On a sale, with the add-on: the engine run after every change to the lines, the date or the tier, over
+     * the till's snapshot of the offers - replaced when they change on any till. An offer column in the
+     * table, and what the offers gave under the lines' count. A sales return runs nothing: its lines take
+     * their source line's offer when it is saved (ق-ع١١, {@code ReturnCostResolver}).
+     */
+    private void installOffers() {
+        if (offerService == null || !offerService.enabled() || documentType() != DocumentType.SALES) {
+            return;
+        }
+        table.getColumns().add(InvoiceTableCoordinator.offerColumn());
+        offerPreview = new InvoiceOfferPreview(new InvoiceOffers.JdbcGroups());
+        reloadOffers();
+        offersCaption.setText(LanguageManager.getInstance().getString("invoice.offers.caption"));
+        offersCaption.getStyleClass().add("summary-label");
+        offersCaption.setMinWidth(Region.USE_PREF_SIZE);
+        offersFigure.getStyleClass().addAll("text-sum", "invoice-summary-figure");
+        if (txtSumDiscount.getParent() instanceof javafx.scene.layout.GridPane footer) {
+            footer.add(offersCaption, 0, 2);
+            footer.add(offersFigure, 1, 2);
+        }
+        showOffers(OfferEngine.Result.none());
+        editor.totalsProperty().addListener((observable, before, now) -> scheduleOffers());
+        date.valueProperty().addListener((observable, before, now) -> scheduleOffers());
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(OffersChanged.class, event -> {
+                reloadOffers();
+                scheduleOffers();
+            }));
+        }
+    }
+
+    private void reloadOffers() {
+        if (offerPreview == null) {
+            return;
+        }
+        try {
+            offerPreview.setOffers(offerService.inForce(offerPreviewRecorded));
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    private Set<Integer> offerPreviewRecorded = Set.of();
+
+    /** A reopened sale keeps the offers its own lines carry, even once stopped (ق-ع٧). */
+    private void restoreOffers(List<? extends BasePurchasesAndSales> lines) {
+        if (offerPreview == null) {
+            return;
+        }
+        offerPreviewRecorded = InvoiceOfferPreview.recordedOn(lines);
+        offerPreview.setRecorded(offerPreviewRecorded);
+        reloadOffers();
+        scheduleOffers();
+    }
+
+    /** Once per pulse, after whatever changed the lines has finished changing them. */
+    private void scheduleOffers() {
+        if (offerPreview == null || offersPending) {
+            return;
+        }
+        offersPending = true;
+        Platform.runLater(() -> {
+            offersPending = false;
+            runOffers();
+        });
+    }
+
+    private void runOffers() {
+        if (offerPreview == null || restoringDocument) {
+            return;
+        }
+        try {
+            T3 party = selectedParty();
+            boolean foreign = party != null && party.getCurrency_id() != null;
+            boolean moved = foreign || date.getValue() == null
+                    ? offerPreview.clear(editor.lines())
+                    : offerPreview.run(editor.lines(), date.getValue(), tierForSave());
+            if (moved) {
+                editor.refreshTotals();
+                table.refresh();
+            }
+            showOffers(offerPreview.last());
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    private void showOffers(OfferEngine.Result result) {
+        boolean any = !result.isEmpty();
+        offersFigure.setText(Columns.money(result.discount()));
+        offersCaption.setVisible(any);
+        offersFigure.setVisible(any);
+        if (any) {
+            StringBuilder lines = new StringBuilder();
+            for (OfferEngine.OfferTotal total : result.totals()) {
+                if (!lines.isEmpty()) {
+                    lines.append('\n');
+                }
+                lines.append(total.offer().name()).append(": ").append(Columns.money(total.discount()));
+            }
+            Tooltip tip = new Tooltip(lines.toString());
+            offersCaption.setTooltip(tip);
+            offersFigure.setTooltip(tip);
         }
     }
 
@@ -1011,6 +1132,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             editor.replaceLines(collection);
             invoiceLineService.captureOriginalLines(collection);
             invoiceExpiryService.captureOriginalLines(collection);
+            restoreOffers(collection);
             radioCash.setSelected(invoiceType.equals(InvoiceType.CASH));
             radioDeffer.setSelected(invoiceType.equals(InvoiceType.DEFER));
             txtPaid.setText(String.valueOf(dataById.getPaid()));

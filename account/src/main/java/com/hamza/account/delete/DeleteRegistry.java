@@ -40,6 +40,9 @@ public final class DeleteRegistry {
             // so deleting a unit used on a stock count reached the database as a raw
             // SQL error instead of a refusal with a reason.
             .referencedBy("stock_count_lines", "unit_id", "delete.ref.stock_count")
+            // V85: an offer for a unit ("5 off a carton"), and a target naming an item in one unit.
+            .referencedBy("offer", "unit_id", "delete.ref.offer")
+            .referencedBy("offer_target", "unit_id", "delete.ref.offer")
             .build();
 
     public static final DeleteRule ITEMS = DeleteRule.forEntity("delete.entity.item")
@@ -54,6 +57,9 @@ public final class DeleteRegistry {
             // actually made, and deleting the item used to take its lines out of one with no
             // refusal and no trace. Declarable only because it no longer cascades.
             .referencedBy("stock_count_lines", "item_id", "delete.ref.stock_count_line")
+            // V85: an offer naming the item. Refused rather than cascaded: an offer that quietly lost its
+            // only target would stay on screen reaching nothing.
+            .referencedBy("offer_target", "item_id", "delete.ref.offer")
             .build();
 
     /** Customer 1 is "بيع نقدى", which the sales screen falls back to. */
@@ -104,12 +110,25 @@ public final class DeleteRegistry {
             .requirePermission(AppPermissions.MAIN_GROUP_DELETE)
             .protectId(1, "delete.protect.main_group.default")
             .referencedBy("sub_group", "main_id", "delete.ref.sub_group")
+            .referencedBy("offer_target", "main_group_id", "delete.ref.offer")
             .build();
 
     public static final DeleteRule SUB_GROUPS = DeleteRule.forEntity("delete.entity.sub_group")
             .requirePermission(AppPermissions.SUB_GROUP_DELETE)
             .protectId(1, "delete.protect.sub_group.default")
             .referencedBy("items", "sub_num", "delete.ref.item")
+            .referencedBy("offer_target", "sub_group_id", "delete.ref.offer")
+            .build();
+
+    /**
+     * An offer (V85). One a sale or a return line names is history and is stopped, never deleted
+     * (docs/pricing-and-offers-plan.md ق-ع٧) - neither key cascades. Its targets and tiers are part of its
+     * definition and go with it.
+     */
+    public static final DeleteRule OFFERS = DeleteRule.forEntity("delete.entity.offer")
+            .requirePermission(AppPermissions.OFFER_DELETE)
+            .referencedBy("sales", "offer_id", "delete.ref.sales_line")
+            .referencedBy("sales_re", "offer_id", "delete.ref.sales_return_line")
             .build();
 
     /**

@@ -132,6 +132,11 @@ public final class WipeCatalog {
                     WipeTable.of("stock_movements"),
                     WipeTable.of("stock_transfer_list"),
                     WipeTable.of("stock_transfer"),
+                    // V85: the offers are statements about items and units, and go with them. The sale
+                    // lines naming one are emptied first, by the targets this one requires.
+                    WipeTable.of("offer_price_tier"),
+                    WipeTable.of("offer_target"),
+                    WipeTable.of("offer"),
                     WipeTable.of("items"),
                     WipeTable.of("units",
                             "INSERT INTO units(unit_id, unit_name) VALUES (1, 'قطعة'), (2, 'كرتونة')")),

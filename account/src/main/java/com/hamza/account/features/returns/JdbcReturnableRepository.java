@@ -94,6 +94,21 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         });
     }
 
+    /**
+     * The offer behind a line's discount and its part of it (V85) - a sales line's alone; a purchase line
+     * has neither column, and reads as a line no offer reached.
+     */
+    static String offerColumns(DocumentType sourceType) {
+        return sourceType == DocumentType.SALES
+                ? "offer_id, offer_discount"
+                : "NULL AS offer_id, 0 AS offer_discount";
+    }
+
+    private static Integer offerId(ResultSet rows) throws java.sql.SQLException {
+        int offerId = rows.getInt("offer_id");
+        return rows.wasNull() ? null : offerId;
+    }
+
     @Override
     public Optional<SourceLine> lineById(DocumentType sourceType, int sourceId, int sourceLineId)
             throws DaoException {
@@ -103,7 +118,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         boolean hasBuyPrice = sourceType == DocumentType.SALES;
         String sql = "SELECT " + spec.lineItem() + " AS item_id, quantity, price, discount, "
                 + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
-                + " type_value, expiration_date FROM " + spec.lineTable()
+                + " type_value, expiration_date, " + offerColumns(sourceType) + " FROM " + spec.lineTable()
                 + " WHERE " + DocumentTableSpec.LINE_KEY + " = ? AND "
                 + DocumentTableSpec.LINE_DOCUMENT + " = ?";
         return withConnection(connection -> {
@@ -119,7 +134,8 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                             rows.getDouble("quantity"), rows.getDouble("price"),
                             rows.getDouble("discount"), rows.getDouble("buy_price"),
                             rows.getInt("unit_id"), rows.getDouble("type_value"),
-                            expiry == null ? null : expiry.toLocalDate()));
+                            expiry == null ? null : expiry.toLocalDate(), offerId(rows),
+                            rows.getDouble("offer_discount")));
                 }
             }
         });
@@ -201,7 +217,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         String sql = "SELECT " + DocumentTableSpec.LINE_KEY + " AS line_id, "
                 + spec.lineItem() + " AS item_id, quantity, price, discount, "
                 + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
-                + " type_value, expiration_date FROM " + spec.lineTable()
+                + " type_value, expiration_date, " + offerColumns(sourceType) + " FROM " + spec.lineTable()
                 + " WHERE " + DocumentTableSpec.LINE_DOCUMENT + " = ? ORDER BY "
                 + DocumentTableSpec.LINE_KEY;
         return withConnection(connection -> {
@@ -216,7 +232,8 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                                 rows.getDouble("price"), rows.getDouble("discount"),
                                 rows.getDouble("buy_price"), rows.getInt("unit_id"),
                                 rows.getDouble("type_value"),
-                                expiry == null ? null : expiry.toLocalDate()));
+                                expiry == null ? null : expiry.toLocalDate(), offerId(rows),
+                            rows.getDouble("offer_discount")));
                     }
                 }
             }

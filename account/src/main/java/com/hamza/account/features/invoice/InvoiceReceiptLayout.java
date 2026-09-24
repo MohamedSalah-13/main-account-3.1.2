@@ -77,6 +77,10 @@ public record InvoiceReceiptLayout(List<Line> lines, String linesTotalLabel, Str
         for (String[] row : InvoicePdfLayout.currencyRows(document.currency(), labels)) {
             summary.add(new Row(row[0], row[1], false));
         }
+        List<String[]> offers = InvoicePdfLayout.offerRows(document, labels);
+        for (int index = 0; index < offers.size(); index++) {
+            summary.add(new Row(offers.get(index)[0], offers.get(index)[1], index == offers.size() - 1));
+        }
         return new InvoiceReceiptLayout(lines, linesLabel, Columns.money(net), summary);
     }
 

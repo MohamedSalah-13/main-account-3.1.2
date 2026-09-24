@@ -57,6 +57,25 @@ class InvoiceLineEditServiceTest {
         assertEquals(4, sale.getPrice());
     }
 
+    /**
+     * A discount is at most the line - more left a net below zero (docs/pricing-and-offers-plan.md §1.2) - and
+     * a line an offer reached takes no manual one: the offer takes its place (ق-ع٨).
+     */
+    @Test
+    void aDiscountIsAtMostTheLineAndNotBesideAnOffer() throws Exception {
+        Sales line = line(item(false), PIECE, 10);
+        InvoiceLineEditService service = editService(DocumentType.SALES,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+        service.editQuantity(line, 3.0);
+        service.editDiscount(line, 30.0);
+        assertEquals(0, line.getTotal_after_discount());
+        assertThrows(com.hamza.controlsfx.error.UserValidationException.class, () -> service.editDiscount(line, 30.01));
+
+        line.setOfferId(4);
+        line.setOfferName("عرض");
+        assertThrows(com.hamza.controlsfx.error.UserValidationException.class, () -> service.editDiscount(line, 1.0));
+    }
+
     @Test
     void quantityAndDiscountEditsRecalculateTheLine() throws Exception {
         Sales line = line(item(false), PIECE, 10);

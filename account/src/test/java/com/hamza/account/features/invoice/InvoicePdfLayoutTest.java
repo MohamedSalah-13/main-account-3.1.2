@@ -195,4 +195,24 @@ class InvoicePdfLayoutTest {
         assertFalse(fields(InvoicePdfLayout.of(base, key -> key).details()).containsKey("invoice.pdf.currency"),
                 "a document in the base says nothing of currencies");
     }
+
+    /**
+     * An offer on the lines (V85, ق-ع١٤): a row an offer under the summary, and last what the customer saved -
+     * the lines' discounts and the invoice's own. The pen's discount of 1 was the offer's.
+     */
+    @Test
+    void anOfferSaysWhatItGaveAndWhatWasSaved() {
+        InvoicePrintDocument plain = document(DocumentType.SALES, InvoiceType.CASH, "4", "20", null);
+        InvoicePrintDocument offered = plain.withOffers(List.of(
+                new InvoicePrintDocument.OfferLine("أقلام بخصم", new BigDecimal("1"))));
+        Map<String, String> summary = fields(InvoicePdfLayout.of(offered, key -> key).summary());
+        assertEquals("1.00", summary.get("invoice.pdf.summary.offer: أقلام بخصم"));
+        assertEquals("5.00", summary.get("invoice.pdf.summary.saved"), "the pen's 1 and the invoice's 4");
+        assertFalse(fields(InvoicePdfLayout.of(plain, key -> key).summary()).containsKey("invoice.pdf.summary.saved"),
+                "a document no offer reached prints what it always printed");
+
+        List<InvoiceReceiptLayout.Row> rows = InvoiceReceiptLayout.of(offered, key -> key).summary();
+        assertEquals("invoice.pdf.summary.saved", rows.get(rows.size() - 1).getLabel());
+        assertTrue(rows.get(rows.size() - 1).getBold());
+    }
 }

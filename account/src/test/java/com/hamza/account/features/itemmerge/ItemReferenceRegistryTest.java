@@ -49,7 +49,9 @@ class ItemReferenceRegistryTest {
      * the old manual bundle, so every key in it is a duplicate of V1's.
      */
     private static final List<String> MIGRATIONS = List.of(
-            "V1__baseline.sql", "V3__item_barcodes.sql", "V5__item_units.sql", "V8__stock_count.sql");
+            "V1__baseline.sql", "V3__item_barcodes.sql", "V5__item_units.sql", "V8__stock_count.sql",
+            // An offer naming an item (offer_target.item_id).
+            "V85__offers.sql");
 
     private static final List<ItemKey> ITEM_KEYS = readItemKeys();
 

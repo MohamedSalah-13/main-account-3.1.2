@@ -16,9 +16,13 @@ public record ProductProfile(
         enabledFeatures = Set.copyOf(enabledFeatures);
     }
 
+    /**
+     * A database with no profile keeps every screen it had - and gains no add-on, which was never a screen
+     * it had (docs/pricing-and-offers-plan.md §6.1).
+     */
     public static ProductProfile legacyFull(ProductFeatureCatalog catalog) {
         return new ProductProfile(ProductProfileCodec.SCHEMA_VERSION, "", "LEGACY_FULL",
-                Instant.EPOCH, catalog.keys(), true);
+                Instant.EPOCH, catalog.keysWithoutAddOns(), true);
     }
 
     @Override

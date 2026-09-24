@@ -40,7 +40,7 @@ public final class InvoicePrintService {
             boolean receipt,
             DocumentSource document) throws DaoException {
         List<ModelPrintInvoice> lines = source.stream().map(InvoicePrintService::asShown).toList();
-        return new InvoicePrintRequest(lines, printedAt, receipt, document.build(lines));
+        return new InvoicePrintRequest(lines, printedAt, receipt, withOffers(document.build(lines), source));
     }
 
     /**
@@ -55,7 +55,29 @@ public final class InvoicePrintService {
             boolean receipt,
             DocumentSource document) throws DaoException {
         List<ModelPrintInvoice> lines = source.stream().map(InvoicePrintService::asTyped).toList();
-        return new InvoicePrintRequest(lines, printedAt, receipt, document.build(lines));
+        return new InvoicePrintRequest(lines, printedAt, receipt, withOffers(document.build(lines), source));
+    }
+
+    /**
+     * A sale says what each offer on its lines gave, in the order the offers first appear (V85, ق-ع١٤). A
+     * return's lines carry their source's offer too, and say nothing of it: "you saved" on a refund is not
+     * a sentence anybody should read.
+     */
+    static InvoicePrintDocument withOffers(InvoicePrintDocument document, List<? extends BasePurchasesAndSales> source) {
+        if (document.type() != com.hamza.account.document.DocumentType.SALES) {
+            return document;
+        }
+        java.util.Map<Integer, InvoicePrintDocument.OfferLine> offers = new java.util.LinkedHashMap<>();
+        for (BasePurchasesAndSales line : source) {
+            if (line.getOfferId() == null || line.getOfferDiscount().signum() <= 0) {
+                continue;
+            }
+            String name = line.getOfferName() == null ? "#" + line.getOfferId() : line.getOfferName();
+            offers.merge(line.getOfferId(), new InvoicePrintDocument.OfferLine(name, line.getOfferDiscount()),
+                    (sum, one) -> new InvoicePrintDocument.OfferLine(sum.name(),
+                            MoneyMath.add(sum.discount(), one.discount())));
+        }
+        return offers.isEmpty() ? document : document.withOffers(List.copyOf(offers.values()));
     }
 
     private static ModelPrintInvoice asShown(BasePurchasesAndSales line) {

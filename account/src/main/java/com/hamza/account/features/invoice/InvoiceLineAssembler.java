@@ -42,6 +42,7 @@ public final class InvoiceLineAssembler {
             preserveSourceLine(row, detached);
             preserveForeignFigures(row, detached);
             preserveListPrice(row, detached);
+            preserveOffer(row, detached);
             result.add(detached);
         }
         return List.copyOf(result);
@@ -59,6 +60,17 @@ public final class InvoiceLineAssembler {
     static void preserveListPrice(BasePurchasesAndSales source, BasePurchasesAndSales target) {
         target.setListPrice(source.getListPrice());
         target.setFromFirstTier(source.isFromFirstTier());
+    }
+
+    /**
+     * Carries the offer behind a line's discount (V85) onto the detached row, for the same reason: on a sale
+     * {@code OfferGuard} has already held it to what the engine gives, and on a return
+     * {@code ReturnCostResolver} sets it again from the source line.
+     */
+    static void preserveOffer(BasePurchasesAndSales source, BasePurchasesAndSales target) {
+        target.setOfferId(source.getOfferId());
+        target.setOfferDiscount(source.getOfferDiscount());
+        target.setOfferName(source.getOfferName());
     }
 
     /**

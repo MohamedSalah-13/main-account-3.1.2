@@ -37,7 +37,9 @@ class ProductProfileServiceTest {
         ProductProfile profile = service().loadCurrent();
 
         assertTrue(profile.legacyFallback());
-        assertEquals(catalog.keys(), profile.enabledFeatures());
+        // Every screen it had - and no add-on, which was never a screen it had (V85, the offers).
+        assertEquals(catalog.keysWithoutAddOns(), profile.enabledFeatures());
+        assertFalse(profile.isEnabled(ProductFeatures.OFFERS));
     }
 
     @Test

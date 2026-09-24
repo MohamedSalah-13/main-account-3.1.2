@@ -68,6 +68,41 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     private java.math.BigDecimal listPrice;
     private boolean fromFirstTier;
 
+    /**
+     * The offer that wrote this line's discount, and how much of {@link #discount} is that offer's (V85,
+     * docs/pricing-and-offers-plan.md ق-ع١). A part of the discount, never an addition to it: every reader
+     * of the discount - the profit, a return's share, the paper, a delegate's ceiling - reads it as it always
+     * did. Null and zero on a line no offer reached; on a sales return, the source line's offer and this
+     * line's share of its discount. {@link #offerName} is for the screen and the paper and is not stored.
+     */
+    private Integer offerId;
+    private java.math.BigDecimal offerDiscount = java.math.BigDecimal.ZERO;
+    private String offerName;
+
+    public Integer getOfferId() {
+        return offerId;
+    }
+
+    public void setOfferId(Integer offerId) {
+        this.offerId = offerId;
+    }
+
+    public java.math.BigDecimal getOfferDiscount() {
+        return offerDiscount;
+    }
+
+    public void setOfferDiscount(java.math.BigDecimal offerDiscount) {
+        this.offerDiscount = offerDiscount == null ? java.math.BigDecimal.ZERO : offerDiscount;
+    }
+
+    public String getOfferName() {
+        return offerName;
+    }
+
+    public void setOfferName(String offerName) {
+        this.offerName = offerName;
+    }
+
     public java.math.BigDecimal getListPrice() {
         return listPrice;
     }

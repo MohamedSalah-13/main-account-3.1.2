@@ -194,7 +194,7 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT id FROM sales WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE sales SET num=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
                     + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=?,"
-                    + "price_foreign=?,discount_foreign=?,list_price=? "
+                    + "price_foreign=?,discount_foreign=?,list_price=?,offer_id=?,offer_discount=? "
                     + "WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
             assertEquals("DELETE FROM sales WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
@@ -222,7 +222,8 @@ class DocumentDaoStatementsTest {
         void lineStatement() {
             assertEquals("INSERT INTO sales (invoice_number,num,type,quantity,price,buy_price,total_sel_price,"
                     + "total_buy_price,total_profit,discount,type_value,expiration_date,price_foreign,"
-                    + "discount_foreign,list_price) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
+                    + "discount_foreign,list_price,offer_id,offer_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    lines.insertListSql());
         }
 
         @Test
@@ -244,13 +245,16 @@ class DocumentDaoStatementsTest {
             line.setDiscountForeign(new BigDecimal("0.10"));
             // What the price tier said for the line, beside the 50 charged (V84).
             line.setListPrice(new BigDecimal("55.00"));
+            // The offer that wrote its discount, and that offer's part of it (V85).
+            line.setOfferId(7);
+            line.setOfferDiscount(new BigDecimal("5.00"));
 
             Object[] data = lines.getData(line);
             assertBindsExactly(lines.insertListSql(), data);
             assertArrayEquals(new Object[]{
                     INVOICE_ID, 31, 2, 2.0, 50.0, 40.0, BigDecimal.valueOf(100), 80.0, BigDecimal.valueOf(20),
                     5.0, 12.0, LocalDate.of(2027, 1, 31), new BigDecimal("1.04"), new BigDecimal("0.10"),
-                    new BigDecimal("55.00")}, data);
+                    new BigDecimal("55.00"), 7, new BigDecimal("5.00")}, data);
         }
 
         /**
@@ -416,7 +420,8 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT id FROM sales_re WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE sales_re SET item_id=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
                     + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=?,"
-                    + "source_line_id=?,price_foreign=?,discount_foreign=? WHERE id=? AND invoice_number=?",
+                    + "source_line_id=?,price_foreign=?,discount_foreign=?,offer_id=?,offer_discount=? "
+                    + "WHERE id=? AND invoice_number=?",
                     lines.lineUpdateSql());
             assertEquals("DELETE FROM sales_re WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
@@ -447,7 +452,8 @@ class DocumentDaoStatementsTest {
         void lineStatement() {
             assertEquals("INSERT INTO sales_re (invoice_number,item_id,type,quantity,price,buy_price,"
                     + "total_sel_price,total_buy_price,total_profit,discount,type_value,expiration_date,"
-                    + "source_line_id,price_foreign,discount_foreign) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    + "source_line_id,price_foreign,discount_foreign,offer_id,offer_discount) "
+                    + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     lines.insertListSql());
         }
 
@@ -473,7 +479,7 @@ class DocumentDaoStatementsTest {
                     5.0, 12.0, LocalDate.of(2027, 1, 31),
                     // A free return: sourceLineId is 0, and the column is a foreign
                     // key, so it must reach the database as NULL, not line zero.
-                    null, null, null}, data);
+                    null, null, null, null, BigDecimal.ZERO}, data);
         }
     }
 

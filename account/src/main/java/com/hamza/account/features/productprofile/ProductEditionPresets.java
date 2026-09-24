@@ -4,7 +4,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Standard editable editions offered by the external setup utility. */
+/**
+ * Standard editable editions offered by the external setup utility. No edition holds an add-on, "full"
+ * included: an add-on is ticked by hand, so a technician choosing "full" cannot give it to a shop that did
+ * not buy it (docs/pricing-and-offers-plan.md §6.1).
+ */
 public final class ProductEditionPresets {
 
     private ProductEditionPresets() {
@@ -12,7 +16,7 @@ public final class ProductEditionPresets {
 
     public static List<ProductEditionPreset> standard(ProductFeatureCatalog catalog) {
         return List.of(
-                preset("full", catalog.keys()), preset("essential", essential()),
+                preset("full", catalog.keysWithoutAddOns()), preset("essential", essential()),
                 preset("sales", sales()), preset("pos", pointOfSale()),
                 preset("inventory", inventory()), preset("custom", Set.of()));
     }

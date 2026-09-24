@@ -67,6 +67,7 @@ public final class InvoiceSaveService<
     private final DelegateDiscountGuard discountGuard;
     private final InvoicePartyCurrency partyCurrency;
     private final InvoicePriceTier priceTier;
+    private final InvoiceOffers offers;
 
     /**
      * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
@@ -94,7 +95,7 @@ public final class InvoiceSaveService<
                 treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
                 ShiftAttributionWriter.jdbc(), ShiftCashLedger.jdbc(), new JdbcShiftCashEffectReader(),
                 ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc(), DelegateDiscountGuard.jdbc(),
-                InvoicePartyCurrency.jdbc(), InvoicePriceTier.jdbc());
+                InvoicePartyCurrency.jdbc(), InvoicePriceTier.jdbc(), InvoiceOffers.jdbc());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -315,7 +316,37 @@ public final class InvoiceSaveService<
                        DelegateDiscountGuard discountGuard,
                        InvoicePartyCurrency partyCurrency,
                        InvoicePriceTier priceTier) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver, treasuryLookup,
+                delegateLookup, stockMovementDao, shiftGate, shiftAttribution, shiftCashLedger,
+                shiftEffectReader, changeAnnouncer, walletFee, discountGuard, partyCurrency, priceTier,
+                InvoiceOffers.none());
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution,
+                       ShiftCashLedger shiftCashLedger,
+                       JdbcShiftCashEffectReader shiftEffectReader,
+                       ChangeAnnouncer changeAnnouncer,
+                       InvoiceWalletFee walletFee,
+                       DelegateDiscountGuard discountGuard,
+                       InvoicePartyCurrency partyCurrency,
+                       InvoicePriceTier priceTier,
+                       InvoiceOffers offers) {
         this.priceTier = priceTier;
+        this.offers = offers;
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -418,21 +449,31 @@ public final class InvoiceSaveService<
         Employees delegate = documentType.hasDelegate()
                 ? delegateLookup.find(command.delegateName())
                 : null;
-        // A delegate's discount ceiling (V73) judges the lines' discounts and the header's
-        // together: a ceiling on the header alone is walked round through a line's discount
-        // column. Asked before the number is allocated - the counter does not roll back, so a
-        // refusal after it would leave a hole in the numbering for every refused attempt.
-        if (delegate != null && discountGuard.refuses(documentType, delegate.getId(),
-                lineTotals.grossAmount(), lineTotals.discountAmount(), payment.discountAmount())) {
-            throw new InvoiceValidationException(InvoiceSaveValidator.Target.DISCOUNT,
-                    DelegateDiscountGuard.REFUSAL_KEY);
-        }
         // The price tier the document is priced at, and every line's list price (V84,
         // docs/pricing-and-offers-plan.md ق-س٢ and ق-س٤) - judged on the lines as they will be
-        // stored, and before the number is allocated, as the discount above is.
+        // stored, and before the number is allocated.
         Integer tierToStore = priceTier.decide(documentType, command.partyId(), existingNumber,
                 command.priceTierId());
         priceTier.requireListPrices(documentType, existingNumber, rows);
+        // The offers on the lines (V85, ق-ع٤): the engine again, over the offers read afresh for the
+        // document's date and tier, and a sale saying anything else refused - before the number is
+        // allocated. A document in a foreign currency takes none in phase B (ق-ع١١); it is judged on
+        // its lines as typed, since the conversion above builds lines of its own.
+        offers.judge(documentType, currency.isForeign(), command.invoiceDate(), tierToStore, existingNumber,
+                currency.isForeign() ? command.lines() : rows);
+        // A delegate's discount ceiling (V73) judges the lines' discounts and the header's
+        // together: a ceiling on the header alone is walked round through a line's discount
+        // column. What the offers gave is left aside - an offer is the shop's decision, not the
+        // delegate's (ق-ع٨). Asked before the number is allocated - the counter does not roll back,
+        // so a refusal after it would leave a hole in the numbering for every refused attempt.
+        if (delegate != null && discountGuard.refuses(documentType, delegate.getId(),
+                lineTotals.grossAmount(),
+                com.hamza.account.finance.MoneyMath.subtract(lineTotals.discountAmount(),
+                        InvoiceOffers.offerDiscount(rows)),
+                payment.discountAmount())) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.DISCOUNT,
+                    DelegateDiscountGuard.REFUSAL_KEY);
+        }
         // Before the number is allocated - the counter does not roll back - as the discount above is.
         Treasury treasury = treasuryLookup.find(command.treasuryName());
         if (treasury == null) {

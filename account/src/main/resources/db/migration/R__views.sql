@@ -65,6 +65,9 @@ SELECT s.id,
        s.price_foreign,
        s.discount_foreign,
        s.list_price,
+       s.offer_id,
+       s.offer_discount,
+       o.name            AS offer_name,
        s.item_has_package,
        s.expiration_date,
        i.nameItem,
@@ -78,7 +81,8 @@ FROM sales s
          JOIN items       i  ON i.id = s.num
          JOIN units       u  ON s.type = u.unit_id
          JOIN total_sales ts ON ts.invoice_number = s.invoice_number
-         JOIN custom      c  ON c.id = ts.sup_code;
+         JOIN custom      c  ON c.id = ts.sup_code
+         LEFT JOIN offer  o  ON o.id = s.offer_id;
 
 -- --------------------------------------sales_return_names_table-----------------------------------
 
@@ -99,6 +103,9 @@ SELECT sr.id,
        sr.discount,
        sr.price_foreign,
        sr.discount_foreign,
+       sr.offer_id,
+       sr.offer_discount,
+       o.name AS offer_name,
        sr.expiration_date,
        i.nameItem,
        i.barcode,
@@ -108,7 +115,8 @@ SELECT sr.id,
 FROM sales_re sr
          JOIN items          i   ON i.id = sr.item_id
          JOIN units          u   ON sr.type = u.unit_id
-         JOIN total_sales_re tsr ON tsr.id = sr.invoice_number;
+         JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
+         LEFT JOIN offer     o   ON o.id = sr.offer_id;
 
 -- --------------------------------------purchase_return_names_table--------------------------------
 

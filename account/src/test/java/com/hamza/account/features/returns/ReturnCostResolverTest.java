@@ -129,6 +129,37 @@ class ReturnCostResolverTest {
                 List.of(returnRow(SOURCE_LINE)), List.of(noDiscount)));
     }
 
+    /**
+     * Example 1 of docs/pricing-and-offers-plan.md §5, one of three soaps back: the sale line took 12 off from
+     * the offer, so the return line carries the offer and 4 of it - written from the source line, whatever
+     * the screen sent (V85, ق-ع١١).
+     */
+    @Test
+    void carriesTheSourceLinesOfferAndItsShare() throws DaoException {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 3.0, 40.0, 12.0, COST_AT_SALE, 1, 1.0, null, 7, 12.0));
+        Sales_Return line = assembledSalesReturnLine(COST_TODAY);
+        line.setPrice(40.0);
+        line.setQuantity(1);
+        line.setDiscount(4.0);
+        line.setOfferId(99);
+        line.setOfferDiscount(new java.math.BigDecimal("1.00"));
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(returnRow(SOURCE_LINE)), List.of(line));
+        assertEquals(7, line.getOfferId());
+        assertEquals(new java.math.BigDecimal("4.00"), line.getOfferDiscount());
+
+        // A source line no offer reached gives none, and a free return is given none.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 3.0, 40.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+        line.setDiscount(0.0);
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(returnRow(SOURCE_LINE)), List.of(line));
+        assertEquals(null, line.getOfferId());
+        Sales_Return free = assembledSalesReturnLine(COST_TODAY);
+        free.setOfferId(7);
+        resolver.apply(DocumentType.SALES_RETURN, 0, 0, List.of(returnRow(0)), List.of(free));
+        assertEquals(null, free.getOfferId());
+    }
+
     @Test
     void refusesAReturnInADifferentUnitFromTheSale() {
         // The price is per unit, so cartons at the piece price refunds a different

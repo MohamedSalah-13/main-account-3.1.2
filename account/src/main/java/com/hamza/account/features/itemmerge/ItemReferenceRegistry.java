@@ -77,12 +77,20 @@ public final class ItemReferenceRegistry {
     public static final ItemReference ITEMS_PACKAGE_ITEM = new ItemReference("items_package", "item_id", MergeAction.MOVE_DEDUPE);
     public static final ItemReference ITEMS_PACKAGE_PACKAGE = new ItemReference("items_package", "package_id", MergeAction.MOVE_DEDUPE);
 
+    /**
+     * An offer naming the item (V85). A plain move: the offer then reaches the surviving item, which now
+     * answers to every code the old one did - "5 off the juice" is still about the juice. An offer naming
+     * both is left naming it twice, which reaches the same lines once.
+     */
+    public static final ItemReference OFFER_TARGETS = new ItemReference("offer_target", "item_id", MergeAction.MOVE);
+
     public static final List<ItemReference> ALL = List.of(
             SALES, SALES_RETURN, PURCHASE, PURCHASE_RETURN,
             STOCK_MOVEMENTS, STOCK_TRANSFER_LINES,
             STOCK_COUNT_LINES, ITEMS_STOCK,
             ITEMS_UNITS, ITEM_BARCODES,
-            ITEMS_PACKAGE_ITEM, ITEMS_PACKAGE_PACKAGE);
+            ITEMS_PACKAGE_ITEM, ITEMS_PACKAGE_PACKAGE,
+            OFFER_TARGETS);
 
     /** The references a plain {@code UPDATE} moves, in the order the merge moves them. */
     public static final List<ItemReference> MOVABLE = ALL.stream()

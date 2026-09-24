@@ -99,9 +99,10 @@ public final class ProductProfileCodec {
             }
             // Version 1 knew only the merge and price-check switches. Newly added
             // screens must remain enabled when an already-issued v1 profile is read,
-            // otherwise an application update would silently remove client screens.
+            // otherwise an application update would silently remove client screens. An add-on is
+            // not one of those screens: it is only in a profile signed with it.
             if (version == 1) {
-                catalog.keys().stream()
+                catalog.keysWithoutAddOns().stream()
                         .filter(key -> !ProductFeatures.VERSION_1_KEYS.contains(key))
                         .forEach(enabled::add);
             }

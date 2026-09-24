@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
+
+<!--
+  The offers (V85). Built in code: see OffersController. An AnchorPane under the root, because an offer's
+  targets and what it gave open over the list in a RowDetailDrawer.
+-->
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.items.OffersController">
+    <children>
+        <AnchorPane fx:id="root"/>
+    </children>
+</StackPane>

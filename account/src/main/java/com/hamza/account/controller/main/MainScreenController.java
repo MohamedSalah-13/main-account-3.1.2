@@ -91,7 +91,7 @@ public class MainScreenController extends MainItems implements Initializable {
     private Accordion sideAccordion;
     @FXML
     private Button btnSales, btnQuickSales, btnQuickPurchase, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems, btnItemGroups,
-            btnAddItem, btnMasterData, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems, btnPriceCheck,
+            btnAddItem, btnMasterData, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems, btnPriceCheck, btnOffers,
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
             btnTreasuries, btnCurrencies, btnTreasuryCash, btnTreasuryTransfer, btnTreasuryCapital, btnTreasuryDetails, btnProcess, btnExpenses,
@@ -227,6 +227,9 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnStockTransfers, getItemsButtons().stockTransfers(), ProductFeatures.ITEMS_STOCK_TRANSFERS);
         menuButtonSetting.configureButton(btnMergeItems, getItemsButtons().mergeItems(), ProductFeatures.ITEMS_MERGE);
         menuButtonSetting.configureButton(btnPriceCheck, getItemsButtons().priceCheck(), ProductFeatures.ITEMS_PRICE_CHECK);
+        // The offers (V85) are a paid add-on: a profile signed without them has no button, and neither has an
+        // install with no profile at all (docs/pricing-and-offers-plan.md §6.1).
+        menuButtonSetting.configureButton(btnOffers, getItemsButtons().offers(), ProductFeatures.OFFERS);
         /*----------------------------------------------- Custom -----------------------------------------------*/
         menuButtonSetting.configureButton(btnAddCustomerName, getNameCustomer().addName(), ProductFeatures.CUSTOMERS_ADD);
         menuButtonSetting.configureButton(btnCustomer, getNameCustomer().namesData(), ProductFeatures.CUSTOMERS_LIST);

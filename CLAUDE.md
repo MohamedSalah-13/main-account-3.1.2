@@ -27,8 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,116 tests** in `account` with 353 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-24 after phase A of the price tiers (seventy-three tests,
+**4,186 tests** in `account` with 362 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-24 after phase B of the offers (seventy tests, nine of
+them gated on MySQL); 4,116 with 353 skipped after phase A of the price tiers (seventy-three tests,
 eight of them gated on MySQL); 4,043 with 346 skipped after wiping the users was locked to the
 administrator (five tests); 4,038 after the delete-data screen was rebuilt over
 `features/wipe` (twelve tests); 4,026 after the glass theme was removed (two cases went with it, two
@@ -375,8 +376,9 @@ Two documents govern work here and are kept current — read them before large c
   that holds an amount in a currency other than the base.**
 - **[`docs/pricing-and-offers-plan.md`](docs/pricing-and-offers-plan.md)** - item 3 of
   `docs/product-plan.md` §1, written 2026-09-24 at the owner's request and **opened the same day, before
-  item 1, at the owner's decision; phase A (the tiers, `V84`) is built** - see **Price tiers** below and
-  the plan's §10. The item as a whole: the
+  item 1, at the owner's decision; phase A (the tiers, `V84`) and phase B (the offer engine and the price
+  offers, `V85`) are built** - see **Price tiers** and **Offers** below and
+  the plan's §10 and §11. The item as a whole: the
   wholesale, retail and piece price tiers, and offers and bundles on items. The two ideas it rests on:
   **a tier answers who is buying and an offer answers when and how many**, and **an offer never changes
   a stored price - it writes a discount on the line** (`offer_id`, `offer_discount` beside `discount`),
@@ -3349,6 +3351,56 @@ and a customer's tier in `custom.price_id`; what was missing was everything arou
 - `PriceTierDatabaseAcceptanceTest` (gated, scratch schema, eight cases, green twice) and the screens seen
   on a copy of the development data as two ordinary users are the proof; what was not seen is in §10.
 
+### Offers
+
+`features/offers`, `InvoiceOffers`/`InvoiceOfferPreview` in `features/invoice`, `OffersController` (the items
+section's «العروض») and `V85`. Phase B of `docs/pricing-and-offers-plan.md` - a percentage, an amount off a
+unit, a price for a unit; §11 is what was delivered, what differs from the plan and what was seen.
+
+- **An offer never changes a stored price: it writes a discount on the line**, and `offer_id` and
+  `offer_discount` beside `discount` say which offer and how much of it (ق-ع١). `offer_discount` is a *part*
+  of `discount`, never an addition to it, so `document_profit`, the return guards, the paper and a delegate's
+  commission base read the line as they always did. The only readers of the two columns are the save's
+  guard, the returns, a delegate's ceiling, the paper and the offers screen.
+- **`OfferEngine` is one pure function the screen and the save both run** (ق-ع٤). The invoice screen runs it
+  after every change to the lines, the date or the tier (`InvoiceOfferPreview`, over a snapshot replaced on
+  `OffersChanged`); `InvoiceSaveService.persist` runs it again over offers read afresh for the document's
+  date (`InvoiceOffers.judge`, groups read from the database, not off the loaded item) and refuses a sale
+  whose lines say anything else - an offer ended, started, or moved - **before the number is allocated**.
+  One offer a line: the highest priority, then the most for the customer, then the oldest.
+- **The discount is worked on the price the line charges, not the list price** - the one departure from the
+  plan's words: a price typed under the list is already a discount, and a percentage of the list on top of
+  it would give the difference twice. On a line at its list they are one figure.
+- **A line under an offer takes no manual discount** (ق-ع٨): the offer replaces it, `editDiscount` says so,
+  and a line an offer leaves goes back to no discount rather than the one it replaced. And **a manual
+  discount is at most the line** (`InvoiceLineEditService.requireWithinTheLine`, also at save) - more left a
+  net below zero (§1.2). A delegate's ceiling judges `discount - offer_discount`.
+- **An offer never reaches back.** A saved sale reopened is judged by the offers in force on its date plus
+  those its own lines carry, even stopped (ق-ع٧) - so `OfferService` refuses a start before today, or an
+  offer written today would appear on last month's invoices the next time one is corrected. What remains,
+  and the acceptance run found: editing **today's** invoice picks up an offer started later today when it
+  gives more.
+- **A used offer is history**: its terms are refused an edit in `OfferService` and by `offer_terms_update`
+  in `R__triggers.sql` (the last section, V85); its name, notes and end may move, the end not before its last
+  use. It is stopped, never deleted - `DeleteRegistry.OFFERS` refuses one a sale or return line names.
+- **A return carries its source line's offer and share** (`ReturnCostResolver.carryTheOffer`, from the source
+  line and never the screen), so part of an offer invoice refunds what was paid for it; a free return gets
+  none. The engine never runs on a return, a purchase, or a document of a party in a foreign currency (the
+  save refuses one claiming an offer).
+- **The offers are a paid add-on** (`ProductFeatures.OFFERS`, key `addons.offers` - a feature key needs a
+  dot). `ProductFeatureDefinition.addOn` keeps it out of `LEGACY_FULL`, out of the version-1 profile road and
+  out of every edition preset including "full"; the setup tool shows it unticked in a section of its own.
+  Without it the button is hidden, `OfferService` refuses the screen, and neither the preview nor the save
+  judges anything - a sale saved with an offer keeps its discount as recorded.
+- **Keys**: `offer.show`/`create`/`update`/`delete`, a `PermissionGroup` of their own; V85 grants each to
+  whoever held the matching `items.*` key. Selling asks none of them. The below-cost warning (ق-ع٩) is shown
+  to a reader holding `show.column.buy.price` and never refuses.
+- **The paper** says a row per offer and "وفّرت اليوم" (every discount on it) under the summary, unsigned,
+  on a sale an offer reached - `InvoicePdfLayout.offerRows`, shared by the receipt. The invoice table has an
+  offer column appended last and the footer an offers figure under the lines' count.
+- `OfferDatabaseAcceptanceTest` (gated, scratch schema, nine cases, green twice) works example 1 and example
+  7 of §5 out by hand, holds `document_profit` to them, and proves the refusals with the counter unmoved.
+
 ### Scale barcodes
 
 A shop scale prints its own barcode with the item and a weight inside it, and
@@ -3882,7 +3934,12 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V84`, the price
+  new database executes it and continues with `V2`, `V3`, … The current head is `V85`, the offers:
+  `offer` (one kind a row - a percentage, an amount, a price - with a CHECK per kind), `offer_target`
+  (an item, an item in a unit, a sub group, a main group or everything, any of them excluded; the two groups
+  are two columns with a key each) and `offer_price_tier`, both cascading with their offer; `offer_id` and
+  `offer_discount` on `sales` and `sales_re`, never cascading; and the four `offer.*` keys granted to whoever
+  held the matching `items.*` one (see **Offers**). Before it `V84` is the price
   tiers: `type_price` gains `is_active` and a fill rule (`rule_*`), a sales document copies the tier it
   was priced at (`price_tier_id`, NULL before), a sales line its list price (`sales.list_price`), and
   `sales.price.below.list` is granted to whoever may sell - its tier-1 rule is a trigger, since MySQL

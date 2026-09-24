@@ -159,17 +159,31 @@ public interface ReturnableRepository {
     /** One exact line, as {@link #rawLines} lists it - {@link SourceLine} plus its own id and quantity. */
     record SourceLineRow(int lineId, int itemId, double quantity, double price,
                          double discount, double buyPrice, int unitId, double typeValue,
-                         LocalDate expirationDate) {
+                         LocalDate expirationDate, Integer offerId, double offerDiscount) {
+
+        /** A line no offer reached - every purchase line, and every sales line before V85. */
+        public SourceLineRow(int lineId, int itemId, double quantity, double price, double discount, double buyPrice,
+                             int unitId, double typeValue, LocalDate expirationDate) {
+            this(lineId, itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, null, 0);
+        }
     }
 
     /**
      * {@code quantity} and {@code discount} are here so a return can be held to the
      * <em>net</em> the line actually charged, not just its unit price: a line discount
      * belongs to the whole line, so returning part of it refunds its proportional share.
+     * {@code offerId} and {@code offerDiscount} are the offer that wrote that discount and its part of it
+     * (V85), which a return line carries forward in the same proportion (ق-ع١١).
      */
     record SourceLine(int itemId, double quantity, double price, double discount,
                       double buyPrice, int unitId, double typeValue,
-                      LocalDate expirationDate) {
+                      LocalDate expirationDate, Integer offerId, double offerDiscount) {
+
+        /** A line no offer reached - every purchase line, and every sales line before V85. */
+        public SourceLine(int itemId, double quantity, double price, double discount, double buyPrice, int unitId,
+                          double typeValue, LocalDate expirationDate) {
+            this(itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, null, 0);
+        }
     }
 
     /**

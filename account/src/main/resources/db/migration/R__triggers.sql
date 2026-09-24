@@ -947,3 +947,69 @@ BEGIN
            'Price tier updated'));
 END|
 DELIMITER ;
+
+
+-- ---------------------------------------------------------------------------------------------
+-- offers (V85)
+--
+-- An offer a sale or a return line names is history (docs/pricing-and-offers-plan.md ق-ع٧): its terms
+-- - what it gives and to whom - are refused an UPDATE here as they are in OfferService, so a statement
+-- from outside the program cannot rewrite what a saved invoice was given. Its name, its notes, its end
+-- and its status may still move. Who wrote an offer, switched it on or stopped it, and who deleted a
+-- draft, is recorded. After the price tiers, being newer.
+
+DROP TRIGGER IF EXISTS offer_terms_update;
+DROP TRIGGER IF EXISTS audit_offer_insert;
+DROP TRIGGER IF EXISTS audit_offer_update;
+DROP TRIGGER IF EXISTS audit_offer_delete;
+
+DELIMITER |
+CREATE TRIGGER offer_terms_update BEFORE UPDATE ON offer FOR EACH ROW
+BEGIN
+    IF (NOT (OLD.kind <=> NEW.kind) OR NOT (OLD.percent <=> NEW.percent) OR NOT (OLD.amount <=> NEW.amount)
+            OR NOT (OLD.offer_price <=> NEW.offer_price) OR NOT (OLD.unit_id <=> NEW.unit_id)
+            OR NOT (OLD.starts_on <=> NEW.starts_on) OR NOT (OLD.weekdays <=> NEW.weekdays)
+            OR NOT (OLD.priority <=> NEW.priority))
+        AND (EXISTS (SELECT 1 FROM sales WHERE offer_id = OLD.id)
+            OR EXISTS (SELECT 1 FROM sales_re WHERE offer_id = OLD.id)) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'a used offer keeps its terms: stop it and write another';
+    END IF;
+END|
+
+CREATE TRIGGER audit_offer_insert AFTER INSERT ON offer FOR EACH ROW
+BEGIN
+    CALL write_audit_log('offer', NEW.id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('name', NEW.name, 'kind', NEW.kind, 'status', NEW.status, 'starts_on', NEW.starts_on,
+                    'ends_on', NEW.ends_on, 'weekdays', NEW.weekdays, 'priority', NEW.priority,
+                    'percent', NEW.percent, 'amount', NEW.amount, 'offer_price', NEW.offer_price,
+                    'unit_id', NEW.unit_id),
+        'Offer created');
+END|
+
+CREATE TRIGGER audit_offer_update AFTER UPDATE ON offer FOR EACH ROW
+BEGIN
+    CALL write_audit_log('offer', NEW.id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('name', OLD.name, 'status', OLD.status, 'starts_on', OLD.starts_on, 'ends_on', OLD.ends_on,
+                    'weekdays', OLD.weekdays, 'priority', OLD.priority, 'percent', OLD.percent,
+                    'amount', OLD.amount, 'offer_price', OLD.offer_price, 'unit_id', OLD.unit_id,
+                    'notes', OLD.notes),
+        JSON_OBJECT('name', NEW.name, 'status', NEW.status, 'starts_on', NEW.starts_on, 'ends_on', NEW.ends_on,
+                    'weekdays', NEW.weekdays, 'priority', NEW.priority, 'percent', NEW.percent,
+                    'amount', NEW.amount, 'offer_price', NEW.offer_price, 'unit_id', NEW.unit_id,
+                    'notes', NEW.notes),
+        IF(OLD.status <> NEW.status,
+           CASE NEW.status WHEN 'ACTIVE' THEN 'Offer switched on' WHEN 'STOPPED' THEN 'Offer stopped'
+                           ELSE 'Offer returned to draft' END,
+           'Offer updated'));
+END|
+
+CREATE TRIGGER audit_offer_delete AFTER DELETE ON offer FOR EACH ROW
+BEGIN
+    CALL write_audit_log('offer', OLD.id, 'DELETE', @app_user_id,
+        JSON_OBJECT('name', OLD.name, 'kind', OLD.kind, 'status', OLD.status, 'starts_on', OLD.starts_on,
+                    'ends_on', OLD.ends_on, 'percent', OLD.percent, 'amount', OLD.amount,
+                    'offer_price', OLD.offer_price, 'unit_id', OLD.unit_id),
+        NULL,
+        'Offer deleted');
+END|
+DELIMITER ;
