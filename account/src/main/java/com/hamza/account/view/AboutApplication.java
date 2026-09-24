@@ -2,7 +2,6 @@ package com.hamza.account.view;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.AppIcon;
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.about.AboutBuild;
 import com.hamza.account.features.about.AboutLicense;
@@ -69,6 +68,8 @@ import java.util.Optional;
 public class AboutApplication extends Application {
 
     private static final double CARD_WIDTH = 300;
+    /** What {@code TrialManager.install} accepts; anything larger is refused before it is read. */
+    private static final long LICENSE_FILE_MAX_BYTES = 64 * 1024;
 
     private final LanguageManager language = LanguageManager.getInstance();
     private final AboutBuild build = AboutBuild.current();
@@ -76,6 +77,7 @@ public class AboutApplication extends Application {
     private final Label status = new Label();
     private final Label remaining = new Label();
     private final Label licenseFile = new Label();
+    private Optional<Image> programImage;
 
     public static void main(String[] args) {
         launch(args);
@@ -93,7 +95,7 @@ public class AboutApplication extends Application {
         Scene scene = new SceneAll(root);
         stage.setScene(scene);
         stage.setTitle(text("nav.about"));
-        stage.getIcons().add(new Image(new Image_Setting().tools));
+        programImage().ifPresent(stage.getIcons()::add);
         stage.setResizable(false);
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.show();
@@ -138,20 +140,31 @@ public class AboutApplication extends Application {
     }
 
     private Node logo() {
-        try (InputStream icon = Main.class.getResourceAsStream("image/tools.png")) {
-            if (icon != null) {
-                ImageView view = new ImageView(new Image(icon));
-                view.setFitWidth(52);
-                view.setFitHeight(52);
-                view.setPreserveRatio(true);
-                StackPane box = new StackPane(view);
-                box.getStyleClass().add("about-logo");
-                return box;
+        return programImage().<Node>map(image -> {
+            ImageView view = new ImageView(image);
+            view.setFitWidth(52);
+            view.setFitHeight(52);
+            view.setPreserveRatio(true);
+            StackPane box = new StackPane(view);
+            box.getStyleClass().add("about-logo");
+            return box;
+        }).orElseGet(() -> AppIcon.INFO.graphic(44));
+    }
+
+    /**
+     * The program's own picture, read once and the stream closed. Not {@code new Image_Setting()},
+     * which opens every one of its forty-odd resource streams to hand out one and closes none.
+     */
+    private Optional<Image> programImage() {
+        if (programImage == null) {
+            try (InputStream icon = Main.class.getResourceAsStream("image/tools.png")) {
+                programImage = icon == null ? Optional.empty() : Optional.of(new Image(icon));
+            } catch (Exception e) {
+                log.debug("No picture for the About window", e);
+                programImage = Optional.empty();
             }
-        } catch (Exception e) {
-            log.debug("No logo for the About window", e);
         }
-        return AppIcon.INFO.graphic(44);
+        return programImage;
     }
 
     // ---- the two cards --------------------------------------------------------------------------
@@ -327,6 +340,12 @@ public class AboutApplication extends Application {
             return;
         }
         try {
+            // Judged by its size before a byte of it is read: a licence is a line of text, and a
+            // renamed file of gigabytes read whole would freeze this window or exhaust the heap.
+            if (file.length() > LICENSE_FILE_MAX_BYTES) {
+                log.warn("The licence file {} was not installed: {} bytes", file, file.length());
+                throw new UserValidationException(text("about.license.refused"));
+            }
             byte[] chosen = Files.readAllBytes(file.toPath());
             Optional<String> refused = withTrialManager(trial -> {
                 try {

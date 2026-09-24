@@ -209,9 +209,13 @@ public class EmployeeFormController implements AddInterface {
         box.getChildren().setAll(header(), scroll);
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
-        // The Enter order, declared once, in the order the form is read - rule ق-ل9.
-        List<Control> order = new ArrayList<>(List.of(txtName, txtNationalId, txtPhone, txtEmail));
+        // The Enter order, declared once, through every control on the form in the order it is read -
+        // the person, then the job - rule ق-ل9. The address and notes are left out: Enter in a text
+        // area is a new line.
+        List<Control> order = new ArrayList<>(List.of(txtName, txtNationalId, birthDate, txtPhone, txtEmail,
+                comboJob, comboEmployment, hireDate, endDate));
         if (salaryVisible) {
+            order.add(comboSalaryKind);
             order.add(txtRate);
         }
         whenEnterPressed(order.toArray(Control[]::new));
