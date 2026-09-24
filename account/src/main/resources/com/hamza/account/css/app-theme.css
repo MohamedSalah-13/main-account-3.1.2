@@ -4005,3 +4005,131 @@
 .table-row-cell:online-large-move > .table-cell {
     -fx-text-fill: -app-warning;
 }
+
+/* ---------- The delete-data screen (DeleteDataController) ----------
+   Every rule names .wipe-screen and sits after the dialog rules, which it has to beat:
+   `.dialog-pane .button` paints every button inside a dialog blue, so the one that empties the
+   database and the one that leaves looked alike, and `.dialog-pane .label` writes every label in
+   the dialog's text colour - which is how the old summary strip came out navy on navy. The red
+   palette is -party-accent in theme-light.css and theme-dark.css, the way the employees' violet is. */
+
+.wipe-screen .wipe-warning {
+    -fx-background-color: -app-danger-soft;
+    -fx-border-color: -app-danger-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 0.909em;
+    -fx-border-radius: 0.909em;
+    -fx-padding: 0.636em 0.909em;
+}
+
+.wipe-screen .wipe-warning .icon-graphic {
+    -fx-icon-color: -app-danger;
+}
+
+.wipe-screen .wipe-warning-text {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.wipe-screen .wipe-card {
+    -fx-padding: 0.909em;
+}
+
+.wipe-screen .wipe-card:has-selection {
+    -fx-border-color: -party-border;
+}
+
+.wipe-screen .wipe-card-title {
+    -fx-font-size: 1.091em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.wipe-screen .wipe-card-icon {
+    -fx-icon-color: -app-text-muted;
+}
+
+.wipe-screen .wipe-card:has-selection .wipe-card-icon {
+    -fx-icon-color: -app-danger;
+}
+
+.wipe-screen .wipe-card-count {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 1em;
+    -fx-padding: 0.091em 0.545em;
+    -fx-font-size: 0.909em;
+    -fx-text-fill: -app-text-muted;
+}
+
+.wipe-screen .wipe-card:has-selection .wipe-card-count {
+    -fx-background-color: -app-danger-soft;
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.wipe-screen .wipe-locked-note {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.818em;
+    -fx-font-style: italic;
+}
+
+.wipe-screen .wipe-summary {
+    -fx-background-color: -app-surface-2;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 0.909em;
+    -fx-border-radius: 0.909em;
+    -fx-padding: 0.636em 0.909em;
+}
+
+.wipe-screen .wipe-summary-caption {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.wipe-screen .wipe-summary-count {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-danger;
+}
+
+.wipe-screen .wipe-summary-empty {
+    -fx-text-fill: -app-text-muted;
+}
+
+.wipe-screen .wipe-chip {
+    -fx-background-color: -app-danger-soft;
+    -fx-border-color: -app-danger-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 1em;
+    -fx-border-radius: 1em;
+    -fx-padding: 0.182em 0.727em;
+    -fx-text-fill: -app-danger;
+}
+
+.wipe-screen .wipe-delete-button {
+    -fx-background-color: linear-gradient(to right, -party-accent-dark, -party-accent);
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+
+.wipe-screen .wipe-delete-button:hover {
+    -fx-background-color: -party-accent-dark;
+}
+
+.wipe-screen .wipe-delete-button .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.wipe-screen .wipe-close-button {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text;
+    -fx-border-color: -app-border;
+}
+
+.wipe-screen .wipe-close-button:hover {
+    -fx-background-color: -app-neutral-hover;
+}
+
+.wipe-screen .wipe-close-button .icon-graphic {
+    -fx-icon-color: -app-text;
+}

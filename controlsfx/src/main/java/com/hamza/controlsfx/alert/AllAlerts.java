@@ -52,6 +52,15 @@ public class AllAlerts {
                 message, DELETE_ALL, DELETE));
     }
 
+    /**
+     * An information message under a heading of the caller's, for an outcome that neither
+     * "saved" nor "deleted all" describes - a wipe of four kinds of data out of sixteen is not
+     * "delete all".
+     */
+    public static void alertInformation(String heading, String message) {
+        showOnFxThread(() -> new AlertSetting(Alert.AlertType.INFORMATION, message, heading, heading));
+    }
+
     public static boolean confirmDelete() {
         return confirm_all(DELETE, MSG_DO_YOU_WANT_DELETE);
     }
