@@ -40,9 +40,15 @@ public final class ItemReportPdf {
      *
      * @param subtitle what was asked - the filter, the date - so a printed page still says
      *                 what question it answers once it is off the screen
+     * @param pageSize the paper: the configured one, turned sideways - these reports are six
+     *                 to ten columns wide, and upright the name column, the one the reader is
+     *                 scanning, is squeezed into a stack of single letters. It used to be A4
+     *                 whatever the shop had chosen, so an A5 shop's direct print sent an A4
+     *                 page to a printer set for A5.
      * @return whether the file was written
      */
-    public static boolean write(ItemReportResult result, String title, String subtitle, String filePath) {
+    public static boolean write(ItemReportResult result, String title, String subtitle, String filePath,
+                                PageSize pageSize) {
         LanguageManager language = LanguageManager.getInstance();
 
         List<ItemReportColumn> columns = result.columns();
@@ -59,12 +65,10 @@ public final class ItemReportPdf {
             rows.add(render(row, columns));
         }
 
-        // Landscape: these reports are eight to ten columns wide, and portrait squeezes the
-        // name column - the one the reader is scanning - into a stack of single letters.
         String[] totals = totalsLine(result);
         return new PdfExportService().exportGenericReport(
                 filePath, title, subtitle, headers, widths, rows,
-                totals == null ? null : totals[0], totals == null ? null : totals[1], null, PageSize.A4.rotate());
+                totals == null ? null : totals[0], totals == null ? null : totals[1], null, pageSize);
     }
 
     /**

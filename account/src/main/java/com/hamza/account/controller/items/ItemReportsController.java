@@ -13,10 +13,12 @@ import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SupGroupService;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
+import com.itextpdf.kernel.geom.PageSize;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -35,7 +37,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
 import java.io.File;
@@ -396,7 +397,12 @@ public class ItemReportsController {
     }
 
     /**
-     * Writes what is on screen to a PDF the operator chooses the location of.
+     * Prints what is on screen, the way the shop prints every report: saved, sent to the
+     * printer, looked at first or asked each time ({@link TablePdfReport#chooseTarget}).
+     * <p>
+     * This screen had a save dialog of its own, so a shop that prints straight to its printer
+     * or previews first had to save an item report to a file and open it elsewhere. The file
+     * is written off the JavaFX thread now, as every other report's is.
      * <p>
      * The subtitle records the question, not just the answer: which report, and the date it
      * was run. A page of figures with no statement of what was asked is a page nobody can
@@ -414,26 +420,20 @@ public class ItemReportsController {
             return;
         }
 
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle(language.getString("itemreport.print"));
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
-        chooser.setInitialFileName(report.id().replace('.', '-') + ".pdf");
-        File file = chooser.showSaveDialog(stackPane.getScene() == null
-                ? null : stackPane.getScene().getWindow());
-        if (file == null) return;
+        String title = language.getString(report.titleKey());
+        File target = TablePdfReport.chooseTarget(stackPane.getScene() == null
+                ? null : stackPane.getScene().getWindow(), title);
+        if (target == null) return;
 
+        // What is on screen when the button was pressed, whatever is run while the file is written.
+        ItemReportResult printed = current;
         String subtitle = language.getString(report.descriptionKey())
                 + (report.usesPeriod() ? "  -  " + language.getString("itemreport.date.from") + " " + dateFrom.getValue()
                 + " " + language.getString("itemreport.date.to") + " " + dateTo.getValue() : "")
                 + "  -  " + java.time.LocalDate.now();
-        boolean written = ItemReportPdf.write(current,
-                language.getString(report.titleKey()), subtitle, file.getAbsolutePath());
-        if (written) {
-            AllAlerts.alertSaveWithMessage(language.getString("itemreport.export.success"));
-        } else {
-            AllAlerts.handleError(language.getString("itemreport.print"),
-                    new Exception("PDF export failed"));
-        }
+        PageSize pageSize = TablePdfReport.pageSizeFor(printed.columns().size());
+        TablePdfReport.write(target,
+                file -> ItemReportPdf.write(printed, title, subtitle, file.getAbsolutePath(), pageSize));
     }
 
     /**

@@ -2958,6 +2958,14 @@ in a table, a title, a subtitle, a footer or an invoice's notes. The fields besi
 (identity, details, summary) and the letterhead's own lines still wrap the old way - they are short.
 `PdfExportServiceLayoutTest` now reads cell positions out of a real PDF, which is the only check that can
 see the totals line, and `TextThatWraps` holds a wrapped cell's beginning above its end.
+**That only holds while the widths the lines were measured against are the widths drawn, so a table's
+widths are decided before iText sees it** (`PdfExportService.widen`/`fitted`, 2026-09-24). Handed a column
+narrower than a word in it - an English heading such as "Shortfall", a barcode, a long amount - iText widens
+that column and takes the room from the others, and a cell in a column that had given its room away was
+wrapped a second time after it was shaped: "أقل من الحد" printed "من" / "أقل" / "الحد" on an English item
+report, and the same happened on an Arabic page whenever an unbreakable word widened a column. Every
+heading, row and totals line is measured first, each column is held at its widest word, and the others share
+what is left by their weights - in the reports and in an invoice's lines alike.
 
 **An invoice is a document, not a report, and prints through its own path.** The A4 invoice
 first went to PDF through `TablePdfReport`, which turns any table of more than five columns
@@ -3063,9 +3071,13 @@ pages drawn up front is hundreds of megabytes. Which page and what size are `Pre
 a toolkit. **The page arrows are picked by the language**: a right-to-left window lays its buttons out
 mirrored but draws each glyph as it is, so "next" is the arrow pointing left in Arabic. The default mode is
 still saving a file, so nothing changed on upgrade; the shop turns the preview on in the printers tab.
-**Only reports that go through `TablePdfReport.chooseTarget` have it** - the item reports' own save dialog,
-the shift and the audit exports and the Jasper receipt do not. **Not seen**: a real printer (none in the
-build environment) and the save dialog, which is the system's.
+**Only reports that go through `TablePdfReport.chooseTarget` have it** - the shift and the audit exports and
+the Jasper receipt do not. **The item reports screen goes through it since 2026-09-24**: it had a save
+dialog of its own, so none of its reports could be printed directly or previewed, and it wrote the file on
+the JavaFX thread and always on A4 - an A5 shop's direct print would have sent an A4 page to a printer set
+for A5. It now takes the configured paper on its side (`TablePdfReport.pageSizeFor`, since every item
+report has six columns or more). **Not seen**: a real printer (none in the build environment) and the
+save dialog, which is the system's.
 
 ### Period locks and stock counts
 

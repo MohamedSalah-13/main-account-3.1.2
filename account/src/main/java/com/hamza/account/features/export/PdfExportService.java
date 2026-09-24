@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,8 @@ public class PdfExportService {
     private float usableWidth = PageSize.A4.getWidth() - 2 * REPORT_MARGIN;
     /** Each table's column widths in points, in the order its cells are added. */
     private final Map<Table, float[]> columnPoints = new IdentityHashMap<>();
+    /** How wide a word is drawn, by face, size and word: a report repeats its words on every page. */
+    private final Map<String, Float> wordWidths = new HashMap<>();
     /**
      * Whether the file being written runs right to left: a report as the reader's language does
      * ({@link ReportSetup#rightToLeft}), an invoice or a voucher always, since its layout is drawn for it.
@@ -370,6 +373,110 @@ public class PdfExportService {
     }
 
     /**
+     * Raises each column's narrowest width to what one line of cells needs: its widest word, which no
+     * line can break, in the face and size it is drawn in, and its cell's padding.
+     * <p>
+     * <b>A table's widths are decided here, never by iText.</b> Given a column narrower than a word in it,
+     * iText widens that column and takes the room from the others - an English heading such as
+     * "Shortfall", a barcode, a long amount - while {@link #wrapped} had measured every cell against the
+     * widths asked for. A cell in a column that had given its room away was then kept on lines too long
+     * for it, and iText wrapped each of those lines again after it was shaped, printing its end first:
+     * "أقل من الحد" came out "من" / "أقل" / "الحد". With every column already as wide as its widest word,
+     * iText keeps the widths it is handed, and they are the ones the lines were measured against.
+     *
+     * @param cells        one line's cells in logical order; a null cell, or a line shorter than the
+     *                     table, needs nothing
+     * @param firstPadding the padding of the first logical column, which a leaf line indents
+     */
+    private void widen(float[] narrowest, String[] cells, boolean bold, float size, float firstPadding,
+                       float padding) {
+        if (cells == null) {
+            return;
+        }
+        for (int i = 0; i < Math.min(cells.length, narrowest.length); i++) {
+            float word = widestWord(cells[i], bold, size);
+            if (word > 0) {
+                narrowest[i] = Math.max(narrowest[i], word + (i == 0 ? firstPadding : padding) + CELL_SLACK);
+            }
+        }
+    }
+
+    private void widen(float[] narrowest, String[] cells, boolean bold, float size, float padding) {
+        widen(narrowest, cells, bold, size, padding, padding);
+    }
+
+    /** The widest word of a cell as {@link #wrapped} draws it: shaped, in the face it chooses. */
+    private float widestWord(String text, boolean bold, float size) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        PdfFont font = bold ? boldFontFor(shape(text)) : arabicFont;
+        String face = font == arabicFont ? "r" : "b";
+        float widest = 0;
+        for (String word : text.strip().split("[ \n]+")) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            float width = wordWidths.computeIfAbsent(face + size + '|' + word,
+                    key -> font.getWidth(shape(word), size));
+            widest = Math.max(widest, width);
+        }
+        return widest;
+    }
+
+    /**
+     * The columns' widths in points: in proportion to {@code weights}, except that none is narrower than
+     * its {@code narrowest} - a column held at its narrowest takes that much, and the others share what is
+     * left by their weights. When even the narrowest widths do not fit, each gets its share of
+     * {@code total} in proportion to its narrowest, and iText does what it can.
+     */
+    static float[] fitted(float[] weights, float[] narrowest, float total) {
+        int columns = weights.length;
+        float weightSum = 0;
+        float narrowestSum = 0;
+        for (int i = 0; i < columns; i++) {
+            weightSum += weights[i];
+            narrowestSum += i < narrowest.length ? narrowest[i] : 0;
+        }
+        float[] points = new float[columns];
+        if (weightSum <= 0 || total <= 0) {
+            return weights.clone();
+        }
+        if (narrowestSum >= total) {
+            for (int i = 0; i < columns; i++) {
+                points[i] = i < narrowest.length ? total * narrowest[i] / narrowestSum : 0;
+            }
+            return points;
+        }
+        boolean[] held = new boolean[columns];
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            float left = total;
+            float shared = 0;
+            for (int i = 0; i < columns; i++) {
+                if (held[i]) {
+                    left -= narrowest[i];
+                } else {
+                    shared += weights[i];
+                }
+            }
+            for (int i = 0; i < columns; i++) {
+                if (held[i]) {
+                    points[i] = narrowest[i];
+                    continue;
+                }
+                points[i] = shared <= 0 ? 0 : left * weights[i] / shared;
+                if (i < narrowest.length && points[i] < narrowest[i]) {
+                    held[i] = true;
+                    changed = true;
+                }
+            }
+        }
+        return points;
+    }
+
+    /**
      * إضافة ترويسة للمستند: the company when the shop asked for it, the title, the subtitle, and the
      * line saying when and by whom it was printed - each only as the style asks.
      */
@@ -504,12 +611,25 @@ public class PdfExportService {
         return style.inkSaver() ? cell.setBorderBottom(new SolidBorder(bandTextColor, 1f)) : cell;
     }
 
+    /** The narrowest widths a flat table's rows and totals line need; {@link #createTable} adds the headings. */
+    private float[] narrowestOf(String[] headers, List<String[]> rows, String[] totals) {
+        float[] narrowest = new float[headers.length];
+        for (String[] row : rows) {
+            widen(narrowest, row, false, style.bodySize(), 4);
+        }
+        if (totals != null && totals.length == headers.length) {
+            widen(narrowest, totals, true, style.totalsSize(), 4);
+        }
+        return narrowest;
+    }
+
     /**
      * إنشاء جدول مع ترويسة (الجدول يُبنى من اليمين إلى اليسار بعكس ترتيب الأعمدة)
      */
-    private Table createTable(String[] headers, float[] columnWidths) {
+    private Table createTable(String[] headers, float[] columnWidths, float[] narrowest) {
+        widen(narrowest, headers, true, style.headerSize(), 4);
         // عكس الأعمدة والعناوين لجعل أول عمود منطقي يظهر في أقصى اليمين
-        float[] rtlWidths = inAddedOrder(columnWidths);
+        float[] rtlWidths = inAddedOrder(fitted(columnWidths, narrowest, usableWidth));
         String[] rtlHeaders = inAddedOrder(headers);
 
         Table table = new Table(UnitValue.createPercentArray(rtlWidths));
@@ -591,7 +711,7 @@ public class PdfExportService {
                 chart.setMarginBottom(10);
                 document.add(chart);
             }
-            Table table = createTable(headers, columnWidths);
+            Table table = createTable(headers, columnWidths, narrowestOf(headers, data, totals));
             int rowIndex = 0;
             for (String[] row : data) {
                 addTableRow(table, row, rowIndex % 2 == 1);
@@ -619,7 +739,15 @@ public class PdfExportService {
                                     TreePdfLayout layout, PageSize pageSize) {
         try (Document document = createDocument(filePath, pageSize)) {
             addHeader(document, title, subtitle);
-            Table table = createTable(layout.headers(), layout.columnWidths());
+            float[] narrowest = new float[layout.headers().length];
+            for (TreePdfLayout.Branch branch : layout.branches()) {
+                for (String[] row : branch.rows()) {
+                    widen(narrowest, row, false, style.branchRowSize(), 20, 8);
+                }
+                widen(narrowest, branch.summary(), true, style.totalsSize(), 8);
+            }
+            widen(narrowest, layout.totals(), true, style.totalsSize(), 4);
+            Table table = createTable(layout.headers(), layout.columnWidths(), narrowest);
             int columns = layout.headers().length;
             for (TreePdfLayout.Branch branch : layout.branches()) {
                 table.addCell(branchHeading(table, branch.title(), columns));
@@ -658,7 +786,16 @@ public class PdfExportService {
                                          List<String[]> rows, String[] totals, PageSize pageSize) {
         try (Document document = createDocument(filePath, pageSize)) {
             addHeader(document, title, subtitle);
-            Table page = createTable(statement.headers(), statement.columnWidths());
+            float[] narrowest = new float[statement.headers().length];
+            for (StatementPdfLayout.Line line : statement.lines()) {
+                switch (line.style()) {
+                    case HEADING -> { }
+                    case ROW -> widen(narrowest, line.cells(), false, style.branchRowSize(), 20, 8);
+                    case SUBTOTAL -> widen(narrowest, line.cells(), true, style.totalsSize(), 8);
+                    case RESULT -> widen(narrowest, line.cells(), true, style.totalsSize(), 4);
+                }
+            }
+            Table page = createTable(statement.headers(), statement.columnWidths(), narrowest);
             int columns = statement.headers().length;
             for (StatementPdfLayout.Line line : statement.lines()) {
                 switch (line.style()) {
@@ -671,7 +808,7 @@ public class PdfExportService {
             document.add(page);
             if (!rows.isEmpty()) {
                 document.add(new Paragraph("\n"));
-                Table table = createTable(headers, columnWidths);
+                Table table = createTable(headers, columnWidths, narrowestOf(headers, rows, totals));
                 int rowIndex = 0;
                 for (String[] row : rows) {
                     addTableRow(table, row, rowIndex % 2 == 1);
@@ -853,7 +990,14 @@ public class PdfExportService {
         try (Document document = createDocument(filePath, pageSize)) {
             addHeader(document, title, subtitle);
 
-            Table table = createTable(headers, columnWidths);
+            float[] narrowest = narrowestOf(headers, data, null);
+            if (totalLabel != null && totalValue != null) {
+                // The figure sits under the last column; the label spans the others.
+                String[] figure = new String[headers.length];
+                figure[headers.length - 1] = totalValue;
+                widen(narrowest, figure, true, style.totalsSize(), 4);
+            }
+            Table table = createTable(headers, columnWidths, narrowest);
 
             int rowIndex = 0;
             for (String[] row : data) {
@@ -1056,8 +1200,15 @@ public class PdfExportService {
      * text; every other column is a code or a figure and is centred under its heading.
      */
     private Table documentLines(DocumentPdfPage page) {
+        float[] narrowest = new float[page.headers().length];
+        widen(narrowest, page.headers(), true, DOCUMENT_FONT_SIZE, 6);
+        for (String[] row : page.rows()) {
+            // The name column is padded 7, the others 4; 7 for all asks a figure for three points it may not need.
+            widen(narrowest, row, false, DOCUMENT_FONT_SIZE, 7);
+        }
+        widen(narrowest, page.totals(), true, DOCUMENT_FONT_SIZE, 6);
         String[] headers = reverseStrings(page.headers());
-        float[] widths = reverseFloats(page.columnWidths());
+        float[] widths = reverseFloats(fitted(page.columnWidths(), narrowest, usableWidth));
         Table table = new Table(UnitValue.createPercentArray(widths))
                 .useAllAvailableWidth();
         table.setFont(arabicFont);
