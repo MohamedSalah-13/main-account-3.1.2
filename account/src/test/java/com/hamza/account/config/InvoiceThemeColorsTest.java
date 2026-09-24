@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Pins that every theme carries the same visual vocabulary for the four documents -
  * not just {@code .invoice-return}. Before this, {@code .invoice-sales},
  * {@code .invoice-purchases} and {@code .invoice-return} existed only in
- * {@code theme-light.css}: switching to dark or glass mode did not just lose the
+ * {@code theme-light.css}: switching to the dark theme did not just lose the
  * return's colour, it made a sale, a purchase and a return look identical, because
  * none of the three had any colour at all outside the light theme.
  * <p>
@@ -30,7 +30,6 @@ class InvoiceThemeColorsTest {
     @ValueSource(strings = {
             "com/hamza/account/css/theme-light.css",
             "com/hamza/account/css/theme-dark.css",
-            "com/hamza/account/css/glass-theme.css",
     })
     @DisplayName("every theme defines all three invoice-type variable blocks")
     void definesAllThreeInvoiceTypes(String resource) {
@@ -44,7 +43,6 @@ class InvoiceThemeColorsTest {
     @ValueSource(strings = {
             "com/hamza/account/css/theme-light.css",
             "com/hamza/account/css/theme-dark.css",
-            "com/hamza/account/css/glass-theme.css",
     })
     @DisplayName("every theme's return class is styled, not left to fall through to purchases")
     void theReturnClassCarriesItsOwnRowAndSummaryStyling(String resource) {
@@ -60,8 +58,7 @@ class InvoiceThemeColorsTest {
     void definesTheSixVariablesEachClassNeeds() {
         for (String resource : new String[]{
                 "com/hamza/account/css/theme-light.css",
-                "com/hamza/account/css/theme-dark.css",
-                "com/hamza/account/css/glass-theme.css"}) {
+                "com/hamza/account/css/theme-dark.css"}) {
             String css = read(resource);
             for (String variable : new String[]{"-invoice-main", "-invoice-main-dark",
                     "-invoice-soft", "-invoice-row-hover", "-invoice-selected", "-invoice-text"}) {

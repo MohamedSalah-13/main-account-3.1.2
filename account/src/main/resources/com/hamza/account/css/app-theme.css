@@ -263,9 +263,10 @@
    rules above reach inside it and used to hide the month and the year:
    the month/year bar is an HBox with style class .spinner, so it was painted
    with -app-input-bg (nearly black in the dark theme), and the month and the
-   year themselves are plain .label nodes, so the glass theme turned them
-   white. The day numbers were unaffected because they are .day-cell, which
-   carries its own text colour - hence only the month and the year vanished.
+   year themselves are plain .label nodes, which a theme colouring every label
+   for its own background turns invisible. The day numbers were unaffected
+   because they are .day-cell, which carries its own text colour - hence only
+   the month and the year vanished.
    The colours here are deliberately fixed rather than taken from -app-*:
    they sit on the popup's own light background, not on the app surface. */
 
@@ -2371,7 +2372,7 @@
    Notifications
 
    Colours come from the -app-* variables the themes define, so
-   the bell, the panel and the toasts follow light/dark/glass
+   the bell, the panel and the toasts follow light and dark
    without a per-theme rule here.
    ========================================================= */
 
@@ -3324,9 +3325,9 @@
     -fx-text-fill: -app-primary-dark;
 }
 
-/* A value beside a caption on a shift card. Every label on these cards carries a class:
-   the glass theme paints a bare .label white, and on a -app-surface card that is invisible -
-   the X-report captions and the open/close form captions shipped that way. */
+/* A value beside a caption on a shift card. Every label on these cards carries a class rather
+   than trusting a bare .label's colour: a theme that painted every label white made the X-report
+   captions and the open/close form captions invisible on a -app-surface card. */
 .shift-root .shift-field-value {
     -fx-text-fill: -app-text;
 }
@@ -3529,7 +3530,7 @@
 }
 
 /* These selectors are intentionally scoped and more specific than the shared label
-   styles and the optional glass theme. The footer is a dark document strip; inheriting
+   styles. The footer is a dark document strip; inheriting
    -app-text from a later stylesheet makes both captions and figures nearly disappear. */
 .invoice-details .invoice-details-summary .summary-label {
     -fx-text-fill: -app-side-muted;

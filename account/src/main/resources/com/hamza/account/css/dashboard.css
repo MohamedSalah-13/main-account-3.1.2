@@ -1,6 +1,6 @@
 /* =========================================================
    Dashboard (home tab) - built on top of the shared -app-*
-   theme tokens from theme-light.css / theme-dark.css / glass-theme.css,
+   theme tokens from theme-light.css / theme-dark.css,
    so it follows whichever theme is active without its own overrides.
    ========================================================= */
 
