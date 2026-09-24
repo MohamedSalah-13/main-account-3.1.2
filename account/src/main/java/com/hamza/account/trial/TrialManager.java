@@ -3,6 +3,7 @@ package com.hamza.account.trial;
 import com.hamza.account.config.MachineId;
 import com.hamza.account.features.license.LicenseClock;
 import com.hamza.account.features.license.LicenseDecision;
+import com.hamza.account.features.license.LicenseFiles;
 import com.hamza.account.features.license.LicenseService;
 import com.hamza.account.features.license.LicenseStatus;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -15,6 +16,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +34,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 @Log4j2
 public class TrialManager {
@@ -50,21 +54,61 @@ public class TrialManager {
     /** One copy, shared with support recovery - see {@link ReleaseSigningKey}. */
     private static final String LICENSE_PUBLIC_KEY_PEM = ReleaseSigningKey.PEM;
 
+    /** A licence is a line of text; a chosen file larger than this is not one. */
+    private static final int LICENSE_MAX_BYTES = 64 * 1024;
+
     private final Connection connection;
+    /** Where the licence files are - this workstation's, or one folder holding a file being judged. */
+    private final Supplier<LicenseService> licenseSource;
 
     public TrialManager(Connection connection) {
+        this(connection, LicenseService::forThisWorkstation);
+    }
+
+    TrialManager(Connection connection, Supplier<LicenseService> licenseSource) {
         this.connection = connection;
+        this.licenseSource = licenseSource;
     }
 
     /**
-     * Where a licence file is <b>put</b>. It is read from here and from the program's own
-     * folder ({@code LicenseFiles.candidates()}), but an installed program's folder is under
-     * Program Files, where the About screen's import could not write at all.
+     * Installs a licence somebody has chosen - only when it licenses this machine.
+     * <p>
+     * The About screen used to copy whatever file was chosen over {@code license.dat} and report
+     * it activated. The start-up reads that file <b>strictly</b>, and there a signature that does
+     * not verify is tampering, which ends the install for good ({@code MAX_FAILS} is 1): choosing
+     * the wrong {@code .dat}, or one cut short by a download, replaced a working licence with the
+     * end of the install. The file is now read first, on its own, in a folder of its own, by the
+     * very routing the start-up uses - a server-issued file never reaches the older reader - and
+     * with {@code strict} off, so nothing here charges a failure or exits. It is written where the
+     * start-up reads only if that reading licenses this machine, and written whole or not at all.
+     * <p>
+     * It is put beside {@code config.xml}, never in the program's own folder: an installed
+     * program's folder is under Program Files, where the About screen could not write at all.
+     *
+     * @return the reason it was not installed, for the log; empty when it was
      */
-    public static Path getLicensePath() throws java.io.IOException {
-        Path target = LicenseService.forThisWorkstation().files().writeTarget();
-        Files.createDirectories(target.getParent());
-        return target;
+    public Optional<String> install(byte[] chosen) throws IOException {
+        if (chosen == null || chosen.length == 0 || chosen.length > LICENSE_MAX_BYTES) {
+            return Optional.of("Not a licence file: " + (chosen == null ? 0 : chosen.length) + " bytes");
+        }
+        Path staging = Files.createTempDirectory("accountk-licence-");
+        try {
+            Files.write(staging.resolve(LicenseFiles.FILE_NAME), chosen);
+            LicenseCheckResult judged = new TrialManager(connection, () -> LicenseService.forFolder(staging))
+                    .currentLicense(false);
+            if (!judged.valid) {
+                return Optional.of(judged.error == null ? "Not a licence for this program" : judged.error);
+            }
+        } finally {
+            try (var leftovers = Files.list(staging)) {
+                for (Path leftover : leftovers.toList()) {
+                    Files.deleteIfExists(leftover);
+                }
+            }
+            Files.deleteIfExists(staging);
+        }
+        licenseSource.get().files().write(chosen);
+        return Optional.empty();
     }
 
     public void checkTrialStatus() {
@@ -454,7 +498,7 @@ public class TrialManager {
      * {@code strict} behaviour is exactly what it was.
      */
     private LicenseCheckResult currentLicense(boolean strict) {
-        LicenseService licenses = LicenseService.forThisWorkstation();
+        LicenseService licenses = licenseSource.get();
         LicenseDecision decision = licenses.check(this::licenseClock);
         if (decision.skipsTrial()) {
             LicenseCheckResult licensed = new LicenseCheckResult();

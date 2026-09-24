@@ -27,9 +27,11 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,033 tests** with 342 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-23 when the currencies item closed, after the exchange differences were
-named (phase E of the currencies),
+**4,026 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-24 after the employee form and the About window were
+reviewed. The 4,033 written here before was not what the build ran: `main` measured 4,007 with 342
+skipped that day, and the review added nineteen, four of them gated on MySQL. The figure before
+that followed the exchange differences being named (phase E of the currencies),
 an invoice learned to be typed in its party's currency, the profit and loss became a statement, the
 returns reasons a report of their own, the two payments reports, the two monthly totals reports and the
 two item reports each one screen, and the summary's figures became its screens' own. What is
@@ -94,8 +96,9 @@ checks for its own residue rather than trusting the rollback.
 `AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
 `TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
-**That list is itself out of date** - fifty-three `*AcceptanceTest` files exist, and the later areas' own
-sections name theirs; the newest are `ExchangeDifferenceDatabaseAcceptanceTest` (phase E, no migration),
+**That list is itself out of date** - fifty-four `*AcceptanceTest` files exist, and the later areas' own
+sections name theirs; the newest is `EmployeeFormDatabaseAcceptanceTest` (see **Employees**), and before
+it `ExchangeDifferenceDatabaseAcceptanceTest` (phase E, no migration),
 `DocumentCurrencyDatabaseAcceptanceTest` (V83) and `PartyCurrencyDatabaseAcceptanceTest` (V82), all three
 under **Currencies**, `MonthlyTotalsDatabaseAcceptanceTest`, the reports work's
 `ProfitLossStatementDatabaseAcceptanceTest`, `ReturnReasonsDatabaseAcceptanceTest` and
@@ -2048,6 +2051,31 @@ same way, as `PartyTableSpec.PartySearchScope`.
 `delegateById` still answer with it — built from `EmployeeRef`, an id and a name, so no salary is
 read to fill a dropdown. It dies with the single `Document` model, not before.
 
+**The employee form sends a salary only for a reader who may see one, and the service agrees**
+(`EmployeeFormController`, `EmployeeService.update`, 2026-09-24). `find` does not select the salary
+for a reader without `employees.show.salary`, so that reader's form held an empty box - which the
+draft reads as zero - and `update` took the zero for a correction of the hire rate: refused without
+`employee.salary.change`, so not even a telephone number could be corrected, and **written** with it,
+which V57 grants to whoever holds `employee.update` - the employee's salary became zero. Reproduced on
+MySQL before the fix (`expected 5000 but was 0.00`). `update` now moves the salary only when
+`salaryVisible()`, and the form leaves the two salary rows out for anybody else. Two more from the
+same review: **a new employee's picture is written inside `create`'s transaction, under the create
+key** - it went through `updatePhoto`, which asks the update key, after the row existed, so a clerk who
+may add but not edit saw the save reported failed over an employee that now existed; and **the job
+combo reads `jobsForPicker`**, open to whoever may add or edit an employee and without the suggested
+salary for a reader who may not see one - `jobs()` asks `job.show`, and a role built without it opened
+the form on a refusal and an empty combo, under a save button that could never enable. The form also
+carries the default treasury forward, which the update names and it used to send as nothing.
+`EmployeeFormDatabaseAcceptanceTest` (gated, scratch schema, four cases) holds all of it, and both
+saves were driven through the real dialog as users without the keys.
+
+**The form is laid out for 1366x768**: a header with the code, two cards side by side - the person
+with the picture, the job with the salary - and one row for the address and the notes, 888 by 607
+(653 with the note that the salary has a dated history). It was one grid of fourteen fields, 1011 by
+504, with date pickers half again the height of a field: the theme gives a date picker's editor and a
+combo's list cell the padding and border of an input inside the control's own, which `.employee-form`
+takes off. **Every other date picker and combo in the program still has it** - not changed here.
+
 **`V57` was found wrong by running it, not by building it.** `ALTER TABLE jobs MODIFY COLUMN id INT
 AUTO_INCREMENT` fails with error 1833 on every install, new or upgrading, because `employees.job` is
 a foreign key pointing at that column — MySQL refuses to change a column a key points at. A green
@@ -3947,6 +3975,22 @@ trial path it meets a years-old installation date, which is "trial expired", whi
 an install gets. The question there is `skipsTrial()`, never `mayRecord()`, and
 `LicensingArchitectureTest` pins both that and the routing. Nothing asks `mayRecord()` yet - the
 read-only guard is phase D.
+
+**The About window installs a licence only when it licenses this machine** (`TrialManager.install`,
+2026-09-24). It copied whatever `.dat` was chosen over `license.dat` and reported it activated, and the
+start-up reads that file strictly - so the wrong file, or one cut short by a download, replaced a
+working licence with the end of the install. The chosen file is now judged alone, in a temporary
+folder of its own (`LicenseService.forFolder`), by `currentLicense(false)` itself - the same routing,
+so a server-format file never reaches the older reader and `validateLicense` keeps its one caller - and
+only then written, whole or not at all (`LicenseFiles.write`). `TrialManagerInstallTest` shows a forged,
+a foreign and a server-format file refused with the installed licence untouched; a file that *does*
+license the machine cannot be tested from here, since that needs the private key. The window itself
+was rebuilt the same day, 636 by 333 where it was 347 by 680: its version was the preference recording
+what this computer last ran (`1.0.0` until first written), its build date Maven's `2026-09-23T02:10:00Z`
+inside an Arabic sentence that printed it `23T02:10:00Z-09-2026`, and its colours were named in code.
+**Not fixed, and worth knowing:** `currentLicense(true)` tries the files in order and a first one with a
+bad signature ends the install before the second is read - so an invalid `license.dat` beside
+`config.xml` blocks an install even when the program folder holds a valid one.
 
 ## Localization
 

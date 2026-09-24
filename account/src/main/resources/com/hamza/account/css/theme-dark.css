@@ -295,6 +295,11 @@
     -party-row-selected: #5b21b6;
 }
 
+/* On a dark card the palette's darker shade reads as nothing; a section title takes the lighter one. */
+.screen-employees .party-form-card .app-section-title {
+    -fx-text-fill: -party-accent;
+}
+
 /* The expenses screens - see theme-light.css. */
 .screen-expenses {
     -party-accent: #f59e0b;

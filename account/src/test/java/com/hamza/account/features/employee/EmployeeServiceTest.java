@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -157,6 +158,34 @@ class EmployeeServiceTest {
         assertThrows(BusinessRuleException.class, () -> service.jobs(EmployeeScope.EVERYONE));
     }
 
+    @Test
+    @DisplayName("the form's jobs are open to whoever may add or edit an employee, without the jobs key")
+    void theFormsJobsFollowTheForm() throws Exception {
+        signInWith(AppPermissions.EMPLOYEE_CREATE);
+        assertEquals(List.of("موظف"), service.jobsForPicker(EmployeeScope.ACTIVE_ONLY).stream()
+                .map(Job::name).toList());
+
+        signInWith(AppPermissions.EMPLOYEE_UPDATE);
+        assertEquals(1, service.jobsForPicker(EmployeeScope.ACTIVE_ONLY).size());
+
+        signInWith(AppPermissions.JOB_SHOW);
+        assertEquals(1, service.jobsForPicker(EmployeeScope.ACTIVE_ONLY).size(), "the jobs screen's own key");
+
+        signInWith(AppPermissions.EMPLOYEE_SHOW);
+        assertThrows(BusinessRuleException.class, () -> service.jobsForPicker(EmployeeScope.ACTIVE_ONLY),
+                "reading the list is not filing somebody under a job");
+    }
+
+    @Test
+    @DisplayName("and a job's suggested salary reaches only a reader who may see a salary")
+    void theSuggestedSalaryIsASalary() throws Exception {
+        signInWith(AppPermissions.EMPLOYEE_CREATE);
+        assertNull(service.jobsForPicker(EmployeeScope.ACTIVE_ONLY).getFirst().defaultSalary());
+
+        signInWith(AppPermissions.EMPLOYEE_CREATE, AppPermissions.EMPLOYEES_SHOW_SALARY);
+        assertEquals(new BigDecimal("3000"), service.jobsForPicker(EmployeeScope.ACTIVE_ONLY).getFirst().defaultSalary());
+    }
+
     private static EmployeeDraft draft() throws UserValidationException {
         return EmployeeDraft.parse(7, "عمر", 1, null, LocalDate.of(2026, 1, 1), null,
                 EmploymentType.FULL_TIME, "", "", "", "", "", null, SalaryKind.MONTHLY,
@@ -276,7 +305,7 @@ class EmployeeServiceTest {
 
         @Override
         public List<Job> jobs(boolean activeOnly) {
-            return List.of(Job.of(1, "موظف"));
+            return List.of(new Job(1, "موظف", false, true, new BigDecimal("3000"), null));
         }
 
         @Override

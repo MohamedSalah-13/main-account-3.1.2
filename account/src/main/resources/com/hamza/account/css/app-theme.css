@@ -614,13 +614,157 @@
 
 /* The add/edit form uses the same palette, but keeps its two data cards compact. */
 .party-customers .party-form-card,
-.party-suppliers .party-form-card {
+.party-suppliers .party-form-card,
+.screen-employees .party-form-card {
     -fx-border-color: -party-border;
 }
 
 .party-customers .party-form-card .app-section-title,
-.party-suppliers .party-form-card .app-section-title {
+.party-suppliers .party-form-card .app-section-title,
+.screen-employees .party-form-card .app-section-title {
     -fx-text-fill: -party-accent-dark;
+}
+
+/* ---------- The employee form (EmployeeFormController) ---------- */
+
+/* A date picker is an input holding an input: the rules above gave its editor a border and a padding
+   of its own inside the picker's, so it stood half again the height of the field beside it. Here the editor
+   is the picker's text and nothing more - what the glass theme already does for every picker. */
+.employee-form .date-picker > .text-field,
+.employee-form .date-picker > .text-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-effect: null;
+}
+
+/* The same input-in-an-input for a combo: its value is a list cell padded inside the combo's padding,
+   so a combo stood a third taller than the field beside it. */
+.employee-form .combo-box > .list-cell {
+    -fx-padding: 0;
+}
+
+.employee-form .date-picker > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+/* The identity header, a little shorter than a list screen's: this is a dialog on a 768-tall display. */
+.employee-form-header {
+    -fx-padding: 0.727em 1.091em;
+}
+
+.employee-form-header .party-screen-icon-box {
+    -fx-min-width: 3.455em;
+    -fx-min-height: 3.455em;
+    -fx-max-width: 3.455em;
+    -fx-max-height: 3.455em;
+}
+
+.employee-photo-frame {
+    -fx-background-color: -app-input-bg;
+    -fx-background-radius: 0.727em;
+    -fx-border-color: -party-border;
+    -fx-border-style: segments(0.364em, 0.273em);
+    -fx-border-radius: 0.727em;
+    -fx-padding: 0.364em;
+}
+
+.employee-photo-frame .icon-graphic {
+    -fx-icon-color: -party-accent;
+}
+
+.employee-form-code-box {
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-radius: 0.818em;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-radius: 0.818em;
+    -fx-padding: 0.273em 1em;
+}
+
+.employee-form-code,
+.dialog-pane .party-screen-header .employee-form-code {
+    -fx-font-size: 1.273em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* ---------- The About window (AboutApplication) ----------
+   Every colour a token, so the dark theme answers for it; it used to name green, orange and red. */
+
+.about-header {
+    -fx-background-color: linear-gradient(to right, -app-primary-darker, -app-primary);
+    -fx-background-radius: 1.091em;
+    -fx-padding: 1em 1.273em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 14, 0.16, 0, 4);
+}
+
+.about-logo {
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-background-radius: 0.909em;
+    -fx-padding: 0.364em;
+}
+
+.about-product-name {
+    -fx-font-size: 1.727em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.about-header-caption {
+    -fx-text-fill: rgba(255, 255, 255, 0.78);
+}
+
+.about-header-value {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.about-value {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.about-badge {
+    -fx-background-radius: 1em;
+    -fx-border-radius: 1em;
+    -fx-border-width: 0.091em;
+    -fx-padding: 0.182em 0.818em;
+    -fx-font-weight: bold;
+    -fx-background-color: -app-neutral-soft;
+    -fx-border-color: -app-border;
+    -fx-text-fill: -app-text-muted;
+}
+
+.about-badge-good {
+    -fx-background-color: -app-success-soft;
+    -fx-border-color: -app-success-border;
+    -fx-text-fill: -app-success;
+}
+
+.about-badge-warning {
+    -fx-background-color: -app-warning-soft;
+    -fx-border-color: -app-warning-border;
+    -fx-text-fill: -app-warning;
+}
+
+.about-badge-bad {
+    -fx-background-color: -app-danger-soft;
+    -fx-border-color: -app-danger-border;
+    -fx-text-fill: -app-danger;
+}
+
+.about-credit-caption {
+    -fx-text-fill: -app-text-muted;
+}
+
+.about-credit {
+    -fx-text-fill: -app-text;
+}
+
+/* A field the save cannot do without. */
+.form-required-mark {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
 }
 
 .party-customers .table-view .column-header-background,
