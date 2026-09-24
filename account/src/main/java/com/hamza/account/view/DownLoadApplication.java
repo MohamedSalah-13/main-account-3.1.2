@@ -85,6 +85,10 @@ import com.hamza.account.features.delegate.CommissionStatementService;
 import com.hamza.account.features.delegate.DelegatePerformanceService;
 import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.features.employee.statement.EmployeeStatementService;
+import com.hamza.account.features.pricing.JdbcPriceTierRepository;
+import com.hamza.account.features.pricing.PriceTierService;
+import com.hamza.account.features.pricing.JdbcTierReportRepository;
+import com.hamza.account.features.pricing.TierReportService;
 import com.hamza.account.service.*;
 import com.hamza.account.config.SharedSettings;
 import com.hamza.account.config.SharedSettingsStore;
@@ -318,7 +322,11 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(TreasuryBalanceService.class, new TreasuryBalanceService(daoFactory));
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
-        ServiceRegistry.register(SelPriceItemService.class, new SelPriceItemService(daoFactory));
+        ServiceRegistry.register(PriceTierService.class, new PriceTierService(new JdbcPriceTierRepository()));
+        ServiceRegistry.register(TierReportService.class, new TierReportService(new JdbcTierReportRepository()));
+        ServiceRegistry.register(com.hamza.account.features.pricing.TierFillService.class,
+                new com.hamza.account.features.pricing.TierFillService(new JdbcPriceTierRepository(),
+                        new com.hamza.account.features.pricing.JdbcTierFillRepository()));
         JdbcCashierTreasuryAssignmentRepository cashierTreasuryRepository =
                 new JdbcCashierTreasuryAssignmentRepository();
         ShiftPolicyService shiftPolicies = new ShiftPolicyService(

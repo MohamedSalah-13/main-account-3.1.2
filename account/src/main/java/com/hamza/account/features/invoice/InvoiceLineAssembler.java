@@ -6,6 +6,7 @@ import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,17 +21,17 @@ public final class InvoiceLineAssembler {
     public static <T extends BasePurchasesAndSales> List<T> assemble(
             List<? extends BasePurchasesAndSales> source, int documentId, LineFactory<T> factory) throws DaoException {
         if (source == null || source.isEmpty()) {
-            throw new UserValidationException("لا يمكن حفظ فاتورة بدون أصناف");
+            throw new UserValidationException(text("invoice.line.error.no.lines"));
         }
 
         List<T> result = new ArrayList<>(source.size());
         for (BasePurchasesAndSales row : source) {
             if (row == null || row.getItems() == null || row.getUnitsType() == null) {
-                throw new UserValidationException("بيانات أحد سطور الفاتورة غير مكتملة");
+                throw new UserValidationException(text("invoice.line.error.incomplete"));
             }
             ItemsModel item = row.getItems();
             if (item.isHasValidate() && row.getExpiration_date() == null) {
-                throw new UserValidationException("يجب تحديد تاريخ صلاحية الصنف: " + item.getNameItem());
+                throw new UserValidationException(text("invoice.line.error.expiry.required", item.getNameItem()));
             }
 
             T detached = factory.create(
@@ -40,9 +41,24 @@ public final class InvoiceLineAssembler {
             preserveHistoricalCost(row, detached);
             preserveSourceLine(row, detached);
             preserveForeignFigures(row, detached);
+            preserveListPrice(row, detached);
             result.add(detached);
         }
         return List.copyOf(result);
+    }
+
+    private static String text(String key, Object... args) {
+        return LanguageManager.getInstance().getString(key, args);
+    }
+
+    /**
+     * Carries the price tier's list price behind a line (V84) onto the detached row, for the reason
+     * {@link #preserveSourceLine} carries the source line: {@link LineFactory} is the seam all four
+     * families share, and only a sales line stores one.
+     */
+    static void preserveListPrice(BasePurchasesAndSales source, BasePurchasesAndSales target) {
+        target.setListPrice(source.getListPrice());
+        target.setFromFirstTier(source.isFromFirstTier());
     }
 
     /**

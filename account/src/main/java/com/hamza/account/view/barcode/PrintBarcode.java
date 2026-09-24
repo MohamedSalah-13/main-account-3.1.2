@@ -60,6 +60,8 @@ import static com.hamza.account.config.PropertiesName.getBarcodeLabelNameOverflo
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintBarcode;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintName;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintPrice;
+import static com.hamza.account.config.PropertiesName.getBarcodeLabelPriceTier;
+import static com.hamza.account.config.PropertiesName.setBarcodeLabelPriceTier;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelShowDouble;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelWidthMm;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelVerticalOffsetMm;
@@ -170,6 +172,50 @@ public class PrintBarcode implements AppSettingInterface {
         txtQuantityAll.setText("1");
         txtQuantityAll.setTextFormatter(TextFormat.createNumericTextFormatter());
         whenEnterPressed(txtQuantityAll, btnApplyQuantity);
+        configurePriceTier();
+    }
+
+    /**
+     * Which tier's price the labels print (V84), under the price option - the shelf of a wholesale shop
+     * is labelled at the wholesale price. Remembered by this computer, as its label printer is. A tier
+     * with no price for an item prints tier 1's, as an invoice line does.
+     */
+    private void configurePriceTier() {
+        if (!(checkShowPrice.getParent() instanceof javafx.scene.layout.GridPane options)) {
+            return;
+        }
+        com.hamza.account.features.pricing.PriceTierCatalog tiers;
+        try {
+            var service = com.hamza.account.controller.others.ServiceRegistry.get(
+                    com.hamza.account.features.pricing.PriceTierService.class);
+            tiers = service == null ? new com.hamza.account.features.pricing.PriceTierCatalog(List.of())
+                    : service.catalog();
+        } catch (Exception e) {
+            handleFailure(e);
+            return;
+        }
+        int remembered = getBarcodeLabelPriceTier();
+        javafx.scene.control.ComboBox<com.hamza.account.features.pricing.PriceTier> comboTier =
+                new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList(tiers.choicesIncluding(remembered)));
+        comboTier.getItems().stream().filter(tier -> tier.id() == remembered).findFirst()
+                .ifPresent(comboTier.getSelectionModel()::select);
+        comboTier.disableProperty().bind(checkShowPrice.selectedProperty().not());
+        comboTier.valueProperty().addListener((observable, before, now) -> {
+            if (now == null) return;
+            setBarcodeLabelPriceTier(now.id());
+            showTier(now.id());
+        });
+        Label caption = new Label(text("barcode.print.price.tier"));
+        javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(8, caption, comboTier);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        options.add(row, 0, 2, 2, 1);
+        showTier(comboTier.getValue() == null ? 1 : comboTier.getValue().id());
+    }
+
+    private void showTier(int tierId) {
+        rows.forEach(row -> row.showTier(tierId));
+        tableView.refresh();
+        requestPreview(false);
     }
 
     private void configureActions() {

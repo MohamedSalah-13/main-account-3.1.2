@@ -88,6 +88,8 @@
                                                                   text="%item.group.manager.title" />
                                                         <MenuItem fx:id="menuItemUnitPrices" mnemonicParsing="false"
                                                                   text="%unit.prices.title" />
+                                                        <MenuItem fx:id="menuItemPriceTiers" mnemonicParsing="false"
+                                                                  text="%pricing.tiers.title" />
                                                         <MenuItem fx:id="menuItemBulkEdit" mnemonicParsing="false"
                                                                   text="%item.menu.bulk.edit" />
                                                         <MenuItem fx:id="menuItemCard" mnemonicParsing="false"

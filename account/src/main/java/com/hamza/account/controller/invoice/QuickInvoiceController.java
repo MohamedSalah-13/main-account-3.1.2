@@ -119,11 +119,34 @@ public class QuickInvoiceController<T3 extends BaseNames, T4 extends BaseAccount
 
             @Override
             public void lineAdded() {
+                String note = noteForAddedLine;
+                noteForAddedLine = null;
                 clearEntryStatus();
+                if (note != null) {
+                    labelEntryStatus.setText(note);
+                }
             }
         });
         quickTable.configure();
         clearEntryStatus();
+    }
+
+    /** Said about the line just added (V84: priced at tier 1), kept past the status line's clearing. */
+    private String noteForAddedLine;
+
+    /** The status line is where this screen says anything - a dialog would be closed by the next scan. */
+    @Override
+    protected void showPricingNote(String text) {
+        clearEntryStatus();
+        if (text != null && !text.isBlank()) {
+            labelEntryStatus.setText(text);
+        }
+    }
+
+    /** A note about the line being added waits for the line to be in, since adding clears the status. */
+    @Override
+    protected void noteAddedLine(String text) {
+        noteForAddedLine = text;
     }
 
     /**

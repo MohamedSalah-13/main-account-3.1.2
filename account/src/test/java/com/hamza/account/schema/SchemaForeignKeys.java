@@ -62,7 +62,9 @@ public final class SchemaForeignKeys {
             // And so does a customer or a supplier dealing in it.
             "V82__party_currency.sql",
             // And a document written in it.
-            "V83__document_currency.sql");
+            "V83__document_currency.sql",
+            // A tier filled from another tier, and a document priced at one (never cascading: a tier is never deleted).
+            "V84__price_tiers.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

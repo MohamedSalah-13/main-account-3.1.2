@@ -100,6 +100,15 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         this.unitRepricer = Objects.requireNonNull(unitRepricer, "unitRepricer");
     }
 
+    /** What the price cell says about a line on hover, or null - see {@link InvoiceLineCells#price}. */
+    private java.util.function.Function<BasePurchasesAndSales, String> priceNote = line -> null;
+
+    /** Sets the sentence the price cell marks a line with (V84: a tier-1 price standing in). */
+    public InvoiceTableCoordinator<T> notePrices(java.util.function.Function<BasePurchasesAndSales, String> note) {
+        this.priceNote = Objects.requireNonNull(note, "note");
+        return this;
+    }
+
     public void configure() {
         table.getColumns().addAll(InvoiceTableCoordinator.<T>amountColumns());
         addIdentityColumns();
@@ -222,6 +231,8 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         enable(PRICE_COLUMN, NumberTextConverter.money(), (line, value) ->
                 editService.editPrice(line, value, mayEditCatalog && updateCatalogPrice.getAsBoolean(),
                         priceTier.getAsInt()));
+        TableColumn<T, Double> priceColumn = column(PRICE_COLUMN);
+        priceColumn.setCellFactory(InvoiceLineCells.price(NumberTextConverter.money(), priceNote));
         enable(DISCOUNT_COLUMN, NumberTextConverter.money(), (line, value) ->
                 editService.editDiscount(line, value));
         configureUnitEdits();

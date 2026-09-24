@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.StackPane?>
+
+<!-- The price tiers, and the items and sales around them (V84). Built in code: see PriceTiersController. -->
+<StackPane fx:id="root" styleClass="app-root" prefWidth="1080" prefHeight="640"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.items.PriceTiersController"/>

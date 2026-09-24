@@ -65,6 +65,8 @@ public class PropertiesName extends PreferencesSetting {
      */
     private static final String PRICE_CHECK_STOCK = "price.check.stock";
     private static final String PRICE_CHECK_PRICE_TIER = "price.check.price.tier";
+    /** The tier whose price a label prints (V84) - this computer's, as its label printer is. */
+    private static final String BARCODE_LABEL_PRICE_TIER = "barcode.label.price.tier";
     private static final String PRICE_CHECK_SHOW_BALANCE = "price.check.show.balance";
     private static final String PRICE_CHECK_SHOW_IMAGE = "price.check.show.image";
     private static final String PRICE_CHECK_SHOW_EXPIRY = "price.check.show.expiry";
@@ -450,6 +452,14 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setPriceCheckPriceTier(int value) {
         putInt(PRICE_CHECK_PRICE_TIER, value);
+    }
+
+    public static int getBarcodeLabelPriceTier() {
+        return getInt(BARCODE_LABEL_PRICE_TIER, 1);
+    }
+
+    public static void setBarcodeLabelPriceTier(int value) {
+        putInt(BARCODE_LABEL_PRICE_TIER, value);
     }
 
     public static boolean getPriceCheckShowBalance() {

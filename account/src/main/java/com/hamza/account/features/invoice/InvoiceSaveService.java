@@ -66,6 +66,7 @@ public final class InvoiceSaveService<
     private final InvoiceWalletFee walletFee;
     private final DelegateDiscountGuard discountGuard;
     private final InvoicePartyCurrency partyCurrency;
+    private final InvoicePriceTier priceTier;
 
     /**
      * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
@@ -93,7 +94,7 @@ public final class InvoiceSaveService<
                 treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
                 ShiftAttributionWriter.jdbc(), ShiftCashLedger.jdbc(), new JdbcShiftCashEffectReader(),
                 ChangeAnnouncer.jdbc(), InvoiceWalletFee.jdbc(), DelegateDiscountGuard.jdbc(),
-                InvoicePartyCurrency.jdbc());
+                InvoicePartyCurrency.jdbc(), InvoicePriceTier.jdbc());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -286,6 +287,35 @@ public final class InvoiceSaveService<
                        InvoiceWalletFee walletFee,
                        DelegateDiscountGuard discountGuard,
                        InvoicePartyCurrency partyCurrency) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver, treasuryLookup,
+                delegateLookup, stockMovementDao, shiftGate, shiftAttribution, shiftCashLedger,
+                shiftEffectReader, changeAnnouncer, walletFee, discountGuard, partyCurrency,
+                InvoicePriceTier.none());
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution,
+                       ShiftCashLedger shiftCashLedger,
+                       JdbcShiftCashEffectReader shiftEffectReader,
+                       ChangeAnnouncer changeAnnouncer,
+                       InvoiceWalletFee walletFee,
+                       DelegateDiscountGuard discountGuard,
+                       InvoicePartyCurrency partyCurrency,
+                       InvoicePriceTier priceTier) {
+        this.priceTier = priceTier;
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -315,6 +345,11 @@ public final class InvoiceSaveService<
      * once meant turning "a return must name an invoice" on had no effect until every open invoice
      * window had been closed and reopened.
      */
+    /** The sentence a refusal reads, from the bundles - never a literal written here. */
+    private static String text(String key, Object... args) {
+        return com.hamza.controlsfx.language.LanguageManager.getInstance().getString(key, args);
+    }
+
     private static ReturnPolicy returnPolicy() {
         if (PropertiesName.getReturnRequireSourceInvoice()) {
             return ReturnPolicy.requiringSource();
@@ -325,7 +360,7 @@ public final class InvoiceSaveService<
 
     public InvoiceSaveResult save(InvoiceSaveCommand command) throws DaoException {
         if (command == null) {
-            throw new DaoException("بيانات الفاتورة مفقودة");
+            throw new DaoException("The invoice save was given no command");
         }
 
         // The permission boundary comes first: a denied request must not even read
@@ -392,11 +427,17 @@ public final class InvoiceSaveService<
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.DISCOUNT,
                     DelegateDiscountGuard.REFUSAL_KEY);
         }
+        // The price tier the document is priced at, and every line's list price (V84,
+        // docs/pricing-and-offers-plan.md ق-س٢ and ق-س٤) - judged on the lines as they will be
+        // stored, and before the number is allocated, as the discount above is.
+        Integer tierToStore = priceTier.decide(documentType, command.partyId(), existingNumber,
+                command.priceTierId());
+        priceTier.requireListPrices(documentType, existingNumber, rows);
         // Before the number is allocated - the counter does not roll back - as the discount above is.
         Treasury treasury = treasuryLookup.find(command.treasuryName());
         if (treasury == null) {
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.TREASURY,
-                    "الخزينة المحددة غير موجودة");
+                    text("invoice.save.error.treasury"));
         }
         requireTreasuryTakes(treasury, currency);
         int invoiceNumber = command.updating()
@@ -409,7 +450,7 @@ public final class InvoiceSaveService<
         T3 party = invoiceFactory.objectName(command.partyId(), command.partyName());
         if (documentType.hasDelegate() && delegate == null) {
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.DELEGATE,
-                    "المندوب المحدد غير موجود");
+                    text("invoice.save.error.delegate"));
         }
         DiscountType discountType = command.discountType() == null
                 ? DiscountType.AMOUNT
@@ -439,9 +480,10 @@ public final class InvoiceSaveService<
         DaoList<T2> dao = repository.totalDao();
         int affected = command.updating() ? dao.update(invoice) : dao.insert(invoice);
         if (affected != 1) {
-            throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
+            throw new DaoException("The invoice was not saved: the write did not affect exactly one row");
         }
         partyCurrency.write(documentType, invoiceNumber, currency, typedPayment);
+        priceTier.write(documentType, invoiceNumber, tierToStore);
         if (!command.updating()) {
             shiftAttribution.assignDocument(documentType, invoiceNumber, shiftId);
         }

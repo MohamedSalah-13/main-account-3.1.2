@@ -87,6 +87,11 @@ public final class ForeignDocumentLines {
             InvoiceLineAssembler.preserveSourceLine(row, line);
             line.setPriceForeign(typedPrice);
             line.setDiscountForeign(typedDiscount);
+            // The list price is converted exactly as the price is (V84), so a line typed at its list
+            // price is stored at its list price and the two are compared in one currency.
+            line.setListPrice(row.getListPrice() == null ? null
+                    : ForeignDocumentFigures.toBase(MoneyMath.money(row.getListPrice()), rate));
+            line.setFromFirstTier(row.isFromFirstTier());
             result.add(line);
         }
         return List.copyOf(result);

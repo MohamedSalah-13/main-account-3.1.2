@@ -14,7 +14,6 @@ import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.features.masterdata.MasterDataKind;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
-import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
@@ -22,7 +21,8 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.MainGroupService;
-import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.features.pricing.PriceTierCatalog;
+import com.hamza.account.features.pricing.PriceTierService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.account.service.UnitsService;
 import com.hamza.account.authorization.AppPermissions;
@@ -100,7 +100,7 @@ public class AddItemController implements AppSettingInterface {
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
-    private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
+    private final PriceTierService priceTierService = ServiceRegistry.get(PriceTierService.class);
     /**
      * True while the write to the database - insertMultiData's transaction across
      * the item, its opening stock row, its units and its barcodes - is in flight
@@ -304,7 +304,7 @@ public class AddItemController implements AppSettingInterface {
      * @param item          the item being edited, or null for a new one
      */
     private record ScreenData(List<UnitsModel> units,
-                              List<SelPriceTypeModel> priceTiers,
+                              PriceTierCatalog priceTiers,
                               List<String> mainGroupNames,
                               List<String> subGroupNames,
                               int mainGroupId, String mainGroupName,
@@ -334,7 +334,7 @@ public class AddItemController implements AppSettingInterface {
     /** Runs on a worker thread. Must not touch a control. */
     private ScreenData readScreenData() throws Exception {
         List<UnitsModel> units = unitsService.getUnitsModelList();
-        List<SelPriceTypeModel> priceTiers = selPriceItemService.getSelPriceTypeList();
+        PriceTierCatalog priceTiers = priceTierService.catalog();
         List<String> mainGroupNames = mainGroupService.getMainGroupsNames();
 
         ItemsModel item = codeItem > 0 ? itemsService.getItemByItemIdAndStockId(codeItem, DefaultStock.ID) : null;
@@ -1064,24 +1064,18 @@ public class AddItemController implements AppSettingInterface {
     }
 
     /**
-     * Names the three price tiers from {@code sel_price_type}.
+     * Names the three price tiers from {@code type_price}, by each tier's id (V84).
      * <p>
-     * The rows are read by position and the table is user-editable, so a missing
-     * row is a screen that would not open at all: the three reads used to be
-     * {@code getFirst()}, {@code get(1)} and {@code get(2)}, and a list of two
-     * threw {@code IndexOutOfBoundsException} out of {@code initialize()}. A tier
-     * nobody named falls back to its generic caption instead.
+     * The rows used to be read by position from a query with no order, and the three reads were
+     * {@code getFirst()}, {@code get(1)} and {@code get(2)} - so a list of two threw
+     * {@code IndexOutOfBoundsException} out of {@code initialize()}, and a database that answered in
+     * another order labelled every price with another tier's name. A tier with no row reads as its
+     * number.
      */
-    private void applyPriceLabels(List<SelPriceTypeModel> priceList) {
-        var lm = LanguageManager.getInstance();
-        setPriceLabel(labelSelPrice, priceList, 0, lm.getString("selPrice"));
-        setPriceLabel(labelSelPrice2, priceList, 1, lm.getString("selPrice") + "2");
-        setPriceLabel(labelSelPrice3, priceList, 2, lm.getString("selPrice") + "3");
-    }
-
-    private void setPriceLabel(Label label, List<SelPriceTypeModel> priceList, int index, String fallback) {
-        String name = index < priceList.size() ? priceList.get(index).getName() : null;
-        label.setText(name == null || name.isBlank() ? fallback : name);
+    private void applyPriceLabels(PriceTierCatalog priceTiers) {
+        labelSelPrice.setText(priceTiers.name(1));
+        labelSelPrice2.setText(priceTiers.name(2));
+        labelSelPrice3.setText(priceTiers.name(3));
     }
 
     /**

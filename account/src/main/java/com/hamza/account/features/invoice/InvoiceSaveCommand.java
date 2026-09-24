@@ -48,7 +48,28 @@ public record InvoiceSaveCommand(
          * base. The save refuses one that is not the document's own rather than converting it -
          * {@code InvoicePartyCurrency.rateFor}.
          */
-        Integer documentCurrencyId) {
+        Integer documentCurrencyId,
+        /**
+         * The price tier the screen priced the document at (V84), or {@code null} for a caller that
+         * does not know tiers - which keeps whatever the document already had. Read by
+         * {@code InvoicePriceTier.decide}, which asks {@code sales.price.tier.change} for any tier but
+         * the customer's own and the one the document was saved at.
+         */
+        Integer priceTierId) {
+
+    /** Every caller before V84: no tier chosen on the screen. */
+    public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate, InvoiceType invoiceType,
+                              BigDecimal invoiceDiscount, DiscountType discountType, BigDecimal enteredPaid,
+                              String notes, int partyId, String partyName, String treasuryName,
+                              String delegateName, boolean allowInsufficientStock, int sourceInvoiceNumber,
+                              ReturnReason returnReason, List<? extends BasePurchasesAndSales> lines,
+                              int stockId, String correctionReason, LocalDateTime expectedUpdatedAt,
+                              Integer documentCurrencyId) {
+        this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount, discountType, enteredPaid,
+                notes, partyId, partyName, treasuryName, delegateName, allowInsufficientStock,
+                sourceInvoiceNumber, returnReason, lines, stockId, correctionReason, expectedUpdatedAt,
+                documentCurrencyId, null);
+    }
 
     public InvoiceSaveCommand {
         invoiceDiscount = MoneyMath.money(invoiceDiscount);

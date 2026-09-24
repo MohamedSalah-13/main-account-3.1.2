@@ -76,9 +76,11 @@ public record DocumentTableSpec(
                     "stock_id", "delegate_id", "treasury_id", "notes"),
             // The two foreign columns last on all four (V83): the price and the discount as typed in
             // the document's currency, beside the base figures - see docs/currency-plan.md §15 ق-د٣.
+            // Then the list price, on the sales lines alone (V84): what the price tier said, beside the
+            // price charged - docs/pricing-and-offers-plan.md ق-س٤.
             List.of("invoice_number", "num", "type", "quantity", "price", "buy_price", "total_sel_price",
                     "total_buy_price", "total_profit", "discount", "type_value", "expiration_date",
-                    "price_foreign", "discount_foreign"));
+                    "price_foreign", "discount_foreign", "list_price"));
 
     public static final DocumentTableSpec PURCHASE = new DocumentTableSpec(
             DocumentType.PURCHASE,

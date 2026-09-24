@@ -44,6 +44,8 @@ public final class InvoiceItemEntryCoordinator {
     private final ErrorHandler errorHandler;
     private boolean applyingSelection;
     private int currentPriceTier = 1;
+    /** The list price the last item or unit chosen was offered at, or null on a purchase (V84). */
+    private com.hamza.account.features.invoice.InvoiceLineDraft.Listed offeredListed;
 
     public InvoiceItemEntryCoordinator(Controls controls, InvoiceEditorViewModel<?> editor,
                                        InvoiceItemSelectionService selectionService, StringProperty searchText, int stockId,
@@ -115,6 +117,11 @@ public final class InvoiceItemEntryCoordinator {
         });
     }
 
+    /**
+     * The line the form describes. Its price is whatever is in the price box - typed over or not - and
+     * the tier's list price behind it is the one the last item or unit chosen was offered at (V84), so a
+     * price typed under it is known to be under it.
+     */
     public InvoiceLineDraft draft() {
         ItemsModel item = editor.selectedItem();
         UnitsModel unit = ItemUnits.unitByName(
@@ -125,11 +132,21 @@ public final class InvoiceItemEntryCoordinator {
                 DoubleSetting.parseDoubleOrDefault(controls.quantity().getText()),
                 DoubleSetting.parseDoubleOrDefault(controls.price().getText()),
                 0,
-                null);
+                null,
+                offeredListed);
     }
 
+    /**
+     * The invoice's tier changed. An item already on the form is offered again at the new tier's
+     * price, as a line already on the invoice is repriced - otherwise the next line added would be at
+     * the tier the invoice has just left.
+     */
     public void setPriceTier(int priceTier) {
         currentPriceTier = priceTier;
+        ItemsModel item = editor.selectedItem();
+        if (item != null && item.getId() > 0) {
+            selectUnit(controls.unit().getSelectionModel().getSelectedItem());
+        }
     }
 
     public void clear() {
@@ -188,6 +205,7 @@ public final class InvoiceItemEntryCoordinator {
             controls.balance().setText(String.valueOf(
                     roundToTwoDecimalPlaces(selection.balance())));
             controls.price().setText(String.valueOf(selection.price()));
+            offeredListed = selection.listed();
         } catch (Exception e) {
             errorHandler.handle(e, false);
         }
@@ -213,6 +231,7 @@ public final class InvoiceItemEntryCoordinator {
             controls.price().setText(String.valueOf(selection.price()));
             controls.quantity().setText(String.valueOf(selection.quantity()));
             controls.total().setText(String.valueOf(selection.total()));
+            offeredListed = selection.listed();
         } finally {
             applyingSelection = false;
         }
@@ -220,6 +239,7 @@ public final class InvoiceItemEntryCoordinator {
 
     private void clearSelectionFields() {
         editor.selectItem(null);
+        offeredListed = null;
         controls.unit().setDisable(false);
         controls.unit().getItems().clear();
         Utils.clearAll(controls.balance(), controls.price(), controls.quantity(),
@@ -228,6 +248,7 @@ public final class InvoiceItemEntryCoordinator {
 
     private void clearSelectionFieldsKeepingBarcode() {
         editor.selectItem(null);
+        offeredListed = null;
         controls.unit().setDisable(false);
         controls.unit().getItems().clear();
         Utils.clearAll(controls.balance(), controls.price(), controls.quantity(),

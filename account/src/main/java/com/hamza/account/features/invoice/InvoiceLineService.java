@@ -9,12 +9,14 @@ import com.hamza.account.service.ItemUnits;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -29,6 +31,7 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
     private final InvoiceLineAssembler.LineFactory<T> lineFactory;
     private final Map<Integer, Double> originalBaseQuantityByItem = new HashMap<>();
     private final Supplier<DocumentPricing> pricing;
+    private BooleanSupplier undercutAllowed = () -> true;
 
     public InvoiceLineService(DocumentType documentType, int documentId,
                               InvoiceLineAssembler.LineFactory<T> lineFactory) {
@@ -46,6 +49,16 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.documentId = documentId;
         this.lineFactory = Objects.requireNonNull(lineFactory, "lineFactory");
+    }
+
+    /**
+     * Whether this user may type a sale's price below its tier's list (V84,
+     * {@code sales.price.below.list}, docs/pricing-and-offers-plan.md ق-س٤). A hint said early - the
+     * save asks the permission itself - so it answers yes until the screen says otherwise.
+     */
+    public InvoiceLineService<T> undercutAllowedWhen(BooleanSupplier allowed) {
+        this.undercutAllowed = Objects.requireNonNull(allowed, "allowed");
+        return this;
     }
 
     public AddResult<T> add(List<T> lines, InvoiceLineDraft draft,
@@ -66,14 +79,21 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
         T line = lineFactory.create(0, documentId, draft.item().getId(), draft.price(),
                 draft.quantity(), draft.discount(), total, draft.unit(), draft.item(),
                 draft.expirationDate());
+        applyListed(line, draft.listed());
         lines.add(line);
         return new AddResult<>(line, true);
+    }
+
+    /** Puts a line's list price and its tier-1 mark on it - or clears both where no list stands behind it. */
+    public static void applyListed(BasePurchasesAndSales line, InvoiceLineDraft.Listed listed) {
+        line.setListPrice(listed == null ? null : MoneyMath.money(listed.price()));
+        line.setFromFirstTier(listed != null && listed.fromFirstTier());
     }
 
     public void validate(List<T> lines, InvoiceLineDraft draft,
                          boolean allowInsufficientStock) throws DaoException {
         if (lines == null) {
-            throw new UserValidationException("قائمة أصناف الفاتورة غير موجودة");
+            throw new UserValidationException(text("invoice.line.error.lines.missing"));
         }
         validateBasics(draft);
 
@@ -84,6 +104,7 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
 
         ItemsModel item = draft.item();
         requireSalePrice(draft);
+        requireListUnlessAllowed(draft.price(), draft.listed() == null ? null : draft.listed().price());
         if (!allowInsufficientStock) {
             double requested = quantityInBase(lines, item.getId())
                     + ItemUnits.toBase(draft.quantity(), draft.unit());
@@ -110,7 +131,7 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
     public void validateForSave(List<T> lines, boolean allowInsufficientStock)
             throws DaoException {
         if (lines == null || lines.isEmpty()) {
-            throw new UserValidationException("لا يمكن حفظ فاتورة بدون أصناف");
+            throw new UserValidationException(text("invoice.line.error.no.lines"));
         }
         Map<Integer, ItemsModel> distinctItems = new LinkedHashMap<>();
         for (T line : lines) {
@@ -167,15 +188,15 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
 
     private void validateBasics(InvoiceLineDraft draft) throws UserValidationException {
         if (draft == null || draft.item() == null || draft.item().getId() <= 0) {
-            throw new UserValidationException("من فضلك اختر صنفًا صحيحًا");
+            throw new UserValidationException(text("invoice.entry.error.item.invalid"));
         }
         if (draft.unit() == null) {
-            throw new UserValidationException("من فضلك حدد وحدة الصنف");
+            throw new UserValidationException(text("invoice.line.error.unit.required"));
         }
-        requirePositiveFinite(draft.quantity(), "يجب أن تكون الكمية أكبر من صفر");
-        requirePositiveFinite(draft.price(), "يجب أن يكون السعر أكبر من صفر");
+        requirePositiveFinite(draft.quantity(), text("invoice.line.error.quantity.positive"));
+        requirePositiveFinite(draft.price(), text("invoice.line.error.price.positive"));
         if (!Double.isFinite(draft.discount()) || draft.discount() < 0) {
-            throw new UserValidationException("خصم الصنف غير صالح");
+            throw new UserValidationException(text("invoice.line.error.discount.invalid"));
         }
     }
 
@@ -186,16 +207,38 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
         // With no rate there is no such price yet - the save refuses the document for that on its own.
         DocumentPricing screen = pricing.get();
         if (screen.hasRate() && screen.toBase(draft.price()) < buyPrice) {
-            throw new BusinessRuleException("لا يمكن البيع بسعر أقل من سعر الشراء");
+            throw new BusinessRuleException(text("invoice.line.error.below.cost"));
         }
     }
+
+    /**
+     * A sale's price below its tier's list, for a user who may not sell below it (V84). Both figures
+     * are in the screen's currency; half a piastre is the same tolerance {@code ReturnGuard} gives a
+     * price, since a list price and a typed one are rounded to money the same way.
+     */
+    void requireListUnlessAllowed(double price, Double listPrice) throws BusinessRuleException {
+        if (documentType != DocumentType.SALES || listPrice == null || undercutAllowed.getAsBoolean()) {
+            return;
+        }
+        if (price < listPrice - LIST_TOLERANCE) {
+            throw new BusinessRuleException(text("invoice.line.error.below.list",
+                    MoneyMath.money(listPrice).toPlainString()));
+        }
+    }
+
+    /** Half a piastre: the tolerance a price is compared with the list at. */
+    static final double LIST_TOLERANCE = 0.005;
 
     private void requireStock(ItemsModel item, double requested) throws BusinessRuleException {
         double original = originalBaseQuantityByItem.getOrDefault(item.getId(), 0.0);
         double availableForEdit = item.getSumAllBalance() + original;
         if (requested > availableForEdit) {
-            throw new BusinessRuleException("لا يوجد رصيد كافٍ من الصنف");
+            throw new BusinessRuleException(text("invoice.line.error.stock.short"));
         }
+    }
+
+    private static String text(String key, Object... args) {
+        return LanguageManager.getInstance().getString(key, args);
     }
 
     private static void requirePositiveFinite(double value, String message)

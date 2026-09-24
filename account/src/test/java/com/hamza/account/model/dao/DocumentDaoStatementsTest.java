@@ -194,7 +194,7 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT id FROM sales WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
             assertEquals("UPDATE sales SET num=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
                     + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=?,"
-                    + "price_foreign=?,discount_foreign=? "
+                    + "price_foreign=?,discount_foreign=?,list_price=? "
                     + "WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
             assertEquals("DELETE FROM sales WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
@@ -222,7 +222,7 @@ class DocumentDaoStatementsTest {
         void lineStatement() {
             assertEquals("INSERT INTO sales (invoice_number,num,type,quantity,price,buy_price,total_sel_price,"
                     + "total_buy_price,total_profit,discount,type_value,expiration_date,price_foreign,"
-                    + "discount_foreign) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
+                    + "discount_foreign,list_price) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", lines.insertListSql());
         }
 
         @Test
@@ -242,12 +242,15 @@ class DocumentDaoStatementsTest {
             // A line of a dollar invoice: the price and the discount as typed, beside the base (V83).
             line.setPriceForeign(new BigDecimal("1.04"));
             line.setDiscountForeign(new BigDecimal("0.10"));
+            // What the price tier said for the line, beside the 50 charged (V84).
+            line.setListPrice(new BigDecimal("55.00"));
 
             Object[] data = lines.getData(line);
             assertBindsExactly(lines.insertListSql(), data);
             assertArrayEquals(new Object[]{
                     INVOICE_ID, 31, 2, 2.0, 50.0, 40.0, BigDecimal.valueOf(100), 80.0, BigDecimal.valueOf(20),
-                    5.0, 12.0, LocalDate.of(2027, 1, 31), new BigDecimal("1.04"), new BigDecimal("0.10")}, data);
+                    5.0, 12.0, LocalDate.of(2027, 1, 31), new BigDecimal("1.04"), new BigDecimal("0.10"),
+                    new BigDecimal("55.00")}, data);
         }
 
         /**

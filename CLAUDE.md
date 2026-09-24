@@ -27,9 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,043 tests** in `account` with 346 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-24 after wiping the users was locked to the administrator
-(five tests); 4,038 after the delete-data screen was rebuilt over
+**4,116 tests** in `account` with 353 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-24 after phase A of the price tiers (seventy-three tests,
+eight of them gated on MySQL); 4,043 with 346 skipped after wiping the users was locked to the
+administrator (five tests); 4,038 after the delete-data screen was rebuilt over
 `features/wipe` (twelve tests); 4,026 after the glass theme was removed (two cases went with it, two
 came with its fallback), and the same after the employee form and the About window were reviewed. The 4,033 written here before was not what the build ran: `main` measured 4,007 with 342
 skipped that day, and the review added nineteen, four of them gated on MySQL. The figure before
@@ -373,7 +374,9 @@ Two documents govern work here and are kept current — read them before large c
   `features/party/currency`, `V80`-`V83`, the foreign half of `InvoiceSaveService`, or adding any column
   that holds an amount in a currency other than the base.**
 - **[`docs/pricing-and-offers-plan.md`](docs/pricing-and-offers-plan.md)** - item 3 of
-  `docs/product-plan.md` §1, written 2026-09-24 at the owner's request and **not started**: the
+  `docs/product-plan.md` §1, written 2026-09-24 at the owner's request and **opened the same day, before
+  item 1, at the owner's decision; phase A (the tiers, `V84`) is built** - see **Price tiers** below and
+  the plan's §10. The item as a whole: the
   wholesale, retail and piece price tiers, and offers and bundles on items. The two ideas it rests on:
   **a tier answers who is buying and an offer answers when and how many**, and **an offer never changes
   a stored price - it writes a discount on the line** (`offer_id`, `offer_discount` beside `discount`),
@@ -382,7 +385,7 @@ Two documents govern work here and are kept current — read them before large c
   not a composite item (`items_package` stays dead). §8 records the owner's decisions of the same day -
   every recommendation taken, and **offers are a paid add-on** (`ProductFeatures.OFFERS`; §6.1 shows that a
   version-1 profile and `LEGACY_FULL` would each hand a new feature out free, so both must leave add-ons
-  out) - and the one still open: whether it opens before item 1. **Read it before touching `type_price`, the `sel_price1..3` columns,
+  out) - and, since decided, that it opens before item 1. **Read it before touching `type_price`, the `sel_price1..3` columns,
   the discount half of `InvoiceSaveService`, or anything under `features/pricing` or `features/offers`.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
@@ -3308,6 +3311,44 @@ reads every matching item, previews, and saves on confirmation; the ticked and p
 the draft and wait for Save. The items list's "more than one unit" filter and unit-count column
 (`ItemCatalogSql.HAS_EXTRA_UNITS` / `UNIT_COUNT`) are the same predicate this screen lists by.
 
+### Price tiers
+
+`features/pricing` and `docs/pricing-and-offers-plan.md` (phase A, `V84`; §10 is what was delivered and
+seen). Three prices an item always had - `items.sel_price1..3`, and per unit `items_units.sel_price..3` -
+and a customer's tier in `custom.price_id`; what was missing was everything around them.
+
+- **What tier 2 is lives in `PriceTiers` alone.** The `switch` from tier to column was written in five
+  places (`SalesInvoice` twice, `SalesInvoiceReturn`, `PriceCheckService`, `ItemUnits`); they all ask it now.
+  `PriceResolver` is what a sales line is offered: the unit's own price on the tier, else the item's times
+  the factor, **else tier 1's, marked** (`ListedPrice.fromFirstTier`) - an item missing a wholesale price
+  used to come out at zero and be refused as "an invalid line". The line carries `listPrice` and the mark;
+  the price cell is drawn in the warning colour with the reason on hover, and the screen says it once.
+- **The invoice carries its tier** (`total_sales.price_tier_id`, `total_sales_re.price_tier_id`), copied at
+  save by `InvoicePriceTier` after the header, as a document copies its rate. The tier box beside the party
+  defaults to the customer's tier (tier 1 when theirs is switched off), is changed only with
+  `sales.price.tier.change` (granted to nobody by V84), and a change restates every line **still at its list
+  price** (`PriceTierRepricing`) - a typed price and a line picked from a return's invoice stay. A reopened
+  document shows its stored tier, and an edit keeps it unasked even after the customer moved.
+- **A price under its line's list needs `sales.price.below.list`** - asked at the cell as a hint and at the
+  save as the rule, before the number is allocated; a saved line whose price did not move is exempt. The
+  price tiers screen's third tab lists who sold under the list, when, and what it gave away.
+- **The tiers screen** (`PriceTiersController`, the items screen's "other" menu): names, on/off, the fill
+  rule, customers per tier; the items missing a price on a tier in use; and the sales below the list. A
+  tier's name is read **by its id** - `SelPriceItemService` read them by position from a query with no order,
+  and is gone with `DialogCashPaid` (dead) and `SelPriceNamesChanged` (never published; `PriceTiersChanged` is
+  announced by the service and relayed to every till).
+- **A fill rule writes prices and is never worked out at the till** (`TierFillRule`). It is applied from its
+  row on the tiers screen - **not the unit prices screen, where the plan put it: that screen lists only items
+  with more than one unit** - through `TierFillService`: a preview, then exactly the preview or nothing
+  (the catalogue locked, recomputed, compared, each figure written only if it still holds what was read).
+  The preview opens on **"only the items with no price on this tier"**, since a typed wholesale price is a
+  decision; unticking it overwrites them too, and the preview says so first.
+- **`%` in a bundle value is a crash, not a character**: `LanguageManager.getString` runs `String.format`
+  on every value, so "النسبة %" threw `UnknownFormatConversionException` and the heading read as its key.
+  Only the screen found it.
+- `PriceTierDatabaseAcceptanceTest` (gated, scratch schema, eight cases, green twice) and the screens seen
+  on a copy of the development data as two ordinary users are the proof; what was not seen is in §10.
+
 ### Scale barcodes
 
 A shop scale prints its own barcode with the item and a weight inside it, and
@@ -3841,7 +3882,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V83`, a document
+  new database executes it and continues with `V2`, `V3`, … The current head is `V84`, the price
+  tiers: `type_price` gains `is_active` and a fill rule (`rule_*`), a sales document copies the tier it
+  was priced at (`price_tier_id`, NULL before), a sales line its list price (`sales.list_price`), and
+  `sales.price.below.list` is granted to whoever may sell - its tier-1 rule is a trigger, since MySQL
+  refuses a CHECK on an AUTO_INCREMENT column (see **Price tiers**). Before it `V83` is a document
   typed in its party's currency: `currency_id` on the four document headers (NULL for one written in the
   base) and `price_foreign`/`discount_foreign` on the four line tables, what was typed beside the base
   figure every reader reads (see **Currencies**). Before it `V82` is a party's

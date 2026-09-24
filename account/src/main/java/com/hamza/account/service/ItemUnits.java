@@ -1,5 +1,6 @@
 package com.hamza.account.service;
 
+import com.hamza.account.features.pricing.PriceTiers;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.UnitsModel;
@@ -173,14 +174,7 @@ public final class ItemUnits {
     }
 
     private static double ownSellPrice(ItemsUnitsModel row, int priceType) {
-        if (row == null) {
-            return 0;
-        }
-        return switch (priceType) {
-            case 2 -> row.getSelPrice2();
-            case 3 -> row.getSelPrice3();
-            default -> row.getSelPrice();
-        };
+        return PriceTiers.unitPrice(row, priceType);
     }
 
     /**

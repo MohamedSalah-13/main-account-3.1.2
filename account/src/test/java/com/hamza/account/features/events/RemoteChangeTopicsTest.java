@@ -67,7 +67,9 @@ class RemoteChangeTopicsTest {
         assertEquals(new ShiftsChanged(), RemoteChangeTopics.eventOf("shifts"));
 
         assertNull(RemoteChangeTopics.topicOf(new UserRenamed("admin")));
-        assertNull(RemoteChangeTopics.topicOf(new SelPriceNamesChanged(Map.of())));
+        // A tier renamed or switched off travels: every price on every till is labelled with its name.
+        assertEquals("price.tiers", RemoteChangeTopics.topicOf(new PriceTiersChanged()));
+        assertEquals(new PriceTiersChanged(), RemoteChangeTopics.eventOf("price.tiers"));
 
         assertNotNull(RemoteChangeTopics.topicOf(new ItemsChanged()),
                 "the bulk event is what a remote catalogue change travels as");

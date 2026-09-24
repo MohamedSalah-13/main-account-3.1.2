@@ -4133,3 +4133,15 @@
 .wipe-screen .wipe-close-button .icon-graphic {
     -fx-icon-color: -app-text;
 }
+
+/* A sales line priced at tier 1 because the invoice's tier had no price for the item
+   (docs/pricing-and-offers-plan.md ق-س٣): the figure in the warning colour, and the sentence why
+   on hover. Selected rows keep their own text colour, so the mark is not lost against the highlight. */
+.table-row-cell .table-cell:first-tier {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell:selected .table-cell:first-tier {
+    -fx-text-fill: -fx-selection-bar-text;
+}

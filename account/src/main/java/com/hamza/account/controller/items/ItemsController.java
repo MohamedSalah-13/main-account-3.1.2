@@ -13,7 +13,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
-import com.hamza.account.features.events.SelPriceNamesChanged;
+import com.hamza.account.features.events.PriceTiersChanged;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.items.ItemQuickEditField;
 import com.hamza.account.features.items.ItemTableEditMode;
@@ -25,7 +25,8 @@ import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.MainGroupService;
-import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.features.pricing.PriceTierCatalog;
+import com.hamza.account.features.pricing.PriceTierService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.EditCell;
@@ -146,7 +147,7 @@ public class ItemsController extends LoadData {
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
-    private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
+    private final PriceTierService priceTierService = ServiceRegistry.get(PriceTierService.class);
     private final ContentSizedColumns<ItemsModel> sizing = new ContentSizedColumns<>();
     /**
      * Type a page number, land on it. The jump goes through {@code setCurrentPageIndex}, so a
@@ -160,7 +161,7 @@ public class ItemsController extends LoadData {
     private Button btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter;
     @FXML
     private MenuItem menuPrint, menuPrintBarcode, menuItemCard, menuItemConvertGroup, menuItemBulkEdit, menuExportExcel,
-            menuItemUnitPrices;
+            menuItemUnitPrices, menuItemPriceTiers;
     @FXML
     private TextField txtSearch, txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo;
     @FXML
@@ -354,30 +355,34 @@ public class ItemsController extends LoadData {
     }
 
     /**
-     * The three sale-price columns are named by the business, and renamed from the settings
-     * screen while this one is open.
+     * The three sale-price columns are named by the business, and renamed on the price tiers screen -
+     * here or at another till - while this one is open.
      * <p>
      * By reference, not by index. The old version wrote the three names into columns 6, 7
      * and 8 - which happened to be right, and stayed right only for as long as nothing else
-     * inserted a column.
+     * inserted a column. And by the tier's id, not its position: the names used to be read by
+     * position from a query with no order.
      */
     private void subscribePriceNames() {
         if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(SelPriceNamesChanged.class,
-                    event -> Platform.runLater(() -> applyPriceNames(event.names()))));
+            subscriptions.add(eventBus.subscribe(PriceTiersChanged.class,
+                    event -> Platform.runLater(this::loadPriceNames)));
         }
+        loadPriceNames();
+    }
+
+    private void loadPriceNames() {
         try {
-            applyPriceNames(selPriceService.getIntegerStringHashMap());
+            applyPriceNames(priceTierService.catalog());
         } catch (DaoException e) {
             reportError(e);
         }
     }
 
-    private void applyPriceNames(Map<Integer, String> names) {
-        if (names == null) return;
-        if (names.get(1) != null) colSelPrice1.setText(names.get(1));
-        if (names.get(2) != null) colSelPrice2.setText(names.get(2));
-        if (names.get(3) != null) colSelPrice3.setText(names.get(3));
+    private void applyPriceNames(PriceTierCatalog tiers) {
+        colSelPrice1.setText(tiers.name(1));
+        colSelPrice2.setText(tiers.name(2));
+        colSelPrice3.setText(tiers.name(3));
         // A heading is part of what a column is measured by.
         sizing.layout(tableView);
     }
@@ -617,6 +622,7 @@ public class ItemsController extends LoadData {
         menuItemCard.setOnAction(event -> openCard());
         menuItemConvertGroup.setOnAction(event -> convertGroups());
         menuItemUnitPrices.setOnAction(event -> openUnitPrices());
+        menuItemPriceTiers.setOnAction(event -> openPriceTiers());
         menuItemBulkEdit.setOnAction(event -> bulkEdit());
         menuPrint.setOnAction(event -> printPdf());
         menuPrintBarcode.setOnAction(event -> printBarcodes());
@@ -963,6 +969,26 @@ public class ItemsController extends LoadData {
         }
     }
 
+    /**
+     * The price tiers screen (V84): the tiers' names, which are in use and how each is filled, and the
+     * items missing a price on one and the sales priced below the list. A window of its own, beside
+     * this list.
+     */
+    private void openPriceTiers() {
+        try {
+            Scene scene = new SceneAll(new com.hamza.account.openFxml.OpenFxmlApplication(
+                    new PriceTiersController()).getPane());
+            Stage stage = new Stage();
+            stage.setTitle(LanguageManager.getInstance().getString("pricing.tiers.title"));
+            stage.setScene(scene);
+            stage.setMinWidth(860);
+            stage.setMinHeight(520);
+            stage.show();
+        } catch (Exception e) {
+            reportError(e);
+        }
+    }
+
     private void convertGroups() {
         List<ItemsModel> selected = selectedItems();
         try {
@@ -1139,7 +1165,7 @@ public class ItemsController extends LoadData {
         try {
             ObservableList<PrintBarcodeModel> models = FXCollections.observableArrayList();
             for (ItemsModel item : selected) {
-                models.add(new PrintBarcodeModel(item.getBarcode(), item.getNameItem(), item.getSelPrice1()));
+                models.add(PrintBarcodeModel.of(item));
             }
             new PrintBarcodeApp(models);
         } catch (Exception e) {
