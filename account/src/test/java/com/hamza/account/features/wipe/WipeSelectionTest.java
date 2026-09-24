@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,5 +109,68 @@ class WipeSelectionTest {
         selection.tick(WipeCatalog.SALES);
 
         assertEquals(List.of(WipeCatalog.SALES_RETURNS, WipeCatalog.SALES), selection.plan().targets());
+    }
+
+    @Test
+    @DisplayName("a locked target cannot be ticked, on its own or through select all")
+    void aLockedTargetCannotBeTicked() {
+        WipeSelection locked = new WipeSelection(WipeCatalog.TARGETS, Set.of(WipeCatalog.USERS));
+
+        locked.tick(WipeCatalog.USERS);
+        assertFalse(locked.isSelected(WipeCatalog.USERS));
+
+        locked.set(WipeCatalog.USERS, true);
+        assertFalse(locked.isSelected(WipeCatalog.USERS));
+
+        locked.selectAll();
+        assertFalse(locked.isSelected(WipeCatalog.USERS), "select all skips what it cannot tick");
+        assertTrue(locked.isSelected(WipeCatalog.SALES), "everything else is still reached");
+    }
+
+    @Test
+    @DisplayName("a locked target ticks nothing that requires it either")
+    void nothingThatRequiresALockedTargetCanBeTicked() {
+        WipeSelection locked = new WipeSelection(WipeCatalog.TARGETS, Set.of(WipeCatalog.SALES));
+
+        // customers requires sales, which is locked here - not the real catalog, but the same shape.
+        locked.tick(WipeCatalog.CUSTOMERS);
+
+        assertFalse(locked.isSelected(WipeCatalog.CUSTOMERS));
+        assertFalse(locked.isSelected(WipeCatalog.SALES));
+    }
+
+    @Test
+    @DisplayName("select all with a lock is still all, once the locked box is left out")
+    void selectAllIsAllWithoutTheLockedBox() {
+        WipeSelection locked = new WipeSelection(WipeCatalog.TARGETS, Set.of(WipeCatalog.USERS));
+
+        assertFalse(locked.isAll());
+        locked.selectAll();
+
+        assertTrue(locked.isAll(), "everything selectable is ticked");
+        assertFalse(locked.isSelected(WipeCatalog.USERS));
+    }
+
+    @Test
+    @DisplayName("isLocked names the target itself, isSelectable follows its closure")
+    void isLockedAndIsSelectable() {
+        WipeSelection locked = new WipeSelection(WipeCatalog.TARGETS, Set.of(WipeCatalog.SALES));
+
+        assertTrue(locked.isLocked(WipeCatalog.SALES));
+        assertFalse(locked.isLocked(WipeCatalog.CUSTOMERS), "customers is not itself locked");
+
+        assertFalse(locked.isSelectable(WipeCatalog.SALES));
+        assertFalse(locked.isSelectable(WipeCatalog.CUSTOMERS), "but ticking it would reach sales");
+        assertTrue(locked.isSelectable(WipeCatalog.PURCHASES), "unrelated to sales");
+    }
+
+    @Test
+    @DisplayName("an empty lock set behaves exactly as before - the single-argument constructor's promise")
+    void noLockIsTheDefault() {
+        WipeSelection unlocked = new WipeSelection(WipeCatalog.TARGETS, Set.of());
+
+        assertTrue(unlocked.isSelectable(WipeCatalog.USERS));
+        unlocked.tick(WipeCatalog.USERS);
+        assertTrue(unlocked.isSelected(WipeCatalog.USERS));
     }
 }

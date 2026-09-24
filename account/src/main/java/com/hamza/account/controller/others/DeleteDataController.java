@@ -4,6 +4,7 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.features.backup.BackupKind;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.wipe.WipeSection;
 import com.hamza.account.features.wipe.WipeSections;
 import com.hamza.account.features.wipe.WipeSelection;
@@ -45,6 +46,7 @@ import javafx.stage.Stage;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -68,7 +70,15 @@ public class DeleteDataController implements AppSettingInterface {
     private static final double PREF_WIDTH = 940;
     private static final PseudoClass HAS_SELECTION = PseudoClass.getPseudoClass("has-selection");
 
-    private final WipeSelection selection = new WipeSelection(WipeCatalog.TARGETS);
+    /**
+     * Wiping {@link WipeCatalog#USERS} keeps only {@code id = 1}; anybody else signed in would
+     * erase their own account and be left on a session pointing at a row that no longer exists.
+     * {@link CurrentUser#isSystemAdministrator()} is asked once, here, rather than a fresh
+     * {@code id == 1} written into this screen - {@code PermissionCatalogArchitectureTest} is what
+     * would catch that.
+     */
+    private final WipeSelection selection = new WipeSelection(WipeCatalog.TARGETS,
+            CurrentUser.isSystemAdministrator() ? Set.of() : Set.of(WipeCatalog.USERS));
     private final List<WipeSection> sections = WipeSections.of(WipeCatalog.TARGETS);
     private final Map<WipeTarget, CheckBox> boxes = new LinkedHashMap<>();
     private final Map<WipeSection, Label> counts = new LinkedHashMap<>();
@@ -196,14 +206,21 @@ public class DeleteDataController implements AppSettingInterface {
         return card;
     }
 
-    private CheckBox box(WipeTarget target) {
+    private Node box(WipeTarget target) {
         CheckBox box = new CheckBox(target.label());
         box.getStyleClass().add("wipe-check");
         box.setMaxWidth(Double.MAX_VALUE);
         box.setWrapText(true);
-        List<WipeTarget> alsoErased = WipeSelection.alsoErasedWith(target);
-        if (!alsoErased.isEmpty()) {
-            box.setTooltip(new Tooltip(text("wipe.also.erased", labels(alsoErased))));
+        boolean locked = selection.isLocked(target);
+        if (locked) {
+            // A disabled CheckBox never shows its Tooltip in this toolkit - confirmed on screen -
+            // so a locked box is explained by a label that stays visible, not by one.
+            box.setDisable(true);
+        } else {
+            List<WipeTarget> alsoErased = WipeSelection.alsoErasedWith(target);
+            if (!alsoErased.isEmpty()) {
+                box.setTooltip(new Tooltip(text("wipe.also.erased", labels(alsoErased))));
+            }
         }
         box.selectedProperty().addListener((observable, was, ticked) -> {
             if (!syncing) {
@@ -212,7 +229,13 @@ public class DeleteDataController implements AppSettingInterface {
             }
         });
         boxes.put(target, box);
-        return box;
+        if (!locked) {
+            return box;
+        }
+        Label note = new Label(text("wipe.target.locked.not.admin"));
+        note.getStyleClass().add("wipe-locked-note");
+        note.setWrapText(true);
+        return new VBox(2, box, note);
     }
 
     private Node sectionIcon(WipeSection section) {
