@@ -1,0 +1,27 @@
+# Every text file is LF, in the repository and in the working tree, whatever core.autocrlf says.
+# Tests read migrations and sources off the disk and look for "\n"; a Windows checkout with
+# core.autocrlf=true wrote them as CRLF and those tests failed locally while CI passed.
+* text=auto eol=lf
+
+# cmd.exe misreads labels and goto in a batch file with LF endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary: never converted, never diffed as text.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.ttf    binary
+*.otf    binary
+*.woff   binary
+*.woff2  binary
+*.jasper binary
+*.jar    binary
+*.zip    binary
+*.pdf    binary
+*.xlsx   binary
+*.docx   binary
+*.dat    binary
+*.enc    binary
