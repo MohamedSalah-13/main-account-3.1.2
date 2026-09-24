@@ -107,6 +107,7 @@ public class SettingController implements Initializable, AppSettingInterface {
         tabChecks.setContent(getTabChecks());
         tabChecks.setText(lm.getString("show"));
         pane.getTabs().add(new Tab(lm.getString("settings.printers.tabTitle"), getTabPrinters()));
+        pane.getTabs().add(getTabReportStyle());
         pane.getTabs().add(new Tab(lm.getString("settings.shortcuts.tabTitle"), getTabShortcuts()));
         // add tab notifications
         pane.getTabs().add(new Tab(lm.getString("settings.notifications.tabTitle"), getTabNotifications()));
@@ -170,6 +171,18 @@ public class SettingController implements Initializable, AppSettingInterface {
 
     private Pane getTabPrinters() throws Exception {
         return new OpenFxmlApplication(new SettingTabPrintersController()).getPane();
+    }
+
+    /** Built in code; its preview is drawn the first time the tab is chosen, not whenever settings opens. */
+    private Tab getTabReportStyle() {
+        SettingTabReportStyleController controller = new SettingTabReportStyleController();
+        Tab tab = new Tab(LanguageManager.getInstance().getString("report.style.tabTitle"), controller.build());
+        tab.selectedProperty().addListener((observable, wasSelected, isSelected) -> {
+            if (isSelected) {
+                controller.shown();
+            }
+        });
+        return tab;
     }
 
     private Parent backup() throws IOException {

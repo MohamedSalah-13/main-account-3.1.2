@@ -35,6 +35,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String SETTING_PRINTER_NORMAL = "setting.printer.normal";
     private static final String REPORT_PDF_OUTPUT_MODE = "report.pdf.output.mode";
     private static final String REPORT_PDF_PAPER_SIZE = "report.pdf.paper.size";
+    private static final String REPORT_PDF_STYLE = SharedSettingKeys.REPORT_PDF_STYLE;
     private static final String DEFAULT_PRINTER_NAME = "Microsoft Print to PDF";
     private static final String INVOICE_BACKUP_AFTER_SAVE = "invoice.backup.after.save";
     private static final String INVOICE_UPDATE_PRICE = SharedSettingKeys.INVOICE_UPDATE_PRICE;
@@ -220,6 +221,18 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setReportPdfPaperSize(String value) {
         putString(REPORT_PDF_PAPER_SIZE, value);
+    }
+
+    /**
+     * The shop's report style as {@code ReportStyleCodec} writes it, or an empty string when nobody has
+     * chosen one - which reads as the default style.
+     */
+    public static String getReportPdfStyle() {
+        return getString(REPORT_PDF_STYLE, "");
+    }
+
+    public static void setReportPdfStyle(String value) {
+        putString(REPORT_PDF_STYLE, value);
     }
 
     public static boolean getSettingPrintReportTitle() {

@@ -5,19 +5,25 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -200,6 +206,303 @@ class PdfExportServiceLayoutTest {
         assertTrue(x.get("932") < middle && x.get("942") < middle, "the summary sits on the left half: " + x);
         assertTrue(y.get("18") > y.get("928") && y.get("928") > y.get("932") && y.get("932") > y.get("942"),
                 "the lines, then their totals, then the summary top to bottom: " + y);
+    }
+
+    /**
+     * The shop's {@link ReportStyle}, read back out of the file it printed: the numbers at the foot, the
+     * sizes the text was set in, what the head carries, where a document starts on paper that already
+     * has a heading.
+     */
+    @Nested
+    class TheShopsStyle {
+
+        private static final String[] HEADERS = {"101", "202", "303"};
+        private static final float[] WIDTHS = {1, 1, 1};
+
+        private static List<String[]> rows(int count) {
+            List<String[]> rows = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                rows.add(new String[]{"111", "222", "333"});
+            }
+            return rows;
+        }
+
+        private static ReportSetup setup(ReportStyle style) {
+            return new ReportSetup(style, new ReportLetterhead("5501", List.of("5502"), null),
+                    new ReportLabels("", "", "%d : %d", ""), "");
+        }
+
+        private String report(String name, ReportStyle style, int rows) {
+            String pdf = dir.resolve(name + ".pdf").toString();
+            assertTrue(new PdfExportService(setup(style)).exportGroupedReport(pdf, "7777", "8888",
+                    HEADERS, WIDTHS, rows(rows), new String[]{"911", "922", "933"}, PageSize.A4));
+            return pdf;
+        }
+
+        /** A report carried no page number at all; by default it now numbers them as an invoice does. */
+        @Test
+        void everyPageOfAReportIsNumberedByDefault() throws Exception {
+            String pdf = report("numbered", ReportStyle.DEFAULT, 80);
+            int pages = pageCount(pdf);
+            assertTrue(pages > 1, "the report should run over several pages: " + pages);
+            for (int page = 1; page <= pages; page++) {
+                assertTrue(pageText(pdf, page).contains(page + " / " + pages),
+                        "page " + page + " should say its number: " + pageText(pdf, page));
+            }
+        }
+
+        @Test
+        void thePageNumberFollowsTheChosenPatternOrIsLeftOff() throws Exception {
+            String worded = report("worded", ReportStyle.DEFAULT.toBuilder()
+                    .pageNumbering(PageNumbering.PAGE_OF_TOTAL).build(), 80);
+            assertTrue(pageText(worded, 2).contains("2 : " + pageCount(worded)), pageText(worded, 2));
+
+            String bare = report("bare", ReportStyle.DEFAULT.toBuilder().pageNumbering(PageNumbering.NONE).build(), 80);
+            assertFalse(pageText(bare, 1).contains(" / "), pageText(bare, 1));
+        }
+
+        /** The sizes the shop chose are the sizes the text was set in. */
+        @Test
+        void theHeadingsTheRowsAndTheTotalsAreSetInTheirOwnSizes() throws Exception {
+            String pdf = report("sizes", ReportStyle.DEFAULT.toBuilder()
+                    .titleSize(26).headerSize(16).bodySize(8).totalsSize(13).build(), 1);
+            Map<String, Float> size = fontSizes(pdf, Set.of("7777", "101", "111", "911"));
+            assertEquals(26f, size.get("7777"), 0.01f);
+            assertEquals(16f, size.get("101"), 0.01f);
+            assertEquals(8f, size.get("111"), 0.01f);
+            assertEquals(13f, size.get("911"), 0.01f);
+        }
+
+        @Test
+        void theCompanyHeadsAReportOnlyWhenAskedAndAboveItsTitle() throws Exception {
+            Map<String, Float> without = textPositions(report("plain", ReportStyle.DEFAULT, 1),
+                    Set.of("5501", "7777"), 1);
+            assertNull(without.get("5501"), "no report carried the company before it was asked for");
+
+            Map<String, Float> with = textPositions(report("letterhead",
+                    ReportStyle.DEFAULT.toBuilder().showLetterhead(true).build(), 1), Set.of("5501", "5502", "7777"), 1);
+            assertNotNull(with.get("5501"), "the company's name: " + with);
+            assertNotNull(with.get("5502"), "the line under it: " + with);
+            assertTrue(with.get("5501") > with.get("5502") && with.get("5502") > with.get("7777"),
+                    "the company, then its line, then the title, top to bottom: " + with);
+        }
+
+        @Test
+        void theTitleAndTheSubtitleCanBeLeftOff() throws Exception {
+            Map<String, Float> found = textPositions(report("headless", ReportStyle.DEFAULT.toBuilder()
+                    .showTitle(false).showSubtitle(false).build(), 1), Set.of("7777", "8888", "101"), 1);
+            assertNull(found.get("7777"), found.toString());
+            assertNull(found.get("8888"), found.toString());
+            assertNotNull(found.get("101"), "the table is still there: " + found);
+        }
+
+        /** The Naskh face's tall line is what made a row nearly three times its text; compact rows are not. */
+        @Test
+        void compactRowsFitMoreOfThemOnAPage() throws Exception {
+            int ordinary = pageCount(report("ordinary", ReportStyle.DEFAULT, 120));
+            int compact = pageCount(report("compact", ReportStyle.DEFAULT.toBuilder().compactRows(true).build(), 120));
+            assertTrue(compact < ordinary, "compact " + compact + " pages, ordinary " + ordinary);
+        }
+
+        private String document(String name, ReportStyle style) throws Exception {
+            String pdf = dir.resolve(name + ".pdf").toString();
+            DocumentPdfPage page = new DocumentPdfPage("4401", "5501", List.of("5502"), null,
+                    List.of(DocumentPdfPage.Field.of("4", "5")), List.of(),
+                    new String[]{"101", "202"}, new float[]{1, 1},
+                    List.<String[]>of(new String[]{"11", "12"}), null,
+                    List.of(DocumentPdfPage.Field.emphasised("941", "942")), "", "", "", "");
+            assertTrue(new PdfExportService(setup(style)).exportDocument(pdf, page, PageSize.A4));
+            return pdf;
+        }
+
+        /** Paper with the company already printed at its head: no letterhead, and the page starts lower. */
+        @Test
+        void aDocumentCanLeaveItsLetterheadToPrintedPaper() throws Exception {
+            Map<String, Float> printed = textPositions(document("with", ReportStyle.DEFAULT), Set.of("5501", "4401"), 1);
+            assertNotNull(printed.get("5501"), "every invoice carries its letterhead by default: " + printed);
+
+            ReportStyle preprinted = ReportStyle.DEFAULT.toBuilder()
+                    .showDocumentLetterhead(false).documentTopSpaceMm(30).build();
+            Map<String, Float> left = textPositions(document("without", preprinted), Set.of("5501", "4401"), 1);
+            assertNull(left.get("5501"), "the paper already says who the company is: " + left);
+            assertNotNull(left.get("4401"), "the document's own name stays: " + left);
+            float drop = printed.get("4401") - left.get("4401");
+            assertTrue(drop > 30 * 72 / 25.4f - 20,
+                    "thirty millimetres left for the printed heading, moved " + drop + " points");
+        }
+
+        @Test
+        void aDocumentsPageNumberFollowsTheStyleToo() throws Exception {
+            assertTrue(pageText(document("slash", ReportStyle.DEFAULT), 1).contains("1 / 1"));
+            assertFalse(pageText(document("none", ReportStyle.DEFAULT.toBuilder()
+                    .pageNumbering(PageNumbering.NONE).build()), 1).contains("1 / 1"));
+        }
+    }
+
+    /**
+     * Arabic that wraps in a cell prints its first words on its first line. It was shaped - put in the
+     * order it is drawn - before iText wrapped it, so an item's name too long for its column printed its
+     * end first, in every report and every invoice. The numbers between the words say which line holds
+     * which part.
+     */
+    @Nested
+    class TextThatWraps {
+
+        private static final String LONG = "بند 11 بند 22 بند 33 بند 44 بند 55 بند 66 بند 77 بند 88 بند 99";
+
+        @Test
+        void aReportCellPrintsItsBeginningOnItsFirstLine() throws Exception {
+            String pdf = dir.resolve("wrapped-report.pdf").toString();
+            assertTrue(new PdfExportService(ReportSetup.plain()).exportGroupedReport(pdf, "1", "",
+                    new String[]{"101", "202"}, new float[]{1, 6},
+                    List.<String[]>of(new String[]{LONG, "111"}), null, PageSize.A4));
+            assertBeginsAboveItsEnd(pageText(pdf, 1));
+        }
+
+        @Test
+        void aDocumentLinePrintsItsBeginningOnItsFirstLine() throws Exception {
+            String pdf = dir.resolve("wrapped-document.pdf").toString();
+            DocumentPdfPage page = new DocumentPdfPage("1", "2", List.of(), null, List.of(), List.of(),
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 6},
+                    List.<String[]>of(new String[]{"11", LONG, "33"}), null, List.of(), "", "", "", "");
+            assertTrue(new PdfExportService(ReportSetup.plain()).exportDocument(pdf, page, PageSize.A4));
+            assertBeginsAboveItsEnd(pageText(pdf, 1));
+        }
+
+        private void assertBeginsAboveItsEnd(String text) {
+            String[] lines = text.split("\n");
+            int first = -1;
+            int last = -1;
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].contains("22") && first < 0) {
+                    first = i;
+                }
+                if (lines[i].contains("99")) {
+                    last = i;
+                }
+            }
+            assertTrue(first >= 0 && last >= 0, "both ends should be on the page: " + text);
+            assertTrue(first < last, "the text should wrap, its beginning above its end: " + text);
+        }
+
+        /** Broken at spaces, as many words to a line as fit, a break already in the text kept. */
+        @Test
+        void theLinesAreAsFullAsTheWidthAllows() throws Exception {
+            var font = com.itextpdf.kernel.font.PdfFontFactory.createFont();
+            float word = font.getWidth("aaa", 10);
+            float space = font.getWidth(" ", 10);
+            float twoWords = 2 * word + space;
+
+            assertEquals(List.of("aaa aaa", "aaa"), PdfExportService.lines("aaa aaa aaa", font, 10, twoWords + 0.5f));
+            assertEquals(List.of("aaa", "aaa aaa"), PdfExportService.lines("aaa\naaa aaa", font, 10, twoWords + 0.5f));
+            assertEquals(List.of("aaa aaa aaa"), PdfExportService.lines("aaa aaa aaa", font, 10, 0),
+                    "no width is no breaking");
+            assertEquals(List.of("aaaaaaaaaaaa"), PdfExportService.lines("aaaaaaaaaaaa", font, 10, word),
+                    "a word wider than the line is left whole for iText to split");
+        }
+    }
+
+    /**
+     * A report runs the way its reader reads. In English it ran right to left like an Arabic one - its
+     * first column on the right under an English heading; the audit log's own renderer was the one PDF
+     * that did not, and it prints through this service now.
+     */
+    @Nested
+    class LeftToRight {
+
+        private final ReportSetup english = new ReportSetup(ReportStyle.DEFAULT, ReportLetterhead.EMPTY,
+                ReportLabels.NONE, "", false);
+
+        @Test
+        void aReportsHeadingsRowsAndTotalsRunLeftToRight() throws Exception {
+            String pdf = dir.resolve("ltr-grouped.pdf").toString();
+            assertTrue(new PdfExportService(english).exportGroupedReport(pdf, "1", "",
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                    List.<String[]>of(new String[]{"111", "222", "333"}),
+                    new String[]{"911", "922", "933"}, PageSize.A4));
+
+            Map<String, Float> x = textPositions(pdf, Set.of("101", "202", "303",
+                    "111", "222", "333", "911", "922", "933"));
+            assertOrderedRightToLeft(x, "303", "202", "101");
+            assertOrderedRightToLeft(x, "333", "222", "111");
+            assertOrderedRightToLeft(x, "933", "922", "911");
+        }
+
+        /** The one-figure totals line: the caption across the left, the figure under the last column. */
+        @Test
+        void aSingleTotalSitsUnderTheLastColumn() throws Exception {
+            String pdf = dir.resolve("ltr-generic.pdf").toString();
+            assertTrue(new PdfExportService(english).exportGenericReport(pdf, "1", "",
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                    List.<String[]>of(new String[]{"111", "222", "333"}), "901", "902", null, PageSize.A4));
+
+            Map<String, Float> x = textPositions(pdf, Set.of("303", "333", "901", "902"));
+            assertTrue(x.get("901") < x.get("902"), "the caption left of the figure: " + x);
+            // Both are centred in their cell, so they start within a few points of each other.
+            assertEquals(x.get("303"), x.get("902"), 10f, "the figure under the last column's heading: " + x);
+        }
+
+        @Test
+        void aTreesLinesRunLeftToRight() throws Exception {
+            String pdf = dir.resolve("ltr-tree.pdf").toString();
+            TreePdfLayout layout = new TreePdfLayout(new String[]{"101", "202"}, new float[]{1, 1},
+                    List.of(new TreePdfLayout.Branch("7001", List.<String[]>of(new String[]{"111", "222"}),
+                            new String[]{"511", "522"})), new String[]{"911", "922"});
+            assertTrue(new PdfExportService(english).exportTreeReport(pdf, "1", "", layout, PageSize.A4));
+
+            Map<String, Float> x = textPositions(pdf, Set.of("111", "222", "511", "522", "911", "922"));
+            assertTrue(x.get("111") < x.get("222") && x.get("511") < x.get("522") && x.get("911") < x.get("922"),
+                    "every line left to right: " + x);
+        }
+
+        /** An invoice keeps its right-to-left layout whatever the reader's language: it is drawn for it. */
+        @Test
+        void aDocumentStillRunsRightToLeft() throws Exception {
+            String pdf = dir.resolve("ltr-document.pdf").toString();
+            DocumentPdfPage page = new DocumentPdfPage("1", "2", List.of(), null, List.of(), List.of(),
+                    new String[]{"101", "202", "303"}, new float[]{1, 1, 1},
+                    List.<String[]>of(new String[]{"11", "12", "13"}), null, List.of(), "", "", "", "");
+            assertTrue(new PdfExportService(english).exportDocument(pdf, page, PageSize.A4));
+
+            assertOrderedRightToLeft(textPositions(pdf, Set.of("101", "202", "303")), "101", "202", "303");
+        }
+    }
+
+    private static int pageCount(String pdf) throws Exception {
+        try (PdfDocument document = new PdfDocument(new PdfReader(pdf))) {
+            return document.getNumberOfPages();
+        }
+    }
+
+    private static String pageText(String pdf, int page) throws Exception {
+        try (PdfDocument document = new PdfDocument(new PdfReader(pdf))) {
+            return PdfTextExtractor.getTextFromPage(document.getPage(page));
+        }
+    }
+
+    /** The size each wanted string was set in on page 1, as the page's own text state says. */
+    private static Map<String, Float> fontSizes(String pdf, Set<String> wanted) throws Exception {
+        Map<String, Float> found = new HashMap<>();
+        try (PdfDocument document = new PdfDocument(new PdfReader(pdf))) {
+            new PdfCanvasProcessor(new IEventListener() {
+                @Override
+                public void eventOccurred(IEventData data, EventType type) {
+                    if (type == EventType.RENDER_TEXT) {
+                        TextRenderInfo info = (TextRenderInfo) data;
+                        String text = info.getText();
+                        if (text != null && wanted.contains(text.strip())) {
+                            found.put(text.strip(), info.getFontSize());
+                        }
+                    }
+                }
+
+                @Override
+                public Set<EventType> getSupportedEvents() {
+                    return Set.of(EventType.RENDER_TEXT);
+                }
+            }).processPageContent(document.getPage(1));
+        }
+        return found;
     }
 
     /** The x of each wanted string's baseline start on page 1. */

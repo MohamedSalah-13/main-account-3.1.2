@@ -90,6 +90,18 @@ public enum AppIcon {
     /** A spreadsheet, as distinct from {@link #EXPORT}, which is any download. */
     SPREADSHEET(Feather.FILE_TEXT),
     /**
+     * The four arrows of the print preview, named for the way they point rather than for "next" and
+     * "previous": a right-to-left window lays its buttons out mirrored but draws each glyph as it is, so
+     * the next page is the arrow pointing left in Arabic and right in English, and the window picks.
+     */
+    CHEVRON_LEFT(Feather.CHEVRON_LEFT),
+    CHEVRON_RIGHT(Feather.CHEVRON_RIGHT),
+    CHEVRONS_LEFT(Feather.CHEVRONS_LEFT),
+    CHEVRONS_RIGHT(Feather.CHEVRONS_RIGHT),
+    /** Showing a page larger, and smaller. */
+    ZOOM_IN(Feather.ZOOM_IN),
+    ZOOM_OUT(Feather.ZOOM_OUT),
+    /**
      * A setting that belongs to the shop rather than to this computer - see
      * {@code SettingScope}. A globe rather than a group of people: it is about where the
      * value lives, not about who may change it.

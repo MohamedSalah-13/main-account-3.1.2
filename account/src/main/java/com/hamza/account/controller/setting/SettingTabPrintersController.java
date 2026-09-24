@@ -178,7 +178,8 @@ public class SettingTabPrintersController implements Initializable {
         comboPdfOutputMode.getItems().setAll(
                 text("report.pdf.output.save"),
                 text("report.pdf.output.print"),
-                text("report.pdf.output.ask"));
+                text("report.pdf.output.ask"),
+                text("report.pdf.output.preview"));
         comboPdfOutputMode.getSelectionModel().select(outputModeIndex(
                 ReportOutputMode.fromStoredValue(getReportPdfOutputMode())));
         comboPdfOutputMode.valueProperty().addListener((observable, oldValue, value) -> {
@@ -205,6 +206,7 @@ public class SettingTabPrintersController implements Initializable {
             case SAVE_PDF -> 0;
             case PRINT_DIRECT -> 1;
             case ASK -> 2;
+            case PREVIEW -> 3;
         };
     }
 

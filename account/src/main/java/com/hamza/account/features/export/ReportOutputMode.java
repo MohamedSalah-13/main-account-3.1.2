@@ -4,7 +4,12 @@ package com.hamza.account.features.export;
 public enum ReportOutputMode {
     SAVE_PDF,
     PRINT_DIRECT,
-    ASK;
+    ASK,
+    /**
+     * The pages shown in a window first, printed or saved from there. Added last: the stored value is
+     * the name, and the settings screen lists the modes in this order.
+     */
+    PREVIEW;
 
     public static ReportOutputMode fromStoredValue(String value) {
         try {
@@ -12,5 +17,10 @@ public enum ReportOutputMode {
         } catch (IllegalArgumentException ignored) {
             return SAVE_PDF;
         }
+    }
+
+    /** Written to a temporary file that goes once it has been printed or the window has closed. */
+    public boolean usesTemporaryFile() {
+        return this == PRINT_DIRECT || this == PREVIEW;
     }
 }

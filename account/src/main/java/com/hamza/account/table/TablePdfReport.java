@@ -38,7 +38,15 @@ public final class TablePdfReport {
 
     /** More columns than this do not fit across an upright page. */
     private static final int UPRIGHT_COLUMN_LIMIT = 5;
-    private static final Map<String, ReportOutputMode> OUTPUT_TARGETS = new ConcurrentHashMap<>();
+    private static final Map<String, Destination> OUTPUT_TARGETS = new ConcurrentHashMap<>();
+
+    /**
+     * What {@link #chooseTarget} decided for a file, kept until {@link #write} has written it: where it
+     * goes, and - for the preview, which opens a window once the file exists - over which window and
+     * under which name.
+     */
+    private record Destination(ReportOutputMode mode, Window owner, String title) {
+    }
 
     private TablePdfReport() {
     }
@@ -50,7 +58,8 @@ public final class TablePdfReport {
 
     /**
      * Resolves the configured report destination. The legacy callers still pass a File, so a
-     * direct-print request uses a temporary PDF that is deleted after it has reached the spooler.
+     * direct-print request uses a temporary PDF that is deleted after it has reached the spooler,
+     * and a preview one that is deleted when its window closes.
      */
     public static File chooseTarget(Window owner, String title) {
         ReportOutputMode mode = configuredOutputMode();
@@ -60,10 +69,10 @@ public final class TablePdfReport {
         if (mode == null) {
             return null;
         }
-        if (mode == ReportOutputMode.PRINT_DIRECT) {
+        if (mode.usesTemporaryFile()) {
             try {
                 File target = File.createTempFile("account-report-", ".pdf");
-                OUTPUT_TARGETS.put(target.getAbsolutePath(), mode);
+                OUTPUT_TARGETS.put(target.getAbsolutePath(), new Destination(mode, owner, title));
                 return target;
             } catch (IOException e) {
                 AllAlerts.handleError(text("party.error.export.generic"), e);
@@ -76,7 +85,7 @@ public final class TablePdfReport {
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
         File target = chooser.showSaveDialog(owner);
         if (target != null) {
-            OUTPUT_TARGETS.put(target.getAbsolutePath(), ReportOutputMode.SAVE_PDF);
+            OUTPUT_TARGETS.put(target.getAbsolutePath(), new Destination(ReportOutputMode.SAVE_PDF, owner, title));
         }
         return target;
     }
@@ -117,7 +126,8 @@ public final class TablePdfReport {
     }
 
     private static void write(File target, PdfFileWriter writer, Runnable afterSaved) {
-        ReportOutputMode mode = OUTPUT_TARGETS.remove(target.getAbsolutePath());
+        Destination destination = OUTPUT_TARGETS.remove(target.getAbsolutePath());
+        ReportOutputMode mode = destination == null ? null : destination.mode();
         Task<Boolean> write = new Task<>() {
             @Override
             protected Boolean call() throws Exception {
@@ -131,8 +141,11 @@ public final class TablePdfReport {
         write.setOnSucceeded(event -> {
             if (Boolean.TRUE.equals(write.getValue())) {
                 if (mode == ReportOutputMode.PRINT_DIRECT) {
-                    deleteTemporaryPrintPdf(target);
+                    deleteTemporaryPrintPdf(target, mode);
                     AllAlerts.alertSaveWithMessage(text("report.pdf.print.sent", getSettingPrinterNormal()));
+                } else if (mode == ReportOutputMode.PREVIEW) {
+                    // The window owns the file from here, and deletes it when it closes.
+                    ReportPreviewWindow.open(destination.owner(), destination.title(), target);
                 } else {
                     AllAlerts.alertSaveWithMessage(text("party.export.success.saved.at", target.getAbsolutePath()));
                 }
@@ -168,7 +181,7 @@ public final class TablePdfReport {
         thread.start();
     }
 
-    private static String safeFileName(String title) {
+    static String safeFileName(String title) {
         return title.replaceAll("[\\\\/:*?\"<>|]", " ").trim();
     }
 
@@ -176,30 +189,30 @@ public final class TablePdfReport {
         return ReportOutputMode.fromStoredValue(getReportPdfOutputMode());
     }
 
-    private static ReportPaperSize configuredPaperSize() {
+    static ReportPaperSize configuredPaperSize() {
         return ReportPaperSize.fromStoredValue(getReportPdfPaperSize());
     }
 
     private static ReportOutputMode askOutputMode(Window owner) {
         ButtonType save = new ButtonType(text("report.pdf.output.save"), ButtonBar.ButtonData.YES);
         ButtonType print = new ButtonType(text("report.pdf.output.print"), ButtonBar.ButtonData.NO);
+        ButtonType preview = new ButtonType(text("report.pdf.output.preview"), ButtonBar.ButtonData.OTHER);
         Alert dialog = new Alert(Alert.AlertType.CONFIRMATION, text("report.pdf.output.ask"), save, print,
-                ButtonType.CANCEL);
+                preview, ButtonType.CANCEL);
         dialog.initOwner(owner);
         dialog.setTitle(text("report.pdf.output.title"));
         Optional<ButtonType> choice = dialog.showAndWait();
         if (choice.isEmpty() || choice.get().equals(ButtonType.CANCEL)) {
             return null;
         }
+        if (choice.get().equals(preview)) {
+            return ReportOutputMode.PREVIEW;
+        }
         return choice.get().equals(print) ? ReportOutputMode.PRINT_DIRECT : ReportOutputMode.SAVE_PDF;
     }
 
-    private static void deleteTemporaryPrintPdf(File target) {
-        deleteTemporaryPrintPdf(target, ReportOutputMode.PRINT_DIRECT);
-    }
-
     private static void deleteTemporaryPrintPdf(File target, ReportOutputMode mode) {
-        if (mode == ReportOutputMode.PRINT_DIRECT && target.exists() && !target.delete()) {
+        if (mode != null && mode.usesTemporaryFile() && target.exists() && !target.delete()) {
             target.deleteOnExit();
         }
     }

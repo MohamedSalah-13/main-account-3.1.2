@@ -57,6 +57,19 @@ class SharedSettingKeysTest {
         assertFalse(SharedSettingKeys.isShared("pane.index"));
     }
 
+    /**
+     * How the paper looks is the shop's; which paper is in the printer, and whether a report is saved
+     * or printed, is the desk's.
+     */
+    @Test
+    @DisplayName("the look of a printed report is the shop's, its paper and destination the desk's")
+    void theReportStyleIsSharedAndThePaperIsNot() {
+        assertTrue(SharedSettingKeys.isShared(SharedSettingKeys.REPORT_PDF_STYLE));
+        assertFalse(SharedSettingKeys.isShared("report.pdf.paper.size"));
+        assertFalse(SharedSettingKeys.isShared("report.pdf.output.mode"));
+        assertFalse(SharedSettingKeys.isShared("setting.printer.normal"));
+    }
+
     @Test
     @DisplayName("the shape of a stored invoice is the shop's, not the till's")
     void invoiceShapeIsShared() {

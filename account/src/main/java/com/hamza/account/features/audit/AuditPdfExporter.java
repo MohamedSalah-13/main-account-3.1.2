@@ -1,35 +1,29 @@
 package com.hamza.account.features.audit;
 
-import com.hamza.account.features.export.ArabicTextHelper;
+import com.hamza.account.features.export.PdfExportService;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.itextpdf.io.font.PdfEncodings;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.font.PdfFont;
-import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Cell;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.properties.BaseDirection;
-import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.layout.properties.UnitValue;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
-/** Compact PDF strategy; long JSON stays complete in Excel and is previewed here. */
+/**
+ * Compact PDF strategy; long JSON stays complete in Excel and is previewed here.
+ * <p>
+ * <b>It is printed by {@link PdfExportService}, in the shop's report style</b> - its sizes, colours, head
+ * and foot, page numbers and letterhead - like every other report. It used to draw its own page, with
+ * sizes and a blue of its own, so nothing on the report appearance tab reached it. What it keeps is its
+ * sheet: eleven columns want an A3 page on its side, whatever paper the other reports are set to. It
+ * still runs the way the reader reads, now because every report does.
+ */
 public final class AuditPdfExporter implements AuditLogExporter {
 
-    private static final String FONT = "/com/hamza/account/fonts/NotoNaskhArabic-Regular.ttf";
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int JSON_PREVIEW = 300;
+    private static final float[] WIDTHS = {5, 11, 9, 7, 9, 7, 8, 9, 10, 13, 13};
 
     @Override
     public AuditExportFormat format() {
@@ -38,73 +32,27 @@ public final class AuditPdfExporter implements AuditLogExporter {
 
     @Override
     public void export(Path target, AuditExportDocument data) throws IOException {
-        PdfFont font = loadFont();
-        try (PdfWriter writer = new PdfWriter(target.toString());
-             PdfDocument pdf = new PdfDocument(writer);
-             Document document = new Document(pdf, PageSize.A3.rotate())) {
-            document.setMargins(20, 20, 20, 20);
-            document.setFont(font);
-            boolean rtl = LanguageManager.getInstance().isRtl();
-            document.setBaseDirection(rtl ? BaseDirection.RIGHT_TO_LEFT : BaseDirection.LEFT_TO_RIGHT);
-            document.add(paragraph(text("audit.log.export.report.title"), true, 18, rtl)
-                    .setTextAlignment(TextAlignment.CENTER));
-            document.add(paragraph(text("audit.log.export.report.range", data.query().from(), data.query().to(),
-                    data.rows().size()), false, 10, rtl));
-            document.add(paragraph(text("audit.log.export.pdf.preview.note"), false, 8, rtl));
-
-            String[] headers = {"audit.log.column.id", "audit.log.column.time", "audit.log.column.actor",
-                    "audit.log.column.action", "audit.log.column.table", "audit.log.column.record",
-                    "audit.log.column.source", "audit.log.column.workstation", "audit.log.column.notes",
-                    "audit.log.details.before", "audit.log.details.after"};
-            Table table = new Table(UnitValue.createPercentArray(
-                    new float[]{5, 11, 9, 7, 9, 7, 8, 9, 10, 13, 13}));
-            table.setWidth(UnitValue.createPercentValue(100));
-            for (String key : headers) table.addHeaderCell(header(text(key), rtl));
-            int row = 0;
-            for (AuditLogEntry entry : data.rows()) {
-                String tableKey = AuditTableLabels.keyFor(entry.tableName());
-                String tableName = tableKey == null ? entry.tableName() : text(tableKey);
-                String workstation = entry.workstationName().isBlank()
-                        ? entry.workstationId() : entry.workstationName();
-                String[] values = {String.valueOf(entry.id()), DATE_TIME.format(entry.actionTime()),
-                        entry.actorName(), text(entry.action().labelKey()), tableName, entry.recordId(),
-                        source(entry.source()), workstation, entry.notes(), preview(entry.oldData()),
-                        preview(entry.newData())};
-                for (String value : values) table.addCell(body(value, row % 2 == 1, rtl));
-                row++;
-            }
-            document.add(table);
+        String[] headers = {text("audit.log.column.id"), text("audit.log.column.time"),
+                text("audit.log.column.actor"), text("audit.log.column.action"), text("audit.log.column.table"),
+                text("audit.log.column.record"), text("audit.log.column.source"),
+                text("audit.log.column.workstation"), text("audit.log.column.notes"),
+                text("audit.log.details.before"), text("audit.log.details.after")};
+        List<String[]> rows = new ArrayList<>(data.rows().size());
+        for (AuditLogEntry entry : data.rows()) {
+            String tableKey = AuditTableLabels.keyFor(entry.tableName());
+            String tableName = tableKey == null ? entry.tableName() : text(tableKey);
+            String workstation = entry.workstationName().isBlank()
+                    ? entry.workstationId() : entry.workstationName();
+            rows.add(new String[]{String.valueOf(entry.id()), DATE_TIME.format(entry.actionTime()),
+                    entry.actorName(), text(entry.action().labelKey()), tableName, entry.recordId(),
+                    source(entry.source()), workstation, entry.notes(), preview(entry.oldData()),
+                    preview(entry.newData())});
         }
-    }
-
-    private static Cell header(String value, boolean rtl) {
-        return new Cell().add(paragraph(value, true, 8, rtl))
-                .setBackgroundColor(new DeviceRgb(41, 128, 185))
-                .setFontColor(ColorConstants.WHITE)
-                .setPadding(3);
-    }
-
-    private static Cell body(String value, boolean alternate, boolean rtl) {
-        Cell cell = new Cell().add(paragraph(value, false, 7, rtl)).setPadding(2);
-        if (alternate) cell.setBackgroundColor(new DeviceRgb(242, 246, 248));
-        return cell;
-    }
-
-    private static Paragraph paragraph(String value, boolean bold, float size, boolean rtl) {
-        String safe = value == null ? "" : value;
-        Paragraph paragraph = new Paragraph(rtl ? ArabicTextHelper.shape(safe) : safe).setFontSize(size);
-        if (bold) paragraph.setBold();
-        return paragraph.setBaseDirection(rtl ? BaseDirection.RIGHT_TO_LEFT : BaseDirection.LEFT_TO_RIGHT)
-                .setTextAlignment(rtl ? TextAlignment.RIGHT : TextAlignment.LEFT);
-    }
-
-    private static PdfFont loadFont() throws IOException {
-        try (InputStream input = AuditPdfExporter.class.getResourceAsStream(FONT)) {
-            if (input == null) return PdfFontFactory.createFont();
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            input.transferTo(bytes);
-            return PdfFontFactory.createFont(bytes.toByteArray(), PdfEncodings.IDENTITY_H,
-                    PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED);
+        String subtitle = text("audit.log.export.report.range", data.query().from(), data.query().to(),
+                data.rows().size()) + "\n" + text("audit.log.export.pdf.preview.note");
+        if (!new PdfExportService().exportGroupedReport(target.toString(), text("audit.log.export.report.title"),
+                subtitle, headers, WIDTHS, rows, null, PageSize.A3.rotate())) {
+            throw new IOException("The audit log PDF could not be written to " + target);
         }
     }
 

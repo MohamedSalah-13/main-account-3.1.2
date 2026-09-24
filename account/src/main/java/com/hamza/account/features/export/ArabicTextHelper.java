@@ -93,28 +93,60 @@ public final class ArabicTextHelper {
      * @return النص بعد التشكيل بحيث تُكتَب حروفه متصلة وبالترتيب البصري الصحيح
      */
     public static String shape(String text) {
-        if (text == null || text.isEmpty()) {
+        return shapeLine(text, text);
+    }
+
+    /**
+     * One line of a longer text, shaped in the direction of the text it was broken out of.
+     * <p>
+     * <b>A text that wraps has to be broken into lines before it is shaped, never after.</b> Shaping
+     * puts a right-to-left line into the order it is drawn, so a paragraph shaped whole and then wrapped
+     * by iText put its <em>end</em> on its first line: an item's name too long for its column printed
+     * "... من إنتاج الشركة" above "زيت عباد الشمس", in every report and every invoice. The renderer
+     * breaks the logical text by measuring it and shapes each line here. The direction is the whole
+     * text's, so a second line that happens to start with a Latin word is not turned round on its own.
+     *
+     * @param paragraph the whole text the line belongs to, which decides the direction
+     */
+    public static String shapeLine(String line, String paragraph) {
+        return shapeLine(line, paragraph, true);
+    }
+
+    /**
+     * {@link #shapeLine(String, String)} on a page that runs {@code rightToLeft} or not.
+     * <p>
+     * The page's direction decides only a text with no letter in it - a date and a time, a code of digits
+     * and dashes - which has no direction of its own. On a right-to-left page it reads right to left, as
+     * it always has; on a left-to-right one it reads as written, or an English report printed
+     * "2026-09-23 09:01" as "09:01 2026-09-23".
+     */
+    public static String shapeLine(String line, String paragraph, boolean rightToLeft) {
+        if (line == null || line.isEmpty()) {
             return "";
         }
         try {
             // 1) إعادة تشكيل الحروف العربية (initial / medial / final / isolated)
-            String shaped = SHAPER.shape(isolateNumbers(text));
+            String shaped = SHAPER.shape(isolateNumbers(line));
 
             // 2) تطبيق Unicode BIDI لإرجاع النص بالترتيب البصري، ثم حذف علامات العزل
             // The paragraph's direction is the original text's first strong letter, as it always was.
             // Asked of the isolated text it would skip what the isolates hold, and a line that is all
             // English - one Latin run - would be set right to left: "Total: 5" as "5 :Total".
             Bidi bidi = new Bidi(shaped.length(), Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT);
-            bidi.setPara(shaped, paragraphLevel(text), null);
+            bidi.setPara(shaped, paragraphLevel(paragraph == null ? line : paragraph, rightToLeft), null);
             return bidi.writeReordered(Bidi.DO_MIRRORING | Bidi.REMOVE_BIDI_CONTROLS);
         } catch (ArabicShapingException e) {
-            return text;
+            return line;
         }
     }
 
     /** Left to right when the first strong letter is, otherwise right to left - an empty line included. */
-    private static byte paragraphLevel(String text) {
-        return Bidi.getBaseDirection(text) == Bidi.LTR ? (byte) 0 : (byte) 1;
+    private static byte paragraphLevel(String text, boolean rightToLeftWhenNeutral) {
+        return switch (Bidi.getBaseDirection(text)) {
+            case Bidi.LTR -> (byte) 0;
+            case Bidi.RTL -> (byte) 1;
+            default -> rightToLeftWhenNeutral ? (byte) 1 : (byte) 0;
+        };
     }
 
     /**

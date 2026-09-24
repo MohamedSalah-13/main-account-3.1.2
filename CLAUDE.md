@@ -2949,9 +2949,15 @@ totals screen's reports as much as the party ones. All three were found only by 
 to an image: the text extracted from the PDF was right all along. **A subtitle is written line by line**
 (`addHeader` splits on `\n`): it is shaped into display order before iText wraps it, so a wrapped
 Arabic subtitle prints its end on the first line - a treasury statement's note printed above its
-dates, the start date split at its hyphen. Give a long subtitle a second line rather than letting it
-wrap; one that wraps still prints backwards. `PdfExportServiceLayoutTest` now
-reads cell positions out of a real PDF, which is the only check that can see the last one.
+dates, the start date split at its hyphen. **The same was true of every Arabic line iText wrapped**, a
+table cell included - an item's name too long for its column printed "... من إنتاج الشركة" above
+"زيت عباد الشمس", in every report and every invoice - until 2026-09-23: `PdfExportService.wrapped` now
+breaks the logical text at its spaces by measuring it in the font it is drawn in, and shapes each line
+alone (`ArabicTextHelper.shapeLine`, in the whole text's direction), so iText never wraps an Arabic line
+in a table, a title, a subtitle, a footer or an invoice's notes. The fields beside an invoice's letterhead
+(identity, details, summary) and the letterhead's own lines still wrap the old way - they are short.
+`PdfExportServiceLayoutTest` now reads cell positions out of a real PDF, which is the only check that can
+see the totals line, and `TextThatWraps` holds a wrapped cell's beginning above its end.
 
 **An invoice is a document, not a report, and prints through its own path.** The A4 invoice
 first went to PDF through `TablePdfReport`, which turns any table of more than five columns
@@ -3013,6 +3019,53 @@ One consequence is accepted rather than fixed: on the 80mm receipt layout the am
 35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number
 is complete and readable, and widening those columns would narrow the name column on every row to
 help a handful. The A4 template's 62-64px columns are unaffected.
+
+**How a PDF looks is the shop's choice, not `PdfExportService`'s** (`features/export/ReportStyle`,
+2026-09-23). What the renderer held as constants is a `ReportStyle` now: six type sizes, compact rows,
+page numbers (none, `1 / 3`, or `صفحة 1 من 3`), what a report's head carries - the company (off by
+default), the title, the subtitle, when and by whom it was printed - the closing line and its text, five
+palettes and an ink saver, and on an invoice or a voucher whether the letterhead prints and how much blank
+space paper with a printed heading needs. **It is one shared setting** (`SharedSettingKeys.REPORT_PDF_STYLE`,
+written by `ReportStyleCodec`, which reads forgivingly: a value another build wrote never stops a print);
+the paper size and the output stay the computer's. **`new PdfExportService()` reads it without being told**:
+`ShopReportSetup.install()` gives `ReportSetups` a source at start-up, read afresh for every file, so none of
+the twelve callers changed, and a test gets `ReportSetup.plain()`. `ReportStyle.DEFAULT` is the old constants
+value for value, so on upgrade the only change is that a report's pages are numbered as an invoice's always
+were. The renderer holds no sentence any more (`ReportLabels` come in from the edge), so `PdfExportService`
+left `LocalizationArchitectureTest`'s list. The settings tab («شكل التقارير», `SettingTabReportStyleController`,
+built in code) saves after a pause and previews through the real renderer on made-up content
+(`ReportStyleSample`), drawn back with PDFBox. Four things only rendering found: a larger heading wraps
+sooner, and **every wrapped Arabic line had printed its end first** (the subtitle paragraph above has the
+fix); **a page number with no word in it is not shaped** - `ArabicTextHelper` reads a line with no letter as right to left and printed
+`1 / 5` as `5 / 1`; **a colour set on a `LineSeparator` is ignored** - it belongs to the `SolidLine` - so the
+rule under every invoice's head had printed black while the code asked for blue; and the shared
+`.section-title` blue vanishes on the dark theme, so the tab's root carries `report-style`, listed in
+`app-theme.css` beside the report screens. **A report runs the reader's way** (`ReportSetup.rightToLeft`,
+from the language): in English its first column is on the left, and a text with no letter in it - a date and
+a time - reads as written (`ArabicTextHelper.shapeLine(..., rightToLeft)`; on a right-to-left page it still
+reads right to left). An invoice or a voucher stays right to left whatever the language: its letterhead,
+fields and summary box are laid out for it. **The two audit PDFs print through `PdfExportService`** in the
+shop's style, keeping only their A3 sheet on its side - they had drawn their own page with a blue and sizes
+of their own, and were the one PDF that already followed the language. **Not done**: an invoice's type sizes
+are fixed, and the 80mm receipt is Jasper's. The checks tab's «طباعة عنوان التقرير» (`setting.print.report.title`) sets
+a Jasper parameter no template reads - it predates this and does nothing. **Not seen**: Windows, a real
+printer, and the tab with a database behind it (the harness handed it the company).
+
+**A report can be looked at before it goes anywhere** (`ReportOutputMode.PREVIEW`, «معاينة قبل الطباعة»,
+beside save, print directly and ask - and offered in the ask dialog too). `TablePdfReport` writes the PDF
+to a temporary file exactly as for the other modes and hands it to `table/ReportPreviewWindow`, so what is
+looked at is the file the printer gets, drawn by PDFBox, which the direct print already sends through. The
+window prints to a printer and a number of copies chosen there for this print only
+(`DirectPdfPrintService.print(..., copies)`), saves a copy, and deletes the file when it closes - after
+closing the document holding it, since Windows will not delete an open file. **One page is drawn at a
+time**, at the size shown and the screen's density (`features/export/PdfPageRenderer`): all of a hundred
+pages drawn up front is hundreds of megabytes. Which page and what size are `PreviewPager`'s, tested without
+a toolkit. **The page arrows are picked by the language**: a right-to-left window lays its buttons out
+mirrored but draws each glyph as it is, so "next" is the arrow pointing left in Arabic. The default mode is
+still saving a file, so nothing changed on upgrade; the shop turns the preview on in the printers tab.
+**Only reports that go through `TablePdfReport.chooseTarget` have it** - the item reports' own save dialog,
+the shift and the audit exports and the Jasper receipt do not. **Not seen**: a real printer (none in the
+build environment) and the save dialog, which is the system's.
 
 ### Period locks and stock counts
 
