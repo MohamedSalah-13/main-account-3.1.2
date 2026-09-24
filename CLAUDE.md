@@ -2072,9 +2072,8 @@ saves were driven through the real dialog as users without the keys.
 **The form is laid out for 1366x768**: a header with the code, two cards side by side - the person
 with the picture, the job with the salary - and one row for the address and the notes, 888 by 607
 (653 with the note that the salary has a dated history). It was one grid of fourteen fields, 1011 by
-504, with date pickers half again the height of a field: the theme gives a date picker's editor and a
-combo's list cell the padding and border of an input inside the control's own, which `.employee-form`
-takes off. **Every other date picker and combo in the program still has it** - not changed here.
+504, with date pickers half again the height of a field - the input-in-an-input the theme then lost
+everywhere (see **A control's inner input**).
 
 **`V57` was found wrong by running it, not by building it.** `ALTER TABLE jobs MODIFY COLUMN id INT
 AUTO_INCREMENT` fails with error 1833 on every install, new or upgrading, because `employees.job` is
@@ -2417,6 +2416,38 @@ like the button class it wears and a plain one keeps Modena's. The glass theme c
 and loads after, so it keeps its white. Seen on the dark and light themes on the profit and loss, the
 exchange differences, the currencies, a sales invoice and the invoices list; the inventory screen's two
 `ChoiceBox`es keep Modena's light box and were left alone.
+
+### A control's inner input
+
+**A date picker, an editable combo and a spinner are an input holding an input, and the theme styles
+only the outer one** (`app-theme.css`, 2026-09-24). The input rule gives `.date-picker`, `.combo-box`
+and `.spinner` their box - and gives the `.text-field` inside them, the editor, a second one with its
+own background, border, padding and focus glow; a non-editable combo's value is a `.list-cell` padded
+again inside the combo's padding. Measured side by side: a field 36 points tall, a combo 44, a date
+picker, an editable combo and a spinner 50, drawn as a box inside a box beside Modena's grey button -
+glaring white on the dark theme. `.combo-box-base > .text-field` and `.spinner > .text-field` are now
+the control's text and nothing more, `.combo-box > .list-cell` carries no padding, and the arrow
+buttons are transparent with their arrows in `-app-text-muted`: every one of them 36, in light and dark.
+**The glass theme pads a text field 8 by 12 at 14px**, and the base theme's padding had been lining up
+with it only by accident of the nested box, so `glass-theme.css` gives the four controls its own
+padding (41-43 beside a 43-point field), its white for their arrows - **it defines none of the `-app-*`
+tokens**, so a base rule that names one does nothing there - and the spinner the box it gives a date
+picker, since the spinner's only box under glass had been the field inside it. Two things seen under
+glass on `main` as well and left alone: a combo's value drawn as a light block, and a focused combo
+losing its border (the base theme's focus rule names tokens glass does not have). Seen by photographing the manual's 49 screens before and after
+through `ManualCapture`: 31 changed, the 18 unchanged are the ones with no such control in view, and
+the dialogs got shorter (the customer form 612 to 583 points). A rule that styles `.text-field` more
+specifically than this one - the invoices' summary cards, the item picker's search, the sign-in box -
+reaches only plain text fields today; one that reaches inside a date picker would bring the second box
+back on that screen. **A `ChoiceBox` is not in it**: it has no editor, and the inventory screen's two
+keep Modena's look on purpose.
+
+The same pictures found **the price check's warehouse reading `com.hamza.account.model.domain.Stock@…`**
+on a device's first setup: with nothing remembered it selected `StockService.getDefaultStock()` - a
+second copy of the default warehouse, and `Stock` has no `equals` - so the combo held a value its list
+did not, which JavaFX writes through the converter rather than the button cell, and there was none.
+`PriceCheckSetupDialog` takes the list's own item by id and carries a converter. The `UnitsModel` copy
+the transfer screen selected (**Warehouses**) was the same defect showing as an empty box.
 
 ### A row's detail, and a screen that has to fit 1366x768
 

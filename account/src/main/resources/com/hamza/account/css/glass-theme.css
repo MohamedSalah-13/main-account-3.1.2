@@ -166,6 +166,24 @@
     -fx-border-color: rgba(255, 255, 255, 0.6);
 }
 
+/* A combo, a date picker and a spinner carry the same padding as a text field here. Their own text
+   is the editor or the list cell inside them, and the base theme strips that of a box of its own, so
+   the control's padding is the whole of it - left at the base theme's, a combo stood 34 points
+   beside a 43-point field. */
+.combo-box-base,
+.spinner {
+    -fx-padding: 8 12;
+    -fx-font-size: 14px;
+}
+
+/* The base theme colours these arrows with one of its tokens, which this theme does not define;
+   said here with the base theme's own selectors, so they are white as the rest of this theme's are. */
+.combo-box-base > .arrow-button > .arrow,
+.spinner > .increment-arrow-button > .increment-arrow,
+.spinner > .decrement-arrow-button > .decrement-arrow {
+    -fx-background-color: white;
+}
+
 /* ComboBox */
 .combo-box {
     -fx-background-color: rgba(255, 255, 255, 0.1);
@@ -445,8 +463,10 @@
     -fx-background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Date Picker */
-.date-picker {
+/* Date Picker - and the spinner, which this theme never styled: its only box was the text field
+   inside it, and the base theme now strips that. */
+.date-picker,
+.spinner {
     -fx-background-color: rgba(255, 255, 255, 0.1);
     -fx-background-radius: 6;
     -fx-border-color: rgba(255, 255, 255, 0.3);
