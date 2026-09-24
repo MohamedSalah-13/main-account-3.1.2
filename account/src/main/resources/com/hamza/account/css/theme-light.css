@@ -311,3 +311,12 @@
     -party-row-hover: #d1fae5;
     -party-row-selected: #a7f3d0;
 }
+
+/* The delete-data screen, as the same palette class: red, the one screen whose main action cannot be
+   undone. Its header and its delete button read this; its warning and chips read -app-danger. */
+.wipe-screen {
+    -party-accent: #dc2626;
+    -party-accent-dark: #b91c1c;
+    -party-border: #fca5a5;
+    -party-shadow: rgba(220, 38, 38, 0.28);
+}

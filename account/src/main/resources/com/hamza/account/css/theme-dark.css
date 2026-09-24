@@ -321,3 +321,11 @@
     -party-row-hover: #064e3b;
     -party-row-selected: #065f46;
 }
+
+/* The delete-data screen - see theme-light.css. */
+.wipe-screen {
+    -party-accent: #ef4444;
+    -party-accent-dark: #b91c1c;
+    -party-border: rgba(252, 165, 165, 0.55);
+    -party-shadow: rgba(220, 38, 38, 0.38);
+}
