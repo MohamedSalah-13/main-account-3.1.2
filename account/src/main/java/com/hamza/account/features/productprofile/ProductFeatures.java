@@ -16,6 +16,8 @@ public final class ProductFeatures {
     public static final String CATEGORY_TREASURY = "product.profile.category.treasury";
     public static final String CATEGORY_REPORTS = "product.profile.category.reports";
     public static final String CATEGORY_SYSTEM = "product.profile.category.system";
+    /** Features sold on their own, never inside an edition (docs/pricing-and-offers-plan.md §6.1). */
+    public static final String CATEGORY_ADD_ONS = "product.profile.category.addons";
 
     public static final FeatureKey SALES_CREATE = key("sales.create");
     public static final FeatureKey SALES_RETURN_CREATE = key("sales.return.create");
@@ -67,6 +69,8 @@ public final class ProductFeatures {
     public static final FeatureKey SYSTEM_SHIFT_REPORTS = key("system.shift-reports");
     public static final FeatureKey SYSTEM_BACKUP = key("system.backup");
     public static final FeatureKey SYSTEM_DELETE_DATA = key("system.delete-data");
+    /** The offers (V85): a paid add-on - present only in a profile signed with it. */
+    public static final FeatureKey OFFERS = key("addons.offers");
 
     /** The only keys understood by schema version 1 profiles. */
     public static final Set<FeatureKey> VERSION_1_KEYS = Set.of(ITEMS_MERGE, ITEMS_PRICE_CHECK);
@@ -97,7 +101,8 @@ public final class ProductFeatures {
             def(REPORT_PROFIT_LOSS, CATEGORY_REPORTS), def(REPORT_RETURN_REASONS, CATEGORY_REPORTS),
             def(SYSTEM_SETTINGS, CATEGORY_SYSTEM), def(SYSTEM_MY_SHIFT, CATEGORY_SYSTEM),
             def(SYSTEM_SHIFT_REPORTS, CATEGORY_SYSTEM), def(SYSTEM_BACKUP, CATEGORY_SYSTEM),
-            def(SYSTEM_DELETE_DATA, CATEGORY_SYSTEM));
+            def(SYSTEM_DELETE_DATA, CATEGORY_SYSTEM),
+            addOn(OFFERS));
 
     private ProductFeatures() {
     }
@@ -108,6 +113,13 @@ public final class ProductFeatures {
 
     public static Set<FeatureKey> allKeys() {
         return DEFINITIONS.stream().map(ProductFeatureDefinition::key).collect(Collectors.toUnmodifiableSet());
+    }
+
+    /** The features sold on their own: pinned by a test in both directions, as the project's other lists are. */
+    public static Set<FeatureKey> addOns() {
+        return DEFINITIONS.stream().filter(ProductFeatureDefinition::addOn)
+                .map(ProductFeatureDefinition::key)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public static Set<FeatureKey> keysInCategory(String categoryKey) {
@@ -127,5 +139,14 @@ public final class ProductFeatures {
                 "product.profile.feature.screen.description",
                 category,
                 Set.of());
+    }
+
+    private static ProductFeatureDefinition addOn(FeatureKey key) {
+        return new ProductFeatureDefinition(key,
+                "product.profile.feature." + key.value().replace('-', '.'),
+                "product.profile.feature.addon.description",
+                CATEGORY_ADD_ONS,
+                Set.of(),
+                true);
     }
 }

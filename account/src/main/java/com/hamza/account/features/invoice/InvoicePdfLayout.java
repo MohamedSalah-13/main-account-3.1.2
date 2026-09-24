@@ -168,7 +168,30 @@ public final class InvoicePdfLayout {
         for (String[] row : currencyRows(document.currency(), labels)) {
             summary.add(DocumentPdfPage.Field.of(row[0], row[1]));
         }
+        List<String[]> offers = offerRows(document, labels);
+        for (int index = 0; index < offers.size(); index++) {
+            summary.add(new DocumentPdfPage.Field(offers.get(index)[0], offers.get(index)[1],
+                    index == offers.size() - 1));
+        }
         return summary;
+    }
+
+    /**
+     * What the offers gave, label and value, shared with the receipt (V85, ق-ع١٤): a row an offer, and last
+     * "you saved today" - every discount on the paper. None on a document no offer reached. The figures are
+     * written unsigned: a minus in a right-to-left line lands on the far side of the number.
+     */
+    static List<String[]> offerRows(InvoicePrintDocument document, Labels labels) {
+        if (document.offers().isEmpty()) {
+            return List.of();
+        }
+        List<String[]> rows = new ArrayList<>();
+        for (InvoicePrintDocument.OfferLine offer : document.offers()) {
+            rows.add(new String[]{labels.text("invoice.pdf.summary.offer") + ": " + offer.name(),
+                    Columns.money(offer.discount())});
+        }
+        rows.add(new String[]{labels.text("invoice.pdf.summary.saved"), Columns.money(document.saved())});
+        return rows;
     }
 
     /**

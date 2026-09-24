@@ -198,6 +198,7 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
         if (!Double.isFinite(draft.discount()) || draft.discount() < 0) {
             throw new UserValidationException(text("invoice.line.error.discount.invalid"));
         }
+        InvoiceLineEditService.requireWithinTheLine(draft.quantity(), draft.price(), draft.discount());
     }
 
     private void requireSalePrice(InvoiceLineDraft draft) throws BusinessRuleException {

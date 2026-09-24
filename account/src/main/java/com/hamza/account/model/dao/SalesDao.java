@@ -94,7 +94,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
                 , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getTotalSelPrice()
                 , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
                 , sales.getUnitsType().getValue(), sales.getExpiration_date()
-                , sales.getPriceForeign(), sales.getDiscountForeign(), sales.getListPrice()};
+                , sales.getPriceForeign(), sales.getDiscountForeign(), sales.getListPrice()
+                , sales.getOfferId(), sales.getOfferDiscount()};
     }
 
     @Override
@@ -149,6 +150,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
             sales.setDiscountForeign(rs.getBigDecimal(ForeignLineColumns.DISCOUNT));
             // What the price tier said for the line (V84); null on every line saved before it.
             sales.setListPrice(rs.getBigDecimal(LIST_PRICE));
+            // The offer that wrote the line's discount (V85); null and zero on every other line.
+            OfferLineColumns.read(rs, sales);
 
 
         } catch (SQLException e) {

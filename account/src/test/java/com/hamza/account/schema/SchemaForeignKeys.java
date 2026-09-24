@@ -64,7 +64,9 @@ public final class SchemaForeignKeys {
             // And a document written in it.
             "V83__document_currency.sql",
             // A tier filled from another tier, and a document priced at one (never cascading: a tier is never deleted).
-            "V84__price_tiers.sql");
+            "V84__price_tiers.sql",
+            // An offer and its targets: the item, the unit, the two groups, and the sale and return lines naming it.
+            "V85__offers.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

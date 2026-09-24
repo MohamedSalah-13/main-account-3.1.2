@@ -77,10 +77,11 @@ public record DocumentTableSpec(
             // The two foreign columns last on all four (V83): the price and the discount as typed in
             // the document's currency, beside the base figures - see docs/currency-plan.md §15 ق-د٣.
             // Then the list price, on the sales lines alone (V84): what the price tier said, beside the
-            // price charged - docs/pricing-and-offers-plan.md ق-س٤.
+            // price charged - docs/pricing-and-offers-plan.md ق-س٤. Then the offer that wrote the line's
+            // discount and its part of it (V85, ق-ع١), on the two sales families.
             List.of("invoice_number", "num", "type", "quantity", "price", "buy_price", "total_sel_price",
                     "total_buy_price", "total_profit", "discount", "type_value", "expiration_date",
-                    "price_foreign", "discount_foreign", "list_price"));
+                    "price_foreign", "discount_foreign", "list_price", "offer_id", "offer_discount"));
 
     public static final DocumentTableSpec PURCHASE = new DocumentTableSpec(
             DocumentType.PURCHASE,
@@ -107,9 +108,10 @@ public record DocumentTableSpec(
                     "stock_id", "delegate_id", "treasury_id", "notes"),
             // source_line_id last, as the two return families both carry it and neither
             // invoice family has it - see V16__return_source.sql.
+            // The source line's offer and this line's share of its discount (V85, ق-ع١١) last.
             List.of("invoice_number", "item_id", "type", "quantity", "price", "buy_price", "total_sel_price",
                     "total_buy_price", "total_profit", "discount", "type_value", "expiration_date",
-                    "source_line_id", "price_foreign", "discount_foreign"));
+                    "source_line_id", "price_foreign", "discount_foreign", "offer_id", "offer_discount"));
 
     public static final DocumentTableSpec PURCHASE_RETURN = new DocumentTableSpec(
             DocumentType.PURCHASE_RETURN,

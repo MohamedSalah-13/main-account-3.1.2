@@ -54,7 +54,8 @@ public record InvoicePrintDocument(
         BigDecimal paid,
         String printedAt,
         Balance balance,
-        DocumentCurrency currency) {
+        DocumentCurrency currency,
+        List<OfferLine> offers) {
 
     public InvoicePrintDocument {
         Objects.requireNonNull(letterhead, "letterhead");
@@ -71,6 +72,45 @@ public record InvoicePrintDocument(
         total = MoneyMath.money(total);
         discount = MoneyMath.money(discount);
         paid = MoneyMath.money(paid);
+        offers = offers == null ? List.of() : List.copyOf(offers);
+    }
+
+    /** A document with no offer on it - every purchase and return, and every sale no offer reached. */
+    public InvoicePrintDocument(Letterhead letterhead, DocumentType type, int number, String date, String partyName,
+                                InvoiceType invoiceType, String stockName, String delegateName,
+                                int sourceInvoiceNumber, String returnReason, String notes,
+                                List<ModelPrintInvoice> lines, BigDecimal total, BigDecimal discount,
+                                BigDecimal paid, String printedAt, Balance balance, DocumentCurrency currency) {
+        this(letterhead, type, number, date, partyName, invoiceType, stockName, delegateName, sourceInvoiceNumber,
+                returnReason, notes, lines, total, discount, paid, printedAt, balance, currency, List.of());
+    }
+
+    /** The same document, saying what each offer on its lines gave (V85, ق-ع١٤). */
+    public InvoicePrintDocument withOffers(List<OfferLine> offers) {
+        return new InvoicePrintDocument(letterhead, type, number, date, partyName, invoiceType, stockName,
+                delegateName, sourceInvoiceNumber, returnReason, notes, lines, total, discount, paid, printedAt,
+                balance, currency, offers);
+    }
+
+    /**
+     * What the customer saved on this paper: every line's discount and the invoice's own. Said only on a
+     * document an offer reached - "you saved today" is the offers' line, and a shop that has none prints
+     * what it always printed.
+     */
+    public BigDecimal saved() {
+        BigDecimal lineDiscounts = lines.stream()
+                .map(line -> MoneyMath.money(line.getDiscount()))
+                .reduce(MoneyMath.ZERO, MoneyMath::add);
+        return MoneyMath.add(lineDiscounts, discount);
+    }
+
+    /** One offer on the document: its name and what it gave, across its lines. */
+    public record OfferLine(String name, BigDecimal discount) {
+
+        public OfferLine {
+            name = text(name);
+            discount = MoneyMath.money(discount);
+        }
     }
 
     /** A document of a party in the base. */

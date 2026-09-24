@@ -26,7 +26,8 @@ class ProductProfileWiringArchitectureTest {
         // 52 since the customers' and suppliers' payments became one button, which either feature opens;
         // 51 since the sales and purchases by year became one button of monthly totals the same way;
         // 50 since the item movement ranking and the daily item sales became one button of item sales.
-        assertEquals(50, gatedScreens);
+        // 51 since the offers (V85), a paid add-on of their own.
+        assertEquals(51, gatedScreens);
         assertTrue(source.contains("ProductFeatures.SALES_CREATE"));
         assertTrue(source.contains("ProductFeatures.REPORT_PROFIT_LOSS"));
         assertTrue(source.contains("ProductFeatures.SYSTEM_DELETE_DATA"));

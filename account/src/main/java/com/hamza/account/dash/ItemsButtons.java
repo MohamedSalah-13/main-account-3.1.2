@@ -100,6 +100,22 @@ public class ItemsButtons {
         };
     }
 
+    /** The offers (V85): a tab of its own, opened on {@code offer.show}; the add-on is the button's to ask. */
+    public ButtonWithPerm offers() {
+        return new ButtonWithPerm() {
+            @Override public PermissionKey getPermissionType() { return AppPermissions.OFFER_SHOW; }
+            @Override public void action() { }
+            @NotNull @Override public String textName() {
+                return LanguageManager.getInstance().getString("offers.title");
+            }
+            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                addItemTab(tabPane, new OpenFxmlApplication(
+                        new com.hamza.account.controller.items.OffersController()).getPane(), textName());
+            }
+            @Override public boolean showOnTapPane() { return true; }
+        };
+    }
+
     public ButtonWithPerm masterData() {
         return new MasterDataButton();
     }

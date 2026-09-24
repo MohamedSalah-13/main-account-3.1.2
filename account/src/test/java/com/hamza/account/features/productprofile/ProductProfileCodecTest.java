@@ -105,6 +105,29 @@ class ProductProfileCodecTest {
         assertTrue(profile.isEnabled(ProductFeatures.SYSTEM_SETTINGS));
         assertTrue(profile.isEnabled(ProductFeatures.ITEMS_PRICE_CHECK));
         assertFalse(profile.isEnabled(ProductFeatures.ITEMS_MERGE));
+        assertFalse(profile.isEnabled(ProductFeatures.OFFERS),
+                "a new screen stays on for an old profile; a paid add-on is not a screen it had");
+    }
+
+    @Test
+    void aVersionTwoProfileHasTheAddOnOnlyWhenItNamesIt() throws Exception {
+        ProductProfile without = codec.decode(signPayload(versionTwo(new JSONArray()
+                .put(ProductFeatures.SALES_CREATE.value()))));
+        ProductProfile with = codec.decode(signPayload(versionTwo(new JSONArray()
+                .put(ProductFeatures.SALES_CREATE.value()).put(ProductFeatures.OFFERS.value()))));
+        assertFalse(without.isEnabled(ProductFeatures.OFFERS));
+        assertTrue(with.isEnabled(ProductFeatures.OFFERS));
+    }
+
+    private static String versionTwo(JSONArray features) {
+        return new JSONObject()
+                .put("type", ProductProfileCodec.PAYLOAD_TYPE)
+                .put("version", 2)
+                .put("customer", "عميل")
+                .put("profile", "كاملة + العروض")
+                .put("issuedAt", "2026-09-24T12:00:00Z")
+                .put("features", features)
+                .toString();
     }
 
     @Test

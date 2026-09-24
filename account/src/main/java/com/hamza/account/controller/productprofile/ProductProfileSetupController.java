@@ -219,9 +219,14 @@ public final class ProductProfileSetupController {
 
             CheckBox feature = new CheckBox(
                     LanguageManager.getInstance().getString(definition.titleKey()));
-            feature.setSelected(true);
+            // An add-on starts unticked and no edition ticks it: a shop has one only if somebody ticked it
+            // for that shop by hand (docs/pricing-and-offers-plan.md §6.1). Ticking one leaves the edition
+            // what it was - "full" and the offers is still "full".
+            feature.setSelected(!definition.addOn());
             feature.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                markCustomPreset();
+                if (!definition.addOn()) {
+                    markCustomPreset();
+                }
                 refreshCategoryCount(definition.categoryKey());
             });
             Label explanation = new Label(
@@ -334,7 +339,11 @@ public final class ProductProfileSetupController {
 
         applyingPreset = true;
         try {
-            featureBoxes.forEach((key, box) -> box.setSelected(preset.enabledFeatures().contains(key)));
+            featureBoxes.forEach((key, box) -> {
+                if (!catalog.isAddOn(key)) {
+                    box.setSelected(preset.enabledFeatures().contains(key));
+                }
+            });
             profileNameField.setText(LanguageManager.getInstance().getString(preset.nameKey()));
         } finally {
             applyingPreset = false;

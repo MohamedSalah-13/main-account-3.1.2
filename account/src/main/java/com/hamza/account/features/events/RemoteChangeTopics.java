@@ -84,6 +84,8 @@ public final class RemoteChangeTopics {
         declare("currencies", new CurrenciesChanged(), Announcer.RELAY);
         // SERVICE: PriceTierService announces inside the transaction that renames or switches off a tier.
         declare("price.tiers", new PriceTiersChanged(), Announcer.SERVICE);
+        // SERVICE: OfferService announces inside the transaction that writes, switches or deletes an offer.
+        declare("offers", new OffersChanged(), Announcer.SERVICE);
         // SERVICE since the expenses rework: ExpenseService announces inside its transaction, so a batch
         // refused on its third line tells no other till to reload for the two lines that were rolled back.
         declare("expenses", new ExpensesChanged(), Announcer.SERVICE);

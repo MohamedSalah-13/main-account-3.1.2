@@ -322,6 +322,17 @@
     -party-row-selected: #065f46;
 }
 
+/* The offers screen - see theme-light.css. */
+.screen-offers {
+    -party-accent: #ec4899;
+    -party-accent-dark: #be185d;
+    -party-border: rgba(244, 114, 182, 0.55);
+    -party-shadow: rgba(219, 39, 119, 0.38);
+    -party-row-alt: #500724;
+    -party-row-hover: #831843;
+    -party-row-selected: #9d174d;
+}
+
 /* The delete-data screen - see theme-light.css. */
 .wipe-screen {
     -party-accent: #ef4444;

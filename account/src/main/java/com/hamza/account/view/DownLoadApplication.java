@@ -327,6 +327,10 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(com.hamza.account.features.pricing.TierFillService.class,
                 new com.hamza.account.features.pricing.TierFillService(new JdbcPriceTierRepository(),
                         new com.hamza.account.features.pricing.JdbcTierFillRepository()));
+        // The offers (V85): the add-on is asked of ProductFeatureAccess, registered above, on every call.
+        ServiceRegistry.register(com.hamza.account.features.offers.OfferService.class,
+                new com.hamza.account.features.offers.OfferService(
+                        new com.hamza.account.features.offers.JdbcOfferRepository()));
         JdbcCashierTreasuryAssignmentRepository cashierTreasuryRepository =
                 new JdbcCashierTreasuryAssignmentRepository();
         ShiftPolicyService shiftPolicies = new ShiftPolicyService(

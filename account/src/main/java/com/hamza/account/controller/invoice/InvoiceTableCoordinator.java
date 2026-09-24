@@ -156,6 +156,20 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
                         BasePurchasesAndSales::total_after_discountProperty)));
     }
 
+    /**
+     * The offer that wrote a line's discount (V85, ق-ع١٤): its name, blank on a line no offer reached. Added
+     * last, after every column this class numbers, so nothing it reaches by index moves. A snapshot of a
+     * plain field: whoever writes the offers on the lines redraws the table.
+     */
+    public static <L extends BasePurchasesAndSales> TableColumn<L, String> offerColumn() {
+        TableColumn<L, String> column = Columns.text("invoice.column.offer",
+                line -> line.getOfferName() == null ? "" : line.getOfferName());
+        column.setId("invoiceOfferColumn");
+        column.setPrefWidth(170);
+        column.setMaxWidth(240);
+        return column;
+    }
+
     private void addIdentityColumns() {
         addColumn(table, LanguageManager.getInstance().getString("barcode"), BARCODE_COLUMN,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)

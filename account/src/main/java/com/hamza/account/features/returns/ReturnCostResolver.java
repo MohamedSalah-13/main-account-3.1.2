@@ -69,6 +69,9 @@ public final class ReturnCostResolver {
             BasePurchasesAndSales original = originalRows.get(index);
             if (original == null || original.getSourceLineId() <= 0) {
                 requireLineComesFromTheSource(sourceInvoiceNumber);
+                // A free return is given no offer (ق-ع١١): there is no line it could have come from.
+                persistedLines.get(index).setOfferId(null);
+                persistedLines.get(index).setOfferDiscount(BigDecimal.ZERO);
                 continue;
             }
             int sourceLineId = original.getSourceLineId();
@@ -86,7 +89,24 @@ public final class ReturnCostResolver {
             double taken = takenByLine.merge(sourceLineId, persisted.getQuantity(), Double::sum);
             requireWithinTheLine(source, returnedByLine.getOrDefault(sourceLineId, 0.0), taken);
             persisted.setBuy_price(source.buyPrice());
+            carryTheOffer(persisted, source);
         }
+    }
+
+    /**
+     * The source line's offer, and this line's share of what the offer gave - in the proportion its share of
+     * the whole discount is taken, by the same arithmetic (V85, ق-ع١١). Written from the source line, never
+     * from the screen: what an offer gave back on a return is a figure a report of the offers will read.
+     */
+    static void carryTheOffer(BasePurchasesAndSales persisted, ReturnableRepository.SourceLine source) {
+        if (source.offerId() == null || source.offerDiscount() == 0 || source.quantity() <= 0) {
+            persisted.setOfferId(null);
+            persisted.setOfferDiscount(BigDecimal.ZERO);
+            return;
+        }
+        persisted.setOfferId(source.offerId());
+        persisted.setOfferDiscount(MoneyMath.multiply(source.offerDiscount(),
+                persisted.getQuantity() / source.quantity()));
     }
 
     /**

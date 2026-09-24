@@ -155,6 +155,6 @@ public final class InvoicePrintDocumentBuilder {
     private static InvoicePrintDocument withBalance(InvoicePrintDocument d, InvoicePrintDocument.Balance b) {
         return new InvoicePrintDocument(d.letterhead(), d.type(), d.number(), d.date(), d.partyName(),
                 d.invoiceType(), d.stockName(), d.delegateName(), d.sourceInvoiceNumber(), d.returnReason(),
-                d.notes(), d.lines(), d.total(), d.discount(), d.paid(), d.printedAt(), b, d.currency());
+                d.notes(), d.lines(), d.total(), d.discount(), d.paid(), d.printedAt(), b, d.currency(), d.offers());
     }
 }

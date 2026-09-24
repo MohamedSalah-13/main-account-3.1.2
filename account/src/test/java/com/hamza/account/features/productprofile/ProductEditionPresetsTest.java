@@ -29,7 +29,8 @@ class ProductEditionPresetsTest {
         ProductEditionPreset sales = presets.stream().filter(preset -> preset.id().equals("sales")).findFirst().orElseThrow();
         ProductEditionPreset inventory = presets.stream().filter(preset -> preset.id().equals("inventory")).findFirst().orElseThrow();
 
-        assertEquals(catalog.keys(), full.enabledFeatures());
+        assertEquals(catalog.keysWithoutAddOns(), full.enabledFeatures(), "\"full\" is every screen, and no add-on");
+        presets.forEach(preset -> assertFalse(preset.enabledFeatures().contains(ProductFeatures.OFFERS), preset.id()));
         assertTrue(sales.enabledFeatures().contains(ProductFeatures.SALES_CREATE));
         assertFalse(sales.enabledFeatures().contains(ProductFeatures.PURCHASES_CREATE));
         assertTrue(inventory.enabledFeatures().contains(ProductFeatures.ITEMS_STOCK_COUNT));

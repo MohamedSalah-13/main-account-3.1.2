@@ -193,8 +193,27 @@ public final class InvoiceLineEditService {
         if (!Double.isFinite(discount) || discount < 0) {
             throw new UserValidationException(text("invoice.line.error.discount.invalid"));
         }
+        // An offer takes the place of a manual discount on its line (V85, ق-ع٨): the person at the
+        // till is told which offer, rather than seeing the figure typed quietly replaced.
+        if (line.getOfferId() != null) {
+            throw new UserValidationException(text("invoice.line.error.discount.offer",
+                    line.getOfferName() == null ? "" : line.getOfferName()));
+        }
+        requireWithinTheLine(line.getQuantity(), line.getPrice(), discount);
         line.setDiscount(discount);
         InvoiceLineService.recalculate(line);
+    }
+
+    /**
+     * A line's discount is at most the line: more than it left a line whose net was below zero, and a
+     * refund of money nobody paid (docs/pricing-and-offers-plan.md §1.2).
+     */
+    static void requireWithinTheLine(double quantity, double price, double discount)
+            throws UserValidationException {
+        if (com.hamza.account.finance.MoneyMath.decimal(discount)
+                .compareTo(com.hamza.account.finance.MoneyMath.multiply(quantity, price)) > 0) {
+            throw new UserValidationException(text("invoice.line.error.discount.above.total"));
+        }
     }
 
     /**

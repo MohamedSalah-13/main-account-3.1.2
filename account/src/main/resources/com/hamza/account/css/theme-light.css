@@ -312,6 +312,18 @@
     -party-row-selected: #a7f3d0;
 }
 
+/* The offers screen (V85), as the same palette class: rose, a price made lower for a while, told apart
+   from a currency (emerald) and an expense (amber) at a glance. */
+.screen-offers {
+    -party-accent: #db2777;
+    -party-accent-dark: #be185d;
+    -party-border: #f9a8d4;
+    -party-shadow: rgba(219, 39, 119, 0.28);
+    -party-row-alt: #fdf2f8;
+    -party-row-hover: #fce7f3;
+    -party-row-selected: #fbcfe8;
+}
+
 /* The delete-data screen, as the same palette class: red, the one screen whose main action cannot be
    undone. Its header and its delete button read this; its warning and chips read -app-danger. */
 .wipe-screen {

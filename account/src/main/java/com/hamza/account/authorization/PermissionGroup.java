@@ -46,6 +46,9 @@ public enum PermissionGroup {
     ITEMS("user.category.items", "items.", "main.group.", "sub.group.", "units.", "sel.price.",
             "show.column."),
 
+    /** The offers (V85): a paid add-on of its own, so its keys are a section of their own. */
+    OFFERS("user.category.offers", "offer."),
+
     /** Warehouses, their balances, the transfers between them and the counts over them. */
     STOCK("user.category.stock", "stock.", "inventory."),
 
