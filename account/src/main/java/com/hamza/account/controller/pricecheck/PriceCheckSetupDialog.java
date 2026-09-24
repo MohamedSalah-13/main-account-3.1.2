@@ -24,6 +24,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
@@ -64,6 +65,20 @@ public class PriceCheckSetupDialog {
         ComboBox<Stock> comboStock = new ComboBox<>(FXCollections.observableArrayList(stocks));
         comboStock.setButtonCell(stockCell());
         comboStock.setCellFactory(list -> stockCell());
+        // A value the list does not hold is written through the converter, not the button cell,
+        // and without one that is Object.toString: the first setup showed the default warehouse
+        // as "com.hamza.account.model.domain.Stock@200a03b3".
+        comboStock.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Stock stock) {
+                return stock == null ? "" : stock.getName();
+            }
+
+            @Override
+            public Stock fromString(String name) {
+                return null;
+            }
+        });
         comboStock.getSelectionModel().select(selectedStock(stocks, stockService));
 
         ComboBox<Integer> comboTier = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3));
@@ -179,13 +194,21 @@ public class PriceCheckSetupDialog {
         return stocks.stream()
                 .filter(stock -> stock.getId() == remembered)
                 .findFirst()
-                .orElseGet(() -> {
-                    try {
-                        return stockService.getDefaultStock();
-                    } catch (Exception unavailable) {
-                        return stocks.getFirst();
-                    }
-                });
+                .orElseGet(() -> defaultAmong(stocks, stockService));
+    }
+
+    /**
+     * The default warehouse as the list's own item. {@code getDefaultStock()} reads a second copy,
+     * and {@code Stock} has no {@code equals}: selected, that copy was a value the list does not
+     * hold, so the combo wrote it with {@code toString} on the first setup of every device.
+     */
+    private static Stock defaultAmong(List<Stock> stocks, StockService stockService) {
+        try {
+            int defaultId = stockService.getDefaultStock().getId();
+            return stocks.stream().filter(stock -> stock.getId() == defaultId).findFirst().orElse(stocks.getFirst());
+        } catch (Exception unavailable) {
+            return stocks.getFirst();
+        }
     }
 
     /** The scale layout exactly as the barcode settings tab has it - one source, not two. */

@@ -190,6 +190,43 @@
     -fx-text-fill: inherit;
 }
 
+/* A date picker, an editable combo and a spinner are an input holding an input: the rules above give
+   the control its box and give the text field inside it - the editor - a second box, with its own
+   background, border, padding and focus glow. So each stood 50 points tall beside a 36-point field,
+   drawn as a box inside a box beside a grey Modena button, glaring white on the dark theme. The
+   editor here is the control's text and nothing more; the control keeps the one box. A combo that
+   is not editable shows its value in a list cell, padded again inside the combo's own padding, 44
+   points tall. Measured with every control side by side under each theme. */
+.combo-box-base > .text-field,
+.combo-box-base > .text-field:focused,
+.combo-box-base > .text-field:disabled,
+.spinner > .text-field,
+.spinner > .text-field:focused,
+.spinner > .text-field:disabled {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-effect: null;
+    -fx-opacity: 1;
+}
+
+.combo-box > .list-cell {
+    -fx-padding: 0;
+}
+
+.combo-box-base > .arrow-button,
+.spinner > .increment-arrow-button,
+.spinner > .decrement-arrow-button {
+    -fx-background-color: transparent;
+}
+
+.combo-box-base > .arrow-button > .arrow,
+.spinner > .increment-arrow-button > .increment-arrow,
+.spinner > .decrement-arrow-button > .decrement-arrow {
+    -fx-background-color: -app-text-muted;
+    -fx-background-insets: 0;
+}
+
 .text-field:focused,
 .password-field:focused,
 .text-area:focused,
@@ -626,27 +663,6 @@
 }
 
 /* ---------- The employee form (EmployeeFormController) ---------- */
-
-/* A date picker is an input holding an input: the rules above gave its editor a border and a padding
-   of its own inside the picker's, so it stood half again the height of the field beside it. Here the editor
-   is the picker's text and nothing more - what the glass theme already does for every picker. */
-.employee-form .date-picker > .text-field,
-.employee-form .date-picker > .text-field:focused {
-    -fx-background-color: transparent;
-    -fx-border-width: 0;
-    -fx-padding: 0;
-    -fx-effect: null;
-}
-
-/* The same input-in-an-input for a combo: its value is a list cell padded inside the combo's padding,
-   so a combo stood a third taller than the field beside it. */
-.employee-form .combo-box > .list-cell {
-    -fx-padding: 0;
-}
-
-.employee-form .date-picker > .arrow-button {
-    -fx-background-color: transparent;
-}
 
 /* The identity header, a little shorter than a list screen's: this is a dialog on a 768-tall display. */
 .employee-form-header {
