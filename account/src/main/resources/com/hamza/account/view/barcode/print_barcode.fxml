@@ -66,11 +66,12 @@
                     <padding>
                         <Insets bottom="4.0" left="6.0" right="16.0" top="4.0"/>
                     </padding>
-                    <VBox minHeight="210.0" spacing="6.0" styleClass="app-card" VBox.vgrow="ALWAYS">
+                    <VBox spacing="6.0" styleClass="app-card" VBox.vgrow="ALWAYS">
                         <Label styleClass="section-title" text="%barcode.print.preview.title"/>
-                        <StackPane minHeight="150.0" styleClass="barcode-preview-surface" VBox.vgrow="ALWAYS">
-                            <ImageView fx:id="previewImage" fitHeight="210.0" fitWidth="300.0"
-                                       preserveRatio="true" smooth="true"/>
+                        <!-- Sized by its card, never by its image: PrintBarcode fits the image inside it. -->
+                        <StackPane fx:id="previewSurface" minHeight="60.0" minWidth="0.0" prefHeight="210.0"
+                                   prefWidth="0.0" styleClass="barcode-preview-surface" VBox.vgrow="ALWAYS">
+                            <ImageView fx:id="previewImage" preserveRatio="true" smooth="true"/>
                         </StackPane>
                         <Label fx:id="labelPreviewStatus" maxWidth="1.7976931348623157E308"
                                styleClass="status-label" text="%barcode.print.preview.empty" wrapText="true"/>

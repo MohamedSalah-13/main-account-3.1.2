@@ -3099,8 +3099,12 @@ Jasper's viewer** - their screen draws them in Java2D and previews the selected 
 what they gained is «معاينة كل الملصقات»: every item's label, a page per item and not per copy, drawn by
 the engine at the printer's own density (`BarcodePrintEngine.labelDrawer`) and enlarged a dot to a block, so
 the page shown still scans. Its print sends the batch as it stood through `BarcodePrintService.print`, on the
-printer chosen in the window; the window's copies are the whole batch again, a job each. **Not seen**: a
-real printer (none in the build environment), Windows, and the save dialog, which is the system's.
+printer chosen in the window; the window's copies are the whole batch again, a job each. **The screen's own
+preview follows its card** (`LabelPreviewFit`): the image had a fixed 300 by 210 box and the card a fixed
+minimum height, so at the screen's opening size a double label covered the card's title and spilled past
+its edge, and at its minimum size the column rose over the printer bar; it is now fitted inside the card
+and never enlarged past a pixel per dot. **Not seen**: a real printer (none in the build environment),
+Windows, and the save dialog, which is the system's.
 
 ### Period locks and stock counts
 
