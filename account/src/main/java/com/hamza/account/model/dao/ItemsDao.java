@@ -21,6 +21,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -721,7 +722,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public String firstBarcodeTakenByAnotherItem(List<String> codes, int exceptItemId) throws DaoException {
         if (codes.isEmpty()) return null;
 
-        return withConnection(connection -> {
+        String taken = withConnection(connection -> {
             try (PreparedStatement statement = takenBarcodesStatement(connection, codes, exceptItemId, true);
                  ResultSet rs = statement.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
@@ -729,6 +730,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 throw new DaoException(e.getMessage(), e);
             }
         });
+        if (taken != null) {
+            return taken;
+        }
+        Map<String, String> bundles = bundlesHolding(codes);
+        return codes.stream().filter(bundles::containsKey).findFirst().orElse(null);
     }
 
     /**
@@ -744,18 +750,52 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public Set<String> takenBarcodesAmong(List<String> codes, int exceptItemId) throws DaoException {
         if (codes.isEmpty()) return Set.of();
 
-        return withConnection(connection -> {
+        Set<String> taken = withConnection(connection -> {
             try (PreparedStatement statement = takenBarcodesStatement(connection, codes, exceptItemId, false);
                  ResultSet rs = statement.executeQuery()) {
-                Set<String> taken = new HashSet<>();
+                Set<String> found = new HashSet<>();
                 while (rs.next()) {
-                    taken.add(rs.getString(1));
+                    found.add(rs.getString(1));
                 }
-                return taken;
+                return found;
             } catch (SQLException e) {
                 throw new DaoException(e.getMessage(), e);
             }
         });
+        taken.addAll(bundlesHolding(codes).keySet());
+        return taken;
+    }
+
+    /**
+     * The bundles (V87) answering to any of {@code codes}, by code - a fourth place a scanned code can land, and
+     * the one the till tries first, so an item must not be given a code a bundle carries. Asked apart from the
+     * union above rather than as a fourth branch of it: {@code offer} is a migration's table and can differ in
+     * collation from a restored one's, and here each code is bound against the one column alone.
+     */
+    private Map<String, String> bundlesHolding(List<String> codes) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(bundleBarcodesSql(codes.size()))) {
+                int index = 1;
+                for (String code : codes) {
+                    statement.setString(index++, code);
+                }
+                try (ResultSet rs = statement.executeQuery()) {
+                    Map<String, String> bundles = new HashMap<>();
+                    while (rs.next()) {
+                        bundles.put(rs.getString(1), rs.getString(2));
+                    }
+                    return bundles;
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
+    /** The text of {@link #bundlesHolding}, separated so a test can read it. */
+    static String bundleBarcodesSql(int codeCount) {
+        return "SELECT barcode, name FROM offer WHERE barcode IN ("
+                + String.join(",", Collections.nCopies(codeCount, "?")) + ")";
     }
 
     /**
@@ -828,7 +868,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 LIMIT 1
                 """;
 
-        return withConnection(connection -> {
+        String item = withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(query)) {
                 statement.setInt(1, exceptItemId);
                 statement.setString(2, code);
@@ -841,6 +881,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 throw new DaoException(e.getMessage(), e);
             }
         });
+        // A bundle's barcode is taken too: the till tries it before an item's (V87).
+        return item != null ? item : bundlesHolding(List.of(code)).get(code);
     }
 
     public int maxItemId() {

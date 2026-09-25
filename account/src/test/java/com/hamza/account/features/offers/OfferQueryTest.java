@@ -15,7 +15,7 @@ class OfferQueryTest {
 
     private static final String COLUMNS = "o.id, o.name, o.kind, o.status, o.starts_on, o.ends_on, o.weekdays,"
             + " o.priority, o.percent, o.amount, o.offer_price, o.unit_id, o.buy_quantity, o.get_quantity,"
-            + " o.get_percent, o.max_per_invoice, o.quantity_limit, o.notes, o.updated_at";
+            + " o.get_percent, o.max_per_invoice, o.quantity_limit, o.threshold, o.barcode, o.notes, o.updated_at";
 
     @Test
     @DisplayName("the till's snapshot, the save's offers for a day, and a document's own")
@@ -37,17 +37,29 @@ class OfferQueryTest {
     void writes() {
         assertEquals("INSERT INTO offer (name, kind, status, starts_on, ends_on, weekdays, priority, percent, amount,"
                 + " offer_price, unit_id, buy_quantity, get_quantity, get_percent, max_per_invoice, quantity_limit,"
-                + " notes, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                OfferQuery.INSERT_SQL);
+                + " threshold, barcode, notes, user_id)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", OfferQuery.INSERT_SQL);
         assertEquals("UPDATE offer SET name = ?, kind = ?, starts_on = ?, ends_on = ?, weekdays = ?, priority = ?,"
                 + " percent = ?, amount = ?, offer_price = ?, unit_id = ?, buy_quantity = ?, get_quantity = ?,"
-                + " get_percent = ?, max_per_invoice = ?, quantity_limit = ?, notes = ?"
+                + " get_percent = ?, max_per_invoice = ?, quantity_limit = ?, threshold = ?, barcode = ?, notes = ?"
                 + " WHERE id = ? AND updated_at = ?", OfferQuery.UPDATE_SQL);
         assertEquals("UPDATE offer SET status = ? WHERE id = ? AND updated_at = ?", OfferQuery.STATUS_SQL);
         assertEquals("INSERT INTO offer_target (offer_id, role, scope, item_id, unit_id, sub_group_id, main_group_id,"
-                + " excluded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", OfferQuery.INSERT_TARGET_SQL);
+                + " excluded, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", OfferQuery.INSERT_TARGET_SQL);
         assertEquals("SELECT (SELECT COUNT(*) FROM sales WHERE offer_id = ?)"
                 + " + (SELECT COUNT(*) FROM sales_re WHERE offer_id = ?)", OfferQuery.USED_SQL);
+    }
+
+    @Test
+    @DisplayName("a bundle's barcode: another offer's, or an item's through its three columns, never a UNION of them")
+    void barcodes() {
+        assertEquals("SELECT COUNT(*) FROM offer WHERE barcode = ? AND id <> ?", OfferQuery.BARCODE_TAKEN_SQL);
+        assertEquals("SELECT i.nameItem FROM items i WHERE i.barcode = ?"
+                + " OR i.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)"
+                + " OR i.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?) LIMIT 1",
+                OfferQuery.ITEM_HOLDING_BARCODE_SQL);
+        assertTrue(OfferQuery.targetsSql(1).startsWith("SELECT t.offer_id, t.role, t.scope, t.item_id, t.unit_id,"
+                + " t.sub_group_id, t.main_group_id, t.excluded, t.quantity, i.nameItem,"), "a component's quantity");
     }
 
     @Test

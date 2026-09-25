@@ -18,7 +18,9 @@ import java.util.Set;
  * offer reaches that prices it: <b>one time of the offer</b> - a unit of a price offer, a whole group of a
  * quantity offer or a "buy and get" - at that tier's price, and what the engine leaves of it, per unit. On a
  * "buy and get" of a gift item the gift is judged beside each item that earns it, the discount shared between
- * them by value as it is on an invoice (ق-ع٢). An item is listed at its worst tier, the gift once.
+ * them by value as it is on an invoice (ق-ع٢). An item is listed at its worst tier, the gift once. A bundle is
+ * judged whole, each component at its share (V87); an invoice offer as the percentage it would take off each
+ * item it reaches.
  */
 public final class OfferCostCheck {
 
@@ -64,6 +66,12 @@ public final class OfferCostCheck {
      */
     public static List<BelowCost> below(Offer offer, List<Candidate> candidates, Candidate gift,
                                         Set<Integer> activeTiers) {
+        if (offer.kind() == OfferKind.BUNDLE) {
+            return bundleBelow(offer, candidates, activeTiers);
+        }
+        if (offer.kind() == OfferKind.INVOICE) {
+            return below(asPercent(offer), candidates, null, activeTiers);
+        }
         Set<Integer> tiers = offer.priceTierIds().isEmpty() ? activeTiers : offer.priceTierIds();
         List<Integer> sortedTiers = tiers.stream().sorted().toList();
         boolean giftOffer = offer.rewardTarget().isPresent();
@@ -128,10 +136,74 @@ public final class OfferCostCheck {
     /** One time of the offer, in its unit: a unit, or a whole group - on a gift offer, what is bought. */
     private static BigDecimal oneTime(Offer offer) {
         return switch (offer.kind()) {
-            case PERCENT, AMOUNT, PRICE -> BigDecimal.ONE;
+            case PERCENT, AMOUNT, PRICE, BUNDLE, INVOICE -> BigDecimal.ONE;
             case QUANTITY_PRICE -> offer.buyQuantity();
             case BUY_GET -> offer.rewardTarget().isPresent() ? offer.buyQuantity() : offer.groupSize();
         };
+    }
+
+    /**
+     * A bundle judged whole: one bundle at each tier every component has a price at, the discount shared among
+     * the components by value as on an invoice (ق-ع٢), and each component that comes out under its cost listed
+     * at its worst tier. {@code candidates} holds each component in its unit, or its base unit.
+     */
+    private static List<BelowCost> bundleBelow(Offer offer, List<Candidate> candidates, Set<Integer> activeTiers) {
+        Set<Integer> tiers = offer.priceTierIds().isEmpty() ? activeTiers : offer.priceTierIds();
+        List<OfferTarget> components = offer.components();
+        List<Candidate> ordered = new ArrayList<>();
+        for (OfferTarget component : components) {
+            Candidate found = candidates.stream()
+                    .filter(candidate -> candidate.itemId() == component.itemId()
+                            && (component.unitId() == null || candidate.unitId() == component.unitId()))
+                    .findFirst().orElse(null);
+            if (found == null) {
+                return List.of();
+            }
+            ordered.add(found);
+        }
+        Map<Integer, BelowCost> worst = new java.util.LinkedHashMap<>();
+        for (int tier : tiers.stream().sorted().toList()) {
+            List<OfferEngine.Line> lines = new ArrayList<>();
+            for (int index = 0; index < ordered.size(); index++) {
+                Candidate candidate = ordered.get(index);
+                BigDecimal price = candidate.priceAt(tier);
+                if (price == null) {
+                    lines = null;
+                    break;
+                }
+                lines.add(new OfferEngine.Line(index, candidate.itemId(), candidate.unitId(), candidate.subGroupId(),
+                        candidate.mainGroupId(), candidate.factor(), components.get(index).quantity(), price));
+            }
+            if (lines == null) {
+                continue;
+            }
+            Map<Integer, BigDecimal> given = OfferEngine.givenAlone(offer, lines);
+            for (OfferEngine.Line line : lines) {
+                Candidate candidate = ordered.get(line.index());
+                BigDecimal net = netPerUnit(line, given.getOrDefault(line.index(), BigDecimal.ZERO));
+                BelowCost known = worst.get(line.index());
+                if (net.compareTo(candidate.cost()) < 0 && (known == null || net.compareTo(known.net()) < 0)) {
+                    worst.put(line.index(), new BelowCost(candidate.itemId(), candidate.name(), candidate.unitName(),
+                            tier, line.price(), net, OfferEngine.money(candidate.cost())));
+                }
+            }
+        }
+        List<BelowCost> found = new ArrayList<>(worst.values());
+        found.sort(Comparator.comparing(BelowCost::name, Comparator.nullsLast(Comparator.naturalOrder())));
+        return found;
+    }
+
+    /**
+     * An invoice offer judged as the percentage it takes off each item it reaches: its own, or its amount over
+     * its threshold - the most an amount can take, on an invoice that only just reaches it.
+     */
+    static Offer asPercent(Offer offer) {
+        BigDecimal percent = offer.percent() != null ? offer.percent()
+                : offer.amount().multiply(BigDecimal.valueOf(100))
+                .divide(offer.threshold(), 3, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100));
+        return new Offer(offer.id(), offer.name(), OfferKind.PERCENT, offer.status(), offer.startsOn(),
+                offer.endsOn(), offer.weekdays(), offer.priority(), percent, null, null, null, offer.notes(),
+                offer.targets(), offer.priceTierIds(), offer.version());
     }
 
     /** What a unit of the line comes to once the offer's part of its discount is taken off. */

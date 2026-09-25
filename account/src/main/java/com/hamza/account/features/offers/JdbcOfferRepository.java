@@ -200,7 +200,8 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
         int id = insertReturningId(OfferQuery.INSERT_SQL, offer.name(), offer.kind().name(), offer.status().name(),
                 offer.startsOn(), offer.endsOn(), offer.weekdays(), offer.priority(), offer.percent(),
                 offer.amount(), offer.offerPrice(), offer.unitId(), offer.buyQuantity(), offer.getQuantity(),
-                offer.getPercent(), offer.maxPerInvoice(), offer.quantityLimit(), offer.notes(), userId);
+                offer.getPercent(), offer.maxPerInvoice(), offer.quantityLimit(), offer.threshold(), offer.barcode(),
+                offer.notes(), userId);
         writeTargetsAndTiers(id, offer);
         return id;
     }
@@ -210,7 +211,8 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
         int written = executeUpdate(OfferQuery.UPDATE_SQL, offer.name(), offer.kind().name(), offer.startsOn(),
                 offer.endsOn(), offer.weekdays(), offer.priority(), offer.percent(), offer.amount(),
                 offer.offerPrice(), offer.unitId(), offer.buyQuantity(), offer.getQuantity(), offer.getPercent(),
-                offer.maxPerInvoice(), offer.quantityLimit(), offer.notes(), offer.id(), version);
+                offer.maxPerInvoice(), offer.quantityLimit(), offer.threshold(), offer.barcode(), offer.notes(),
+                offer.id(), version);
         if (written != 1) {
             return false;
         }
@@ -218,6 +220,94 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
         executeUpdate(OfferQuery.DELETE_TIERS_SQL, offer.id());
         writeTargetsAndTiers(offer.id(), offer);
         return true;
+    }
+
+    @Override
+    public boolean barcodeTaken(String barcode, int exceptId) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = prepare(connection, OfferQuery.BARCODE_TAKEN_SQL, barcode, exceptId);
+                 ResultSet rows = statement.executeQuery()) {
+                return rows.next() && rows.getInt(1) > 0;
+            }
+        });
+    }
+
+    @Override
+    public String itemHoldingBarcode(String barcode) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = prepare(connection, OfferQuery.ITEM_HOLDING_BARCODE_SQL, barcode,
+                    barcode, barcode);
+                 ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? rows.getString(1) : null;
+            }
+        });
+    }
+
+    @Override
+    public Map<Integer, OfferFigures> figures(LocalDate from, LocalDate to, boolean withCost) throws DaoException {
+        return withConnection(connection -> {
+            Map<Integer, OfferFigures> figures = new LinkedHashMap<>();
+            try (PreparedStatement statement = prepare(connection, OfferPerformanceQuery.figuresSql(withCost),
+                    from, to, from, to);
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    figures.put(rows.getInt("offer_id"), new OfferFigures(rows.getInt("invoices"),
+                            rows.getInt("lines_count"), rows.getBigDecimal("sold_quantity"),
+                            rows.getBigDecimal("returned_quantity"), rows.getBigDecimal("covered"),
+                            rows.getBigDecimal("given"), rows.getBigDecimal("given_back"), rows.getBigDecimal("sold"),
+                            rows.getBigDecimal("returned"), withCost ? rows.getBigDecimal("cost") : null));
+                }
+            }
+            return figures;
+        });
+    }
+
+    @Override
+    public int invoicesReached(LocalDate from, LocalDate to) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = prepare(connection, OfferPerformanceQuery.invoicesSql(), from, to);
+                 ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? rows.getInt(1) : 0;
+            }
+        });
+    }
+
+    @Override
+    public List<OfferPerformanceItem> performanceItems(int offerId, LocalDate from, LocalDate to, boolean withCost)
+            throws DaoException {
+        return withConnection(connection -> {
+            List<OfferPerformanceItem> items = new ArrayList<>();
+            try (PreparedStatement statement = prepare(connection, OfferPerformanceQuery.itemsSql(withCost),
+                    from, to, offerId, from, to, offerId);
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    items.add(new OfferPerformanceItem(rows.getInt("item_id"), rows.getString("name_item"),
+                            rows.getString("unit_name"), rows.getBigDecimal("sold_quantity"),
+                            rows.getBigDecimal("returned_quantity"), rows.getBigDecimal("discount"),
+                            rows.getBigDecimal("net"), withCost ? rows.getBigDecimal("cost") : null));
+                }
+            }
+            return items;
+        });
+    }
+
+    @Override
+    public List<OfferAlerts.ItemBalance> balancesOf(Collection<Integer> itemIds) throws DaoException {
+        List<Integer> ids = itemIds.stream().distinct().sorted().toList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return withConnection(connection -> {
+            List<OfferAlerts.ItemBalance> balances = new ArrayList<>();
+            try (PreparedStatement statement = prepare(connection, OfferQuery.balancesSql(ids.size()), ids.toArray());
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    balances.add(new OfferAlerts.ItemBalance(rows.getInt("id"), rows.getString("nameItem"),
+                            rows.getBigDecimal("mini_quantity"), rows.getBigDecimal("balance")));
+                }
+            }
+            return balances;
+        });
     }
 
     @Override
@@ -280,8 +370,9 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
     private void writeTargetsAndTiers(int offerId, Offer offer) throws DaoException {
         for (OfferTarget target : offer.targets()) {
             executeUpdate(OfferQuery.INSERT_TARGET_SQL, offerId, target.role().name(), target.scope().name(),
-                    target.itemId(),
-                    target.unitId(), target.subGroupId(), target.mainGroupId(), target.excluded() ? 1 : 0);
+                    target.itemId(), target.unitId(), target.subGroupId(), target.mainGroupId(),
+                    target.excluded() ? 1 : 0,
+                    target.quantity() == null ? null : target.quantity().setScale(3, java.math.RoundingMode.HALF_UP));
         }
         for (int tierId : offer.priceTierIds().stream().sorted().toList()) {
             executeUpdate(OfferQuery.INSERT_TIER_SQL, offerId, tierId);
@@ -333,14 +424,15 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
                 rows.getBigDecimal("percent"), rows.getBigDecimal("amount"), rows.getBigDecimal("offer_price"),
                 integer(rows, "unit_id"), rows.getBigDecimal("buy_quantity"), rows.getBigDecimal("get_quantity"),
                 rows.getBigDecimal("get_percent"), rows.getBigDecimal("max_per_invoice"),
-                rows.getBigDecimal("quantity_limit"), rows.getString("notes"), targets, tiers,
-                rows.getObject("updated_at", LocalDateTime.class));
+                rows.getBigDecimal("quantity_limit"), rows.getBigDecimal("threshold"), rows.getString("barcode"),
+                rows.getString("notes"), targets, tiers, rows.getObject("updated_at", LocalDateTime.class));
     }
 
     private static OfferTarget target(ResultSet rows) throws SQLException {
         return new OfferTarget(OfferScope.valueOf(rows.getString("scope")), integer(rows, "item_id"),
                 integer(rows, "unit_id"), integer(rows, "sub_group_id"), integer(rows, "main_group_id"),
-                rows.getInt("excluded") == 1, OfferRole.valueOf(rows.getString("role")));
+                rows.getInt("excluded") == 1, OfferRole.valueOf(rows.getString("role")),
+                rows.getBigDecimal("quantity"));
     }
 
     private static Integer integer(ResultSet rows, String column) throws SQLException {

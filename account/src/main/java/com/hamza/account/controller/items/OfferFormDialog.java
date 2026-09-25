@@ -43,6 +43,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
@@ -73,8 +74,14 @@ import java.util.stream.Collectors;
  * box again. It holds no rule: {@link OfferForm} judges the form and {@link OfferService} the write.
  * <p>
  * <b>An offer a line names is history</b> (ق-ع٧): its terms are shown and not editable, and only its name,
- * its notes and its end remain. Before an offer is written switched on, or switched on, the items it would
- * sell below their cost are listed for a confirmation (ق-ع٩) - for a reader who may see a cost.
+ * its notes and its end remain - and a bundle's barcode. Before an offer is written switched on, or switched on,
+ * the items it would sell below their cost are listed for a confirmation (ق-ع٩) - for a reader who may see a
+ * cost.
+ * <p>
+ * A bundle (V87) is written as its price, its barcode and its components, each with a quantity - the targets
+ * pane names items only then, with no exclusion; "try it" is one bundle at the first tier's prices. An invoice
+ * offer is written as a threshold and a percentage or an amount, and "try it" says what an invoice of the item
+ * tried would be given.
  */
 final class OfferFormDialog {
 
@@ -115,6 +122,23 @@ final class OfferFormDialog {
     private final TextField txtQuantityLimit = new TextField();
     private final CheckBox targetGift = new CheckBox(text("offer.form.target.gift"));
 
+    /** The unit an amount or a price is for - none on a percentage, a bundle or an invoice offer. */
+    private final Label unitCaption = caption("offer.form.unit");
+    private final Label limitInvoiceCaption = caption("offer.form.limit.invoice");
+    /** An invoice offer's threshold, and whether its value is an amount rather than a percentage (V87). */
+    private final Label thresholdCaption = caption("offer.form.threshold");
+    private final TextField txtThreshold = new TextField();
+    private final Label invoiceModeCaption = caption("offer.form.invoice.mode");
+    private final ComboBox<Boolean> comboAmountOff = new ComboBox<>();
+    /** A bundle's barcode: scanned on an invoice, it puts the components on it (V87). */
+    private final Label barcodeCaption = caption("offer.form.barcode");
+    private final TextField txtBarcode = new TextField();
+    /** How many of the item one bundle holds, beside the item picked for it. */
+    private final Label componentQuantityCaption = caption("offer.form.component.quantity");
+    private final TextField txtComponentQuantity = new TextField();
+    /** The items a bundle's components name, kept for "try it" at the first tier's prices. */
+    private final Map<Integer, ItemsModel> componentItems = new java.util.HashMap<>();
+
     private final ObservableList<OfferTargetLabel> targets = FXCollections.observableArrayList();
     private final ComboBox<OfferScope> comboScope = new ComboBox<>();
     private final ItemSuggestionField targetItem;
@@ -127,6 +151,8 @@ final class OfferFormDialog {
     private final ComboBox<UnitsModel> tryUnit = new ComboBox<>();
     private final TextField tryQuantity = new TextField();
     private final Label tryResult = new Label();
+    /** The item, unit and quantity boxes of "try it" - which a bundle does without: it tries itself. */
+    private final List<Node> tryInputs = new ArrayList<>();
 
     private OfferFormDialog(OfferService service, ItemsService itemsService, List<PriceTier> activeTiers,
                             Offer existing, boolean used) {
@@ -173,6 +199,11 @@ final class OfferFormDialog {
             }
         });
         Utils.whenEnterPressed(txtName, txtValue, txtPriority, txtNotes);
+        // Refused as typed or pasted, never rewritten: "12A34" silently becoming "1234" would save a code
+        // nobody entered (docs/new-code-rules.md ق-ل5). Digits alone and no longer than the column, as the
+        // form will judge it.
+        txtBarcode.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("[0-9]{0," + OfferForm.BARCODE_MAX + "}") ? change : null));
         ThemeManager.apply(dialog.getDialogPane().getScene());
         return dialog.showAndWait().filter(button -> button == save).isPresent();
     }
@@ -187,11 +218,18 @@ final class OfferFormDialog {
         txtPriority.setPrefColumnCount(5);
         Utils.setOptionalNumberFormatter(txtValue);
         // Blank means none - a limit left empty is no limit - so none of these seeds a zero.
-        for (TextField quantity : List.of(txtBuy, txtGet, txtGetPercent, txtMaxPerInvoice, txtQuantityLimit)) {
+        for (TextField quantity : List.of(txtBuy, txtGet, txtGetPercent, txtMaxPerInvoice, txtQuantityLimit,
+                txtThreshold)) {
             Utils.setOptionalNumberFormatter(quantity);
             quantity.setPrefColumnCount(6);
             quantity.textProperty().addListener(observable -> showTryOut());
         }
+        comboAmountOff.setItems(FXCollections.observableArrayList(false, true));
+        comboAmountOff.setConverter(converter(amount -> text(amount ? "offer.form.invoice.amount"
+                : "offer.form.invoice.percent")));
+        comboAmountOff.getSelectionModel().selectFirst();
+        comboAmountOff.valueProperty().addListener((observable, before, now) -> kindChanged());
+        txtBarcode.setPrefColumnCount(14);
         for (Label label : List.of(buyCaption, getCaption, getPercentCaption)) {
             label.getStyleClass().add("form-label");
             label.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
@@ -219,12 +257,20 @@ final class OfferFormDialog {
         grid.add(comboKind, 3, 0);
         grid.add(valueCaption, 0, 1);
         grid.add(txtValue, 1, 1);
-        grid.add(caption("offer.form.unit"), 2, 1);
+        // One cell each, whichever the kind uses: the unit, or an invoice offer's percentage-or-amount.
+        grid.add(unitCaption, 2, 1);
         grid.add(comboUnit, 3, 1);
+        grid.add(invoiceModeCaption, 2, 1);
+        grid.add(comboAmountOff, 3, 1);
+        // The quantity bought, an invoice offer's threshold, or a bundle's barcode.
         grid.add(buyCaption, 0, 2);
         grid.add(txtBuy, 1, 2);
+        grid.add(thresholdCaption, 0, 2);
+        grid.add(txtThreshold, 1, 2);
+        grid.add(barcodeCaption, 0, 2);
+        grid.add(txtBarcode, 1, 2);
         grid.add(getBox, 2, 2, 2, 1);
-        grid.add(caption("offer.form.limit.invoice"), 0, 3);
+        grid.add(limitInvoiceCaption, 0, 3);
         grid.add(txtMaxPerInvoice, 1, 3);
         grid.add(caption("offer.form.limit.total"), 2, 3);
         grid.add(txtQuantityLimit, 3, 3);
@@ -242,7 +288,8 @@ final class OfferFormDialog {
         grid.add(activateNow, 3, 8);
         grid.add(caption("offer.form.notes"), 0, 9);
         grid.add(txtNotes, 1, 9, 3, 1);
-        for (Node node : List.of(txtName, comboKind, txtValue, comboUnit, dateStarts, dateEnds, txtNotes)) {
+        for (Node node : List.of(txtName, comboKind, txtValue, comboUnit, comboAmountOff, dateStarts, dateEnds,
+                txtNotes)) {
             if (node instanceof javafx.scene.control.Control control) {
                 control.setMaxWidth(Double.MAX_VALUE);
             }
@@ -341,8 +388,11 @@ final class OfferFormDialog {
             }
             targetExcluded.setDisable(gift || comboScope.getValue() == OfferScope.ALL);
         });
-        HBox picker = new HBox(8, comboScope, targetItem, targetUnit, targetSubGroup, targetMainGroup,
-                targetExcluded, targetGift, add);
+        Utils.setOptionalNumberFormatter(txtComponentQuantity);
+        txtComponentQuantity.setPrefColumnCount(5);
+        txtComponentQuantity.setText("1");
+        HBox picker = new HBox(8, comboScope, targetItem, targetUnit, componentQuantityCaption, txtComponentQuantity,
+                targetSubGroup, targetMainGroup, targetExcluded, targetGift, add);
         picker.setAlignment(Pos.CENTER_LEFT);
         picker.setDisable(used);
         scopeChanged();
@@ -371,8 +421,10 @@ final class OfferFormDialog {
         comboUnit.valueProperty().addListener(observable -> showTryOut());
         targets.addListener((javafx.collections.ListChangeListener<OfferTargetLabel>) change -> showTryOut());
         tryResult.getStyleClass().add("form-label");
-        HBox row = new HBox(8, caption("offer.form.try.item"), tryItem, tryUnit, caption("offer.form.try.quantity"),
-                tryQuantity, tryResult);
+        Label tryItemCaption = caption("offer.form.try.item");
+        Label tryQuantityCaption = caption("offer.form.try.quantity");
+        tryInputs.addAll(List.of(tryItemCaption, tryItem, tryUnit, tryQuantityCaption, tryQuantity));
+        HBox row = new HBox(8, tryItemCaption, tryItem, tryUnit, tryQuantityCaption, tryQuantity, tryResult);
         row.setAlignment(Pos.CENTER_LEFT);
         TitledPane pane = new TitledPane(text("offer.form.try"), row);
         pane.setCollapsible(false);
@@ -402,9 +454,14 @@ final class OfferFormDialog {
             BigDecimal value = switch (existing.kind()) {
                 case PERCENT -> existing.percent();
                 case AMOUNT -> existing.amount();
-                case PRICE, QUANTITY_PRICE -> existing.offerPrice();
+                case PRICE, QUANTITY_PRICE, BUNDLE -> existing.offerPrice();
                 case BUY_GET -> null;
+                case INVOICE -> existing.percent() != null ? existing.percent() : existing.amount();
             };
+            comboAmountOff.getSelectionModel().select(existing.kind() == OfferKind.INVOICE
+                    && existing.amount() != null);
+            txtThreshold.setText(OffersController.plain(existing.threshold()));
+            txtBarcode.setText(existing.barcode() == null ? "" : existing.barcode());
             txtValue.setText(OffersController.plain(value));
             txtBuy.setText(OffersController.plain(existing.buyQuantity()));
             txtGet.setText(OffersController.plain(existing.getQuantity()));
@@ -428,8 +485,9 @@ final class OfferFormDialog {
         if (existing == null) {
             txtGetPercent.setText("100");
         }
+        // A bundle's barcode is not among them: it is how the bundle is scanned, not what it gives.
         for (Node term : List.of(comboKind, txtValue, comboUnit, dateStarts, txtPriority, txtBuy, txtGet,
-                txtGetPercent, txtMaxPerInvoice, txtQuantityLimit)) {
+                txtGetPercent, txtMaxPerInvoice, txtQuantityLimit, txtThreshold, comboAmountOff)) {
             term.setDisable(used);
         }
         days.values().forEach(check -> check.setDisable(used));
@@ -437,21 +495,42 @@ final class OfferFormDialog {
         kindChanged();
     }
 
-    /** Shows the boxes the kind uses and names them - a quantity offer's value is its group's price. */
+    /**
+     * Shows the boxes the kind uses and names them - a quantity offer's value is its group's price, a bundle's
+     * its own, an invoice offer's a percentage or an amount beside its threshold.
+     */
     private void kindChanged() {
         OfferKind kind = comboKind.getValue();
+        boolean bundle = kind == OfferKind.BUNDLE;
+        boolean invoice = kind == OfferKind.INVOICE;
+        boolean amountOff = Boolean.TRUE.equals(comboAmountOff.getValue());
         valueCaption.setText(text(kind == OfferKind.AMOUNT ? "offer.form.value.amount"
                 : kind == OfferKind.PRICE ? "offer.form.value.price"
-                : kind == OfferKind.QUANTITY_PRICE ? "offer.form.value.group.price" : "offer.form.value.percent"));
+                : kind == OfferKind.QUANTITY_PRICE ? "offer.form.value.group.price"
+                : bundle ? "offer.form.value.bundle.price"
+                : invoice && amountOff ? "offer.form.value.invoice.amount"
+                : invoice ? "offer.form.value.invoice.percent" : "offer.form.value.percent"));
         valueCaption.getStyleClass().setAll("form-label");
         boolean buyGet = kind == OfferKind.BUY_GET;
-        boolean pooled = kind != null && kind.pooled();
+        boolean counts = kind != null && kind.countsAQuantity();
         show(valueCaption, !buyGet);
         show(txtValue, !buyGet);
         buyCaption.setText(text(buyGet ? "offer.form.buy" : "offer.form.buy.group"));
-        show(buyCaption, pooled);
-        show(txtBuy, pooled);
+        show(buyCaption, counts);
+        show(txtBuy, counts);
         show(getBox, buyGet);
+        show(thresholdCaption, invoice);
+        show(txtThreshold, invoice);
+        show(barcodeCaption, bundle);
+        show(txtBarcode, bundle);
+        show(unitCaption, !bundle && !invoice);
+        show(comboUnit, !bundle && !invoice);
+        show(invoiceModeCaption, invoice);
+        show(comboAmountOff, invoice);
+        // An invoice offer is given once an invoice; a limit per invoice says nothing about it.
+        show(limitInvoiceCaption, !invoice);
+        show(txtMaxPerInvoice, !invoice);
+        tryInputs.forEach(node -> show(node, !bundle));
         comboUnit.setDisable(used || kind == OfferKind.PERCENT);
         if (kind == OfferKind.PERCENT && !comboUnit.getItems().isEmpty()) {
             comboUnit.getSelectionModel().selectFirst();
@@ -461,6 +540,19 @@ final class OfferFormDialog {
     }
 
     private void scopeChanged() {
+        boolean bundle = comboKind.getValue() == OfferKind.BUNDLE;
+        // A bundle's components are items, each in a quantity, never left out (ق-ع١٢).
+        if (bundle && comboScope.getValue() != OfferScope.ITEM) {
+            comboScope.getSelectionModel().select(OfferScope.ITEM);
+            return;
+        }
+        comboScope.setDisable(bundle);
+        show(componentQuantityCaption, bundle);
+        show(txtComponentQuantity, bundle);
+        show(targetExcluded, !bundle);
+        if (bundle) {
+            targetExcluded.setSelected(false);
+        }
         OfferScope scope = comboScope.getValue();
         show(targetItem, scope == OfferScope.ITEM);
         show(targetUnit, scope == OfferScope.ITEM);
@@ -491,6 +583,19 @@ final class OfferFormDialog {
                     yield null;
                 }
                 UnitsModel unit = targetUnit.getValue();
+                if (comboKind.getValue() == OfferKind.BUNDLE) {
+                    BigDecimal quantity = componentQuantity();
+                    if (quantity == null) {
+                        yield null;
+                    }
+                    // One line an item: adding it again says how many, rather than a second component of it.
+                    targets.removeIf(existingLabel -> existingLabel.target().component()
+                            && existingLabel.target().itemId() == item.getId());
+                    componentItems.put(item.getId(), item);
+                    yield new OfferTargetLabel(OfferTarget.component(item.getId(),
+                            unit == null ? null : unit.getUnit_id(), quantity), item.getNameItem(),
+                            unit == null ? null : unit.getUnit_name(), null, null);
+                }
                 if (targetGift.isVisible() && targetGift.isSelected()) {
                     OfferTarget gift = unit == null ? OfferTarget.reward(item.getId())
                             : OfferTarget.rewardInUnit(item.getId(), unit.getUnit_id());
@@ -525,6 +630,24 @@ final class OfferFormDialog {
         }
     }
 
+    /** The quantity typed beside a component - one when blank - or null, with the refusal said. */
+    private BigDecimal componentQuantity() {
+        try {
+            BigDecimal quantity = NumberTextConverter.parse(txtComponentQuantity.getText());
+            if (quantity == null) {
+                return BigDecimal.ONE;
+            }
+            if (quantity.signum() <= 0 || quantity.stripTrailingZeros().scale() > 3) {
+                throw new com.hamza.controlsfx.error.UserValidationException("offer.error.bundle.quantity");
+            }
+            return quantity;
+        } catch (Exception e) {
+            AllAlerts.handleError(text("offers.title"), e instanceof NumberFormatException
+                    ? new com.hamza.controlsfx.error.UserValidationException("offer.error.bundle.quantity") : e);
+            return null;
+        }
+    }
+
     // ---- what the form says ------------------------------------------------------------------
 
     /** The offer as typed - refused with a message key when it is not one yet. */
@@ -541,7 +664,9 @@ final class OfferFormDialog {
                     NumberTextConverter.parse(txtBuy.getText()), NumberTextConverter.parse(txtGet.getText()),
                     NumberTextConverter.parse(txtGetPercent.getText()),
                     NumberTextConverter.parse(txtMaxPerInvoice.getText()),
-                    NumberTextConverter.parse(txtQuantityLimit.getText()));
+                    NumberTextConverter.parse(txtQuantityLimit.getText()),
+                    NumberTextConverter.parse(txtThreshold.getText()),
+                    Boolean.TRUE.equals(comboAmountOff.getValue()), txtBarcode.getText());
             BigDecimal typedPriority = NumberTextConverter.parse(txtPriority.getText());
             priority = typedPriority == null ? 0 : typedPriority.intValueExact();
         } catch (NumberFormatException | ArithmeticException notANumber) {
@@ -579,6 +704,10 @@ final class OfferFormDialog {
 
     /** What the offer as typed would give the quantity of the item tried, at tier 1 - or why nothing. */
     private void showTryOut() {
+        if (comboKind.getValue() == OfferKind.BUNDLE) {
+            showBundleTryOut();
+            return;
+        }
         ItemsModel item = tryItem == null ? null : tryItem.chosenItemProperty().get();
         UnitsModel unit = tryUnit.getValue();
         if (item == null || unit == null) {
@@ -606,6 +735,9 @@ final class OfferFormDialog {
             Optional<BigDecimal> discount = OfferEngine.discountFor(offer, line);
             if (discount.isEmpty()) {
                 tryResult.setText(text("offer.try.not.reached"));
+            } else if (offer.kind() == OfferKind.INVOICE && line.value().compareTo(offer.threshold()) < 0) {
+                tryResult.setText(text("offer.try.threshold", Columns.money(line.value()),
+                        Columns.money(offer.threshold())));
             } else if (discount.get().signum() == 0) {
                 tryResult.setText(text("offer.try.nothing"));
             } else {
@@ -615,6 +747,55 @@ final class OfferFormDialog {
         } catch (Exception notAnOfferYet) {
             tryResult.setText("");
         }
+    }
+
+    /** One bundle at the first tier's prices: what its components come to, what it gives, and what it costs. */
+    private void showBundleTryOut() {
+        try {
+            Offer offer = offer();
+            List<OfferEngine.Line> lines = new ArrayList<>();
+            for (OfferTarget component : offer.components()) {
+                ItemsModel item = componentItem(component.itemId());
+                if (item == null) {
+                    tryResult.setText("");
+                    return;
+                }
+                UnitsModel unit = component.unitId() == null ? ItemUnits.baseUnit(item)
+                        : ItemUnits.unitsFor(item).stream().filter(u -> u.getUnit_id() == component.unitId())
+                        .findFirst().orElse(null);
+                if (unit == null) {
+                    tryResult.setText("");
+                    return;
+                }
+                int sub = item.getSubGroups() == null ? 0 : item.getSubGroups().getId();
+                int main = item.getSubGroups() == null || item.getSubGroups().getMainGroups() == null
+                        ? 0 : item.getSubGroups().getMainGroups().getId();
+                lines.add(new OfferEngine.Line(lines.size(), item.getId(), unit.getUnit_id(), sub, main,
+                        BigDecimal.valueOf(ItemUnits.factor(unit)), component.quantity(),
+                        BigDecimal.valueOf(ItemUnits.sellPrice(item, unit, PriceTiers.FIRST, item.getSelPrice1()))));
+            }
+            BigDecimal value = lines.stream().map(OfferEngine.Line::value).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal given = OfferEngine.givenAlone(offer, lines).values().stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            tryResult.setText(given.signum() == 0
+                    ? text("offer.try.bundle.nothing", Columns.money(value), Columns.money(offer.offerPrice()))
+                    : text("offer.try.result", Columns.money(value), Columns.money(given),
+                            Columns.money(value.subtract(given))));
+        } catch (Exception notABundleYet) {
+            tryResult.setText("");
+        }
+    }
+
+    /** A component's item: the one picked for it, else read once and kept. */
+    private ItemsModel componentItem(int itemId) throws DaoException {
+        ItemsModel item = componentItems.get(itemId);
+        if (item == null) {
+            item = itemsService.findItemById(itemId);
+            if (item != null) {
+                componentItems.put(itemId, item);
+            }
+        }
+        return item;
     }
 
     private static Label caption(String key) {

@@ -6,6 +6,7 @@ import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.table.Columns;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -16,7 +17,8 @@ import java.util.Set;
 /**
  * What the invoice screen says under its lines about an offer the customer is close to
  * (docs/pricing-and-offers-plan.md ق-ع٤): the units that complete a quantity group, the unit a "buy and get"
- * would give, a gift earned and not on the invoice. A sentence per hint, the item and the unit named - the
+ * would give, a gift earned and not on the invoice, a bundle's missing component, and what is left to spend to
+ * reach an invoice offer. A sentence per hint, the item and the unit named - the
  * unit the offer counts in, or the item's base unit - and every figure between words, never beside a sign
  * that the right-to-left line would move.
  */
@@ -34,6 +36,11 @@ public final class InvoiceOfferHints {
     public static List<String> sentences(List<OfferEngine.Hint> hints, Items items) throws DaoException {
         Set<String> sentences = new LinkedHashSet<>();
         for (OfferEngine.Hint hint : hints) {
+            if (hint.kind() == OfferEngine.HintKind.SPEND) {
+                sentences.add(LanguageManager.getInstance().getString("invoice.offer.hint.spend",
+                        Columns.money(hint.missing()), hint.offer().name()));
+                continue;
+            }
             ItemsModel item = items.item(hint.itemId());
             if (item == null) {
                 continue;
@@ -45,6 +52,8 @@ public final class InvoiceOfferHints {
                 case COMPLETE -> "invoice.offer.hint.complete";
                 case FREE -> "invoice.offer.hint.free";
                 case GIFT -> "invoice.offer.hint.gift";
+                case BUNDLE -> "invoice.offer.hint.bundle";
+                case SPEND -> throw new IllegalStateException("said above");
             };
             sentences.add(LanguageManager.getInstance().getString(key, quantity, unit, item.getNameItem(), offer));
         }

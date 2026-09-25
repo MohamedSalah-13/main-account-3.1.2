@@ -39,6 +39,10 @@
                  the name was found sitting the first time this screen was run. -->
             <Label fx:id="lblItemName" styleClass="pricecheck-name" wrapText="true"
                    alignment="CENTER" textAlignment="CENTER" maxWidth="Infinity"/>
+            <!-- An offer in force (phase E): its name, and the list price struck through above the offer's. -->
+            <Label fx:id="lblOffer" styleClass="pricecheck-offer" wrapText="true"
+                   alignment="CENTER" textAlignment="CENTER" maxWidth="Infinity"/>
+            <Label fx:id="lblWasPrice" styleClass="pricecheck-was"/>
             <Label fx:id="lblPrice" styleClass="pricecheck-price"/>
             <Label fx:id="lblUnit" styleClass="pricecheck-unit"/>
             <Label fx:id="lblWeight" styleClass="pricecheck-weight" wrapText="true"/>

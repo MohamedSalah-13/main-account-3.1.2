@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/** Resolves a catalog choice in the current invoice and warehouse context. */
+/** Resolves a catalog choice - or a bundle's component - in the current invoice and warehouse context. */
 public final class InvoiceItemPickerService {
 
     private final DocumentType documentType;
@@ -59,7 +59,9 @@ public final class InvoiceItemPickerService {
         if (item == null || item.getId() <= 0) {
             return Optional.empty();
         }
-        UnitsModel unit = ItemUnits.baseUnit(item);
+        UnitsModel unit = request.unitId() == null ? ItemUnits.baseUnit(item)
+                : ItemUnits.unitsFor(item).stream().filter(one -> one.getUnit_id() == request.unitId())
+                .findFirst().orElse(null);
         if (unit == null) {
             return Optional.empty();
         }

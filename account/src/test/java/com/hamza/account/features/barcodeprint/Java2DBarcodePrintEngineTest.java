@@ -229,6 +229,26 @@ class Java2DBarcodePrintEngineTest {
         return -1;
     }
 
+    /** An offer's price, the list price after it struck through (phase E) - and the label still scans. */
+    @Test
+    void anOffersPriceIsPrintedBesideTheListPriceStruckThrough() throws Exception {
+        BarcodePrintLine offered = new BarcodePrintLine(BARCODE, "صنف", new BigDecimal("10.00"), 1,
+                new BigDecimal("12.50"));
+        List<Java2DBarcodePrintEngine.DetailPiece> pieces = Java2DBarcodePrintEngine.details(offered,
+                options(41, 28, false));
+        assertEquals(List.of(new Java2DBarcodePrintEngine.DetailPiece(BARCODE, false),
+                new Java2DBarcodePrintEngine.DetailPiece(" - ", false),
+                new Java2DBarcodePrintEngine.DetailPiece("10.00", false),
+                new Java2DBarcodePrintEngine.DetailPiece("  ", false),
+                new Java2DBarcodePrintEngine.DetailPiece("12.50", true)), pieces);
+        assertEquals(BARCODE, decode(Java2DBarcodePrintEngine.render(offered, options(41, 28, false), 203)));
+
+        assertEquals(3, Java2DBarcodePrintEngine.details(line(BARCODE), options(41, 28, false)).size(),
+                "no offer, one price");
+        assertEquals(null, new BarcodePrintLine(BARCODE, "", new BigDecimal("12.50"), 1, new BigDecimal("12.50"))
+                .oldPrice(), "an old price no higher than the new one is no offer");
+    }
+
     private static BarcodePrintLine line(String barcode) {
         return new BarcodePrintLine(barcode, "صنف اختبار طويل", new BigDecimal("12.50"), 1);
     }

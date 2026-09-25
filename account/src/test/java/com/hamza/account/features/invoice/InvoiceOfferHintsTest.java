@@ -60,4 +60,16 @@ class InvoiceOfferHintsTest {
         assertTrue(InvoiceOfferHints.sentences(List.of(new OfferEngine.Hint(THREE_FOR_100,
                 OfferEngine.HintKind.GIFT, 99, null, BigDecimal.ONE)), items::get).isEmpty());
     }
+
+    @Test
+    @DisplayName("what is left to spend names no item: the amount, written as money, and the offer")
+    void spend() throws Exception {
+        List<String> sentences = InvoiceOfferHints.sentences(List.of(new OfferEngine.Hint(THREE_FOR_100,
+                OfferEngine.HintKind.SPEND, 0, null, new BigDecimal("1250.5"))), itemId -> {
+            throw new AssertionError("no item is looked up for a sum");
+        });
+        assertEquals(1, sentences.size());
+        assertTrue(sentences.get(0).contains("1,250.50"), sentences.get(0));
+        assertTrue(sentences.get(0).contains("3 بـ 100"), sentences.get(0));
+    }
 }

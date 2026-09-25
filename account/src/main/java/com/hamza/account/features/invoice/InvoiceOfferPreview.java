@@ -60,6 +60,11 @@ public final class InvoiceOfferPreview {
         this.offers = List.copyOf(offers);
     }
 
+    /** The offers the till may apply - where a bundle's barcode is looked up. */
+    public List<Offer> offers() {
+        return offers;
+    }
+
     /** The offers a reopened sale's own lines carry; empty for a new one. */
     public void setRecorded(Set<Integer> recorded) {
         this.recorded = Set.copyOf(recorded);

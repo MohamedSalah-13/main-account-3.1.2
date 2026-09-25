@@ -44,6 +44,8 @@ public final class InvoiceItemEntryCoordinator {
     private final ErrorHandler errorHandler;
     private boolean applyingSelection;
     private int currentPriceTier = 1;
+    /** A bundle's barcode is tried before an item's (V87): none by default. */
+    private BundleEntry bundleEntry = barcode -> false;
     /** The list price the last item or unit chosen was offered at, or null on a purchase (V84). */
     private com.hamza.account.features.invoice.InvoiceLineDraft.Listed offeredListed;
 
@@ -149,6 +151,11 @@ public final class InvoiceItemEntryCoordinator {
         }
     }
 
+    /** What a scanned code is asked first: whether a bundle answers to it and has put its lines on. */
+    public void setBundleEntry(BundleEntry bundleEntry) {
+        this.bundleEntry = Objects.requireNonNull(bundleEntry, "bundleEntry");
+    }
+
     public void clear() {
         applyingSelection = true;
         try {
@@ -164,6 +171,10 @@ public final class InvoiceItemEntryCoordinator {
         String barcode = controls.barcode().getText();
         InvoiceItemSelectionService.ScaleBarcodeSettings settings = scaleSettings.get();
         try {
+            if (bundleEntry.add(barcode)) {
+                clear();
+                return;
+            }
             InvoiceItemSelection selection = selectionService.selectByBarcode(
                     barcode, stockId.getAsInt(), resolvePriceTier(), settings);
             apply(selection, true);
@@ -269,6 +280,12 @@ public final class InvoiceItemEntryCoordinator {
     @FunctionalInterface
     public interface CheckedIntSupplier {
         int getAsInt() throws Exception;
+    }
+
+    /** Puts a bundle's components on the invoice when one answers to the code; false when none does. */
+    @FunctionalInterface
+    public interface BundleEntry {
+        boolean add(String barcode) throws Exception;
     }
 
     @FunctionalInterface

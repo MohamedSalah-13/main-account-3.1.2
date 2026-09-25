@@ -27,9 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,264 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-25 after the program side of the licence server's S1 (twenty-six
-tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
+**4,326 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-25 after phases D and E of the offers and their review
+(sixty-two tests, six of them gated on MySQL, `pricing-and-offers-plan.md` §13-§14); 4,264 with 368 skipped after the program side of the
+licence server's S1 (twenty-six tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
 nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
 tests, six of them gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
 architecture rule (`pricing-and-offers-plan.md` §11.6); 4,186 after phase B of the offers (seventy tests, nine of
@@ -381,10 +382,11 @@ Two documents govern work here and are kept current — read them before large c
   that holds an amount in a currency other than the base.**
 - **[`docs/pricing-and-offers-plan.md`](docs/pricing-and-offers-plan.md)** - item 3 of
   `docs/product-plan.md` §1, written 2026-09-24 at the owner's request and **opened the same day, before
-  item 1, at the owner's decision; phase A (the tiers, `V84`), phase B (the offer engine and the price
-  offers, `V85`) and phase C (the quantity offers, the gifts and the limits, `V86`) are built - the item's
-  least useful whole; D and E wait for a customer to ask** - see **Price tiers** and **Offers** below and
-  the plan's §10, §11 and §12. The item as a whole: the
+  item 1, at the owner's decision; all five phases are built** - A (the tiers, `V84`), B (the offer engine and
+  the price offers, `V85`) and C (the quantity offers, the gifts and the limits, `V86`), the item's least useful
+  whole, then D (the bundle and the offer on the invoice's total, `V87`) and E (the performance report, the two
+  reminders, the shelf label and the price-check screen) at the owner's request on 2026-09-25 - see **Price
+  tiers** and **Offers** below and the plan's §10 to §14. The item as a whole: the
   wholesale, retail and piece price tiers, and offers and bundles on items. The two ideas it rests on:
   **a tier answers who is buying and an offer answers when and how many**, and **an offer never changes
   a stored price - it writes a discount on the line** (`offer_id`, `offer_discount` beside `discount`),
@@ -3364,10 +3366,12 @@ and a customer's tier in `custom.price_id`; what was missing was everything arou
 
 ### Offers
 
-`features/offers`, `InvoiceOffers`/`InvoiceOfferPreview` in `features/invoice`, `OffersController` (the items
-section's «العروض») and `V85`-`V86`. Phase B of `docs/pricing-and-offers-plan.md` - a percentage, an amount off
-a unit, a price for a unit - and phase C, a quantity for a price and "buy and get"; §11 and §12 are what was
-delivered, what differs from the plan and what was seen.
+`features/offers`, `InvoiceOffers`/`InvoiceOfferPreview`/`InvoiceBundleEntry` in `features/invoice`,
+`OffersController` (the items section's «العروض»), `OfferPerformanceController` and `V85`-`V87`. Phase B of
+`docs/pricing-and-offers-plan.md` - a percentage, an amount off a unit, a price for a unit - phase C, a quantity
+for a price and "buy and get", phase D, the bundle and the offer on the invoice's total, and phase E, what the
+offers did and where they are told; §11 to §14 are what was delivered, what differs from the plan and what was
+seen.
 
 - **An offer never changes a stored price: it writes a discount on the line**, and `offer_id` and
   `offer_discount` beside `discount` say which offer and how much of it (ق-ع١). `offer_discount` is a *part*
@@ -3437,6 +3441,37 @@ delivered, what differs from the plan and what was seen.
   only by driving the screens. `OffersController` publishes `OffersChanged` after every write, and
   `PriceTiersController` `PriceTiersChanged` and `ItemsChanged`; `MultiDeviceRefreshArchitectureTest`
   fails on an event a screen listens for that nothing but an `announce` builds.
+- **Phase D (`V87`, §13) adds the bundle and the invoice's total.** A `BUNDLE` is components - two items or more,
+  each once, each in its unit or its base units and in its quantity (`offer_target.role = COMPONENT`, with a
+  `quantity`) - at one price, taken **first** (ق-ع٥): as many whole bundles as every component's lines allow, the
+  dearest units first, never above what they charge, shared by value. Its optional **barcode** puts the
+  components on the invoice as ordinary lines (`InvoiceBundleEntry`, found in the till's snapshot, then
+  `InvoiceItemPickerService` - which takes a unit now - and `addLine`), so each moves its own stock and carries
+  its own cost; a bundle switched on but outside its days or tiers is refused by name. **All the components
+  or none**: each is resolved before any is added, and one refused on its way in - its stock, an expiry
+  question dismissed - puts the lines back as they were (`InvoiceLinesCheckpoint`), rather than leaving the
+  ones before it at their ordinary prices. **The barcode is nobody
+  else's**: `OfferService` refuses one another offer or an item holds, and the item screen's three barcode checks
+  in `ItemsDao` refuse one a bundle holds - asked as a separate query, never a fourth branch of the collation-
+  sensitive UNION. It is not a term: it may move on a used bundle. An `INVOICE` offer ("5% from 500", or an
+  amount) comes **last**: its threshold is judged on the lines its targets reach **after their own offers**, and
+  it is given on the lines **no other offer took** (one offer a line), by value; given once a document, each line
+  records its share of that once (`offer_quantity`, three places), so the global limit counts invoices and a
+  return gives its share back; no limit per invoice (CHECK). Hints: a bundle's missing component, and "spend X
+  more" past half the threshold.
+- **Phase E (§14) says what the offers did, and where.** `OfferPriceTag` answers what one unit costs under the
+  offers in force at a tier - a price for the price kinds, words for the pooled ones, nothing for an invoice
+  offer - and both the price-check screen (the list price struck through above the offer's) and the shelf label
+  (`BarcodePrintLine.oldPrice`, off until ticked, per computer; price offers only) ask it - the label screen
+  again on `OffersChanged` and before every batch it prints or previews, since an offer also ends by its date. `OfferSources` are
+  two reminders - an offer ending today or tomorrow, an item an offer names by itself gone or down to its
+  minimum, by the items list's own balance - silent without the add-on and for a reader without `offer.show`.
+  **«أداء العروض»** (`OfferService.performance`) is each offer's times, invoices, discount that stayed given,
+  net and change on the period before (`ProfitLossPeriod`'s rule), and - for `reports.show.profit` alone, and
+  not read otherwise - its profit; it asks `reports.show.sales` on top of `offer.show`, opens from the offers
+  screen and the reports hub (`ReportEntry.OFFER_PERFORMANCE`), and **counts an invoice once** across offers -
+  the first picture summed the rows and called two invoices five. `OfferDatabaseAcceptanceTest` (21 cases)
+  holds a bundle's and an invoice offer's rows to `document_profit` for the same invoices.
 
 ### Scale barcodes
 
@@ -3971,7 +4006,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V86`, the offers' phase C:
+  new database executes it and continues with `V2`, `V3`, … The current head is `V87`, the offers' phase D:
+  `offer` gains an invoice offer's `threshold` and a bundle's `barcode` (unique, a bundle's alone), with
+  `offer_kind_chk` rewritten whole for seven kinds; and `offer_target` a `quantity` - a bundle's component
+  carries one, nothing else may - with `offer_target_role_chk` rewritten for the role `COMPONENT` (see **Offers**).
+  Its triggers are a V87 section at the end of `R__triggers.sql`. Before it `V86` is the offers' phase C:
   `offer` gains a quantity offer's and a "buy and get"'s columns and the two limits, with `offer_kind_chk`
   rewritten whole; `offer_target` a `role` (the gift is a `REWARD`); and `sales` and `sales_re` an
   `offer_quantity` - the units a line's offer covered, filled for V85's lines - which the global limit counts

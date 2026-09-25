@@ -41,13 +41,19 @@ import java.util.Set;
  *       gift item, the gift has to be on the invoice (ق-ع٣: no line at zero - the gift is a line at its price
  *       with the offer's discount), and a gift earned and not there is a hint.</li>
  * </ul>
+ * <b>The bundle</b> (phase D, ق-ع١٢) is pooled too: as many whole bundles as every component's lines allow, the
+ * dearest units of each first, for the bundle's price - never above what they charge. <b>The invoice offer</b>
+ * comes last (ق-ع٥): its threshold is judged on the net of the lines its targets reach <i>after</i> their own
+ * offers, and its percentage or amount is given on the lines no other offer took - one offer a line - by
+ * their value; it is given once a document, and each line records its share of that once, three places.
+ * <p>
  * A pooled offer's discount is shared among the lines that earned it <b>by their value</b>, rounded half up,
  * the remainder on the largest (ق-ع٢) - a return then refunds what was paid for what came back with no rule
  * of its own. What a line records besides is how many of its units the offer covered ({@code offer_quantity}),
  * which is what the global limit counts.
  * <p>
- * <b>The order is fixed</b> (ق-ع٥): the "buy and get" offers, then the quantity offers, then the price
- * offers. A line is given one offer at most, and a pooled offer that covers part of a line takes the whole
+ * <b>The order is fixed</b> (ق-ع٥): the bundles, then the "buy and get" offers, then the quantity offers, then
+ * the price offers, then the invoice offers on what is left. A line is given one offer at most, and a pooled offer that covers part of a line takes the whole
  * line - the part it does not cover goes without, since a line names one offer. Within a kind: the highest
  * {@link Offer#priority()}, then the one giving the customer more, then the oldest. The engine is greedy and
  * deterministic and does not search for the best combination of offers across the document.
@@ -58,7 +64,8 @@ import java.util.Set;
  * lines' order.
  * <p>
  * <b>Hints</b> say what would earn an offer: the units that complete a quantity group, the one more unit a
- * "buy and get" would give, a gift earned and not on the invoice.
+ * "buy and get" would give, a gift earned and not on the invoice, a bundle's missing component, and - once
+ * past half of it - what is left to spend to reach an invoice offer.
  */
 public final class OfferEngine {
 
@@ -66,7 +73,11 @@ public final class OfferEngine {
     private static final int SCALE = 10;
 
     /** The pooled kinds, in the order they take lines (ق-ع٥). */
-    private static final List<OfferKind> POOLED = List.of(OfferKind.BUY_GET, OfferKind.QUANTITY_PRICE);
+    private static final List<OfferKind> POOLED = List.of(OfferKind.BUNDLE, OfferKind.BUY_GET,
+            OfferKind.QUANTITY_PRICE);
+
+    /** An invoice offer's hint appears once the reached lines come to this share of its threshold. */
+    static final BigDecimal SPEND_HINT_FROM = new BigDecimal("0.5");
 
     private OfferEngine() {
     }
@@ -137,12 +148,16 @@ public final class OfferEngine {
         /** Units of the item a "buy and get" would give - the customer has bought enough for them already. */
         FREE,
         /** The gift item a "buy and get" earned, not on the invoice. */
-        GIFT
+        GIFT,
+        /** A bundle's component the invoice does not hold enough of for the next bundle. */
+        BUNDLE,
+        /** What is left to spend - an amount, not units - to reach an invoice offer's threshold. */
+        SPEND
     }
 
     /**
      * What would earn an offer: {@code missing} units of {@code itemId} - in {@code unitId}, or its base
-     * units when that is null.
+     * units when that is null. A {@link HintKind#SPEND} names no item: {@code missing} is money.
      */
     public record Hint(Offer offer, HintKind kind, int itemId, Integer unitId, BigDecimal missing) {
     }
@@ -224,7 +239,7 @@ public final class OfferEngine {
             }
         }
 
-        List<Offer> single = live.stream().filter(offer -> !offer.kind().pooled()).toList();
+        List<Offer> single = live.stream().filter(offer -> offer.kind().single()).toList();
         if (!single.isEmpty()) {
             Comparator<Applied> order = Comparator.<Applied>comparingInt(applied -> applied.offer().priority())
                     .reversed()
@@ -248,6 +263,29 @@ public final class OfferEngine {
             }
         }
 
+        List<Offer> invoiceOffers = new ArrayList<>(live.stream()
+                .filter(offer -> offer.kind() == OfferKind.INVOICE).toList());
+        while (!invoiceOffers.isEmpty()) {
+            Pooled best = null;
+            for (Offer offer : invoiceOffers) {
+                Pooled answer = invoice(offer, lines, byIndex, available, left.get(offer.id()));
+                if (answer.discount().signum() > 0 && (best == null || better(answer, best))) {
+                    best = answer;
+                }
+            }
+            if (best == null) {
+                break;
+            }
+            for (Applied applied : best.applied()) {
+                byIndex.put(applied.index(), applied);
+                available.remove(applied.index());
+            }
+            invoiceOffers.remove(best.offer());
+        }
+        for (Offer offer : invoiceOffers) {
+            hints.addAll(invoice(offer, lines, byIndex, available, left.get(offer.id())).hints());
+        }
+
         Map<Integer, OfferTotal> totals = new LinkedHashMap<>();
         for (Line line : lines) {
             Applied applied = byIndex.get(line.index());
@@ -266,9 +304,21 @@ public final class OfferEngine {
      * line alone; a "buy and get" of a gift item gives nothing to one line.
      */
     public static Optional<BigDecimal> discountFor(Offer offer, Line line) {
-        if (!offer.kind().pooled()) {
+        if (offer.kind().single()) {
             Applied applied = single(offer, line, null);
             return applied == null ? Optional.empty() : Optional.of(applied.discount());
+        }
+        if (offer.kind() == OfferKind.INVOICE) {
+            if (!offer.targets(line)) {
+                return Optional.empty();
+            }
+            Map<Integer, Line> alone = new LinkedHashMap<>(Map.of(line.index(), line));
+            return Optional.of(invoice(offer, List.of(line), Map.of(), alone, null).discount());
+        }
+        if (offer.kind() == OfferKind.BUNDLE) {
+            return offer.components().stream().anyMatch(component -> component.names(line))
+                    ? Optional.of(pooled(offer, Map.of(line.index(), line), null).discount())
+                    : Optional.empty();
         }
         if (!offer.targets(line) && !offer.rewards(line)) {
             return Optional.empty();
@@ -278,11 +328,20 @@ public final class OfferEngine {
 
     /**
      * What this one offer alone gives these lines, by index - its dates, days, tiers and limits aside. The
-     * below-cost check's question: "one group of this item, at this tier's price - what is left of it?"
+     * below-cost check's question: "one group of this item, at this tier's price - what is left of it?" - and
+     * the form's "try it" on a bundle: one of each component at the first tier's price.
      */
-    static Map<Integer, BigDecimal> givenAlone(Offer offer, List<Line> lines) {
+    public static Map<Integer, BigDecimal> givenAlone(Offer offer, List<Line> lines) {
         Map<Integer, BigDecimal> given = new LinkedHashMap<>();
-        if (!offer.kind().pooled()) {
+        if (offer.kind() == OfferKind.INVOICE) {
+            Map<Integer, Line> available = new LinkedHashMap<>();
+            lines.forEach(line -> available.put(line.index(), line));
+            for (Applied applied : invoice(offer, lines, Map.of(), available, null).applied()) {
+                given.put(applied.index(), applied.discount());
+            }
+            return given;
+        }
+        if (offer.kind().single()) {
             for (Line line : lines) {
                 Applied applied = single(offer, line, null);
                 if (applied != null) {
@@ -352,6 +411,9 @@ public final class OfferEngine {
     }
 
     private static Pooled pooled(Offer offer, Map<Integer, Line> available, BigDecimal timesLeft) {
+        if (offer.kind() == OfferKind.BUNDLE) {
+            return bundle(offer, available, timesLeft);
+        }
         if (offer.kind() == OfferKind.BUY_GET && offer.rewardTarget().isPresent()) {
             return buyGetAGift(offer, available, timesLeft);
         }
@@ -501,6 +563,167 @@ public final class OfferEngine {
         coveredBought.forEach((line, units) -> weights.put(line, units.multiply(unitPrice(offer.unitId(), line))));
         coveredGifts.forEach((line, units) -> weights.put(line, units.multiply(unitPrice(gift.unitId(), line))));
         return new Pooled(offer, discount, groups, shareByWeight(offer, discount, covered, weights), hints);
+    }
+
+    // ---- the bundle and the invoice offer (phase D) ------------------------------------------
+
+    /** One of a bundle's components as the engine counts it: the item, the unit it counts in, how many a bundle holds. */
+    private record Component(int itemId, Integer unitId, BigDecimal quantity) {
+    }
+
+    /**
+     * "The Ramadan bundle at 150": as many whole bundles as every component's lines allow, the dearest units of
+     * each first, for the bundle's price - never above what they charge. A line is counted for the first
+     * component that names it, so two components naming one item (which the form refuses, and a merge of two
+     * items could leave behind) never count one line twice. A component the invoice holds too little of for the
+     * next bundle is a hint, when some other component is already there for it.
+     */
+    private static Pooled bundle(Offer offer, Map<Integer, Line> available, BigDecimal timesLeft) {
+        Map<String, Component> components = new LinkedHashMap<>();
+        for (OfferTarget target : offer.components()) {
+            components.merge(target.itemId() + "/" + target.unitId(),
+                    new Component(target.itemId(), target.unitId(), target.quantity()),
+                    (first, second) -> new Component(first.itemId(), first.unitId(),
+                            first.quantity().add(second.quantity())));
+        }
+        Map<Component, List<Line>> linesOf = new LinkedHashMap<>();
+        components.values().forEach(component -> linesOf.put(component, new ArrayList<>()));
+        for (Line line : available.values()) {
+            for (Component component : components.values()) {
+                if (component.itemId() == line.itemId() && inTheOffersUnit(component.unitId(), line)
+                        && count(component.unitId(), line).signum() > 0) {
+                    linesOf.get(component).add(line);
+                    break;
+                }
+            }
+        }
+        BigDecimal bundles = null;
+        for (Map.Entry<Component, List<Line>> entry : linesOf.entrySet()) {
+            BigDecimal these = total(entry.getKey().unitId(), entry.getValue())
+                    .divide(entry.getKey().quantity(), 0, RoundingMode.FLOOR);
+            bundles = bundles == null ? these : bundles.min(these);
+        }
+        if (bundles == null) {
+            return new Pooled(offer, money(BigDecimal.ZERO), BigDecimal.ZERO, List.of(), List.of());
+        }
+        BigDecimal remaining = timesLeft == null ? null
+                : timesLeft.max(BigDecimal.ZERO).setScale(0, RoundingMode.FLOOR);
+        if (remaining != null) {
+            bundles = bundles.min(remaining);
+        }
+        List<Hint> hints = new ArrayList<>();
+        BigDecimal next = bundles.add(BigDecimal.ONE);
+        if (remaining == null || remaining.compareTo(bundles) > 0) {
+            boolean oneIsThere = linesOf.entrySet().stream().anyMatch(entry ->
+                    total(entry.getKey().unitId(), entry.getValue())
+                            .compareTo(next.multiply(entry.getKey().quantity())) >= 0);
+            if (oneIsThere) {
+                linesOf.forEach((component, componentLines) -> {
+                    BigDecimal missing = next.multiply(component.quantity())
+                            .subtract(total(component.unitId(), componentLines));
+                    if (missing.signum() > 0) {
+                        hints.add(new Hint(offer, HintKind.BUNDLE, component.itemId(), component.unitId(),
+                                quantity(missing)));
+                    }
+                });
+            }
+        }
+        if (bundles.signum() <= 0) {
+            return new Pooled(offer, money(BigDecimal.ZERO), BigDecimal.ZERO, List.of(), hints);
+        }
+        Map<Line, BigDecimal> covered = new LinkedHashMap<>();
+        Map<Line, BigDecimal> weights = new LinkedHashMap<>();
+        BigDecimal value = BigDecimal.ZERO;
+        for (Map.Entry<Component, List<Line>> entry : linesOf.entrySet()) {
+            Integer unitId = entry.getKey().unitId();
+            Map<Line, BigDecimal> taken = take(entry.getValue(), bundles.multiply(entry.getKey().quantity()), unitId);
+            for (Map.Entry<Line, BigDecimal> one : taken.entrySet()) {
+                BigDecimal weight = one.getValue().multiply(unitPrice(unitId, one.getKey()));
+                covered.put(one.getKey(), one.getValue());
+                weights.put(one.getKey(), weight);
+                value = value.add(weight);
+            }
+        }
+        BigDecimal discount = money(value.subtract(bundles.multiply(offer.offerPrice())).max(BigDecimal.ZERO));
+        if (discount.signum() <= 0) {
+            // A bundle already cheaper than its price at this tier gives nothing - and asks for nothing.
+            return new Pooled(offer, money(BigDecimal.ZERO), BigDecimal.ZERO, List.of(), List.of());
+        }
+        return new Pooled(offer, discount, bundles, shareByWeight(offer, discount, covered, weights), hints);
+    }
+
+    /**
+     * "5% from 1,000": the threshold judged on the lines the offer's targets reach, each at its value less
+     * what an offer already took off it; the percentage - or the amount, never more than they are worth -
+     * given on the reached lines still free, by their value. Given once, so each line records its share of
+     * one time, three places, the remainder on the largest - a return then gives back its share of it as it
+     * gives back its share of the discount. Short of the threshold, past half of it, what is left is a hint.
+     */
+    private static Pooled invoice(Offer offer, List<Line> lines, Map<Integer, Applied> byIndex,
+                                  Map<Integer, Line> available, BigDecimal timesLeft) {
+        Pooled nothing = new Pooled(offer, money(BigDecimal.ZERO), BigDecimal.ZERO, List.of(), List.of());
+        if (timesLeft != null && timesLeft.compareTo(BigDecimal.ONE) < 0) {
+            return nothing;
+        }
+        BigDecimal base = BigDecimal.ZERO;
+        List<Line> free = new ArrayList<>();
+        for (Line line : lines) {
+            if (!offer.targets(line)) {
+                continue;
+            }
+            Applied taken = byIndex.get(line.index());
+            base = base.add(line.value().subtract(taken == null ? BigDecimal.ZERO : taken.discount()));
+            if (available.containsKey(line.index())) {
+                free.add(line);
+            }
+        }
+        if (base.compareTo(offer.threshold()) < 0) {
+            if (base.signum() > 0 && base.compareTo(offer.threshold().multiply(SPEND_HINT_FROM)) >= 0) {
+                return new Pooled(offer, money(BigDecimal.ZERO), BigDecimal.ZERO, List.of(),
+                        List.of(new Hint(offer, HintKind.SPEND, 0, null, money(offer.threshold().subtract(base)))));
+            }
+            return nothing;
+        }
+        BigDecimal freeValue = free.stream().map(Line::value).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (freeValue.signum() <= 0) {
+            return nothing;
+        }
+        BigDecimal discount = offer.percent() != null
+                ? money(freeValue.multiply(offer.percent()).divide(HUNDRED, SCALE, RoundingMode.HALF_UP))
+                : money(offer.amount()).min(freeValue);
+        if (discount.signum() <= 0) {
+            return nothing;
+        }
+        Map<Line, BigDecimal> weights = new LinkedHashMap<>();
+        free.forEach(line -> weights.put(line, line.value()));
+        return new Pooled(offer, discount, BigDecimal.ONE,
+                shareByWeight(offer, discount, sharesOfOne(weights), weights), List.of());
+    }
+
+    /**
+     * One time shared among the lines by their weight, to three places, the remainder on the line with the
+     * most - the first of them on a tie - so the shares always come to exactly one.
+     */
+    private static Map<Line, BigDecimal> sharesOfOne(Map<Line, BigDecimal> weights) {
+        BigDecimal whole = weights.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<Line, BigDecimal> shares = new LinkedHashMap<>();
+        BigDecimal given = quantity(BigDecimal.ZERO);
+        Line largest = null;
+        for (Map.Entry<Line, BigDecimal> entry : weights.entrySet()) {
+            BigDecimal share = whole.signum() == 0 ? quantity(BigDecimal.ZERO)
+                    : quantity(entry.getValue().divide(whole, SCALE, RoundingMode.HALF_UP));
+            shares.put(entry.getKey(), share);
+            given = given.add(share);
+            if (largest == null || entry.getValue().compareTo(weights.get(largest)) > 0
+                    || (entry.getValue().compareTo(weights.get(largest)) == 0
+                    && entry.getKey().index() < largest.index())) {
+                largest = entry.getKey();
+            }
+        }
+        if (largest != null) {
+            shares.merge(largest, BigDecimal.ONE.subtract(given), BigDecimal::add);
+        }
+        return shares;
     }
 
     // ---- counting and sharing ----------------------------------------------------------------

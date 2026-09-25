@@ -156,6 +156,50 @@ class OfferMigrationTest {
     }
 
     @Test
+    @DisplayName("V87: the kind CHECK is rewritten whole with the bundle and the invoice offer, and the role CHECK"
+            + " with the component's quantity")
+    void phaseDChecks() throws IOException {
+        String sql = read("V87__offers_bundle_and_invoice.sql");
+        assertTrue(sql.indexOf("CALL v87_drop_check_if_present('offer', 'offer_kind_chk');")
+                        > sql.indexOf("CALL v87_add_column_if_missing('offer', 'threshold'"),
+                "the new column exists before a CHECK names it");
+        assertTrue(sql.contains("(kind = ''BUNDLE'' AND offer_price IS NOT NULL AND offer_price > 0"));
+        assertTrue(sql.contains("(kind = ''INVOICE'' AND threshold IS NOT NULL AND threshold > 0"
+                + "\n                AND ((percent IS NOT NULL AND percent > 0 AND percent <= 100 AND amount IS NULL)"
+                + "\n                    OR (amount IS NOT NULL AND amount > 0 AND percent IS NULL))"));
+        assertTrue(sql.contains("AND offer_price IS NULL AND unit_id IS NULL AND max_per_invoice IS NULL"),
+                "an invoice offer is given once an invoice");
+        assertEquals(6, count(sql, "AND threshold IS NULL)"), "the other six kinds say they have no threshold");
+        assertTrue(sql.contains("CHECK ((role = ''QUALIFY'' AND quantity IS NULL)"
+                + "\n        OR (role = ''REWARD'' AND scope = ''ITEM'' AND excluded = 0 AND quantity IS NULL)"
+                + "\n        OR (role = ''COMPONENT'' AND scope = ''ITEM'' AND excluded = 0 AND quantity IS NOT NULL"
+                + " AND quantity > 0))"));
+        assertTrue(sql.contains("'offer', 'offer_barcode_uk', 'UNIQUE (barcode)'"));
+        assertTrue(sql.contains("CHECK (barcode IS NULL OR (kind = ''BUNDLE'' AND barcode <> ''''))"));
+        assertTrue(sql.contains("'VARCHAR(50) NULL"), "the length OfferForm.BARCODE_MAX restates");
+        assertEquals(50, OfferForm.BARCODE_MAX);
+        for (String helper : List.of("v87_add_column_if_missing", "v87_add_constraint_if_missing",
+                "v87_drop_check_if_present")) {
+            assertTrue(sql.contains("DROP PROCEDURE IF EXISTS " + helper + ";"), helper + " is left behind");
+        }
+    }
+
+    @Test
+    @DisplayName("V87's triggers come last, and the threshold is a term there - the barcode is not")
+    void phaseDTriggers() throws IOException {
+        String triggers = read("R__triggers.sql");
+        int v86 = triggers.indexOf("-- offers, quantity and gifts (V86)");
+        int v87 = triggers.indexOf("-- offers, bundles and the invoice's total (V87)");
+        assertTrue(v87 > v86, "a test building a V86 schema cuts the file at the V87 marker");
+        String ours = triggers.substring(v87);
+        assertTrue(ours.contains("NOT (OLD.threshold <=> NEW.threshold)"));
+        assertFalse(ours.contains("NOT (OLD.barcode <=> NEW.barcode)"), "a bundle's barcode may move once used");
+        assertTrue(ours.contains("'barcode', NEW.barcode"), "but who moved it is recorded");
+        assertFalse(triggers.substring(v86, v87).contains("threshold"),
+                "the V86 section names no V87 column: MySQL refuses a trigger naming one it does not have");
+    }
+
+    @Test
     @DisplayName("the columns the form restates are the columns the table has")
     void limits() throws IOException {
         String sql = read("V85__offers.sql");

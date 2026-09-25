@@ -1,5 +1,7 @@
 package com.hamza.account.controller.pricecheck;
 
+import com.hamza.account.controller.items.OfferWords;
+import com.hamza.account.features.offers.OfferPriceTag;
 import com.hamza.account.features.pricecheck.PriceCheckResult;
 import com.hamza.account.features.pricecheck.PriceCheckService;
 import com.hamza.account.features.pricecheck.PriceCheckSession;
@@ -80,7 +82,8 @@ public class PriceCheckController implements Initializable {
     @FXML
     private ImageView imgItem;
     @FXML
-    private Label lblItemName, lblPrice, lblUnit, lblWeight, lblBalance, lblExpiry, lblNotFoundCode;
+    private Label lblItemName, lblPrice, lblUnit, lblWeight, lblBalance, lblExpiry, lblNotFoundCode, lblOffer,
+            lblWasPrice;
 
     public PriceCheckController(PriceCheckService service, PriceCheckSettings settings, int resetSeconds) {
         this.service = Objects.requireNonNull(service, "service");
@@ -178,6 +181,7 @@ public class PriceCheckController implements Initializable {
         double headline = found.scaleBarcode() ? found.total() : found.price();
         lblPrice.setText(money(headline));
         lblUnit.setText(lm.getString("pricecheck.per.unit", found.unitName()));
+        showOffer(found);
 
         show(lblWeight, found.scaleBarcode());
         if (found.scaleBarcode()) {
@@ -199,6 +203,28 @@ public class PriceCheckController implements Initializable {
 
         showImage(found.image());
         showOnly(resultBox);
+    }
+
+    /**
+     * An offer in force (phase E): a price for the unit is the headline, the list price struck through above it;
+     * an offer with no price for one unit - "3 for 100", a bundle - is said in words and the price stays.
+     */
+    private void showOffer(PriceCheckResult.Found found) {
+        OfferPriceTag offer = found.offer();
+        show(lblOffer, offer != null);
+        show(lblWasPrice, offer != null && offer.hasPrice());
+        if (offer == null) {
+            return;
+        }
+        var lm = LanguageManager.getInstance();
+        if (offer.hasPrice()) {
+            lblOffer.setText(lm.getString("pricecheck.offer.name", offer.offer().name()));
+            lblWasPrice.setText(money(found.scaleBarcode() ? found.total() : found.price()));
+            lblPrice.setText(money(found.scaleBarcode() ? found.offerTotal() : offer.offerPrice().doubleValue()));
+        } else {
+            lblOffer.setText(lm.getString("pricecheck.offer.told", offer.offer().name(),
+                    OfferWords.value(offer.offer())));
+        }
     }
 
     private void showImage(byte[] image) {

@@ -20,7 +20,7 @@ public final class OfferQuery {
 
     static final String OFFER_COLUMNS = "o.id, o.name, o.kind, o.status, o.starts_on, o.ends_on, o.weekdays,"
             + " o.priority, o.percent, o.amount, o.offer_price, o.unit_id, o.buy_quantity, o.get_quantity,"
-            + " o.get_percent, o.max_per_invoice, o.quantity_limit, o.notes, o.updated_at";
+            + " o.get_percent, o.max_per_invoice, o.quantity_limit, o.threshold, o.barcode, o.notes, o.updated_at";
 
     /**
      * Every offer switched on, whatever its dates: the till's snapshot. The engine judges the dates against
@@ -46,14 +46,14 @@ public final class OfferQuery {
 
     public static final String INSERT_SQL = "INSERT INTO offer (name, kind, status, starts_on, ends_on, weekdays,"
             + " priority, percent, amount, offer_price, unit_id, buy_quantity, get_quantity, get_percent,"
-            + " max_per_invoice, quantity_limit, notes, user_id)"
-            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + " max_per_invoice, quantity_limit, threshold, barcode, notes, user_id)"
+            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     /** The version is compared here, so an edit made on another till since this one read the row is refused. */
     public static final String UPDATE_SQL = "UPDATE offer SET name = ?, kind = ?, starts_on = ?, ends_on = ?,"
             + " weekdays = ?, priority = ?, percent = ?, amount = ?, offer_price = ?, unit_id = ?,"
             + " buy_quantity = ?, get_quantity = ?, get_percent = ?, max_per_invoice = ?, quantity_limit = ?,"
-            + " notes = ? WHERE id = ? AND updated_at = ?";
+            + " threshold = ?, barcode = ?, notes = ? WHERE id = ? AND updated_at = ?";
 
     public static final String STATUS_SQL = "UPDATE offer SET status = ? WHERE id = ? AND updated_at = ?";
 
@@ -62,7 +62,19 @@ public final class OfferQuery {
     public static final String DELETE_TARGETS_SQL = "DELETE FROM offer_target WHERE offer_id = ?";
 
     public static final String INSERT_TARGET_SQL = "INSERT INTO offer_target (offer_id, role, scope, item_id,"
-            + " unit_id, sub_group_id, main_group_id, excluded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            + " unit_id, sub_group_id, main_group_id, excluded, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    /** Whether another offer carries this barcode - a courtesy before {@code offer_barcode_uk} refuses it. */
+    public static final String BARCODE_TAKEN_SQL = "SELECT COUNT(*) FROM offer WHERE barcode = ? AND id <> ?";
+
+    /**
+     * The item that answers to a code - its own barcode, one of its extra codes, or a unit's - so a bundle is
+     * not given a code a scan would already take to an item. Three conditions on the one bound value, never a
+     * UNION: the three columns can differ in collation on a restored database (V63).
+     */
+    public static final String ITEM_HOLDING_BARCODE_SQL = "SELECT i.nameItem FROM items i WHERE i.barcode = ?"
+            + " OR i.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)"
+            + " OR i.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?) LIMIT 1";
 
     public static final String DELETE_TIERS_SQL = "DELETE FROM offer_price_tier WHERE offer_id = ?";
 
@@ -147,9 +159,22 @@ public final class OfferQuery {
             + " JOIN sub_group sg ON sg.id = i.sub_num JOIN units un ON un.unit_id = iu.unit"
             + " WHERE iu.unit = ? AND iu.unit <> i.unit_id";
 
+    /**
+     * Each named item's stock across every warehouse, and its minimum: the items list's own balance
+     * ({@code ItemCatalogSql.BALANCE}) over the rows {@code ItemStockBalanceSql} reads for named items alone -
+     * one definition of a balance, and no pass over the whole sales history for a handful of items.
+     */
+    static String balancesSql(int items) {
+        return "SELECT i.id, i.nameItem, i.mini_quantity, "
+                + com.hamza.account.features.items.ItemCatalogSql.BALANCE.strip() + " AS balance FROM items i JOIN "
+                + com.hamza.account.features.items.ItemStockBalanceSql.acrossStocksForItems(items).strip()
+                + " ip ON ip.item_id = i.id ORDER BY i.id";
+    }
+
     /** Each target of the offers named, with what it names spelled out for the screen. */
     static String targetsSql(int offers) {
         return "SELECT t.offer_id, t.role, t.scope, t.item_id, t.unit_id, t.sub_group_id, t.main_group_id, t.excluded,"
+                + " t.quantity,"
                 + " i.nameItem, un.unit_name, sg.name AS sub_group_name, mg.name_g AS main_group_name"
                 + " FROM offer_target t"
                 + " LEFT JOIN items i ON i.id = t.item_id"

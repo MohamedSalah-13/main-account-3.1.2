@@ -176,6 +176,105 @@ class OfferFormTest {
         assertEquals(OfferRole.QUALIFY, OfferTarget.item(3).role(), "every target before V86 earns the offer");
     }
 
+    private static OfferForm.Terms bundleTerms(String price, String barcode) {
+        return new OfferForm.Terms(d(price), null, null, null, null, null, null, false, barcode);
+    }
+
+    private static OfferForm.Terms invoiceTerms(String value, String threshold, boolean amountOff) {
+        return new OfferForm.Terms(d(value), null, null, null, null, null, d(threshold), amountOff, null);
+    }
+
+    private static final List<OfferTarget> OIL_AND_SUGAR = List.of(OfferTarget.component(3, null, d("1")),
+            OfferTarget.component(4, 2, d("2")));
+
+    @Test
+    @DisplayName("a bundle keeps its price and its barcode, and its components are the whole of what it reaches")
+    void aBundle() throws Exception {
+        Offer bundle = buildTerms(OfferKind.BUNDLE, bundleTerms("150", " 6221 "), OIL_AND_SUGAR);
+        assertEquals(d("150"), bundle.offerPrice());
+        assertEquals("6221", bundle.barcode(), "stripped");
+        assertNull(bundle.unitId(), "a bundle's units are its components'");
+        assertEquals(d("3"), bundle.groupSize());
+        assertEquals(2, bundle.components().size());
+
+        assertKey("offer.error.bundle.price", () -> buildTerms(OfferKind.BUNDLE, bundleTerms(null, null),
+                OIL_AND_SUGAR));
+        assertKey("offer.error.bundle.components", () -> buildTerms(OfferKind.BUNDLE, bundleTerms("150", null),
+                List.of(OfferTarget.component(3, null, d("1")))));
+        assertKey("offer.error.bundle.duplicate", () -> buildTerms(OfferKind.BUNDLE, bundleTerms("150", null),
+                List.of(OfferTarget.component(3, null, d("1")), OfferTarget.component(3, 2, d("1")))));
+        assertKey("offer.error.bundle.targets", () -> buildTerms(OfferKind.BUNDLE, bundleTerms("150", null),
+                List.of(OfferTarget.component(3, null, d("1")), OfferTarget.component(4, null, d("1")),
+                        OfferTarget.item(5))));
+        assertKey("offer.error.bundle.targets", () -> buildTerms(OfferKind.PERCENT,
+                new OfferForm.Terms(d("10"), null, null, null, null, null), OIL_AND_SUGAR));
+        assertKey("offer.error.bundle.quantity", () -> buildTerms(OfferKind.BUNDLE, bundleTerms("150", null),
+                List.of(OfferTarget.component(3, null, d("1.0005")), OfferTarget.component(4, null, d("1")))));
+        assertKey("offer.error.barcode", () -> buildTerms(OfferKind.BUNDLE, bundleTerms("150", "62-21"),
+                OIL_AND_SUGAR));
+        assertKey("offer.error.barcode", () -> buildTerms(OfferKind.BUNDLE, bundleTerms("150", "1".repeat(51)),
+                OIL_AND_SUGAR));
+        assertNull(buildTerms(OfferKind.PERCENT, new OfferForm.Terms(d("10"), null, null, null, null, null, null,
+                false, "6221"), List.of(OfferTarget.everything())).barcode(), "only a bundle keeps a barcode");
+    }
+
+    @Test
+    @DisplayName("a component holds a quantity, kept without trailing zeros; no other target holds one")
+    void aComponent() {
+        assertEquals(OfferTarget.component(3, null, d("2")), OfferTarget.component(3, null, d("2.000")),
+                "2.000 read back equals the 2 the form wrote");
+        assertThrows(IllegalArgumentException.class, () -> OfferTarget.component(3, null, BigDecimal.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> OfferTarget.component(3, null, d("1")).except());
+        assertThrows(IllegalArgumentException.class, () -> new OfferTarget(OfferScope.ITEM, 3, null, null, null,
+                false, OfferRole.QUALIFY, d("1")));
+        assertThrows(IllegalArgumentException.class, () -> new OfferTarget(OfferScope.SUB_GROUP, null, null, 4,
+                null, false, OfferRole.COMPONENT, d("1")));
+    }
+
+    @Test
+    @DisplayName("an invoice offer: a threshold and a percentage or an amount, and no limit per invoice")
+    void anInvoiceOffer() throws Exception {
+        Offer percent = buildTerms(OfferKind.INVOICE, invoiceTerms("5", "1000", false),
+                List.of(OfferTarget.everything()));
+        assertEquals(d("5"), percent.percent());
+        assertNull(percent.amount());
+        assertEquals(d("1000"), percent.threshold());
+        assertNull(percent.unitId());
+        Offer amount = buildTerms(OfferKind.INVOICE, invoiceTerms("50", "500", true),
+                List.of(OfferTarget.everything()));
+        assertEquals(d("50"), amount.amount());
+        assertNull(amount.percent());
+        Offer withAPerInvoiceLimit = buildTerms(OfferKind.INVOICE, new OfferForm.Terms(d("5"), null, null, null,
+                d("2"), d("100"), d("1000"), false, null), List.of(OfferTarget.everything()));
+        assertNull(withAPerInvoiceLimit.maxPerInvoice(), "given once an invoice: the box is not read");
+        assertEquals(d("100"), withAPerInvoiceLimit.quantityLimit(), "the total counts invoices");
+
+        assertKey("offer.error.threshold", () -> buildTerms(OfferKind.INVOICE, invoiceTerms("5", null, false),
+                List.of(OfferTarget.everything())));
+        assertKey("offer.error.percent", () -> buildTerms(OfferKind.INVOICE, invoiceTerms("150", "1000", false),
+                List.of(OfferTarget.everything())));
+        assertKey("offer.error.invoice.amount", () -> buildTerms(OfferKind.INVOICE, invoiceTerms("500", "500", true),
+                List.of(OfferTarget.everything())));
+        assertKey("offer.error.targets", () -> buildTerms(OfferKind.INVOICE, invoiceTerms("5", "1000", false),
+                List.of(OfferTarget.item(3).except())));
+    }
+
+    @Test
+    @DisplayName("the threshold and the components are terms; a bundle's barcode is not")
+    void phaseDTerms() throws Exception {
+        Offer offer = buildTerms(OfferKind.INVOICE, invoiceTerms("5", "1000", false), List.of(OfferTarget.everything()));
+        Offer raised = buildTerms(OfferKind.INVOICE, invoiceTerms("5", "1200", false), List.of(OfferTarget.everything()));
+        assertFalse(OfferForm.sameTerms(offer, raised));
+
+        Offer bundle = buildTerms(OfferKind.BUNDLE, bundleTerms("150", "6221"), OIL_AND_SUGAR);
+        Offer rescanned = buildTerms(OfferKind.BUNDLE, bundleTerms("150.00", "7000"), List.of(
+                OfferTarget.component(3, null, d("1.000")), OfferTarget.component(4, 2, d("2"))));
+        assertTrue(OfferForm.sameTerms(bundle, rescanned), "a new barcode, and 1.000 read back for 1");
+        Offer moreSugar = buildTerms(OfferKind.BUNDLE, bundleTerms("150", "6221"), List.of(
+                OfferTarget.component(3, null, d("1")), OfferTarget.component(4, 2, d("3"))));
+        assertFalse(OfferForm.sameTerms(bundle, moreSugar));
+    }
+
     private static void assertKey(String key, org.junit.jupiter.api.function.Executable build) {
         UserValidationException refused = assertThrows(UserValidationException.class, build);
         assertEquals(key, refused.getMessage());

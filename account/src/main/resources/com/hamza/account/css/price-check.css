@@ -36,6 +36,23 @@
     -fx-text-fill: #4ade80;
 }
 
+/* An offer in force: what it is called and gives, above the price. */
+.pricecheck-offer {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #facc15;
+}
+
+/* The list price the offer takes something off, struck through above the one the customer pays. */
+.pricecheck-was {
+    -fx-font-size: 48px;
+    -fx-text-fill: #8fa3ba;
+}
+
+.pricecheck-was .text {
+    -fx-strikethrough: true;
+}
+
 .pricecheck-unit {
     -fx-font-size: 34px;
     -fx-text-fill: #b7c6d8;

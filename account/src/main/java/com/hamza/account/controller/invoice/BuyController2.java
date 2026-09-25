@@ -88,6 +88,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 this::addData,
                 num -> addItem(num, txtBarcode.getText()),
                 this::handleItemEntryError);
+        itemEntry.setBundleEntry(this::addBundle);
         itemEntry.configure();
     }
 

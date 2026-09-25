@@ -68,6 +68,14 @@ public final class QuickInvoiceTable {
         /** Resolves a scanned or typed code, honouring the scale-barcode settings. */
         InvoiceItemSelection selectByBarcode(String barcode) throws Exception;
 
+        /**
+         * Puts a bundle's components on the invoice when one answers to the code (V87); false when none does,
+         * and the code is then read as an item's.
+         */
+        default boolean addBundle(String barcode) throws Exception {
+            return false;
+        }
+
         /** Resolves an item chosen by name, for the current warehouse and price tier. */
         InvoiceItemSelection selectByName(String itemName) throws Exception;
 
@@ -306,11 +314,35 @@ public final class QuickInvoiceTable {
             return;
         }
         try {
+            if (addBundle(barcode)) {
+                return;
+            }
             commit(host.selectByBarcode(barcode));
         } catch (Exception e) {
             host.handleError(e, false);
             focusEntryRow();
         }
+    }
+
+    /**
+     * A bundle's components go in as lines of their own, after the last real line - the entry row taken out
+     * first and put back after, as {@link #commit} does for one line.
+     */
+    private boolean addBundle(String barcode) throws Exception {
+        BasePurchasesAndSales entryRow = removeEntryRow();
+        boolean added;
+        try {
+            added = host.addBundle(barcode);
+        } finally {
+            restoreEntryRow(entryRow);
+        }
+        if (!added) {
+            return false;
+        }
+        host.totalsChanged();
+        host.lineAdded();
+        focusEntryRow();
+        return true;
     }
 
     private void selectByName(ItemsModel item) {

@@ -144,7 +144,32 @@ public final class NotificationBootstrap {
                     new com.hamza.account.view.OpenApplication<>(
                             new com.hamza.account.controller.employee.CommissionRunController());
                 }),
-                new CommissionSources.LaggingTarget());
+                new CommissionSources.LaggingTarget(),
+                // Both silent without the offers add-on, and for a shop with no offer switched on.
+                new OfferSources.Ending(this::openOffers),
+                new OfferSources.ShortOfStock(this::openOffers));
+    }
+
+    /** The offers screen in a window of its own - a notification has no tab pane to open it in. */
+    private void openOffers() throws Exception {
+        AuthorizationGuard.require(com.hamza.account.authorization.AppPermissions.OFFER_SHOW);
+        new com.hamza.account.view.OpenApplication<>(new com.hamza.controlsfx.interfaceData.AppSettingInterface() {
+            @Override
+            public javafx.scene.layout.Pane pane() throws Exception {
+                return new com.hamza.account.openFxml.OpenFxmlApplication(
+                        new com.hamza.account.controller.items.OffersController()).getPane();
+            }
+
+            @Override
+            public String title() {
+                return LanguageManager.getInstance().getString("offers.title");
+            }
+
+            @Override
+            public boolean resize() {
+                return true;
+            }
+        });
     }
 
     /**

@@ -169,6 +169,49 @@ class PriceCheckServiceTest {
         assertNull(found.nearestExpiry());
     }
 
+    /** An offer in force is attached to the answer as the offers say it at the screen's tier (phase E). */
+    @Test
+    void anOfferInForceIsAttachedToTheAnswer() throws Exception {
+        var offer = new com.hamza.account.features.offers.Offer(4, "خصم الألبان",
+                com.hamza.account.features.offers.OfferKind.PERCENT,
+                com.hamza.account.features.offers.OfferStatus.ACTIVE, LocalDate.of(2026, 9, 1), null, null, 0,
+                java.math.BigDecimal.TEN, null, null, null, null,
+                List.of(com.hamza.account.features.offers.OfferTarget.everything()), java.util.Set.of(), null);
+        var tag = new com.hamza.account.features.offers.OfferPriceTag(offer, new java.math.BigDecimal("120.00"),
+                new java.math.BigDecimal("108.00"));
+        int[] askedTier = {0};
+        PriceCheckService service = new PriceCheckService(
+                (barcode, settings) -> selection(item(3, "لبن"), "كرتونة", 120, 1, 120, 8),
+                noExpiry(),
+                (resolved, settings) -> {
+                    askedTier[0] = settings.priceTier();
+                    return java.util.Optional.of(tag);
+                });
+
+        var found = assertInstanceOf(PriceCheckResult.Found.class,
+                service.lookup("6221", new PriceCheckSettings(7, 2, true, true, true, ScaleBarcodeSettings.disabled())));
+
+        assertEquals(tag, found.offer());
+        assertEquals(2, askedTier[0], "the screen's tier, as its price is");
+        assertEquals(120, found.price(), "the list price stays the answer's price; the screen shows both");
+    }
+
+    /** The offers failing to read costs the customer nothing but the offer: the price is still answered. */
+    @Test
+    void anOfferThatCannotBeReadIsLeftOut() throws Exception {
+        PriceCheckService service = new PriceCheckService(
+                (barcode, settings) -> selection(item(3, "لبن"), "كرتونة", 120, 1, 120, 8),
+                noExpiry(),
+                (resolved, settings) -> {
+                    throw new IllegalStateException("the offers could not be read");
+                });
+
+        var found = assertInstanceOf(PriceCheckResult.Found.class, service.lookup("6221", EVERYTHING_SHOWN));
+
+        assertNull(found.offer());
+        assertEquals(120, found.price());
+    }
+
     /** A tier outside 1..3 has no price column behind it; the first one is the fallback. */
     @Test
     void anImpossiblePriceTierFallsBackToTheFirst() {

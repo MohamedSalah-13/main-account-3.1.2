@@ -90,7 +90,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * comes back with its share of the offer and nothing else; and example 7, a delegate's ceiling judging the
  * manual discount alone. And phase C (V86): V86 from nothing and over a V85 database with sales on it; examples
  * 2, 3 and 4 worked by hand, the gift and a return of part of it; the limit on one invoice; and the global limit
- * with two tills in two real transactions, the second waiting on the first's lock.
+ * with two tills in two real transactions, the second waiting on the first's lock. And phase D (V87): V87 from
+ * nothing and over a V86 database with offers on it; examples 5 and 6 worked by hand; a bundle's barcode refused
+ * where another bundle or an item holds it, and seen by the item screen's own checks; and an invoice offer's
+ * limit counting invoices.
  * <p>
  * The case: soap in a group of its own, costing 25 and sold at 40; rice outside it, costing 60 and sold at 100;
  * "10% off the detergents" from today. The session is user 9, never user 1 - who bypasses every permission.
@@ -696,20 +699,29 @@ class OfferDatabaseAcceptanceTest {
      * V86 adds cannot be built before it - and no views, which name them too; the upgrade builds them all.
      */
     private static Path migrationsBeforeV86() throws Exception {
+        return migrationsBefore(86, "-- offers, quantity and gifts (V86)");
+    }
+
+    /**
+     * Every migration before {@code version} and {@code R__triggers.sql} cut at {@code triggerMarker} - a trigger
+     * naming a column the version adds cannot be built before it - and no views, which name them too.
+     */
+    private static Path migrationsBefore(int version, String triggerMarker) throws Exception {
         Path source = Paths.get(OfferDatabaseAcceptanceTest.class.getResource("/db/migration").toURI());
-        Path target = Files.createTempDirectory("offer-migrations-v85-");
+        Path target = Files.createTempDirectory("offer-migrations-v" + (version - 1) + "-");
         target.toFile().deleteOnExit();
         try (var files = Files.list(source)) {
             for (Path file : files.toList()) {
                 String name = file.getFileName().toString();
-                if ((name.matches("V(\\d+)__.*") && Integer.parseInt(name.substring(1, name.indexOf("__"))) >= 86)
+                if ((name.matches("V(\\d+)__.*")
+                        && Integer.parseInt(name.substring(1, name.indexOf("__"))) >= version)
                         || name.equals("R__views.sql")) {
                     continue;
                 }
                 String sql = Files.readString(file, StandardCharsets.UTF_8);
                 if (name.equals("R__triggers.sql")) {
-                    int cut = sql.indexOf("-- offers, quantity and gifts (V86)");
-                    assertTrue(cut > 0, "the V86 section of R__triggers.sql is where this test expects it");
+                    int cut = sql.indexOf(triggerMarker);
+                    assertTrue(cut > 0, "the section of R__triggers.sql this test cuts at is where it expects it");
                     sql = sql.substring(0, cut);
                 }
                 Files.writeString(target.resolve(name), sql, StandardCharsets.UTF_8);
@@ -717,6 +729,300 @@ class OfferDatabaseAcceptanceTest {
             }
         }
         return target;
+    }
+
+    // --- phase D: the bundle and the invoice's total (V87) ------------------------------------------------
+
+    /** Digits alone, as the invoice's barcode box takes; unique to this run. */
+    private static final String BUNDLE_CODE = "62" + (System.nanoTime() % 1_000_000_000L);
+    private static final String CLASH_CODE = "63" + (System.nanoTime() % 1_000_000_000L);
+
+    private static int ramadan;
+    private static int fivePercent;
+    private static int ramadanSale;
+    private static int invoiceSale;
+    private static int oilItem;
+
+    @Test
+    @Order(16)
+    @DisplayName("V87 from nothing: the threshold, the barcode and the component's quantity, and every CHECK")
+    void thePhaseDSchema() throws Exception {
+        for (String column : List.of("threshold", "barcode")) {
+            assertEquals(1, scalar("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()"
+                    + " AND TABLE_NAME = 'offer' AND COLUMN_NAME = '" + column + "'"), column);
+        }
+        assertEquals(1, scalar("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()"
+                + " AND TABLE_NAME = 'offer_target' AND COLUMN_NAME = 'quantity'"));
+        // A bundle with no price; an invoice offer with a percentage and an amount, or a limit per invoice; a
+        // barcode on anything but a bundle: the rewritten CHECKs.
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on) VALUES ('d1', 'BUNDLE', 'DRAFT',"
+                + " CURRENT_DATE)");
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, threshold, percent, amount) VALUES"
+                + " ('d2', 'INVOICE', 'DRAFT', CURRENT_DATE, 1000, 5, 50)");
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, threshold, percent, max_per_invoice)"
+                + " VALUES ('d3', 'INVOICE', 'DRAFT', CURRENT_DATE, 1000, 5, 1)");
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, percent, barcode) VALUES ('d4',"
+                + " 'PERCENT', 'DRAFT', CURRENT_DATE, 10, '123')");
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, percent, threshold) VALUES ('d5',"
+                + " 'PERCENT', 'DRAFT', CURRENT_DATE, 10, 100)");
+        // A component with no quantity, and a quantity on a target that earns: the role's CHECK.
+        assertSqlRefused(3819, "INSERT INTO offer_target (offer_id, role, scope, item_id) VALUES (" + tenPercent
+                + ", 'COMPONENT', 'ITEM', " + soap + ")");
+        assertSqlRefused(3819, "INSERT INTO offer_target (offer_id, role, scope, item_id, quantity) VALUES ("
+                + tenPercent + ", 'QUALIFY', 'ITEM', " + soap + ", 2)");
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("example 5: the Ramadan bundle at 150 - 7.28, 5.45 and 2.27 on its lines, document_profit 150 - 132;"
+            + " its barcode nobody else's, and a sale without the sugar refused")
+    void exampleFive() throws Exception {
+        int oil = insertItem("OIL", 1, 70, 80);
+        int sugar = insertItem("SUG", 1, 20, 30);
+        int bran = insertItem("RIC", 1, 22, 25);
+        execute("INSERT INTO items(barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2, sel_price3,"
+                + " unit_id, mini_quantity, user_id) VALUES ('" + CLASH_CODE + "', '" + STAMP + " clash', 1, 1, 2, 0,"
+                + " 0, 1, 0, 1)");
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_CREATE);
+        List<OfferTarget> components = List.of(OfferTarget.component(oil, null, BigDecimal.ONE),
+                OfferTarget.component(sugar, null, new BigDecimal("2")), OfferTarget.component(bran, null, BigDecimal.ONE));
+        java.util.function.Function<String, Offer> bundle = code -> new Offer(0, STAMP + " ramadan " + code,
+                OfferKind.BUNDLE, OfferStatus.ACTIVE, TODAY, null, null, 0, null, null, new BigDecimal("150"), null,
+                null, null, null, null, null, null, code, null, components, Set.of(), null);
+        UserValidationException itemsCode = assertThrows(UserValidationException.class,
+                () -> offers().create(bundle.apply(CLASH_CODE)));
+        assertTrue(itemsCode.getMessage().contains(STAMP + " clash"), itemsCode.getMessage());
+
+        ramadan = offers().create(bundle.apply(BUNDLE_CODE));
+        assertEquals("BUNDLE|150.00|" + BUNDLE_CODE, text("SELECT CONCAT(kind, '|', offer_price, '|', barcode)"
+                + " FROM offer WHERE id = " + ramadan));
+        assertEquals("COMPONENT|2.000", text("SELECT CONCAT(role, '|', quantity) FROM offer_target WHERE offer_id = "
+                + ramadan + " AND item_id = " + sugar));
+        Offer again = new Offer(0, STAMP + " ramadan twice", OfferKind.BUNDLE, OfferStatus.ACTIVE, TODAY, null, null,
+                0, null, null, new BigDecimal("150"), null, null, null, null, null, null, null, BUNDLE_CODE, null,
+                components, Set.of(), null);
+        assertEquals("offer.error.barcode.duplicate",
+                assertThrows(UserValidationException.class, () -> offers().create(again)).getMessage());
+        // And the item screen's own checks see it: the till tries a bundle's code before an item's.
+        assertEquals(BUNDLE_CODE, DaoFactory.INSTANCE.getItemsDao()
+                .firstBarcodeTakenByAnotherItem(List.of("none-" + STAMP, BUNDLE_CODE), 0));
+        assertEquals(STAMP + " ramadan " + BUNDLE_CODE, DaoFactory.INSTANCE.getItemsDao()
+                .itemNameHoldingBarcode(BUNDLE_CODE, 0));
+        assertTrue(DaoFactory.INSTANCE.getItemsDao().takenBarcodesAmong(List.of(BUNDLE_CODE), 0).contains(BUNDLE_CODE));
+
+        // Scanned, it is the bundle, and its components are the lines it puts on the invoice.
+        Offer scanned = com.hamza.account.features.invoice.InvoiceBundleEntry.find(offers().inForce(), BUNDLE_CODE)
+                .orElseThrow();
+        assertEquals(List.of(oil, sugar, bran), com.hamza.account.features.invoice.InvoiceBundleEntry
+                .requests(scanned).stream().map(com.hamza.account.features.invoice.ItemPickRequest::itemId).toList());
+
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales oilLine = line(new Sales(), oil, 70, 1, "80", "0");
+        Sales sugarLine = line(new Sales(), sugar, 20, 2, "30", "0");
+        Sales riceLine = line(new Sales(), bran, 22, 1, "25", "0");
+        offerLines(List.of(oilLine, sugarLine, riceLine));
+        int saved = sales().save(sale(List.of(oilLine, sugarLine, riceLine), "0")).invoiceNumber();
+        ramadanSale = saved;
+        oilItem = oil;
+
+        assertEquals("7.28|1.000", lineOf(saved, oil), "80 / 165 x 15, and the piastre left on the largest");
+        assertEquals("5.45|2.000", lineOf(saved, sugar));
+        assertEquals("2.27|1.000", lineOf(saved, bran));
+        assertEquals("150.00", text("SELECT total FROM total_sales WHERE invoice_number = " + saved),
+                "the bundle's price, the lines after their shares");
+        assertEquals("150.00|132.00|18.00", text("SELECT CONCAT(net_revenue, '|', cost_of_sales, '|', profit)"
+                + " FROM document_profit WHERE document_kind = 'sales' AND document_id = " + saved),
+                "each component carries its own cost: 70 + 2 x 20 + 22");
+
+        // Oil and rice claiming the bundle with the sugar gone: nothing the offers give, refused unnumbered.
+        Sales forgedOil = line(new Sales(), oil, 70, 1, "80", "7.28");
+        forgedOil.setOfferId(ramadan);
+        forgedOil.setOfferDiscount(new BigDecimal("7.28"));
+        Sales plainRice = line(new Sales(), bran, 22, 1, "25", "0");
+        long counter = counter();
+        assertThrows(InvoiceValidationException.class, () -> sales().save(sale(List.of(forgedOil, plainRice), "0")));
+        assertEquals(counter, counter());
+    }
+
+    @Test
+    @Order(18)
+    @DisplayName("example 6: 5% from 1,000 - 20 and 40 by value, one time shared 0.333 and 0.667; the first invoice"
+            + " only, then nothing; and its threshold a term once used")
+    void exampleSix() throws Exception {
+        int cups = insertItem("CUP", 1, 25, 40);
+        int pans = insertItem("PAN", 1, 60, 100);
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_CREATE);
+        fivePercent = offers().create(new Offer(0, STAMP + " 5% from 1000", OfferKind.INVOICE, OfferStatus.ACTIVE,
+                TODAY, null, null, 0, new BigDecimal("5"), null, null, null, null, null, null, null, BigDecimal.ONE,
+                new BigDecimal("1000"), null, null, List.of(OfferTarget.everything()), Set.of(), null));
+
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales cupLine = line(new Sales(), cups, 25, 10, "40", "0");
+        Sales panLine = line(new Sales(), pans, 60, 8, "100", "0");
+        offerLines(List.of(cupLine, panLine));
+        int saved = sales().save(sale(List.of(cupLine, panLine), "0")).invoiceNumber();
+        invoiceSale = saved;
+
+        assertEquals("20.00|0.333", lineOf(saved, cups), "400 / 1,200 of 60");
+        assertEquals("40.00|0.667", lineOf(saved, pans), "the shares come to one invoice");
+        assertEquals("1140.00|0.00", text("SELECT CONCAT(total, '|', discount) FROM total_sales"
+                + " WHERE invoice_number = " + saved), "on the lines, never in the invoice's own discount box");
+        assertEquals("1140.00|730.00|410.00", text("SELECT CONCAT(net_revenue, '|', cost_of_sales, '|', profit)"
+                + " FROM document_profit WHERE document_kind = 'sales' AND document_id = " + saved));
+        assertEquals(0, BigDecimal.ONE.compareTo(new JdbcOfferRepository().usage(fivePercent).units()),
+                "one invoice counted against its limit of one");
+
+        // The limit was one invoice: the next over 1,000 is given nothing, and a screen claiming it is refused.
+        Sales again = line(new Sales(), pans, 60, 12, "100", "0");
+        offerLines(List.of(again));
+        assertEquals(0.0, again.getDiscount());
+        Sales forged = line(new Sales(), pans, 60, 12, "100", "60");
+        forged.setOfferId(fivePercent);
+        forged.setOfferDiscount(new BigDecimal("60.00"));
+        long counter = counter();
+        assertThrows(InvoiceValidationException.class, () -> sales().save(sale(List.of(forged), "0")));
+        assertEquals(counter, counter());
+
+        // Once used, its threshold is history: the trigger refuses it as it refuses a percentage.
+        assertSqlRefused(1644, "UPDATE offer SET threshold = 500 WHERE id = " + fivePercent);
+        execute("UPDATE offer SET name = '" + STAMP + " renamed' WHERE id = " + fivePercent);
+    }
+
+    @Test
+    @Order(19)
+    @DisplayName("an install at V86 with offers of every earlier kind upgrades to V87 with its rows untouched")
+    void theUpgradeToV87() throws Exception {
+        String older = SCHEMA_PREFIX + "v86_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        try (Connection connection = DriverManager.getConnection(jdbcUrl(""), username, password);
+             Statement statement = connection.createStatement()) {
+            statement.execute("CREATE DATABASE `" + older + "` CHARACTER SET utf8mb4");
+        }
+        try {
+            Flyway.configure().dataSource(jdbcUrl(older), username, password)
+                    .locations("filesystem:" + migrationsBefore(87, "-- offers, bundles and the invoice's total (V87)")
+                            .toAbsolutePath().toString().replace('\\', '/'))
+                    .validateOnMigrate(false).cleanDisabled(true).load().migrate();
+            try (Connection connection = DriverManager.getConnection(jdbcUrl(older), username, password);
+                 Statement statement = connection.createStatement()) {
+                statement.execute("INSERT INTO offer (name, kind, status, starts_on, percent) VALUES ('ten', 'PERCENT',"
+                        + " 'ACTIVE', CURRENT_DATE, 10)");
+                statement.execute("INSERT INTO offer (name, kind, status, starts_on, buy_quantity, get_quantity,"
+                        + " get_percent) VALUES ('gift', 'BUY_GET', 'ACTIVE', CURRENT_DATE, 1, 1, 100)");
+                statement.execute("INSERT INTO offer_target (offer_id, role, scope) SELECT id, 'QUALIFY', 'ALL'"
+                        + " FROM offer WHERE name = 'ten'");
+                statement.execute("INSERT INTO items (barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2,"
+                        + " sel_price3, unit_id, mini_quantity, user_id) VALUES ('UP', 'UP', 1, 25, 40, 0, 0, 1, 0, 1)");
+                statement.execute("INSERT INTO offer_target (offer_id, role, scope, item_id) SELECT o.id, 'REWARD',"
+                        + " 'ITEM', i.id FROM offer o JOIN items i ON i.barcode = 'UP' WHERE o.name = 'gift'");
+            }
+            Flyway.configure().dataSource(jdbcUrl(older), username, password).locations("classpath:db/migration")
+                    .validateOnMigrate(false).cleanDisabled(true).load().migrate();
+            try (Connection connection = DriverManager.getConnection(jdbcUrl(older), username, password);
+                 Statement statement = connection.createStatement();
+                 ResultSet rows = statement.executeQuery("SELECT o.name, o.threshold, o.barcode, t.role, t.quantity"
+                         + " FROM offer o JOIN offer_target t ON t.offer_id = o.id ORDER BY o.id")) {
+                assertTrue(rows.next());
+                assertEquals("ten", rows.getString(1));
+                assertEquals(null, rows.getObject(2));
+                assertEquals(null, rows.getObject(3));
+                assertTrue(rows.next());
+                assertEquals("REWARD", rows.getString(4), "the rewritten role CHECK keeps the gift");
+                assertEquals(null, rows.getObject(5));
+                assertFalse(rows.next());
+            }
+        } finally {
+            try (Connection connection = DriverManager.getConnection(jdbcUrl(""), username, password);
+                 Statement statement = connection.createStatement()) {
+                statement.execute("DROP DATABASE IF EXISTS `" + older + "`");
+            }
+        }
+    }
+
+    // --- phase E: what the offers did ----------------------------------------------------------------------
+
+    @Test
+    @Order(20)
+    @DisplayName("the performance report: an offer's lines as document_profit says for the same invoices, a return"
+            + " giving back its share, the cost only for the profit key, the period before empty")
+    void thePerformanceReport() throws Exception {
+        com.hamza.account.features.profitloss.statement.ProfitLossPeriod today =
+                new com.hamza.account.features.profitloss.statement.ProfitLossPeriod(TODAY, TODAY);
+        signIn(AppPermissions.OFFER_SHOW);
+        assertThrows(BusinessRuleException.class, () -> offers().performance(today), "a sales report's key too");
+
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.REPORTS_SHOW_SALES, AppPermissions.REPORTS_SHOW_PROFIT);
+        OfferPerformanceReport report = offers().performance(today);
+        OfferPerformanceRow bundleRow = rowOf(report, ramadan);
+        assertEquals(1, bundleRow.now().invoices());
+        assertEquals("15.00|150.00|132.00", figures(bundleRow.now()));
+        assertEquals(text("SELECT CONCAT(discount_total, '|', net_revenue, '|', cost_of_sales) FROM (SELECT 15.00 AS"
+                + " discount_total, net_revenue, cost_of_sales FROM document_profit WHERE document_kind = 'sales'"
+                + " AND document_id = " + ramadanSale + ") p"), figures(bundleRow.now()),
+                "the bundle's lines are the whole invoice: document_profit says the same");
+        assertEquals(0, BigDecimal.ONE.compareTo(bundleRow.times()), "one bundle: four units over four");
+
+        OfferPerformanceRow invoiceRow = rowOf(report, fivePercent);
+        assertEquals("60.00|1140.00|730.00", figures(invoiceRow.now()));
+        assertEquals(text("SELECT CONCAT('60.00|', net_revenue, '|', cost_of_sales) FROM document_profit"
+                + " WHERE document_kind = 'sales' AND document_id = " + invoiceSale), figures(invoiceRow.now()));
+
+        // Example 4's gift: 24 and 16 given, the shampoo back with its 24 - so 16 stayed given, and the net and
+        // the cost are the conditioner's alone.
+        int gift = scalar("SELECT id FROM offer WHERE name = '" + STAMP + " gift'");
+        OfferPerformanceRow giftRow = rowOf(report, gift);
+        assertEquals("16.00|24.00|30.00", figures(giftRow.now()));
+        assertEquals(0, new BigDecimal("0.5").compareTo(giftRow.times()), "two units covered, one given back");
+        assertTrue(report.rows().stream().allMatch(row -> row.before().lines() == 0),
+                "yesterday, before the schema existed, gave nothing");
+        assertEquals(scalar("SELECT COUNT(DISTINCT invoice_number) FROM sales WHERE offer_id IS NOT NULL"),
+                report.invoices(), "each invoice once, however many offers it held");
+
+        List<OfferPerformanceItem> items = offers().performanceItems(ramadan, today);
+        assertEquals(3, items.size());
+        assertEquals(0, new BigDecimal("150.00").compareTo(items.stream().map(OfferPerformanceItem::net)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)), "the drawer's items add up to the row");
+
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.REPORTS_SHOW_SALES);
+        OfferPerformanceReport withoutCost = offers().performance(today);
+        assertTrue(withoutCost.profit().isEmpty());
+        assertEquals(null, rowOf(withoutCost, ramadan).now().cost(), "never read for a reader who may not see it");
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("the reminders on MySQL: an item on offer down to its minimum, by the items list's own balance, and"
+            + " an offer ending tomorrow")
+    void theReminders() throws Exception {
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_CREATE);
+        assertTrue(offers().shortOfStock(TODAY).stream().noneMatch(item -> item.item().itemId() == oilItem));
+        execute("UPDATE items SET mini_quantity = 200 WHERE id = " + oilItem);
+        OfferAlerts.ShortItem oil = offers().shortOfStock(TODAY).stream()
+                .filter(item -> item.item().itemId() == oilItem).findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("99").compareTo(oil.item().balance()), "100 opening, one sold in the bundle");
+        assertEquals(List.of(ramadan), oil.offers().stream().map(Offer::id).toList());
+
+        int lastDay = offers().create(new Offer(0, STAMP + " last day", OfferKind.PERCENT, OfferStatus.ACTIVE, TODAY,
+                TODAY.plusDays(1), null, 0, BigDecimal.ONE, null, null, null, null,
+                List.of(OfferTarget.item(oilItem)), Set.of(), null));
+        OfferAlerts.Ending ending = offers().endingSoon(TODAY).stream()
+                .filter(end -> end.offer().id() == lastDay).findFirst().orElseThrow();
+        assertEquals(1, ending.daysLeft());
+    }
+
+    private static OfferPerformanceRow rowOf(OfferPerformanceReport report, int offerId) {
+        return report.rows().stream().filter(row -> row.offer().id() == offerId).findFirst().orElseThrow();
+    }
+
+    private static String figures(OfferFigures figures) {
+        return figures.discount().setScale(2, java.math.RoundingMode.HALF_UP) + "|"
+                + figures.net().setScale(2, java.math.RoundingMode.HALF_UP) + "|"
+                + figures.cost().setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /** A line of a saved sale: its offer's discount and the units, or the share of a time, it covered. */
+    private static String lineOf(int invoice, int item) throws Exception {
+        return text("SELECT CONCAT(offer_discount, '|', offer_quantity) FROM sales WHERE invoice_number = " + invoice
+                + " AND num = " + item);
     }
 
     // --- the screen's own path -------------------------------------------------------------------------------

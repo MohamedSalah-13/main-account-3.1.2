@@ -1115,6 +1115,47 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         }
     }
 
+    /**
+     * A bundle's barcode (V87, ق-ع١٢): its components go on the invoice as ordinary lines, each through the path
+     * every line takes - the validation, the expiry question, the merge - and the engine shares the bundle's
+     * discount among them. Answers false for a code no bundle answers to, which is then read as an item's.
+     * Only a sale with the add-on has bundles to scan: the snapshot is empty everywhere else.
+     * <p>
+     * All the components or none: each is resolved before any is added, and a component refused on its
+     * way in - its stock, its line, an expiry question dismissed - puts the lines back as they were
+     * ({@link InvoiceLinesCheckpoint}), rather than leaving the ones before it at their ordinary prices.
+     */
+    protected boolean addBundle(String code) throws Exception {
+        if (offerPreview == null) {
+            return false;
+        }
+        java.util.Optional<com.hamza.account.features.offers.Offer> bundle =
+                InvoiceBundleEntry.find(offerPreview.offers(), code);
+        if (bundle.isEmpty()) {
+            return false;
+        }
+        InvoiceBundleEntry.requireInForce(bundle.get(), date.getValue(), tierForSave());
+        List<InvoiceLineDraft> drafts = new java.util.ArrayList<>();
+        for (ItemPickRequest request : InvoiceBundleEntry.requests(bundle.get())) {
+            drafts.add(invoiceItemPickerService.resolve(request, invoiceStockId, priceTypeByNameId)
+                    .orElseThrow(() -> new UserValidationException(LanguageManager.getInstance()
+                            .getString("invoice.bundle.component.missing", bundle.get().name()))));
+        }
+        InvoiceLinesCheckpoint before = InvoiceLinesCheckpoint.of(editor.lines());
+        try {
+            for (InvoiceLineDraft draft : drafts) {
+                if (addLine(draft) == null) {
+                    before.restore(editor.lines());
+                    return true;
+                }
+            }
+        } catch (Exception refused) {
+            before.restore(editor.lines());
+            throw refused;
+        }
+        return true;
+    }
+
     protected int resolveSelectedPriceTier() throws Exception {
         String selectedName = textSearchName == null ? null : textSearchName.get();
         if (selectedName == null || selectedName.isBlank()) {

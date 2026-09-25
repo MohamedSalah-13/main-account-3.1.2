@@ -71,6 +71,11 @@ public class QuickInvoiceController<T3 extends BaseNames, T4 extends BaseAccount
             }
 
             @Override
+            public boolean addBundle(String barcode) throws Exception {
+                return QuickInvoiceController.this.addBundle(barcode);
+            }
+
+            @Override
             public InvoiceItemSelection selectByName(String itemName) throws Exception {
                 return invoiceItemSelectionService.selectByName(itemName, invoiceStockId,
                         resolveSelectedPriceTier());
