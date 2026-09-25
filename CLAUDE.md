@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,263 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-25 after the program side of the licence server's S1 (twenty-five
+**4,264 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-25 after the program side of the licence server's S1 (twenty-six
 tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
 nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
 tests, six of them gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
