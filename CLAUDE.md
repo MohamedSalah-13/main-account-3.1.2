@@ -4227,6 +4227,12 @@ license the machine cannot be tested from here, since that needs the private key
 was rebuilt the same day, 636 by 333 where it was 347 by 680: its version was the preference recording
 what this computer last ran (`1.0.0` until first written), its build date Maven's `2026-09-23T02:10:00Z`
 inside an Arabic sentence that printed it `23T02:10:00Z-09-2026`, and its colours were named in code.
+**The older format is being retired** (`licensing-server-plan.md` §11, decided 2026-09-25): each `HAMZA_ACCOUNT`
+holder is converted through the dashboard's legacy import, with a year of updates from that day, and **only after
+the last one** does a release remove `validateLicense`. A holder who installed that release unconverted would meet
+"trial expired" at start-up with no way to reach About to install a file. Until that release the older reader and
+its tampering rule stay exactly as they are; do not remove them on the strength of the decision alone.
+
 **Not fixed, and worth knowing:** `currentLicense(true)` tries the older files in order and a first one with a
 bad signature ends the install before the second is read - so an *older-format* `license.dat` beside
 `config.xml` whose signature fails blocks an install even when the program folder holds a valid one. Since
