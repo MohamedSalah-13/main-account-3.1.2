@@ -72,6 +72,7 @@ public final class ReturnCostResolver {
                 // A free return is given no offer (ق-ع١١): there is no line it could have come from.
                 persistedLines.get(index).setOfferId(null);
                 persistedLines.get(index).setOfferDiscount(BigDecimal.ZERO);
+                persistedLines.get(index).setOfferQuantity(BigDecimal.ZERO);
                 continue;
             }
             int sourceLineId = original.getSourceLineId();
@@ -102,11 +103,16 @@ public final class ReturnCostResolver {
         if (source.offerId() == null || source.offerDiscount() == 0 || source.quantity() <= 0) {
             persisted.setOfferId(null);
             persisted.setOfferDiscount(BigDecimal.ZERO);
+            persisted.setOfferQuantity(BigDecimal.ZERO);
             return;
         }
         persisted.setOfferId(source.offerId());
         persisted.setOfferDiscount(MoneyMath.multiply(source.offerDiscount(),
                 persisted.getQuantity() / source.quantity()));
+        // The units the offer covered come back in the same proportion (V86): what its global limit gets back.
+        persisted.setOfferQuantity(BigDecimal.valueOf(source.offerQuantity())
+                .multiply(BigDecimal.valueOf(persisted.getQuantity()))
+                .divide(BigDecimal.valueOf(source.quantity()), 3, java.math.RoundingMode.HALF_UP));
     }
 
     /**

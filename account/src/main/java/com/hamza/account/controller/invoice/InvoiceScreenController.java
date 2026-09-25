@@ -294,6 +294,11 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
     private boolean offersPending;
     private final Label offersCaption = new Label();
     private final Label offersFigure = new Label();
+    /** Under the lines: what would earn an offer - the units that complete a group, a gift not yet on it. */
+    private final Label offersHint = new Label();
+    /** The items the hints name, kept - a gift is usually not on the invoice yet. */
+    private final java.util.Map<Integer, com.hamza.account.model.domain.ItemsModel> hintItems =
+            new java.util.HashMap<>();
 
     /**
      * On a sale, with the add-on: the engine run after every change to the lines, the date or the tier, over
@@ -306,7 +311,10 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             return;
         }
         table.getColumns().add(InvoiceTableCoordinator.offerColumn());
-        offerPreview = new InvoiceOfferPreview(new InvoiceOffers.JdbcGroups());
+        // What a limited offer has left is read afresh for each preview; the save reads it again, locked.
+        offerPreview = new InvoiceOfferPreview(new InvoiceOffers.JdbcGroups(),
+                (limited, exceptInvoice) -> offerService.timesLeft(limited, exceptInvoice, false));
+        placeOffersHint();
         reloadOffers();
         offersCaption.setText(LanguageManager.getInstance().getString("invoice.offers.caption"));
         offersCaption.getStyleClass().add("summary-label");
@@ -347,6 +355,7 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
         }
         offerPreviewRecorded = InvoiceOfferPreview.recordedOn(lines);
         offerPreview.setRecorded(offerPreviewRecorded);
+        offerPreview.setInvoiceNumber(num_invoice_update);
         reloadOffers();
         scheduleOffers();
     }
@@ -400,6 +409,62 @@ public abstract class InvoiceScreenController<T3 extends BaseNames, T4 extends B
             offersCaption.setTooltip(tip);
             offersFigure.setTooltip(tip);
         }
+        showOfferHints(result.hints());
+    }
+
+    /**
+     * The hint line goes straight under the lines table on both screens: into the quick screen's column, and
+     * into a column made for it on the standard screen, whose table is the centre of its frame on its own.
+     */
+    private void placeOffersHint() {
+        offersHint.getStyleClass().add("invoice-offer-hint");
+        offersHint.setWrapText(true);
+        offersHint.setMaxWidth(Double.MAX_VALUE);
+        // Every hint, not the first cut short: the table beside it grows into all the height it is given, and a
+        // label left its default least size is squeezed to one line - seen on the first picture of three hints.
+        offersHint.setMinHeight(Region.USE_PREF_SIZE);
+        offersHint.setVisible(false);
+        offersHint.setManaged(false);
+        javafx.scene.Parent parent = table.getParent();
+        if (parent instanceof javafx.scene.layout.VBox column) {
+            column.getChildren().add(column.getChildren().indexOf(table) + 1, offersHint);
+        } else if (parent instanceof javafx.scene.layout.BorderPane frame && frame.getCenter() == table) {
+            frame.setCenter(null);
+            javafx.scene.layout.VBox column = new javafx.scene.layout.VBox(4, table, offersHint);
+            javafx.scene.layout.VBox.setVgrow(table, javafx.scene.layout.Priority.ALWAYS);
+            frame.setCenter(column);
+        }
+    }
+
+    private void showOfferHints(List<OfferEngine.Hint> hints) {
+        List<String> sentences = List.of();
+        if (!hints.isEmpty()) {
+            try {
+                sentences = InvoiceOfferHints.sentences(hints, this::hintItem);
+            } catch (DaoException e) {
+                logError(e);
+            }
+        }
+        offersHint.setText(String.join("\n", sentences));
+        offersHint.setVisible(!sentences.isEmpty());
+        offersHint.setManaged(!sentences.isEmpty());
+    }
+
+    /** An item a hint names: off the invoice's own lines, else read once and kept. */
+    private com.hamza.account.model.domain.ItemsModel hintItem(int itemId) throws DaoException {
+        for (BasePurchasesAndSales line : editor.lines()) {
+            if (line.getItems() != null && line.getItems().getId() == itemId) {
+                return line.getItems();
+            }
+        }
+        com.hamza.account.model.domain.ItemsModel item = hintItems.get(itemId);
+        if (item == null) {
+            item = itemsService.findItemById(itemId);
+            if (item != null) {
+                hintItems.put(itemId, item);
+            }
+        }
+        return item;
     }
 
     /** Double-clicking the empty centre of the command bar minimizes this invoice window. */

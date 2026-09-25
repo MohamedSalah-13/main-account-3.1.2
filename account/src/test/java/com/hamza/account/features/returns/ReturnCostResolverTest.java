@@ -160,6 +160,29 @@ class ReturnCostResolverTest {
         assertEquals(null, free.getOfferId());
     }
 
+    /**
+     * Example 2 of docs/pricing-and-offers-plan.md §5: seven soaps at 40 on "3 for 100", six of them in the two
+     * groups and 40 off. Two back carry two sevenths of the discount and of the six units the offer covered -
+     * what the offer's global limit gets back (V86).
+     */
+    @Test
+    void carriesTheShareOfTheUnitsTheOfferCovered() throws DaoException {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 7.0, 40.0, 40.0, COST_AT_SALE, 1, 1.0, null, 7, 40.0, 6.0));
+        Sales_Return line = assembledSalesReturnLine(COST_TODAY);
+        line.setPrice(40.0);
+        line.setQuantity(2);
+        line.setDiscount(11.43);
+        resolver.apply(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(returnRow(SOURCE_LINE)), List.of(line));
+        assertEquals(new java.math.BigDecimal("11.43"), line.getOfferDiscount(), "40 x 2 / 7 = 11.43");
+        assertEquals(new java.math.BigDecimal("1.714"), line.getOfferQuantity(), "6 x 2 / 7 = 1.714");
+
+        Sales_Return free = assembledSalesReturnLine(COST_TODAY);
+        free.setOfferQuantity(new java.math.BigDecimal("3"));
+        resolver.apply(DocumentType.SALES_RETURN, 0, 0, List.of(returnRow(0)), List.of(free));
+        assertEquals(java.math.BigDecimal.ZERO, free.getOfferQuantity(), "a free return gives no offer anything back");
+    }
+
     @Test
     void refusesAReturnInADifferentUnitFromTheSale() {
         // The price is per unit, so cartons at the piece price refunds a different

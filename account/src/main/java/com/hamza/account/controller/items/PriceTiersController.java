@@ -1,6 +1,8 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.account.features.events.PriceTiersChanged;
 import com.hamza.account.features.party.statement.StatementPeriod;
 import com.hamza.account.features.pricing.PriceTier;
 import com.hamza.account.features.pricing.PriceTierCatalog;
@@ -16,6 +18,7 @@ import com.hamza.account.table.PeriodPicker;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.collections.FXCollections;
@@ -69,6 +72,7 @@ public class PriceTiersController {
     private final TierReportService reportService = ServiceRegistry.get(TierReportService.class);
     private final com.hamza.account.features.pricing.TierFillService fillService =
             ServiceRegistry.get(com.hamza.account.features.pricing.TierFillService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
 
     @FXML
     private StackPane root;
@@ -274,6 +278,9 @@ public class PriceTiersController {
                 }
             }
             int written = tierService.save(edited);
+            // The service tells the other tills; the relay passes over this machine's own rows, so this one
+            // hears it here - the items screen shows the tiers' names.
+            eventBus.publish(new PriceTiersChanged());
             loadTiers();
             AllAlerts.alertSaveWithMessage(text("pricing.tiers.saved", written));
         } catch (Exception e) {
@@ -297,6 +304,7 @@ public class PriceTiersController {
                 return;
             }
             int written = fillService.apply(tier.id(), choice.onlyMissing(), choice.changes());
+            eventBus.publish(new ItemsChanged());
             AllAlerts.alertSaveWithMessage(text("pricing.fill.done", written, tier.name()));
         } catch (Exception e) {
             AllAlerts.handleError(text("pricing.tiers.apply"), e);

@@ -47,6 +47,35 @@ class OfferCostCheckTest {
     }
 
     @Test
+    @DisplayName("3 for 100 leaves a soap at 33.33 against a cost of 35 - judged on a whole group")
+    void aQuantityOfferIsJudgedOnAGroup() {
+        List<OfferCostCheck.Candidate> soap = List.of(new OfferCostCheck.Candidate(11, "صابون", 1, "قطعة", 5, 9,
+                BigDecimal.ONE, d("35"), List.of(d("40"), d("0"), d("0"))));
+        Offer threeFor100 = new Offer(1, "3 بـ 100", OfferKind.QUANTITY_PRICE, OfferStatus.ACTIVE,
+                LocalDate.of(2026, 9, 24), null, null, 0, null, null, d("100"), null, d("3"), null, null, null, null,
+                null, List.of(OfferTarget.item(11)), Set.of(), null);
+        assertEquals(List.of(new OfferCostCheck.BelowCost(11, "صابون", "قطعة", 1, d("40"), d("33.33"), d("35.00"))),
+                OfferCostCheck.below(threeFor100, soap, Set.of(1)));
+    }
+
+    @Test
+    @DisplayName("example 4 at a cost of 45 and 30: the shampoo nets 36 and the gift 24 - both listed, the gift once")
+    void aGiftIsJudgedBesideWhatEarnsIt() {
+        List<OfferCostCheck.Candidate> shampoo = List.of(new OfferCostCheck.Candidate(30, "شامبو", 1, "قطعة", 8, 4,
+                BigDecimal.ONE, d("45"), List.of(d("60"), d("0"), d("0"))));
+        OfferCostCheck.Candidate conditioner = new OfferCostCheck.Candidate(31, "بلسم", 1, "قطعة", 8, 4,
+                BigDecimal.ONE, d("30"), List.of(d("40"), d("0"), d("0")));
+        Offer gift = new Offer(1, "بلسم هدية", OfferKind.BUY_GET, OfferStatus.ACTIVE, LocalDate.of(2026, 9, 24), null,
+                null, 0, null, null, null, null, d("1"), d("1"), d("100"), null, null, null,
+                List.of(OfferTarget.item(30), OfferTarget.reward(31)), Set.of(), null);
+
+        List<OfferCostCheck.BelowCost> below = OfferCostCheck.below(gift, shampoo, conditioner, Set.of(1));
+        assertEquals(List.of(
+                new OfferCostCheck.BelowCost(31, "بلسم", "قطعة", 1, d("40"), d("24.00"), d("30.00")),
+                new OfferCostCheck.BelowCost(30, "شامبو", "قطعة", 1, d("60"), d("36.00"), d("45.00"))), below);
+    }
+
+    @Test
     @DisplayName("an offer that does not reach an item says nothing of it")
     void notReached() {
         Offer soapOnly = new Offer(1, "صابون", OfferKind.PRICE, OfferStatus.ACTIVE, LocalDate.of(2026, 9, 24), null,

@@ -104,7 +104,7 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
     @Override
     public OfferUsage usage(int offerId) throws DaoException {
         return withConnection(connection -> {
-            try (PreparedStatement statement = prepare(connection, OfferQuery.USAGE_SQL, offerId, offerId);
+            try (PreparedStatement statement = prepare(connection, OfferQuery.USAGE_SQL, offerId, offerId, offerId);
                  ResultSet rows = statement.executeQuery()) {
                 if (!rows.next() || rows.getInt("lines_count") == 0) {
                     return OfferUsage.NONE;
@@ -112,7 +112,7 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
                 return new OfferUsage(rows.getInt("invoices"), rows.getInt("lines_count"),
                         rows.getBigDecimal("given"), rows.getBigDecimal("net"),
                         rows.getObject("first_used", LocalDate.class), rows.getObject("last_used", LocalDate.class),
-                        rows.getBigDecimal("returned"));
+                        rows.getBigDecimal("returned"), rows.getBigDecimal("units"));
             }
         });
     }
@@ -124,6 +124,52 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
                  ResultSet rows = statement.executeQuery()) {
                 return rows.next() ? rows.getInt(1) : 0;
             }
+        });
+    }
+
+    @Override
+    public void lockOffers(Collection<Integer> offerIds) throws DaoException {
+        List<Integer> ids = offerIds.stream().distinct().sorted().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        withConnection(connection -> {
+            try (PreparedStatement statement = prepare(connection, OfferQuery.lockLimitedSql(ids.size()),
+                    ids.toArray());
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    rows.getInt(1);
+                }
+            }
+            return null;
+        });
+    }
+
+    @Override
+    public Map<Integer, java.math.BigDecimal> usedUnits(Collection<Integer> offerIds, int exceptInvoice,
+                                                        boolean lock) throws DaoException {
+        List<Integer> ids = offerIds.stream().distinct().sorted().toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return withConnection(connection -> {
+            Map<Integer, java.math.BigDecimal> used = new HashMap<>();
+            List<Object> sold = new ArrayList<>(ids);
+            sold.add(exceptInvoice);
+            try (PreparedStatement statement = prepare(connection, OfferQuery.usedOnSalesSql(ids.size(), lock),
+                    sold.toArray());
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    used.put(rows.getInt(1), rows.getBigDecimal(2));
+                }
+            }
+            try (PreparedStatement statement = prepare(connection, OfferQuery.returnedSql(ids.size()), ids.toArray());
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    used.merge(rows.getInt(1), rows.getBigDecimal(2).negate(), java.math.BigDecimal::add);
+                }
+            }
+            return used;
         });
     }
 
@@ -153,7 +199,8 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
     public int insert(Offer offer, int userId) throws DaoException {
         int id = insertReturningId(OfferQuery.INSERT_SQL, offer.name(), offer.kind().name(), offer.status().name(),
                 offer.startsOn(), offer.endsOn(), offer.weekdays(), offer.priority(), offer.percent(),
-                offer.amount(), offer.offerPrice(), offer.unitId(), offer.notes(), userId);
+                offer.amount(), offer.offerPrice(), offer.unitId(), offer.buyQuantity(), offer.getQuantity(),
+                offer.getPercent(), offer.maxPerInvoice(), offer.quantityLimit(), offer.notes(), userId);
         writeTargetsAndTiers(id, offer);
         return id;
     }
@@ -162,7 +209,8 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
     public boolean update(Offer offer, LocalDateTime version) throws DaoException {
         int written = executeUpdate(OfferQuery.UPDATE_SQL, offer.name(), offer.kind().name(), offer.startsOn(),
                 offer.endsOn(), offer.weekdays(), offer.priority(), offer.percent(), offer.amount(),
-                offer.offerPrice(), offer.unitId(), offer.notes(), offer.id(), version);
+                offer.offerPrice(), offer.unitId(), offer.buyQuantity(), offer.getQuantity(), offer.getPercent(),
+                offer.maxPerInvoice(), offer.quantityLimit(), offer.notes(), offer.id(), version);
         if (written != 1) {
             return false;
         }
@@ -231,7 +279,8 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
 
     private void writeTargetsAndTiers(int offerId, Offer offer) throws DaoException {
         for (OfferTarget target : offer.targets()) {
-            executeUpdate(OfferQuery.INSERT_TARGET_SQL, offerId, target.scope().name(), target.itemId(),
+            executeUpdate(OfferQuery.INSERT_TARGET_SQL, offerId, target.role().name(), target.scope().name(),
+                    target.itemId(),
                     target.unitId(), target.subGroupId(), target.mainGroupId(), target.excluded() ? 1 : 0);
         }
         for (int tierId : offer.priceTierIds().stream().sorted().toList()) {
@@ -272,11 +321,8 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
             return found;
         });
         return offers.stream()
-                .map(offer -> new Offer(offer.id(), offer.name(), offer.kind(), offer.status(), offer.startsOn(),
-                        offer.endsOn(), offer.weekdays(), offer.priority(), offer.percent(), offer.amount(),
-                        offer.offerPrice(), offer.unitId(), offer.notes(),
-                        targets.getOrDefault(offer.id(), List.of()), tiers.getOrDefault(offer.id(), Set.of()),
-                        offer.version()))
+                .map(offer -> offer.withTargetsAndTiers(targets.getOrDefault(offer.id(), List.of()),
+                        tiers.getOrDefault(offer.id(), Set.of())))
                 .toList();
     }
 
@@ -285,14 +331,16 @@ public final class JdbcOfferRepository extends AbstractDao<Object> implements Of
                 OfferStatus.valueOf(rows.getString("status")), rows.getObject("starts_on", LocalDate.class),
                 rows.getObject("ends_on", LocalDate.class), integer(rows, "weekdays"), rows.getInt("priority"),
                 rows.getBigDecimal("percent"), rows.getBigDecimal("amount"), rows.getBigDecimal("offer_price"),
-                integer(rows, "unit_id"), rows.getString("notes"), targets, tiers,
+                integer(rows, "unit_id"), rows.getBigDecimal("buy_quantity"), rows.getBigDecimal("get_quantity"),
+                rows.getBigDecimal("get_percent"), rows.getBigDecimal("max_per_invoice"),
+                rows.getBigDecimal("quantity_limit"), rows.getString("notes"), targets, tiers,
                 rows.getObject("updated_at", LocalDateTime.class));
     }
 
     private static OfferTarget target(ResultSet rows) throws SQLException {
         return new OfferTarget(OfferScope.valueOf(rows.getString("scope")), integer(rows, "item_id"),
                 integer(rows, "unit_id"), integer(rows, "sub_group_id"), integer(rows, "main_group_id"),
-                rows.getInt("excluded") == 1);
+                rows.getInt("excluded") == 1, OfferRole.valueOf(rows.getString("role")));
     }
 
     private static Integer integer(ResultSet rows, String column) throws SQLException {

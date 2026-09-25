@@ -70,6 +70,7 @@ public final class InvoiceLineAssembler {
     static void preserveOffer(BasePurchasesAndSales source, BasePurchasesAndSales target) {
         target.setOfferId(source.getOfferId());
         target.setOfferDiscount(source.getOfferDiscount());
+        target.setOfferQuantity(source.getOfferQuantity());
         target.setOfferName(source.getOfferName());
     }
 

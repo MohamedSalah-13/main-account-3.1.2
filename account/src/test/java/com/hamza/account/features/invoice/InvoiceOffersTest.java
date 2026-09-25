@@ -165,6 +165,48 @@ class InvoiceOffersTest {
         }
 
         @Test
+        @DisplayName("a global limit is asked of the save locked, leaving the edited document out - and judged:"
+                + " what the screen took when three were left is refused when two are")
+        void theGlobalLimitIsAskedLockedAndJudged() throws DaoException {
+            Offer firstTen = new Offer(1, "أول عشرة", OfferKind.PERCENT, OfferStatus.ACTIVE, DAY.minusDays(5), null,
+                    null, 0, new BigDecimal("10"), null, null, null, null, null, null, null, new BigDecimal("10"),
+                    null, List.of(OfferTarget.subGroup(5)), Set.of(), null);
+            inForce.clear();
+            inForce.add(firstTen);
+            Sales soap = line(11, 5, 3, 40, 0);
+            List<String> asked = new ArrayList<>();
+            InvoiceOfferPreview preview = new InvoiceOfferPreview(ids -> Map.of(), (limited, except) -> {
+                asked.add("screen " + limited.size() + " but " + except);
+                return Map.of(1, new BigDecimal("3"));
+            });
+            preview.setInvoiceNumber(15);
+            preview.setOffers(inForce);
+            preview.run(List.of(soap), DAY, 1);
+            assertEquals(new BigDecimal("12.00"), soap.getOfferDiscount());
+            assertEquals(new BigDecimal("3.000"), soap.getOfferQuantity(), "the line records the units it covered");
+            assertEquals(List.of("screen 1 but 15"), asked, "the screen reads it plainly, leaving itself out");
+
+            InvoiceOffers save = new InvoiceOffers(new InvoiceOffers.Source() {
+                @Override public boolean enabled() { return true; }
+                @Override public List<Offer> forDocument(LocalDate day, Set<Integer> recorded) { return inForce; }
+                @Override public Set<Integer> offersOnDocument(int invoiceNumber) { return Set.of(); }
+                @Override public String nameOf(int offerId) { return "عرض " + offerId; }
+                @Override public Map<Integer, InvoiceOffers.ItemGroups> groupsOf(Collection<Integer> itemIds) {
+                    return Map.of(11, new InvoiceOffers.ItemGroups(5, 9));
+                }
+                @Override public Map<Integer, BigDecimal> timesLeft(Collection<Offer> offers, int exceptInvoice,
+                                                                    boolean lock) {
+                    asked.add("save " + offers.size() + " but " + exceptInvoice + (lock ? " locked" : ""));
+                    return Map.of(1, new BigDecimal("2"));
+                }
+            });
+            InvoiceValidationException refused = assertThrows(InvoiceValidationException.class,
+                    () -> save.judge(DocumentType.SALES, false, DAY, 1, 15, List.of(soap)));
+            assertTrue(refused.getMessage().contains("أول عشرة"), refused.getMessage());
+            assertEquals("save 1 but 15 locked", asked.get(1));
+        }
+
+        @Test
         @DisplayName("a document in a foreign currency claims no offer (ق-ع١١)")
         void foreign() {
             Sales claimed = line(11, 5, 3, 40, 12);

@@ -24,16 +24,27 @@ public final class OfferGuard {
 
     /** Half a piastre: two figures rounded to money that agree are within it. */
     private static final BigDecimal TOLERANCE = new BigDecimal("0.005");
+    /** Half a thousandth: two quantities of three places that agree are within it. */
+    private static final BigDecimal QUANTITY_TOLERANCE = new BigDecimal("0.0005");
 
     private OfferGuard() {
     }
 
-    /** What one line of the document claims: the offer it names, that offer's part of it, its whole discount. */
-    public record Claim(int index, Integer offerId, BigDecimal offerDiscount, BigDecimal discount) {
+    /**
+     * What one line of the document claims: the offer it names, that offer's part of it, its whole discount,
+     * and how many of its units the offer covered - which the global limit counts, so it is judged too. A
+     * quantity of null is not asserted.
+     */
+    public record Claim(int index, Integer offerId, BigDecimal offerDiscount, BigDecimal discount,
+                        BigDecimal offerQuantity) {
 
         public Claim {
             offerDiscount = offerDiscount == null ? BigDecimal.ZERO : offerDiscount;
             discount = discount == null ? BigDecimal.ZERO : discount;
+        }
+
+        public Claim(int index, Integer offerId, BigDecimal offerDiscount, BigDecimal discount) {
+            this(index, offerId, offerDiscount, discount, null);
         }
     }
 
@@ -55,7 +66,9 @@ public final class OfferGuard {
             if (due.isEmpty() || due.get().offer().id() != claim.offerId()) {
                 throw refusal("offer.guard.error.gone", names.nameOf(claim.offerId()));
             }
-            if (!same(due.get().discount(), claim.offerDiscount())) {
+            if (!same(due.get().discount(), claim.offerDiscount())
+                    || (due.get().quantity() != null && claim.offerQuantity() != null
+                        && due.get().quantity().subtract(claim.offerQuantity()).abs().compareTo(QUANTITY_TOLERANCE) >= 0)) {
                 throw refusal("offer.guard.error.changed", due.get().offer().name());
             }
             if (!same(claim.discount(), claim.offerDiscount())) {

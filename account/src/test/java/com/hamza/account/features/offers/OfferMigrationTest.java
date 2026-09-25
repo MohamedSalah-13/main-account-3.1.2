@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,6 +102,57 @@ class OfferMigrationTest {
         assertTrue(ours.contains("CALL write_audit_log('offer', NEW.id, 'INSERT'"));
         assertTrue(ours.contains("CALL write_audit_log('offer', OLD.id, 'DELETE'"));
         assertFalse(ours.contains("symbol_latin"), "CurrencyMigrationTest counts those from its marker to the end");
+    }
+
+    @Test
+    @DisplayName("V86: the kind CHECK is rewritten whole, every branch naming its values IS NOT NULL and the rest NULL")
+    void phaseCKindCheck() throws IOException {
+        String sql = read("V86__offers_quantity_and_gifts.sql");
+        assertTrue(sql.contains("CALL v86_drop_check_if_present('offer', 'offer_kind_chk');"));
+        assertTrue(sql.indexOf("CALL v86_drop_check_if_present('offer', 'offer_kind_chk');")
+                        > sql.indexOf("CALL v86_add_column_if_missing('offer', 'quantity_limit'"),
+                "the new columns exist before a CHECK names them");
+        assertTrue(sql.contains("(kind = ''QUANTITY_PRICE'' AND buy_quantity IS NOT NULL AND buy_quantity > 0"
+                + "\n                AND offer_price IS NOT NULL AND offer_price > 0"));
+        assertTrue(sql.contains("(kind = ''BUY_GET'' AND buy_quantity IS NOT NULL AND buy_quantity > 0"
+                + "\n                AND get_quantity IS NOT NULL AND get_quantity > 0"
+                + "\n                AND get_percent IS NOT NULL AND get_percent > 0 AND get_percent <= 100"));
+        assertEquals(3, count(sql, "AND buy_quantity IS NULL AND get_quantity IS NULL AND get_percent IS NULL)"),
+                "phase B's three kinds say their new columns are empty");
+        assertTrue(sql.contains("CHECK ((max_per_invoice IS NULL OR max_per_invoice > 0)"
+                + " AND (quantity_limit IS NULL OR quantity_limit > 0))"));
+        assertTrue(sql.contains("CHECK (role = ''QUALIFY'' OR (role = ''REWARD'' AND scope = ''ITEM'' AND excluded = 0))"));
+        assertEquals(2, count(sql, "CHECK (offer_quantity >= 0 AND (offer_id IS NOT NULL OR offer_quantity = 0))"),
+                "on the sale lines and the return lines");
+    }
+
+    @Test
+    @DisplayName("V86: a phase B line covered all of itself - in the offer's unit, or its base units")
+    void phaseCBackfill() throws IOException {
+        String sql = read("V86__offers_quantity_and_gifts.sql");
+        assertTrue(sql.contains("SET s.offer_quantity = IF(o.unit_id IS NULL, s.quantity * s.type_value, s.quantity)"));
+        assertTrue(sql.contains("SET r.offer_quantity = IF(o.unit_id IS NULL, r.quantity * r.type_value, r.quantity)"));
+        for (String helper : List.of("v86_add_column_if_missing", "v86_add_check_if_missing", "v86_drop_check_if_present")) {
+            assertTrue(sql.contains("DROP PROCEDURE IF EXISTS " + helper + ";"), helper + " is left behind");
+        }
+    }
+
+    @Test
+    @DisplayName("V86's triggers come after V85's, and a used offer's quantities and limits are terms there too")
+    void phaseCTriggers() throws IOException {
+        String triggers = read("R__triggers.sql");
+        int v85 = triggers.indexOf("-- offers (V85)");
+        int v86 = triggers.indexOf("-- offers, quantity and gifts (V86)");
+        assertTrue(v86 > v85, "a test building a V85 schema cuts the file at the V86 marker");
+        String ours = triggers.substring(v86);
+        for (String term : List.of("buy_quantity", "get_quantity", "get_percent", "max_per_invoice",
+                "quantity_limit")) {
+            assertTrue(ours.contains("NOT (OLD." + term + " <=> NEW." + term + ")"), term + " is a term");
+        }
+        assertFalse(triggers.substring(v85, v86).contains("buy_quantity"),
+                "the V85 section names no V86 column: MySQL refuses a trigger naming one it does not have");
+        String views = read("R__views.sql");
+        assertTrue(views.contains("       s.offer_quantity,") && views.contains("       sr.offer_quantity,"));
     }
 
     @Test

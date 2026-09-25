@@ -95,6 +95,87 @@ class OfferFormTest {
         assertNull(Weekdays.of(EVERY_DAY));
     }
 
+    private static Offer buildTerms(OfferKind kind, OfferForm.Terms terms, List<OfferTarget> targets)
+            throws UserValidationException {
+        return OfferForm.build(0, "كمية", kind, null, DAY, null, EVERY_DAY, 0, terms, 2, null, targets, Set.of(),
+                null);
+    }
+
+    private static BigDecimal d(String value) {
+        return value == null ? null : new BigDecimal(value);
+    }
+
+    @Test
+    @DisplayName("a quantity offer keeps its group and its price; a buy-and-get its three figures and no value")
+    void theQuantityKinds() throws Exception {
+        Offer threeFor100 = buildTerms(OfferKind.QUANTITY_PRICE,
+                new OfferForm.Terms(d("100"), d("3"), d("9"), d("50"), d("2"), null), List.of(OfferTarget.item(3)));
+        assertEquals(d("100"), threeFor100.offerPrice());
+        assertEquals(d("3"), threeFor100.buyQuantity());
+        assertNull(threeFor100.getQuantity(), "what a quantity offer does not use is not kept");
+        assertNull(threeFor100.getPercent());
+        assertEquals(d("2"), threeFor100.maxPerInvoice());
+        assertEquals(d("3"), threeFor100.groupSize());
+
+        Offer twoPlusOne = buildTerms(OfferKind.BUY_GET,
+                new OfferForm.Terms(d("7"), d("2"), d("1"), d("100"), null, d("500")),
+                List.of(OfferTarget.item(3), OfferTarget.reward(4)));
+        assertNull(twoPlusOne.offerPrice(), "a buy-and-get has no value box");
+        assertEquals(d("3"), twoPlusOne.groupSize(), "two bought and one given");
+        assertEquals(d("500"), twoPlusOne.quantityLimit());
+        assertEquals(4, twoPlusOne.rewardTarget().orElseThrow().itemId());
+    }
+
+    @Test
+    @DisplayName("each phase C rule refuses with its own key")
+    void theQuantityRefusals() {
+        List<OfferTarget> item = List.of(OfferTarget.item(3));
+        assertKey("offer.error.buy.quantity", () -> buildTerms(OfferKind.QUANTITY_PRICE,
+                new OfferForm.Terms(d("100"), null, null, null, null, null), item));
+        assertKey("offer.error.price", () -> buildTerms(OfferKind.QUANTITY_PRICE,
+                new OfferForm.Terms(null, d("3"), null, null, null, null), item));
+        assertKey("offer.error.get.quantity", () -> buildTerms(OfferKind.BUY_GET,
+                new OfferForm.Terms(null, d("2"), null, d("100"), null, null), item));
+        assertKey("offer.error.get.percent", () -> buildTerms(OfferKind.BUY_GET,
+                new OfferForm.Terms(null, d("2"), d("1"), d("100.5"), null, null), item));
+        assertKey("offer.error.buy.quantity", () -> buildTerms(OfferKind.BUY_GET,
+                new OfferForm.Terms(null, d("2.0001"), d("1"), d("100"), null, null), item));
+        assertKey("offer.error.limit", () -> buildTerms(OfferKind.PERCENT,
+                new OfferForm.Terms(d("10"), null, null, null, d("0"), null), List.of(OfferTarget.everything())));
+        assertKey("offer.error.limit", () -> buildTerms(OfferKind.PERCENT,
+                new OfferForm.Terms(d("10"), null, null, null, null, d("-5")), List.of(OfferTarget.everything())));
+        assertKey("offer.error.reward", () -> buildTerms(OfferKind.PERCENT,
+                new OfferForm.Terms(d("10"), null, null, null, null, null),
+                List.of(OfferTarget.item(3), OfferTarget.reward(4))));
+        assertKey("offer.error.reward", () -> buildTerms(OfferKind.BUY_GET,
+                new OfferForm.Terms(null, d("1"), d("1"), d("100"), null, null),
+                List.of(OfferTarget.item(3), OfferTarget.reward(4), OfferTarget.reward(5))));
+        assertKey("offer.error.targets", () -> buildTerms(OfferKind.BUY_GET,
+                new OfferForm.Terms(null, d("1"), d("1"), d("100"), null, null), List.of(OfferTarget.reward(4))));
+    }
+
+    @Test
+    @DisplayName("the quantities and the limits are terms: a used offer keeps them")
+    void theLimitsAreTerms() throws Exception {
+        Offer offer = buildTerms(OfferKind.QUANTITY_PRICE,
+                new OfferForm.Terms(d("100"), d("3"), null, null, d("2"), null), List.of(OfferTarget.item(3)));
+        Offer raised = buildTerms(OfferKind.QUANTITY_PRICE,
+                new OfferForm.Terms(d("100"), d("3"), null, null, d("3"), null), List.of(OfferTarget.item(3)));
+        Offer same = buildTerms(OfferKind.QUANTITY_PRICE,
+                new OfferForm.Terms(d("100.00"), d("3.000"), null, null, d("2"), null), List.of(OfferTarget.item(3)));
+        assertFalse(OfferForm.sameTerms(offer, raised));
+        assertTrue(OfferForm.sameTerms(offer, same));
+    }
+
+    @Test
+    @DisplayName("a gift is one item, never excluded")
+    void aGiftIsOneItem() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new OfferTarget(OfferScope.SUB_GROUP, null, null, 4, null, false, OfferRole.REWARD));
+        assertThrows(IllegalArgumentException.class, () -> OfferTarget.reward(4).except());
+        assertEquals(OfferRole.QUALIFY, OfferTarget.item(3).role(), "every target before V86 earns the offer");
+    }
+
     private static void assertKey(String key, org.junit.jupiter.api.function.Executable build) {
         UserValidationException refused = assertThrows(UserValidationException.class, build);
         assertEquals(key, refused.getMessage());
