@@ -63,8 +63,8 @@ class TrialManagerInstallTest {
     }
 
     @Test
-    @DisplayName("a server-issued file this build has no key to verify is refused, never shown to the older reader")
-    void aServerFileWithoutTheServerKeyIsRefused() throws Exception {
+    @DisplayName("a server-issued file none of the server's keys signed is refused, never shown to the older reader")
+    void aServerFileTheServerDidNotSignIsRefused() throws Exception {
         String serverFormat = LicenseEnvelope.encode(
                 "HAMZA_LICENSE2|this-machine|a shop|FULL|2026-01-01|2027-01-01|2027-01-01", new byte[256]);
 

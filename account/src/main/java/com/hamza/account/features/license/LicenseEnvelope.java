@@ -41,10 +41,11 @@ public record LicenseEnvelope(String payload, byte[] signature) {
      * Whether these bytes claim to be a server-issued licence - asked <b>before</b> any
      * signature is checked, because the answer decides which key the check is made with.
      *
-     * <p>It also decides which reader a file is handed to at all. The older reader verifies
-     * with the release key and treats a failed signature as tampering, which ends an install
-     * for good; a server-issued file shown to it would fail exactly that way. So a file that
-     * answers true here must never reach it.
+     * <p>It does <b>not</b> decide which reader a file is handed to. A server file with one of
+     * its first twenty characters changed - they carry the tag - answers false here, and the
+     * older reader, which ends an install over a signature it cannot verify, must still never
+     * see it; so that reader is shown only a file that is positively its own
+     * ({@code OlderLicenceFile}), and a file answering true here never qualifies.
      */
     public static boolean claimsServerFormat(byte[] fileBytes) {
         return parse(fileBytes)

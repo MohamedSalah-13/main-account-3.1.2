@@ -18,9 +18,11 @@ import java.util.function.Supplier;
  *
  * <p>Two files may be present - one beside {@code config.xml}, one in the program's folder -
  * and either may be in either format. This class owns that sorting, because getting it wrong
- * is expensive in one direction only: a server-issued file handed to the older reader fails
- * its signature check against the release key, and that reader ends the install for it.
- * {@link #filesForOlderReader()} is therefore the only list the older reader may be given.
+ * is expensive in one direction only: the older reader checks with the release key and ends the
+ * install over a signature it cannot verify. So it is shown only a file that is its own
+ * ({@link OlderLicenceFile}), and {@link #filesForOlderReader()} is the only list it may be
+ * given. Every other file - a server licence, and anything damaged or foreign whatever it once
+ * was - is judged here, where nothing is charged.
  *
  * <p>Nothing in this package exits the program or charges a failure, and
  * {@code LicensePackageNeverExitsTest} keeps it so.
@@ -62,8 +64,8 @@ public final class LicenseService {
 
     /**
      * The decision for this workstation on the clock's day. A file that licenses the machine
-     * wins wherever it is; failing that, the first file that at least claimed the format
-     * says why it did not, so the reason can be shown rather than guessed at.
+     * wins wherever it is; failing that, the first file judged here says why it did not, so the
+     * reason can be shown rather than guessed at.
      *
      * <p>The clock is a supplier because reading it may cost a query, and this is asked on
      * every saved invoice while a machine is on the trial: with no server-format file
@@ -74,7 +76,7 @@ public final class LicenseService {
         LicenseClock clock = null;
         String machine = machineId.get();
         for (Path candidate : files.candidates()) {
-            byte[] bytes = readIfServerFormat(candidate);
+            byte[] bytes = readIfJudgedHere(candidate);
             if (bytes == null) {
                 continue;
             }
@@ -94,13 +96,13 @@ public final class LicenseService {
     }
 
     /**
-     * The existing files that do <b>not</b> claim the server format, in the order to try
-     * them - the files the older {@code HAMZA_ACCOUNT} reader may be shown.
+     * The existing files that are the older {@code HAMZA_ACCOUNT} licence, in the order to try
+     * them - the only files the older reader may be shown.
      */
     public List<Path> filesForOlderReader() {
         List<Path> older = new ArrayList<>();
         for (Path candidate : files.candidates()) {
-            if (Files.isRegularFile(candidate) && readIfServerFormat(candidate) == null) {
+            if (Files.isRegularFile(candidate) && readIfJudgedHere(candidate) == null) {
                 older.add(candidate);
             }
         }
@@ -108,17 +110,17 @@ public final class LicenseService {
     }
 
     /**
-     * The file's bytes when it claims the server format, otherwise null. A file that cannot
-     * be read is treated as claiming it: unreadable is not evidence of anything, and this is
-     * the side that charges nobody for it.
+     * The file's bytes when it is this package's to judge - anything but the older licence -
+     * otherwise null. A file that cannot be read is judged here: unreadable is not evidence of
+     * anything, and this is the side that charges nobody for it.
      */
-    private static byte[] readIfServerFormat(Path candidate) {
+    private static byte[] readIfJudgedHere(Path candidate) {
         if (!Files.isRegularFile(candidate)) {
             return null;
         }
         try {
             byte[] bytes = Files.readAllBytes(candidate);
-            return LicenseEnvelope.claimsServerFormat(bytes) ? bytes : null;
+            return OlderLicenceFile.claims(bytes) ? null : bytes;
         } catch (IOException unreadable) {
             log.warn("The licence file {} could not be read", candidate, unreadable);
             return new byte[0];

@@ -2,6 +2,7 @@ package com.hamza.account.view;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.AppIcon;
+import com.hamza.account.config.MachineId;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.about.AboutBuild;
 import com.hamza.account.features.about.AboutLicense;
@@ -23,8 +24,11 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -77,7 +81,13 @@ public class AboutApplication extends Application {
     private final Label status = new Label();
     private final Label remaining = new Label();
     private final Label licenseFile = new Label();
+    private final Label machineCode = new Label();
+    private final Button copyMachineCode = new Button();
     private Optional<Image> programImage;
+
+    /** What the licence card shows, read together off the JavaFX thread. */
+    private record Loaded(TrialManager.TrialDisplayInfo info, Optional<String> machine) {
+    }
 
     public static void main(String[] args) {
         launch(args);
@@ -188,6 +198,7 @@ public class AboutApplication extends Application {
         GridPane rows = rows();
         addRow(rows, 0, "about.caption.remaining", remaining);
         addRow(rows, 1, "about.caption.license", licenseFile);
+        addRow(rows, 2, "about.caption.machine", machineCodeRow());
 
         Button activate = new Button(text("about.license.activate"), AppIcon.SECURITY.graphic());
         activate.getStyleClass().add("app-neutral-button");
@@ -244,11 +255,46 @@ public class AboutApplication extends Application {
     }
 
     private void addRow(GridPane rows, int row, String captionKey, Label value) {
+        value.getStyleClass().add("about-value");
+        addRow(rows, row, captionKey, (Node) value);
+    }
+
+    private void addRow(GridPane rows, int row, String captionKey, Node value) {
         Label caption = new Label(text(captionKey));
         caption.getStyleClass().add("form-label");
-        value.getStyleClass().add("about-value");
         rows.add(caption, 0, row);
         rows.add(value, 1, row);
+    }
+
+    /**
+     * This computer's {@code MachineGuid} - what a licence is issued for. A shop without internet
+     * reads it to support over the telephone, and support types it into the licence server's
+     * "issue a file for a machine" form; the licence then licenses this computer and no other.
+     * It is written left to right and copied whole, because one wrong character is another machine.
+     * <p>
+     * <b>It is never cut short</b>: the card is 300 points and the code 36 characters, and the first
+     * draft drew {@code c373b698-a8fb-483c-9...} beside a button reading "..." - half a code to read
+     * down a telephone. The label keeps its whole width and the window grows for it, and the button
+     * is an icon whose word is its tooltip.
+     */
+    private HBox machineCodeRow() {
+        machineCode.getStyleClass().add("about-machine-code");
+        machineCode.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        machineCode.setMinWidth(Region.USE_PREF_SIZE);
+        copyMachineCode.setGraphic(AppIcon.DUPLICATE.graphic());
+        copyMachineCode.setTooltip(new Tooltip(text("about.machine.copy")));
+        copyMachineCode.setMinWidth(Region.USE_PREF_SIZE);
+        copyMachineCode.getStyleClass().add("app-neutral-button");
+        copyMachineCode.setOnAction(event -> {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(machineCode.getText());
+            Clipboard.getSystemClipboard().setContent(content);
+            copyMachineCode.setGraphic(AppIcon.CONFIRM.graphic());
+            copyMachineCode.getTooltip().setText(text("about.machine.copied"));
+        });
+        HBox row = new HBox(8, machineCode, copyMachineCode);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 
     private static Label value(String text) {
@@ -294,13 +340,25 @@ public class AboutApplication extends Application {
 
     // ---- the licence ----------------------------------------------------------------------------
 
-    /** Reads the trial state off the JavaFX thread, on a pooled connection it gives straight back. */
+    /**
+     * Reads the trial state off the JavaFX thread, on a pooled connection it gives straight back,
+     * and the machine's code with it: {@code MachineId} answers from what the start-up read, and
+     * on a miss starts a {@code reg} process, which is not the JavaFX thread's to wait for. The code
+     * needs no database, so a failure to read the trial state does not take it away.
+     */
     private void refreshStatus() {
         show(null, true);
-        Task<TrialManager.TrialDisplayInfo> read = new Task<>() {
+        Task<Loaded> read = new Task<>() {
             @Override
-            protected TrialManager.TrialDisplayInfo call() {
-                return withTrialManager(TrialManager::getDisplayInfo);
+            protected Loaded call() {
+                Optional<String> machine = MachineId.current();
+                TrialManager.TrialDisplayInfo info = null;
+                try {
+                    info = withTrialManager(TrialManager::getDisplayInfo);
+                } catch (RuntimeException unread) {
+                    log.warn("The licence state was not read for the About window", unread);
+                }
+                return new Loaded(info, machine);
             }
         };
         read.setOnSucceeded(event -> show(read.getValue(), false));
@@ -310,14 +368,22 @@ public class AboutApplication extends Application {
         thread.start();
     }
 
-    private void show(TrialManager.TrialDisplayInfo info, boolean loading) {
+    private void show(Loaded loaded, boolean loading) {
         if (loading) {
             status.setText("…");
             remaining.setText("…");
             licenseFile.setText("…");
+            machineCode.setText("…");
+            copyMachineCode.setGraphic(AppIcon.DUPLICATE.graphic());
+            copyMachineCode.getTooltip().setText(text("about.machine.copy"));
+            copyMachineCode.setDisable(true);
             return;
         }
-        AboutLicense license = AboutLicense.of(info);
+        Optional<String> machine = loaded == null ? Optional.empty() : loaded.machine();
+        machineCode.setText(machine.orElse(text("about.machine.unavailable")));
+        copyMachineCode.setDisable(machine.isEmpty());
+
+        AboutLicense license = AboutLicense.of(loaded == null ? null : loaded.info());
         status.setText(text(license.statusKey()));
         remaining.setText(license.remainingDays() == null
                 ? text(license.remainingKey())

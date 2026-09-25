@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -132,6 +134,81 @@ class LicenseServiceTest {
         files.write(new String(server.file(termsFor("PC-02")), StandardCharsets.UTF_8));
         files.write(new String(server.file(termsFor(MACHINE)), StandardCharsets.UTF_8));
         assertEquals(LicenseStatus.ACTIVE, check().status());
+    }
+
+    /**
+     * A server file damaged in its first twenty characters - where its tag is written - no longer
+     * reads as the server's format. It used to be handed to the older reader for that, which checks
+     * with the release key and, at start-up, ends the install over the signature it cannot verify:
+     * one changed character, and the one failure an install is allowed was spent. It is judged here
+     * now, where a bad file licenses nothing and costs nothing.
+     */
+    @Test
+    void aServerFileWithADamagedTagIsJudgedHereAndNeverHandedOn() throws IOException {
+        String genuine = new String(server.file(termsFor(MACHINE)), StandardCharsets.US_ASCII);
+        String damaged = (genuine.charAt(0) == 'S' ? 'T' : 'S') + genuine.substring(1);
+        Files.writeString(configDirectory.resolve(LicenseFiles.FILE_NAME), damaged);
+
+        assertTrue(service.filesForOlderReader().isEmpty());
+        assertEquals(LicenseStatus.BAD_SIGNATURE, check().status());
+    }
+
+    /** A download cut short: before its dot, or with a signature half base64 cannot read. */
+    @Test
+    void aServerFileCutShortIsJudgedHereAndNeverHandedOn() throws IOException {
+        String genuine = new String(server.file(termsFor(MACHINE)), StandardCharsets.US_ASCII);
+        int dot = genuine.indexOf('.');
+        for (String cut : List.of(genuine.substring(0, dot + 14), genuine.substring(0, dot), genuine.substring(0, 10))) {
+            Files.writeString(configDirectory.resolve(LicenseFiles.FILE_NAME), cut);
+
+            assertTrue(service.filesForOlderReader().isEmpty(), "cut to " + cut.length() + " characters");
+            assertEquals(LicenseStatus.MALFORMED, check().status(), "cut to " + cut.length() + " characters");
+        }
+    }
+
+    /** What is not a licence of either kind is not the older reader's to punish. */
+    @Test
+    void aFileThatIsNoLicenceAtAllIsNeverHandedOn() throws IOException {
+        for (byte[] rubbish : List.of("PK\u0003\u0004 a zip, say".getBytes(StandardCharsets.ISO_8859_1),
+                new byte[0], "not.a.licence".getBytes(StandardCharsets.US_ASCII))) {
+            Files.write(programDirectory.resolve(LicenseFiles.FILE_NAME), rubbish);
+
+            assertTrue(service.filesForOlderReader().isEmpty());
+            assertFalse(check().skipsTrial());
+        }
+    }
+
+    /**
+     * Every shape of older licence the older reader could ever accept still reaches it: the
+     * narrowing is of what it is shown, never of what it accepts.
+     */
+    @Test
+    void everyOlderLicenceTheOlderReaderCouldAcceptStillReachesIt() throws IOException {
+        String payload = Base64.getEncoder().encodeToString(("HAMZA_ACCOUNT|" + MACHINE).getBytes(StandardCharsets.UTF_8));
+        Path older = programDirectory.resolve(LicenseFiles.FILE_NAME);
+        for (byte[] shape : List.of(
+                (payload + ".AQID").getBytes(StandardCharsets.US_ASCII),
+                ("﻿" + payload + ".AQID").getBytes(StandardCharsets.UTF_8),
+                ("  " + payload + "\r\n.AQID\r\n").getBytes(StandardCharsets.US_ASCII),
+                concat((payload + ".").getBytes(StandardCharsets.US_ASCII), new byte[]{'.', '\n', (byte) 0xFF, 0}))) {
+            Files.write(older, shape);
+            assertEquals(List.of(older), service.filesForOlderReader());
+        }
+    }
+
+    /** An older licence with its machine edited is still the older reader's to call tampering; that rule is not relaxed here. */
+    @Test
+    void anEditedOlderLicenceIsStillTheOlderReadersBusiness() throws IOException {
+        Path older = programDirectory.resolve(LicenseFiles.FILE_NAME);
+        Files.write(older, LicenseEnvelope.encode("HAMZA_ACCOUNT|SOMEBODY-ELSE", new byte[]{9, 9, 9})
+                .getBytes(StandardCharsets.UTF_8));
+        assertEquals(List.of(older), service.filesForOlderReader());
+    }
+
+    private static byte[] concat(byte[] first, byte[] second) {
+        byte[] both = Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, both, first.length, second.length);
+        return both;
     }
 
     @Test
