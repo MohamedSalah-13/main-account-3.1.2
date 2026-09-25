@@ -58,6 +58,15 @@ public final class InvoiceOffers {
         String nameOf(int offerId) throws DaoException;
 
         Map<Integer, ItemGroups> groupsOf(Collection<Integer> itemIds) throws DaoException;
+
+        /**
+         * For the offers with a global limit, the times the other documents have left each - locked and read
+         * with a locking read when {@code lock}, as the save asks. None by default: no limit is counted.
+         */
+        default Map<Integer, BigDecimal> timesLeft(Collection<Offer> offers, int exceptInvoice, boolean lock)
+                throws DaoException {
+            return Map.of();
+        }
     }
 
     private final Source source;
@@ -72,32 +81,38 @@ public final class InvoiceOffers {
     }
 
     public static InvoiceOffers jdbc() {
-        OfferService offers = new OfferService(new JdbcOfferRepository());
+        OfferService offersService = new OfferService(new JdbcOfferRepository());
         JdbcGroups groups = new JdbcGroups();
         return new InvoiceOffers(new Source() {
             @Override
             public boolean enabled() {
-                return offers.enabled();
+                return offersService.enabled();
             }
 
             @Override
             public List<Offer> forDocument(LocalDate day, Set<Integer> recorded) throws DaoException {
-                return offers.forDocument(day, recorded);
+                return offersService.forDocument(day, recorded);
             }
 
             @Override
             public Set<Integer> offersOnDocument(int invoiceNumber) throws DaoException {
-                return offers.offersOnDocument(invoiceNumber);
+                return offersService.offersOnDocument(invoiceNumber);
             }
 
             @Override
             public String nameOf(int offerId) throws DaoException {
-                return offers.nameOf(offerId);
+                return offersService.nameOf(offerId);
             }
 
             @Override
             public Map<Integer, ItemGroups> groupsOf(Collection<Integer> itemIds) throws DaoException {
                 return groups.groupsOf(itemIds);
+            }
+
+            @Override
+            public Map<Integer, BigDecimal> timesLeft(Collection<Offer> offers, int exceptInvoice, boolean lock)
+                    throws DaoException {
+                return offers.isEmpty() ? Map.of() : offersService.timesLeft(offers, exceptInvoice, lock);
             }
         });
     }
@@ -130,8 +145,14 @@ public final class InvoiceOffers {
                 return;
             }
             Set<Integer> recorded = source.offersOnDocument(existingNumber);
+            List<Offer> inForce = source.forDocument(day, recorded);
+            // An offer with a global limit is locked here, and what the other documents used of it read with
+            // a locking read (ق-ع١٠): a second till saving the same offer waits until this one commits, then
+            // sees what it took. After the stock guard's item locks - the invoice save is the one path that
+            // locks both, so there is one order.
+            Map<Integer, BigDecimal> timesLeft = source.timesLeft(inForce, existingNumber, true);
             OfferEngine.Result expected = OfferEngine.apply(engineLines(rows, source::groupsOf, false),
-                    new OfferEngine.Context(day, tierId, recorded), source.forDocument(day, recorded));
+                    new OfferEngine.Context(day, tierId, recorded, timesLeft), inForce);
             OfferGuard.require(claims, expected, names);
         } catch (BusinessRuleException refused) {
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.LINES, refused.getMessage());
@@ -185,21 +206,26 @@ public final class InvoiceOffers {
             }
             var applied = result.forLine(index);
             if (applied.isPresent()) {
-                moved |= write(row, applied.get().offer().id(), applied.get().offer().name(), applied.get().discount());
+                moved |= write(row, applied.get().offer().id(), applied.get().offer().name(), applied.get().discount(),
+                        applied.get().quantity());
             } else if (row.getOfferId() != null) {
-                moved |= write(row, null, null, BigDecimal.ZERO);
+                moved |= write(row, null, null, BigDecimal.ZERO, BigDecimal.ZERO);
             }
         }
         return moved;
     }
 
-    private static boolean write(BasePurchasesAndSales row, Integer offerId, String name, BigDecimal discount) {
+    private static boolean write(BasePurchasesAndSales row, Integer offerId, String name, BigDecimal discount,
+                                 BigDecimal quantity) {
+        BigDecimal covered = quantity == null ? BigDecimal.ZERO : quantity;
         boolean same = java.util.Objects.equals(row.getOfferId(), offerId)
                 && row.getOfferDiscount().compareTo(discount) == 0
+                && row.getOfferQuantity().compareTo(covered) == 0
                 && MoneyMath.decimal(row.getDiscount()).compareTo(discount) == 0;
         row.setOfferId(offerId);
         row.setOfferName(name);
         row.setOfferDiscount(discount);
+        row.setOfferQuantity(covered);
         if (!same) {
             row.setDiscount(MoneyMath.asDouble(discount));
             InvoiceLineService.recalculate(row);
@@ -216,7 +242,7 @@ public final class InvoiceOffers {
                 continue;
             }
             claims.add(new OfferGuard.Claim(index, row.getOfferId(), row.getOfferDiscount(),
-                    MoneyMath.decimal(row.getDiscount())));
+                    MoneyMath.decimal(row.getDiscount()), row.getOfferQuantity()));
         }
         return claims;
     }

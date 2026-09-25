@@ -27,8 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,186 tests** in `account` with 362 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-24 after phase B of the offers (seventy tests, nine of
+**4,232 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-25 after phase C of the offers (forty-five tests, six of them
+gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
+architecture rule (`pricing-and-offers-plan.md` §11.6); 4,186 after phase B of the offers (seventy tests, nine of
 them gated on MySQL); 4,116 with 353 skipped after phase A of the price tiers (seventy-three tests,
 eight of them gated on MySQL); 4,043 with 346 skipped after wiping the users was locked to the
 administrator (five tests); 4,038 after the delete-data screen was rebuilt over
@@ -376,9 +378,10 @@ Two documents govern work here and are kept current — read them before large c
   that holds an amount in a currency other than the base.**
 - **[`docs/pricing-and-offers-plan.md`](docs/pricing-and-offers-plan.md)** - item 3 of
   `docs/product-plan.md` §1, written 2026-09-24 at the owner's request and **opened the same day, before
-  item 1, at the owner's decision; phase A (the tiers, `V84`) and phase B (the offer engine and the price
-  offers, `V85`) are built** - see **Price tiers** and **Offers** below and
-  the plan's §10 and §11. The item as a whole: the
+  item 1, at the owner's decision; phase A (the tiers, `V84`), phase B (the offer engine and the price
+  offers, `V85`) and phase C (the quantity offers, the gifts and the limits, `V86`) are built - the item's
+  least useful whole; D and E wait for a customer to ask** - see **Price tiers** and **Offers** below and
+  the plan's §10, §11 and §12. The item as a whole: the
   wholesale, retail and piece price tiers, and offers and bundles on items. The two ideas it rests on:
   **a tier answers who is buying and an offer answers when and how many**, and **an offer never changes
   a stored price - it writes a discount on the line** (`offer_id`, `offer_discount` beside `discount`),
@@ -3354,8 +3357,9 @@ and a customer's tier in `custom.price_id`; what was missing was everything arou
 ### Offers
 
 `features/offers`, `InvoiceOffers`/`InvoiceOfferPreview` in `features/invoice`, `OffersController` (the items
-section's «العروض») and `V85`. Phase B of `docs/pricing-and-offers-plan.md` - a percentage, an amount off a
-unit, a price for a unit; §11 is what was delivered, what differs from the plan and what was seen.
+section's «العروض») and `V85`-`V86`. Phase B of `docs/pricing-and-offers-plan.md` - a percentage, an amount off
+a unit, a price for a unit - and phase C, a quantity for a price and "buy and get"; §11 and §12 are what was
+delivered, what differs from the plan and what was seen.
 
 - **An offer never changes a stored price: it writes a discount on the line**, and `offer_id` and
   `offer_discount` beside `discount` say which offer and how much of it (ق-ع١). `offer_discount` is a *part*
@@ -3398,8 +3402,33 @@ unit, a price for a unit; §11 is what was delivered, what differs from the plan
 - **The paper** says a row per offer and "وفّرت اليوم" (every discount on it) under the summary, unsigned,
   on a sale an offer reached - `InvoicePdfLayout.offerRows`, shared by the receipt. The invoice table has an
   offer column appended last and the footer an offers figure under the lines' count.
-- `OfferDatabaseAcceptanceTest` (gated, scratch schema, nine cases, green twice) works example 1 and example
-  7 of §5 out by hand, holds `document_profit` to them, and proves the refusals with the counter unmoved.
+- `OfferDatabaseAcceptanceTest` (gated, scratch schema, fifteen cases, green twice) works examples 1, 2, 3, 4
+  and 7 of §5 out by hand, holds `document_profit` to them, proves the refusals with the counter unmoved, runs
+  the global limit as two tills in two real transactions, and upgrades a V85 database with sales on it to V86.
+- **Phase C (`V86`, §12) counts a quantity**: `QUANTITY_PRICE` ("3 for 100") and `BUY_GET` - of the item
+  itself, or of a gift item named by a target whose `role` is `REWARD`. An item's lines are counted together, in
+  the offer's unit or its base units, **each item apart** (a group is "3 for 100" on each of its items, never a
+  mix). The engine's order is the plan's (ق-ع٥): buy-and-get, then quantity, then price offers; a pooled
+  offer's discount is shared among the lines that earned it **by value**, the remainder on the largest - so a
+  return needs no new rule. A pooled offer covering part of a line takes the whole line (a line names one
+  offer). The gift is a line at its price with its share (ق-ع٣), never added for the cashier: a gift earned and
+  not on the invoice is a **hint**, shown under the lines on both screens (`InvoiceOfferHints`).
+- **The two limits count the offer's times** - a unit for the price kinds, a group for the quantity kinds -
+  `max_per_invoice` on one document and `quantity_limit` over every document less what came back. **The used
+  count is derived from the lines, never stored**: `offer_quantity` (V86) is how many of a line's units its
+  offer covered, and a return carries its share back. **The save locks the offer's row and reads the sales with
+  `FOR SHARE`** (`OfferService.timesLeft`): a plain read under REPEATABLE READ sees the snapshot taken at the
+  transaction's first read, which the save's earlier reads have already fixed, and would miss a sale another
+  till committed while this one waited for the lock - `OfferDatabaseAcceptanceTest` shows both answers in one
+  transaction. Items are locked before offers; the invoice save is the one path locking both.
+- **A figure never shares a cell with a `+`**: "2 + 1" in a right-to-left cell reads "1 + 2", the opposite
+  offer, so the list writes "اشترِ 2 وخذ 1 مجانًا" with words between the numbers.
+- **A change the service announces is published here by the screen that made it** (§11.6). `ChangeAnnouncer`
+  writes `data_change` for the other tills and the relay passes over its own machine's rows, so the offers
+  list stayed stale after its own activate, stop and delete, and an open invoice kept the old offers - seen
+  only by driving the screens. `OffersController` publishes `OffersChanged` after every write, and
+  `PriceTiersController` `PriceTiersChanged` and `ItemsChanged`; `MultiDeviceRefreshArchitectureTest`
+  fails on an event a screen listens for that nothing but an `announce` builds.
 
 ### Scale barcodes
 
@@ -3934,7 +3963,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V85`, the offers:
+  new database executes it and continues with `V2`, `V3`, … The current head is `V86`, the offers' phase C:
+  `offer` gains a quantity offer's and a "buy and get"'s columns and the two limits, with `offer_kind_chk`
+  rewritten whole; `offer_target` a `role` (the gift is a `REWARD`); and `sales` and `sales_re` an
+  `offer_quantity` - the units a line's offer covered, filled for V85's lines - which the global limit counts
+  (see **Offers**). Its triggers are a V86 section at the end of `R__triggers.sql`. Before it `V85` is the offers:
   `offer` (one kind a row - a percentage, an amount, a price - with a CHECK per kind), `offer_target`
   (an item, an item in a unit, a sub group, a main group or everything, any of them excluded; the two groups
   are two columns with a key each) and `offer_price_tier`, both cascading with their offer; `offer_id` and

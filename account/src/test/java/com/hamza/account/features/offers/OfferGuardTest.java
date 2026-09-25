@@ -59,6 +59,15 @@ class OfferGuardTest {
     }
 
     @Test
+    @DisplayName("the same figure over another count of units: the global limit counts units, so it is judged too")
+    void changedQuantity() {
+        assertThrows(BusinessRuleException.class, () -> OfferGuard.require(
+                List.of(new OfferGuard.Claim(0, 1, d("12.00"), d("12.00"), d("2.000"))), expected, names));
+        assertDoesNotThrow(() -> OfferGuard.require(
+                List.of(new OfferGuard.Claim(0, 1, d("12.00"), d("12.00"), d("3.000"))), expected, names));
+    }
+
+    @Test
     @DisplayName("a manual discount beside the offer: the offer takes its place (ق-ع٨)")
     void manualBesideTheOffer() {
         BusinessRuleException refused = assertThrows(BusinessRuleException.class, () -> OfferGuard.require(

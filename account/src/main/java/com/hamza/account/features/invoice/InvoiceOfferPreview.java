@@ -5,6 +5,7 @@ import com.hamza.account.features.offers.OfferEngine;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.controlsfx.database.DaoException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,14 +27,32 @@ import java.util.stream.Collectors;
  */
 public final class InvoiceOfferPreview {
 
+    /** For the offers with a global limit, the times the documents but this one have left each (ق-ع١٠). */
+    @FunctionalInterface
+    public interface TimesLeft {
+        Map<Integer, BigDecimal> of(Collection<Offer> limited, int exceptInvoice) throws DaoException;
+    }
+
     private final InvoiceOffers.GroupLookup lookup;
+    private final TimesLeft timesLeft;
     private final Map<Integer, InvoiceOffers.ItemGroups> groups = new HashMap<>();
     private List<Offer> offers = List.of();
     private Set<Integer> recorded = Set.of();
+    private int invoiceNumber;
     private OfferEngine.Result last = OfferEngine.Result.none();
 
     public InvoiceOfferPreview(InvoiceOffers.GroupLookup lookup) {
+        this(lookup, (limited, exceptInvoice) -> Map.of());
+    }
+
+    public InvoiceOfferPreview(InvoiceOffers.GroupLookup lookup, TimesLeft timesLeft) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
+        this.timesLeft = Objects.requireNonNull(timesLeft, "timesLeft");
+    }
+
+    /** The saved sale being edited, left out of what a limit has used; zero for a new one. */
+    public void setInvoiceNumber(int invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
     }
 
     /** The offers the till may apply - replaced whole when they change anywhere. */
@@ -62,8 +81,12 @@ public final class InvoiceOfferPreview {
             last = OfferEngine.Result.none();
             return false;
         }
+        // What a limit has left is asked afresh each time - another till may have used some of it - and only
+        // of the offers that have one, which is usually none.
+        List<Offer> limited = offers.stream().filter(offer -> offer.quantityLimit() != null).toList();
+        Map<Integer, BigDecimal> left = limited.isEmpty() ? Map.of() : timesLeft.of(limited, invoiceNumber);
         OfferEngine.Result result = OfferEngine.apply(InvoiceOffers.engineLines(lines, this::groupsOf, true),
-                new OfferEngine.Context(date, tierId, recorded), offers);
+                new OfferEngine.Context(date, tierId, recorded, left), offers);
         last = result;
         return InvoiceOffers.apply(lines, result);
     }

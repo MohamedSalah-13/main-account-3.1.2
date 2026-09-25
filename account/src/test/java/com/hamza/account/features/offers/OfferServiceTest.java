@@ -39,6 +39,7 @@ class OfferServiceTest {
 
     private final Map<Integer, Offer> stored = new HashMap<>();
     private final Map<Integer, Integer> usedLines = new HashMap<>();
+    private final Map<Integer, BigDecimal> usedUnits = new HashMap<>();
     private final List<String> journal = new ArrayList<>();
     private final List<AppEvent> announced = new ArrayList<>();
     private boolean addOn = true;
@@ -82,6 +83,14 @@ class OfferServiceTest {
             }
             @Override public int usedLines(int offerId) {
                 return usedLines.getOrDefault(offerId, 0);
+            }
+            @Override public void lockOffers(Collection<Integer> offerIds) {
+                journal.add("lock offers " + offerIds);
+            }
+            @Override public Map<Integer, BigDecimal> usedUnits(Collection<Integer> offerIds, int exceptInvoice,
+                                                                boolean lock) {
+                journal.add("used " + offerIds + " but " + exceptInvoice + (lock ? " locked" : ""));
+                return usedUnits;
             }
             @Override public boolean nameTaken(String name, int exceptId) {
                 return stored.values().stream().anyMatch(o -> o.name().equals(name) && o.id() != exceptId);

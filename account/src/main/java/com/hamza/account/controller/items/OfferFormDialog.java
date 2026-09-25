@@ -101,6 +101,20 @@ final class OfferFormDialog {
     private final CheckBox activateNow = new CheckBox(text("offer.form.activate"));
     private final TextField txtNotes = new TextField();
 
+    /** A quantity offer's group, or a "buy and get"'s quantity bought (V86). */
+    private final Label buyCaption = new Label();
+    private final TextField txtBuy = new TextField();
+    /** What a "buy and get" gives, and at what discount - a hundred is free. */
+    private final Label getCaption = new Label(text("offer.form.get"));
+    private final TextField txtGet = new TextField();
+    private final Label getPercentCaption = new Label(text("offer.form.get.percent"));
+    private final TextField txtGetPercent = new TextField();
+    private final HBox getBox = new HBox(8);
+    /** The two limits, counted in the offer's times: units, or groups for the quantity kinds. */
+    private final TextField txtMaxPerInvoice = new TextField();
+    private final TextField txtQuantityLimit = new TextField();
+    private final CheckBox targetGift = new CheckBox(text("offer.form.target.gift"));
+
     private final ObservableList<OfferTargetLabel> targets = FXCollections.observableArrayList();
     private final ComboBox<OfferScope> comboScope = new ComboBox<>();
     private final ItemSuggestionField targetItem;
@@ -149,7 +163,7 @@ final class OfferFormDialog {
         ButtonType save = new ButtonType(text("save"), ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().setAll(save, ButtonType.CANCEL);
         dialog.getDialogPane().setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
-        dialog.getDialogPane().setPrefSize(980, 660);
+        dialog.getDialogPane().setPrefSize(980, 720);
         dialog.setResizable(true);
         load(existingTargets);
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
@@ -172,6 +186,23 @@ final class OfferFormDialog {
         comboUnit.setConverter(converter(choice -> choice == null ? "" : choice.name()));
         txtPriority.setPrefColumnCount(5);
         Utils.setOptionalNumberFormatter(txtValue);
+        // Blank means none - a limit left empty is no limit - so none of these seeds a zero.
+        for (TextField quantity : List.of(txtBuy, txtGet, txtGetPercent, txtMaxPerInvoice, txtQuantityLimit)) {
+            Utils.setOptionalNumberFormatter(quantity);
+            quantity.setPrefColumnCount(6);
+            quantity.textProperty().addListener(observable -> showTryOut());
+        }
+        for (Label label : List.of(buyCaption, getCaption, getPercentCaption)) {
+            label.getStyleClass().add("form-label");
+            label.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        }
+        getBox.getChildren().setAll(getCaption, txtGet, getPercentCaption, txtGetPercent);
+        getBox.setAlignment(Pos.CENTER_LEFT);
+        Label limitsHint = new Label(text("offer.form.limits.hint"));
+        limitsHint.getStyleClass().add("text-explain");
+        limitsHint.setWrapText(true);
+        limitsHint.setMaxWidth(Double.MAX_VALUE);
+        limitsHint.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -190,19 +221,27 @@ final class OfferFormDialog {
         grid.add(txtValue, 1, 1);
         grid.add(caption("offer.form.unit"), 2, 1);
         grid.add(comboUnit, 3, 1);
-        grid.add(caption("offer.form.starts"), 0, 2);
-        grid.add(dateStarts, 1, 2);
-        grid.add(caption("offer.form.ends"), 2, 2);
-        grid.add(dateEnds, 3, 2);
-        grid.add(caption("offer.form.days"), 0, 3);
-        grid.add(daysBox(), 1, 3, 3, 1);
-        grid.add(caption("offer.form.tiers"), 0, 4);
-        grid.add(tiersBox(), 1, 4, 3, 1);
-        grid.add(caption("offer.form.priority"), 0, 5);
-        grid.add(txtPriority, 1, 5);
-        grid.add(activateNow, 3, 5);
-        grid.add(caption("offer.form.notes"), 0, 6);
-        grid.add(txtNotes, 1, 6, 3, 1);
+        grid.add(buyCaption, 0, 2);
+        grid.add(txtBuy, 1, 2);
+        grid.add(getBox, 2, 2, 2, 1);
+        grid.add(caption("offer.form.limit.invoice"), 0, 3);
+        grid.add(txtMaxPerInvoice, 1, 3);
+        grid.add(caption("offer.form.limit.total"), 2, 3);
+        grid.add(txtQuantityLimit, 3, 3);
+        grid.add(limitsHint, 1, 4, 3, 1);
+        grid.add(caption("offer.form.starts"), 0, 5);
+        grid.add(dateStarts, 1, 5);
+        grid.add(caption("offer.form.ends"), 2, 5);
+        grid.add(dateEnds, 3, 5);
+        grid.add(caption("offer.form.days"), 0, 6);
+        grid.add(daysBox(), 1, 6, 3, 1);
+        grid.add(caption("offer.form.tiers"), 0, 7);
+        grid.add(tiersBox(), 1, 7, 3, 1);
+        grid.add(caption("offer.form.priority"), 0, 8);
+        grid.add(txtPriority, 1, 8);
+        grid.add(activateNow, 3, 8);
+        grid.add(caption("offer.form.notes"), 0, 9);
+        grid.add(txtNotes, 1, 9, 3, 1);
         for (Node node : List.of(txtName, comboKind, txtValue, comboUnit, dateStarts, dateEnds, txtNotes)) {
             if (node instanceof javafx.scene.control.Control control) {
                 control.setMaxWidth(Double.MAX_VALUE);
@@ -295,8 +334,15 @@ final class OfferFormDialog {
             }
         });
 
+        // A "buy and get"'s gift: one item, never left out - the box is there only for that kind and an item.
+        targetGift.selectedProperty().addListener((observable, before, gift) -> {
+            if (gift) {
+                targetExcluded.setSelected(false);
+            }
+            targetExcluded.setDisable(gift || comboScope.getValue() == OfferScope.ALL);
+        });
         HBox picker = new HBox(8, comboScope, targetItem, targetUnit, targetSubGroup, targetMainGroup,
-                targetExcluded, add);
+                targetExcluded, targetGift, add);
         picker.setAlignment(Pos.CENTER_LEFT);
         picker.setDisable(used);
         scopeChanged();
@@ -356,9 +402,15 @@ final class OfferFormDialog {
             BigDecimal value = switch (existing.kind()) {
                 case PERCENT -> existing.percent();
                 case AMOUNT -> existing.amount();
-                case PRICE -> existing.offerPrice();
+                case PRICE, QUANTITY_PRICE -> existing.offerPrice();
+                case BUY_GET -> null;
             };
-            txtValue.setText(value == null ? "" : value.stripTrailingZeros().toPlainString());
+            txtValue.setText(OffersController.plain(value));
+            txtBuy.setText(OffersController.plain(existing.buyQuantity()));
+            txtGet.setText(OffersController.plain(existing.getQuantity()));
+            txtGetPercent.setText(OffersController.plain(existing.getPercent()));
+            txtMaxPerInvoice.setText(OffersController.plain(existing.maxPerInvoice()));
+            txtQuantityLimit.setText(OffersController.plain(existing.quantityLimit()));
             comboUnit.getItems().stream()
                     .filter(choice -> choice.id() == (existing.unitId() == null ? 0 : existing.unitId()))
                     .findFirst().ifPresent(comboUnit.getSelectionModel()::select);
@@ -373,7 +425,11 @@ final class OfferFormDialog {
             activateNow.setVisible(false);
             activateNow.setManaged(false);
         }
-        for (Node term : List.of(comboKind, txtValue, comboUnit, dateStarts, txtPriority)) {
+        if (existing == null) {
+            txtGetPercent.setText("100");
+        }
+        for (Node term : List.of(comboKind, txtValue, comboUnit, dateStarts, txtPriority, txtBuy, txtGet,
+                txtGetPercent, txtMaxPerInvoice, txtQuantityLimit)) {
             term.setDisable(used);
         }
         days.values().forEach(check -> check.setDisable(used));
@@ -381,15 +437,26 @@ final class OfferFormDialog {
         kindChanged();
     }
 
+    /** Shows the boxes the kind uses and names them - a quantity offer's value is its group's price. */
     private void kindChanged() {
         OfferKind kind = comboKind.getValue();
         valueCaption.setText(text(kind == OfferKind.AMOUNT ? "offer.form.value.amount"
-                : kind == OfferKind.PRICE ? "offer.form.value.price" : "offer.form.value.percent"));
+                : kind == OfferKind.PRICE ? "offer.form.value.price"
+                : kind == OfferKind.QUANTITY_PRICE ? "offer.form.value.group.price" : "offer.form.value.percent"));
         valueCaption.getStyleClass().setAll("form-label");
+        boolean buyGet = kind == OfferKind.BUY_GET;
+        boolean pooled = kind != null && kind.pooled();
+        show(valueCaption, !buyGet);
+        show(txtValue, !buyGet);
+        buyCaption.setText(text(buyGet ? "offer.form.buy" : "offer.form.buy.group"));
+        show(buyCaption, pooled);
+        show(txtBuy, pooled);
+        show(getBox, buyGet);
         comboUnit.setDisable(used || kind == OfferKind.PERCENT);
         if (kind == OfferKind.PERCENT && !comboUnit.getItems().isEmpty()) {
             comboUnit.getSelectionModel().selectFirst();
         }
+        scopeChanged();
         showTryOut();
     }
 
@@ -399,7 +466,12 @@ final class OfferFormDialog {
         show(targetUnit, scope == OfferScope.ITEM);
         show(targetSubGroup, scope == OfferScope.SUB_GROUP);
         show(targetMainGroup, scope == OfferScope.MAIN_GROUP);
-        targetExcluded.setDisable(scope == OfferScope.ALL);
+        boolean gift = comboKind.getValue() == OfferKind.BUY_GET && scope == OfferScope.ITEM;
+        show(targetGift, gift);
+        if (!gift) {
+            targetGift.setSelected(false);
+        }
+        targetExcluded.setDisable(scope == OfferScope.ALL || targetGift.isSelected());
         if (scope == OfferScope.ALL) {
             targetExcluded.setSelected(false);
         }
@@ -419,6 +491,14 @@ final class OfferFormDialog {
                     yield null;
                 }
                 UnitsModel unit = targetUnit.getValue();
+                if (targetGift.isVisible() && targetGift.isSelected()) {
+                    OfferTarget gift = unit == null ? OfferTarget.reward(item.getId())
+                            : OfferTarget.rewardInUnit(item.getId(), unit.getUnit_id());
+                    // One gift an offer: a second replaces the first rather than joining it.
+                    targets.removeIf(existingLabel -> existingLabel.target().reward());
+                    yield new OfferTargetLabel(gift, item.getNameItem(),
+                            unit == null ? null : unit.getUnit_name(), null, null);
+                }
                 OfferTarget target = unit == null ? OfferTarget.item(item.getId())
                         : OfferTarget.itemInUnit(item.getId(), unit.getUnit_id());
                 yield new OfferTargetLabel(excluded ? target.except() : target, item.getNameItem(),
@@ -454,10 +534,14 @@ final class OfferFormDialog {
         Set<Integer> tiers = tierBoxes.stream().filter(CheckBox::isSelected)
                 .map(check -> (Integer) check.getUserData()).collect(Collectors.toCollection(LinkedHashSet::new));
         OfferChoice unit = comboUnit.getValue();
-        BigDecimal value;
+        OfferForm.Terms terms;
         int priority;
         try {
-            value = NumberTextConverter.parse(txtValue.getText());
+            terms = new OfferForm.Terms(NumberTextConverter.parse(txtValue.getText()),
+                    NumberTextConverter.parse(txtBuy.getText()), NumberTextConverter.parse(txtGet.getText()),
+                    NumberTextConverter.parse(txtGetPercent.getText()),
+                    NumberTextConverter.parse(txtMaxPerInvoice.getText()),
+                    NumberTextConverter.parse(txtQuantityLimit.getText()));
             BigDecimal typedPriority = NumberTextConverter.parse(txtPriority.getText());
             priority = typedPriority == null ? 0 : typedPriority.intValueExact();
         } catch (NumberFormatException | ArithmeticException notANumber) {
@@ -467,7 +551,7 @@ final class OfferFormDialog {
                 : activateNow.isSelected() ? OfferStatus.ACTIVE : OfferStatus.DRAFT;
         LocalDateTime version = existing == null ? null : existing.version();
         return OfferForm.build(existing == null ? 0 : existing.id(), txtName.getText(), comboKind.getValue(), status,
-                dateStarts.getValue(), dateEnds.getValue(), ticked, priority, value,
+                dateStarts.getValue(), dateEnds.getValue(), ticked, priority, terms,
                 unit == null || unit.id() == 0 ? null : unit.id(), txtNotes.getText(),
                 targets.stream().map(OfferTargetLabel::target).toList(), tiers, version);
     }
@@ -478,7 +562,7 @@ final class OfferFormDialog {
             Offer offer = offer();
             boolean goesLive = offer.status() == OfferStatus.ACTIVE
                     && (existing == null || !OfferForm.sameTerms(existing, offer));
-            if (goesLive && !OffersController.confirmBelowCost(owner, service, offer, activeTierIds())) {
+            if (goesLive && !OffersController.confirmBelowCost(owner, service, offer, activeTiers)) {
                 return false;
             }
             if (existing == null) {
@@ -491,10 +575,6 @@ final class OfferFormDialog {
             AllAlerts.handleError(text("offers.title"), e);
             return false;
         }
-    }
-
-    private Set<Integer> activeTierIds() {
-        return activeTiers.stream().map(PriceTier::id).collect(Collectors.toSet());
     }
 
     /** What the offer as typed would give the quantity of the item tried, at tier 1 - or why nothing. */
@@ -518,6 +598,11 @@ final class OfferFormDialog {
                     ? 0 : item.getSubGroups().getMainGroups().getId();
             OfferEngine.Line line = new OfferEngine.Line(0, item.getId(), unit.getUnit_id(), sub, main,
                     BigDecimal.valueOf(ItemUnits.factor(unit)), quantity, BigDecimal.valueOf(price));
+            if (offer.rewardTarget().isPresent()) {
+                // A gift is earned by one item and given on another's line: one line cannot show it.
+                tryResult.setText(text("offer.try.gift"));
+                return;
+            }
             Optional<BigDecimal> discount = OfferEngine.discountFor(offer, line);
             if (discount.isEmpty()) {
                 tryResult.setText(text("offer.try.not.reached"));

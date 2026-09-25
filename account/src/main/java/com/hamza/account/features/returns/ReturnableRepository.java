@@ -159,12 +159,20 @@ public interface ReturnableRepository {
     /** One exact line, as {@link #rawLines} lists it - {@link SourceLine} plus its own id and quantity. */
     record SourceLineRow(int lineId, int itemId, double quantity, double price,
                          double discount, double buyPrice, int unitId, double typeValue,
-                         LocalDate expirationDate, Integer offerId, double offerDiscount) {
+                         LocalDate expirationDate, Integer offerId, double offerDiscount, double offerQuantity) {
+
+        /** A line an offer reached before its covered units were recorded (V85). */
+        public SourceLineRow(int lineId, int itemId, double quantity, double price, double discount, double buyPrice,
+                             int unitId, double typeValue, LocalDate expirationDate, Integer offerId,
+                             double offerDiscount) {
+            this(lineId, itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, offerId,
+                    offerDiscount, 0);
+        }
 
         /** A line no offer reached - every purchase line, and every sales line before V85. */
         public SourceLineRow(int lineId, int itemId, double quantity, double price, double discount, double buyPrice,
                              int unitId, double typeValue, LocalDate expirationDate) {
-            this(lineId, itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, null, 0);
+            this(lineId, itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, null, 0, 0);
         }
     }
 
@@ -173,16 +181,24 @@ public interface ReturnableRepository {
      * <em>net</em> the line actually charged, not just its unit price: a line discount
      * belongs to the whole line, so returning part of it refunds its proportional share.
      * {@code offerId} and {@code offerDiscount} are the offer that wrote that discount and its part of it
-     * (V85), which a return line carries forward in the same proportion (ق-ع١١).
+     * (V85), which a return line carries forward in the same proportion (ق-ع١١) - and {@code offerQuantity} the
+     * units that offer covered (V86), whose share the return gives back to the offer's limit.
      */
     record SourceLine(int itemId, double quantity, double price, double discount,
                       double buyPrice, int unitId, double typeValue,
-                      LocalDate expirationDate, Integer offerId, double offerDiscount) {
+                      LocalDate expirationDate, Integer offerId, double offerDiscount, double offerQuantity) {
+
+        /** A line an offer reached before its covered units were recorded (V85). */
+        public SourceLine(int itemId, double quantity, double price, double discount, double buyPrice, int unitId,
+                          double typeValue, LocalDate expirationDate, Integer offerId, double offerDiscount) {
+            this(itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, offerId,
+                    offerDiscount, 0);
+        }
 
         /** A line no offer reached - every purchase line, and every sales line before V85. */
         public SourceLine(int itemId, double quantity, double price, double discount, double buyPrice, int unitId,
                           double typeValue, LocalDate expirationDate) {
-            this(itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, null, 0);
+            this(itemId, quantity, price, discount, buyPrice, unitId, typeValue, expirationDate, null, 0, 0);
         }
     }
 

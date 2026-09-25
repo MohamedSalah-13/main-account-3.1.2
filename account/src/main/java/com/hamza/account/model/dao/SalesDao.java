@@ -95,7 +95,7 @@ public class SalesDao extends DocumentLineDao<Sales> {
                 , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
                 , sales.getUnitsType().getValue(), sales.getExpiration_date()
                 , sales.getPriceForeign(), sales.getDiscountForeign(), sales.getListPrice()
-                , sales.getOfferId(), sales.getOfferDiscount()};
+                , sales.getOfferId(), sales.getOfferDiscount(), sales.getOfferQuantity()};
     }
 
     @Override

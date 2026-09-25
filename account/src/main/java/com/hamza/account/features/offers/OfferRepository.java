@@ -37,6 +37,16 @@ public interface OfferRepository {
     /** How many sale and return lines name the offer. */
     int usedLines(int offerId) throws DaoException;
 
+    /** Locks the named offers' rows in id order - what the save does before it reads their counts. */
+    void lockOffers(Collection<Integer> offerIds) throws DaoException;
+
+    /**
+     * The units each named offer covered on every sale but {@code exceptInvoice}, less what the returns
+     * naming it brought back. {@code lock} reads the sales with a locking read, as the save must.
+     */
+    Map<Integer, java.math.BigDecimal> usedUnits(Collection<Integer> offerIds, int exceptInvoice, boolean lock)
+            throws DaoException;
+
     boolean nameTaken(String name, int exceptId) throws DaoException;
 
     /** Locks the row and answers its version, or empty when there is no such offer. */

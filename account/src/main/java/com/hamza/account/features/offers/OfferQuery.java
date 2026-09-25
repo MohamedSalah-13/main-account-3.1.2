@@ -19,7 +19,8 @@ public final class OfferQuery {
     }
 
     static final String OFFER_COLUMNS = "o.id, o.name, o.kind, o.status, o.starts_on, o.ends_on, o.weekdays,"
-            + " o.priority, o.percent, o.amount, o.offer_price, o.unit_id, o.notes, o.updated_at";
+            + " o.priority, o.percent, o.amount, o.offer_price, o.unit_id, o.buy_quantity, o.get_quantity,"
+            + " o.get_percent, o.max_per_invoice, o.quantity_limit, o.notes, o.updated_at";
 
     /**
      * Every offer switched on, whatever its dates: the till's snapshot. The engine judges the dates against
@@ -44,13 +45,15 @@ public final class OfferQuery {
     public static final String NAME_TAKEN_SQL = "SELECT COUNT(*) FROM offer WHERE name = ? AND id <> ?";
 
     public static final String INSERT_SQL = "INSERT INTO offer (name, kind, status, starts_on, ends_on, weekdays,"
-            + " priority, percent, amount, offer_price, unit_id, notes, user_id)"
-            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + " priority, percent, amount, offer_price, unit_id, buy_quantity, get_quantity, get_percent,"
+            + " max_per_invoice, quantity_limit, notes, user_id)"
+            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     /** The version is compared here, so an edit made on another till since this one read the row is refused. */
     public static final String UPDATE_SQL = "UPDATE offer SET name = ?, kind = ?, starts_on = ?, ends_on = ?,"
-            + " weekdays = ?, priority = ?, percent = ?, amount = ?, offer_price = ?, unit_id = ?, notes = ?"
-            + " WHERE id = ? AND updated_at = ?";
+            + " weekdays = ?, priority = ?, percent = ?, amount = ?, offer_price = ?, unit_id = ?,"
+            + " buy_quantity = ?, get_quantity = ?, get_percent = ?, max_per_invoice = ?, quantity_limit = ?,"
+            + " notes = ? WHERE id = ? AND updated_at = ?";
 
     public static final String STATUS_SQL = "UPDATE offer SET status = ? WHERE id = ? AND updated_at = ?";
 
@@ -58,8 +61,8 @@ public final class OfferQuery {
 
     public static final String DELETE_TARGETS_SQL = "DELETE FROM offer_target WHERE offer_id = ?";
 
-    public static final String INSERT_TARGET_SQL = "INSERT INTO offer_target (offer_id, scope, item_id, unit_id,"
-            + " sub_group_id, main_group_id, excluded) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    public static final String INSERT_TARGET_SQL = "INSERT INTO offer_target (offer_id, role, scope, item_id,"
+            + " unit_id, sub_group_id, main_group_id, excluded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     public static final String DELETE_TIERS_SQL = "DELETE FROM offer_price_tier WHERE offer_id = ?";
 
@@ -75,9 +78,39 @@ public final class OfferQuery {
             + " COALESCE(SUM(s.offer_discount), 0) AS given,"
             + " COALESCE(SUM(s.total_sel_price - s.discount), 0) AS net,"
             + " MIN(ts.invoice_date) AS first_used, MAX(ts.invoice_date) AS last_used,"
-            + " (SELECT COALESCE(SUM(r.offer_discount), 0) FROM sales_re r WHERE r.offer_id = ?) AS returned"
+            + " (SELECT COALESCE(SUM(r.offer_discount), 0) FROM sales_re r WHERE r.offer_id = ?) AS returned,"
+            + " COALESCE(SUM(s.offer_quantity), 0)"
+            + " - (SELECT COALESCE(SUM(r.offer_quantity), 0) FROM sales_re r WHERE r.offer_id = ?) AS units"
             + " FROM sales s JOIN total_sales ts ON ts.invoice_number = s.invoice_number"
             + " WHERE s.offer_id = ?";
+
+    /**
+     * The offers a sale is judged by for their global limit, locked in id order before their counts are read -
+     * so a second till saving the same offer waits here until the first has committed (ق-ع١٠).
+     */
+    static String lockLimitedSql(int offers) {
+        return "SELECT id FROM offer WHERE id IN (" + placeholders(offers) + ") ORDER BY id FOR UPDATE";
+    }
+
+    /**
+     * The units each offer covered on every sale line but one document's - a locking read at the save, which
+     * sees what another till committed while this one waited for the offer's lock, where a plain read under
+     * REPEATABLE READ would see the snapshot it began with. The last value bound is the document left out.
+     */
+    static String usedOnSalesSql(int offers, boolean lock) {
+        return "SELECT s.offer_id, COALESCE(SUM(s.offer_quantity), 0) FROM sales s"
+                + " WHERE s.offer_id IN (" + placeholders(offers) + ") AND s.invoice_number <> ?"
+                + " GROUP BY s.offer_id" + (lock ? " FOR SHARE" : "");
+    }
+
+    /**
+     * The units the returns naming each offer gave back. A plain read even at the save: a return committed
+     * meanwhile only leaves more of the limit than this sees, never less.
+     */
+    static String returnedSql(int offers) {
+        return "SELECT r.offer_id, COALESCE(SUM(r.offer_quantity), 0) FROM sales_re r"
+                + " WHERE r.offer_id IN (" + placeholders(offers) + ") GROUP BY r.offer_id";
+    }
 
     /** Whether anything names the offer - a sale line or a return line. Once it does, its terms are history. */
     public static final String USED_SQL = "SELECT (SELECT COUNT(*) FROM sales WHERE offer_id = ?)"
@@ -116,7 +149,7 @@ public final class OfferQuery {
 
     /** Each target of the offers named, with what it names spelled out for the screen. */
     static String targetsSql(int offers) {
-        return "SELECT t.offer_id, t.scope, t.item_id, t.unit_id, t.sub_group_id, t.main_group_id, t.excluded,"
+        return "SELECT t.offer_id, t.role, t.scope, t.item_id, t.unit_id, t.sub_group_id, t.main_group_id, t.excluded,"
                 + " i.nameItem, un.unit_name, sg.name AS sub_group_name, mg.name_g AS main_group_name"
                 + " FROM offer_target t"
                 + " LEFT JOIN items i ON i.id = t.item_id"

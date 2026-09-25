@@ -15,10 +15,13 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,6 +132,37 @@ public final class OfferService {
         return invoiceNumber <= 0 ? Set.of() : repository.offersOnDocument(invoiceNumber);
     }
 
+    /**
+     * For each offer here with a global limit, the times the documents other than {@code exceptInvoice} have
+     * left it (ق-ع١٠): its limit less the units its lines covered, less those the returns brought back, over
+     * its group. The save asks with {@code lock}: the offers' rows are locked in id order first and the sales
+     * read with a locking read, so two tills cannot both take the last of a limit. The screen asks without,
+     * for a preview the save judges again.
+     */
+    public Map<Integer, BigDecimal> timesLeft(Collection<Offer> offers, int exceptInvoice, boolean lock)
+            throws DaoException {
+        Map<Integer, Offer> limited = new LinkedHashMap<>();
+        for (Offer offer : offers) {
+            if (offer.quantityLimit() != null) {
+                limited.put(offer.id(), offer);
+            }
+        }
+        if (limited.isEmpty()) {
+            return Map.of();
+        }
+        if (lock) {
+            repository.lockOffers(limited.keySet());
+        }
+        Map<Integer, BigDecimal> used = repository.usedUnits(limited.keySet(), exceptInvoice, lock);
+        Map<Integer, BigDecimal> left = new LinkedHashMap<>();
+        for (Offer offer : limited.values()) {
+            BigDecimal times = used.getOrDefault(offer.id(), BigDecimal.ZERO).max(BigDecimal.ZERO)
+                    .divide(offer.groupSize(), 3, RoundingMode.HALF_UP);
+            left.put(offer.id(), offer.quantityLimit().subtract(times).max(BigDecimal.ZERO));
+        }
+        return left;
+    }
+
     /** An offer's name by id, for a refusal naming one the engine no longer returns. */
     public String nameOf(int offerId) throws DaoException {
         return repository.byIds(List.of(offerId)).stream().map(Offer::name).findFirst().orElse("#" + offerId);
@@ -179,7 +213,14 @@ public final class OfferService {
     public List<OfferCostCheck.BelowCost> belowCost(Offer offer, Set<Integer> activeTiers) throws DaoException {
         requireReadable();
         AuthorizationGuard.require(AppPermissions.SHOW_COLUMN_BUY_PRICE);
-        return OfferCostCheck.below(offer, repository.candidates(offer.unitId()), activeTiers);
+        OfferCostCheck.Candidate gift = null;
+        var giftTarget = offer.rewardTarget();
+        if (giftTarget.isPresent()) {
+            int giftId = giftTarget.get().itemId();
+            gift = repository.candidates(giftTarget.get().unitId()).stream()
+                    .filter(candidate -> candidate.itemId() == giftId).findFirst().orElse(null);
+        }
+        return OfferCostCheck.below(offer, repository.candidates(offer.unitId()), gift, activeTiers);
     }
 
     public boolean canSeeCost() {
@@ -242,10 +283,7 @@ public final class OfferService {
                 requireNotBackdated(offer.startsOn());
             }
             requireNameFree(offer.name(), offer.id());
-            Offer written = new Offer(offer.id(), offer.name(), offer.kind(), stored.status(), offer.startsOn(),
-                    offer.endsOn(), offer.weekdays(), offer.priority(), offer.percent(), offer.amount(),
-                    offer.offerPrice(), offer.unitId(), offer.notes(), offer.targets(), offer.priceTierIds(),
-                    offer.version());
+            Offer written = offer.withStatus(stored.status());
             if (!writeOrDuplicate(() -> repository.update(written, version))) {
                 throw new BusinessRuleException("offer.error.stale");
             }

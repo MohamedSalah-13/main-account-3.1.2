@@ -156,7 +156,7 @@ public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
                 , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()
                 , sourceLineIdOrNull(salesReturn)
                 , salesReturn.getPriceForeign(), salesReturn.getDiscountForeign()
-                , salesReturn.getOfferId(), salesReturn.getOfferDiscount()};
+                , salesReturn.getOfferId(), salesReturn.getOfferDiscount(), salesReturn.getOfferQuantity()};
     }
 
     private void setData(PreparedStatement statement, Sales_Return salesReturn) throws SQLException {

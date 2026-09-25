@@ -74,9 +74,12 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
      * of the discount - the profit, a return's share, the paper, a delegate's ceiling - reads it as it always
      * did. Null and zero on a line no offer reached; on a sales return, the source line's offer and this
      * line's share of its discount. {@link #offerName} is for the screen and the paper and is not stored.
+     * {@link #offerQuantity} is how many of the line's units the offer covered, in its unit or the item's
+     * base (V86) - what the offer's global limit counts; on a return, its share of the source line's.
      */
     private Integer offerId;
     private java.math.BigDecimal offerDiscount = java.math.BigDecimal.ZERO;
+    private java.math.BigDecimal offerQuantity = java.math.BigDecimal.ZERO;
     private String offerName;
 
     public Integer getOfferId() {
@@ -93,6 +96,14 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
 
     public void setOfferDiscount(java.math.BigDecimal offerDiscount) {
         this.offerDiscount = offerDiscount == null ? java.math.BigDecimal.ZERO : offerDiscount;
+    }
+
+    public java.math.BigDecimal getOfferQuantity() {
+        return offerQuantity;
+    }
+
+    public void setOfferQuantity(java.math.BigDecimal offerQuantity) {
+        this.offerQuantity = offerQuantity == null ? java.math.BigDecimal.ZERO : offerQuantity;
     }
 
     public String getOfferName() {

@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OfferQueryTest {
 
     private static final String COLUMNS = "o.id, o.name, o.kind, o.status, o.starts_on, o.ends_on, o.weekdays,"
-            + " o.priority, o.percent, o.amount, o.offer_price, o.unit_id, o.notes, o.updated_at";
+            + " o.priority, o.percent, o.amount, o.offer_price, o.unit_id, o.buy_quantity, o.get_quantity,"
+            + " o.get_percent, o.max_per_invoice, o.quantity_limit, o.notes, o.updated_at";
 
     @Test
     @DisplayName("the till's snapshot, the save's offers for a day, and a document's own")
@@ -35,16 +36,36 @@ class OfferQueryTest {
     @DisplayName("the writes, the version compared where the row is written")
     void writes() {
         assertEquals("INSERT INTO offer (name, kind, status, starts_on, ends_on, weekdays, priority, percent, amount,"
-                + " offer_price, unit_id, notes, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                + " offer_price, unit_id, buy_quantity, get_quantity, get_percent, max_per_invoice, quantity_limit,"
+                + " notes, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 OfferQuery.INSERT_SQL);
         assertEquals("UPDATE offer SET name = ?, kind = ?, starts_on = ?, ends_on = ?, weekdays = ?, priority = ?,"
-                + " percent = ?, amount = ?, offer_price = ?, unit_id = ?, notes = ? WHERE id = ? AND updated_at = ?",
-                OfferQuery.UPDATE_SQL);
+                + " percent = ?, amount = ?, offer_price = ?, unit_id = ?, buy_quantity = ?, get_quantity = ?,"
+                + " get_percent = ?, max_per_invoice = ?, quantity_limit = ?, notes = ?"
+                + " WHERE id = ? AND updated_at = ?", OfferQuery.UPDATE_SQL);
         assertEquals("UPDATE offer SET status = ? WHERE id = ? AND updated_at = ?", OfferQuery.STATUS_SQL);
-        assertEquals("INSERT INTO offer_target (offer_id, scope, item_id, unit_id, sub_group_id, main_group_id,"
-                + " excluded) VALUES (?, ?, ?, ?, ?, ?, ?)", OfferQuery.INSERT_TARGET_SQL);
+        assertEquals("INSERT INTO offer_target (offer_id, role, scope, item_id, unit_id, sub_group_id, main_group_id,"
+                + " excluded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", OfferQuery.INSERT_TARGET_SQL);
         assertEquals("SELECT (SELECT COUNT(*) FROM sales WHERE offer_id = ?)"
                 + " + (SELECT COUNT(*) FROM sales_re WHERE offer_id = ?)", OfferQuery.USED_SQL);
+    }
+
+    @Test
+    @DisplayName("a global limit: the offers locked in id order, the sales read with a locking read, the returns plainly")
+    void limits() {
+        assertEquals("SELECT id FROM offer WHERE id IN (?, ?) ORDER BY id FOR UPDATE", OfferQuery.lockLimitedSql(2));
+        assertEquals("SELECT s.offer_id, COALESCE(SUM(s.offer_quantity), 0) FROM sales s"
+                + " WHERE s.offer_id IN (?, ?) AND s.invoice_number <> ? GROUP BY s.offer_id FOR SHARE",
+                OfferQuery.usedOnSalesSql(2, true));
+        assertEquals("SELECT s.offer_id, COALESCE(SUM(s.offer_quantity), 0) FROM sales s"
+                + " WHERE s.offer_id IN (?) AND s.invoice_number <> ? GROUP BY s.offer_id",
+                OfferQuery.usedOnSalesSql(1, false));
+        assertEquals("SELECT r.offer_id, COALESCE(SUM(r.offer_quantity), 0) FROM sales_re r"
+                + " WHERE r.offer_id IN (?) GROUP BY r.offer_id", OfferQuery.returnedSql(1));
+        assertTrue(OfferQuery.USAGE_SQL.contains(" COALESCE(SUM(s.offer_quantity), 0)"
+                + " - (SELECT COALESCE(SUM(r.offer_quantity), 0) FROM sales_re r WHERE r.offer_id = ?) AS units"));
+        assertEquals(3, OfferQuery.USAGE_SQL.chars().filter(c -> c == '?').count(),
+                "the usage binds the offer three times: the returned discount, the returned units, the lines");
     }
 
     @Test

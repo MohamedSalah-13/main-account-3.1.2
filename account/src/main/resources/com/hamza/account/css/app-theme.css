@@ -4145,3 +4145,17 @@
 .table-row-cell:selected .table-cell:first-tier {
     -fx-text-fill: -fx-selection-bar-text;
 }
+
+/* ---- the offers' hint under an invoice's lines (V86, docs/pricing-and-offers-plan.md §12) ----
+   What would earn an offer: the units that complete a group, a gift earned and not on the invoice. A hint,
+   not a warning - the success palette, the way a saving is shown. */
+.invoice-offer-hint {
+    -fx-padding: 0.35em 0.65em;
+    -fx-background-color: -app-success-soft;
+    -fx-border-color: -app-success-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 0.4em;
+    -fx-border-radius: 0.4em;
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.02em;
+}

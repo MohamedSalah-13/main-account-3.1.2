@@ -58,9 +58,11 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -302,6 +304,13 @@ public class OffersController {
             line = detailLine(line, "offers.column.days", daysText(row.offer().weekdays()));
             line = detailLine(line, "offers.detail.tiers", tiersText(row.offer()));
             line = detailLine(line, "offers.detail.priority", String.valueOf(row.offer().priority()));
+            if (row.offer().maxPerInvoice() != null) {
+                line = detailLine(line, "offers.detail.limit.invoice", plain(row.offer().maxPerInvoice()));
+            }
+            if (row.offer().quantityLimit() != null) {
+                line = detailLine(line, "offers.detail.limit.total", text("offers.detail.limit.used",
+                        plain(usage.times(row.offer())), plain(row.offer().quantityLimit())));
+            }
             line = detailLine(line, "offers.detail.invoices", String.valueOf(usage.invoices()));
             line = detailLine(line, "offers.column.used", String.valueOf(usage.lines()));
             line = detailLine(line, "offers.column.given", Columns.money(usage.given()));
@@ -338,8 +347,10 @@ public class OffersController {
         try {
             Offer offer = row == null ? null : service.find(row.offer().id()).orElse(null);
             List<OfferTargetLabel> targets = row == null ? List.of() : service.targets(row.offer().id());
-            OfferFormDialog.open(window(), service, itemsService, activeTiers(), offer, targets,
-                    row != null && row.used());
+            if (OfferFormDialog.open(window(), service, itemsService, activeTiers(), offer, targets,
+                    row != null && row.used())) {
+                changedHere();
+            }
         } catch (Exception e) {
             AllAlerts.handleError(text("offers.title"), e);
         }
@@ -350,6 +361,7 @@ public class OffersController {
             Offer offer = row.offer();
             if (AllAlerts.confirm_all(text("offers.action.stop"), text("offers.confirm.stop", offer.name()))) {
                 service.stop(offer.id(), offer.version());
+                changedHere();
             }
         } catch (Exception e) {
             AllAlerts.handleError(text("offers.title"), e);
@@ -361,9 +373,9 @@ public class OffersController {
         try {
             Offer offer = row.offer();
             Offer full = service.find(offer.id()).orElse(offer);
-            if (confirmBelowCost(window(), service, full, activeTiers().stream().map(PriceTier::id)
-                    .collect(Collectors.toSet()))) {
+            if (confirmBelowCost(window(), service, full, activeTiers())) {
                 service.activate(offer.id(), offer.version());
+                changedHere();
             }
         } catch (Exception e) {
             AllAlerts.handleError(text("offers.title"), e);
@@ -374,10 +386,20 @@ public class OffersController {
         try {
             if (AllAlerts.confirm_all(text("offers.action.delete"), text("offers.confirm.delete", row.offer().name()))) {
                 service.delete(row.offer().id());
+                changedHere();
             }
         } catch (Exception e) {
             AllAlerts.handleError(text("offers.title"), e);
         }
+    }
+
+    /**
+     * The service tells the other tills through {@code data_change}; this one hears it here. The relay passes
+     * over the rows its own machine wrote, so without this the list - and every invoice open on this till -
+     * went on showing the offers as they were until reopened.
+     */
+    private void changedHere() {
+        eventBus.publish(new OffersChanged());
     }
 
     private List<PriceTier> activeTiers() throws DaoException {
@@ -392,13 +414,18 @@ public class OffersController {
      * The items the offer would sell below their cost, for a yes or a no before it goes live (ق-ع٩) - a
      * decision taken once, knowingly, never a refusal. Asked only of a reader who may see a cost; for anybody
      * else the answer is yes, as it was before the offers existed for a price typed by hand.
+     * <p>
+     * An item is listed at the tier where it fares worst, so the tier is named on its row: without it the
+     * dialog priced a 42.00 item at 40.00 - its third tier's - with nothing saying why.
      */
-    static boolean confirmBelowCost(Window owner, OfferService service, Offer offer, Set<Integer> activeTiers)
+    static boolean confirmBelowCost(Window owner, OfferService service, Offer offer, List<PriceTier> activeTiers)
             throws DaoException {
         if (!service.canSeeCost()) {
             return true;
         }
-        List<OfferCostCheck.BelowCost> below = service.belowCost(offer, activeTiers);
+        Map<Integer, String> tierNames = activeTiers.stream()
+                .collect(Collectors.toMap(PriceTier::id, PriceTier::name, (first, second) -> first));
+        List<OfferCostCheck.BelowCost> below = service.belowCost(offer, tierNames.keySet());
         if (below.isEmpty()) {
             return true;
         }
@@ -406,6 +433,8 @@ public class OffersController {
         list.getColumns().setAll(List.of(
                 Columns.text("offers.below.item", OfferCostCheck.BelowCost::name),
                 Columns.text("offers.below.unit", OfferCostCheck.BelowCost::unitName),
+                Columns.text("offers.below.tier",
+                        row -> tierNames.getOrDefault(row.tierId(), String.valueOf(row.tierId()))),
                 Columns.text("offers.below.price", row -> Columns.money(row.price())),
                 Columns.text("offers.below.net", row -> Columns.money(row.net())),
                 Columns.text("offers.below.cost", row -> Columns.money(row.cost()))));
@@ -433,6 +462,8 @@ public class OffersController {
             case PERCENT -> text("offer.kind.percent");
             case AMOUNT -> text("offer.kind.amount");
             case PRICE -> text("offer.kind.price");
+            case QUANTITY_PRICE -> text("offer.kind.quantity.price");
+            case BUY_GET -> text("offer.kind.buy.get");
         };
     }
 
@@ -473,13 +504,27 @@ public class OffersController {
         return WEEK.stream().filter(days::contains).map(OffersController::dayName).collect(Collectors.joining("، "));
     }
 
+    /**
+     * What the offer gives, in a few words. Every figure stands between words: "2 + 1" in a right-to-left
+     * cell reads "1 + 2", which is the opposite offer.
+     */
     static String valueText(OfferRow row) {
         Offer offer = row.offer();
         return switch (offer.kind()) {
-            case PERCENT -> offer.percent().stripTrailingZeros().toPlainString() + "%";
+            case PERCENT -> plain(offer.percent()) + "%";
             case AMOUNT -> Columns.money(offer.amount());
             case PRICE -> Columns.money(offer.offerPrice());
+            case QUANTITY_PRICE -> text("offer.value.quantity.price", plain(offer.buyQuantity()),
+                    Columns.money(offer.offerPrice()));
+            case BUY_GET -> offer.getPercent().compareTo(BigDecimal.valueOf(100)) == 0
+                    ? text("offer.value.buy.get.free", plain(offer.buyQuantity()), plain(offer.getQuantity()))
+                    : text("offer.value.buy.get.percent", plain(offer.buyQuantity()), plain(offer.getQuantity()),
+                            plain(offer.getPercent()));
         };
+    }
+
+    static String plain(BigDecimal value) {
+        return value == null ? "" : value.stripTrailingZeros().toPlainString();
     }
 
     private String tiersText(Offer offer) {
@@ -503,6 +548,9 @@ public class OffersController {
             case MAIN_GROUP -> text("offer.scope.main.group") + ": " + label.mainGroupName();
             case ALL -> text("offer.scope.all");
         };
+        if (label.target().reward()) {
+            return text("offer.target.gift") + " " + what;
+        }
         return label.target().excluded() ? text("offer.target.except") + " " + what : what;
     }
 

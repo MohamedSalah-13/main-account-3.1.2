@@ -100,8 +100,8 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
      */
     static String offerColumns(DocumentType sourceType) {
         return sourceType == DocumentType.SALES
-                ? "offer_id, offer_discount"
-                : "NULL AS offer_id, 0 AS offer_discount";
+                ? "offer_id, offer_discount, offer_quantity"
+                : "NULL AS offer_id, 0 AS offer_discount, 0 AS offer_quantity";
     }
 
     private static Integer offerId(ResultSet rows) throws java.sql.SQLException {
@@ -135,7 +135,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                             rows.getDouble("discount"), rows.getDouble("buy_price"),
                             rows.getInt("unit_id"), rows.getDouble("type_value"),
                             expiry == null ? null : expiry.toLocalDate(), offerId(rows),
-                            rows.getDouble("offer_discount")));
+                            rows.getDouble("offer_discount"), rows.getDouble("offer_quantity")));
                 }
             }
         });
@@ -233,7 +233,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                                 rows.getDouble("buy_price"), rows.getInt("unit_id"),
                                 rows.getDouble("type_value"),
                                 expiry == null ? null : expiry.toLocalDate(), offerId(rows),
-                            rows.getDouble("offer_discount")));
+                            rows.getDouble("offer_discount"), rows.getDouble("offer_quantity")));
                     }
                 }
             }

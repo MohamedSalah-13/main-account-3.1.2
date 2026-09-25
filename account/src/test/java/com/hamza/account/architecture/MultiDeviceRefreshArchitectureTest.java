@@ -191,6 +191,39 @@ class MultiDeviceRefreshArchitectureTest {
     }
 
     /**
+     * An event a screen listens for has to be published on this machine, and an announcement is not that.
+     *
+     * <p>{@code ChangeAnnouncer} writes a row for the other tills, and the relay deliberately passes over the
+     * rows its own machine wrote - so an event only ever announced reaches every till but the one it happened
+     * on. The offers screen went on listing an offer it had just activated, stopped or deleted, and an
+     * invoice open on the same till kept the old offers, while every test was green; only driving the screen
+     * found it. The tiers' names had the same gap on the items screen. So some code other than an
+     * {@code announce(...)} call must build the event - which is what publishes it here.</p>
+     */
+    @Test
+    void anEventAScreenListensForIsPublishedOnThisMachine() {
+        String sources = SourceTree.javaFiles(SourceTree.javaPackage()).stream()
+                .filter(file -> !file.endsWith("RemoteChangeTopics.java"))
+                .map(file -> SourceTree.withoutComments(SourceTree.readJava(file)))
+                .collect(Collectors.joining("\n"));
+        java.util.regex.Matcher listened = java.util.regex.Pattern
+                .compile("subscribe\\(\\s*([A-Z]\\w*)\\.class").matcher(sources);
+        Set<String> events = new java.util.TreeSet<>();
+        while (listened.find()) {
+            events.add(listened.group(1));
+        }
+        assertFalse(events.isEmpty(), "no subscription found; the scan is broken");
+
+        for (String event : events) {
+            String built = "new " + event + "(";
+            int published = occurrences(sources, built) - occurrences(sources, "announce(" + built);
+            assertTrue(published > 0, event + " is listened for, but only ever announced to the other"
+                    + " machines; the relay skips this machine's own rows, so the screens here never hear it."
+                    + " Publish it on the EventBus after the write, as the treasury screens do");
+        }
+    }
+
+    /**
      * A restore replaces the whole database and has no service behind it, so it is the one
      * place that announces the service topics itself.
      */

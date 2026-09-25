@@ -52,6 +52,10 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -64,8 +68,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -78,7 +88,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * save refuses a sale the offers do not say - one started since the screen looked, one stopped since - before a
  * number is taken; that a stopped offer stays with the invoice it was given on; that part of an offer invoice
  * comes back with its share of the offer and nothing else; and example 7, a delegate's ceiling judging the
- * manual discount alone.
+ * manual discount alone. And phase C (V86): V86 from nothing and over a V85 database with sales on it; examples
+ * 2, 3 and 4 worked by hand, the gift and a return of part of it; the limit on one invoice; and the global limit
+ * with two tills in two real transactions, the second waiting on the first's lock.
  * <p>
  * The case: soap in a group of its own, costing 25 and sold at 40; rice outside it, costing 60 and sold at 100;
  * "10% off the detergents" from today. The session is user 9, never user 1 - who bypasses every permission.
@@ -422,11 +434,300 @@ class OfferDatabaseAcceptanceTest {
         assertEquals(0, new BigDecimal("250.00").compareTo(cartons.getFirst().net()));
     }
 
+    // --- phase C: the quantity, the gift and the limits (V86) ------------------------------------------------
+
+    private static int water;
+    private static int juice;
+    private static int shampoo;
+    private static int conditioner;
+    private static int giftSale;
+
+    /** "{@code size} for {@code price}" on one item, written through the service and switched on. */
+    private static int quantityOffer(String name, int item, String size, String price, String perInvoice,
+                                     String total) throws Exception {
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_CREATE);
+        return offers().create(new Offer(0, name, OfferKind.QUANTITY_PRICE, OfferStatus.ACTIVE, TODAY, null, null,
+                0, null, null, new BigDecimal(price), null, new BigDecimal(size), null, null,
+                perInvoice == null ? null : new BigDecimal(perInvoice), total == null ? null : new BigDecimal(total),
+                null, List.of(OfferTarget.item(item)), Set.of(), null));
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("V86 from nothing: the new kinds' CHECK, the gift's, the covered units', and the limits as terms")
+    void thePhaseCSchema() throws Exception {
+        for (String column : List.of("buy_quantity", "get_quantity", "get_percent", "max_per_invoice",
+                "quantity_limit")) {
+            assertEquals(1, scalar("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()"
+                    + " AND TABLE_NAME = 'offer' AND COLUMN_NAME = '" + column + "'"), column);
+        }
+        // A buy-and-get with nothing given, and a percentage carrying a quantity: the rewritten CHECK.
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, buy_quantity) VALUES ('c1',"
+                + " 'BUY_GET', 'DRAFT', CURRENT_DATE, 2)");
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, percent, buy_quantity) VALUES"
+                + " ('c2', 'PERCENT', 'DRAFT', CURRENT_DATE, 10, 3)");
+        assertSqlRefused(3819, "INSERT INTO offer (name, kind, status, starts_on, percent, max_per_invoice) VALUES"
+                + " ('c3', 'PERCENT', 'DRAFT', CURRENT_DATE, 10, 0)");
+        // A gift that is a group: the role's CHECK.
+        assertSqlRefused(3819, "INSERT INTO offer_target (offer_id, role, scope, sub_group_id) VALUES ("
+                + tenPercent + ", 'REWARD', 'SUB_GROUP', " + detergents + ")");
+        // Units covered on a line naming no offer: the line's CHECK.
+        assertSqlRefused(3819, "UPDATE sales SET offer_quantity = 1 WHERE invoice_number = " + invoiceA
+                + " AND num = " + rice);
+        // Invoice A's soap line - saved, then edited, through the save - records the three units its offer covered.
+        assertEquals("3.000", text("SELECT offer_quantity FROM sales WHERE invoice_number = " + invoiceA
+                + " AND num = " + soap));
+        // A used offer's limit is a term: the trigger refuses it as it refuses the percentage.
+        assertSqlRefused(1644, "UPDATE offer SET max_per_invoice = 5 WHERE id = " + tenPercent);
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("example 2: 3 for 100, seven at 40 - two groups, 40 off, six units covered; document_profit 240 - 175")
+    void exampleTwo() throws Exception {
+        juice = insertItem("J", 1, 25, 40);
+        int threeFor100 = quantityOffer(STAMP + " 3 for 100", juice, "3", "100", null, null);
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales seven = line(new Sales(), juice, 25, 7, "40", "0");
+        offerLines(List.of(seven));
+        int saved = sales().save(sale(List.of(seven), "0")).invoiceNumber();
+
+        assertEquals("40.00|" + threeFor100 + "|40.00|6.000", text("SELECT CONCAT(discount, '|', offer_id, '|',"
+                + " offer_discount, '|', offer_quantity) FROM sales WHERE invoice_number = " + saved));
+        assertEquals("240.00|175.00|65.00", text("SELECT CONCAT(net_revenue, '|', cost_of_sales, '|', profit)"
+                + " FROM document_profit WHERE document_kind = 'sales' AND document_id = " + saved),
+                "280 less the offer's 40, against seven at 25");
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("example 4: shampoo 60 and the conditioner 40 a gift - 24 and 16, a profit of -15; the shampoo back"
+            + " refunds 36")
+    void exampleFour() throws Exception {
+        execute("INSERT INTO sub_group (name, main_id) VALUES ('" + STAMP + "-H', 1)");
+        int hair = scalar("SELECT id FROM sub_group WHERE name = '" + STAMP + "-H'");
+        shampoo = insertItem("SH", hair, 45, 60);
+        conditioner = insertItem("CO", hair, 30, 40);
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_CREATE);
+        int gift = offers().create(new Offer(0, STAMP + " gift", OfferKind.BUY_GET, OfferStatus.ACTIVE, TODAY, null,
+                null, 0, null, null, null, null, BigDecimal.ONE, BigDecimal.ONE, new BigDecimal("100"), null, null,
+                null, List.of(OfferTarget.item(shampoo), OfferTarget.reward(conditioner)), Set.of(), null));
+        assertEquals("REWARD", text("SELECT role FROM offer_target WHERE offer_id = " + gift + " AND item_id = "
+                + conditioner));
+
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales shampooLine = line(new Sales(), shampoo, 45, 1, "60", "0");
+        Sales conditionerLine = line(new Sales(), conditioner, 30, 1, "40", "0");
+        offerLines(List.of(shampooLine, conditionerLine));
+        giftSale = sales().save(sale(List.of(shampooLine, conditionerLine), "0")).invoiceNumber();
+
+        assertEquals("24.00|1.000", text("SELECT CONCAT(offer_discount, '|', offer_quantity) FROM sales"
+                + " WHERE invoice_number = " + giftSale + " AND num = " + shampoo));
+        assertEquals("16.00|1.000", text("SELECT CONCAT(offer_discount, '|', offer_quantity) FROM sales"
+                + " WHERE invoice_number = " + giftSale + " AND num = " + conditioner), "no line at zero (ق-ع٣)");
+        assertEquals("60.00|75.00|-15.00", text("SELECT CONCAT(net_revenue, '|', cost_of_sales, '|', profit)"
+                + " FROM document_profit WHERE document_kind = 'sales' AND document_id = " + giftSale),
+                "the gift cost the shop goods, and the profit says so");
+
+        // The shampoo alone back: 60 less its 24 - the rule the returns already had (ق-ع٢), nothing new.
+        signIn(AppPermissions.SALES_RE_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales_Return back = line(new Sales_Return(), shampoo, 45, 1, "60", "24.00");
+        back.setSourceLineId(scalar("SELECT id FROM sales WHERE invoice_number = " + giftSale + " AND num = "
+                + shampoo));
+        int returned = returns().save(new InvoiceSaveCommand(0, TODAY, InvoiceType.CASH, BigDecimal.ZERO,
+                DiscountType.AMOUNT, new BigDecimal("36.00"), STAMP, CASH_CUSTOMER, "customer", MAIN_TREASURY,
+                DELEGATE, false, giftSale, null, List.of(back), 1, null, null, null, 1)).invoiceNumber();
+        assertEquals("24.00|" + gift + "|24.00|1.000", text("SELECT CONCAT(discount, '|', offer_id, '|',"
+                + " offer_discount, '|', offer_quantity) FROM sales_re WHERE invoice_number = " + returned));
+        assertEquals("-36.00", text("SELECT net_revenue FROM document_profit WHERE document_kind = 'sales_return'"
+                + " AND document_id = " + returned), "the customer keeps a conditioner paid 24 for");
+    }
+
+    @Test
+    @Order(13)
+    @DisplayName("example 3 and the invoice limit: buy 2 get 1 on five is 30 off; a limit of one group refuses a"
+            + " screen claiming two, the counter unmoved")
+    void exampleThreeAndTheInvoiceLimit() throws Exception {
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_CREATE);
+        int biscuits = insertItem("B", 1, 20, 30);
+        int twoPlusOne = offers().create(new Offer(0, STAMP + " 2+1", OfferKind.BUY_GET, OfferStatus.ACTIVE, TODAY,
+                null, null, 0, null, null, null, null, new BigDecimal("2"), BigDecimal.ONE, new BigDecimal("100"),
+                null, null, null, List.of(OfferTarget.item(biscuits)), Set.of(), null));
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales five = line(new Sales(), biscuits, 20, 5, "30", "0");
+        offerLines(List.of(five));
+        int saved = sales().save(sale(List.of(five), "0")).invoiceNumber();
+        assertEquals("30.00|" + twoPlusOne + "|3.000", text("SELECT CONCAT(offer_discount, '|', offer_id, '|',"
+                + " offer_quantity) FROM sales WHERE invoice_number = " + saved), "one group: three of the five");
+
+        water = insertItem("W", 1, 25, 40);
+        int onceEach = quantityOffer(STAMP + " once", water, "3", "100", "1", null);
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales seven = line(new Sales(), water, 25, 7, "40", "0");
+        offerLines(List.of(seven));
+        assertEquals(20.0, seven.getDiscount(), "the screen gives one group, not two");
+        Sales forged = line(new Sales(), water, 25, 7, "40", "40");
+        forged.setOfferId(onceEach);
+        forged.setOfferDiscount(new BigDecimal("40.00"));
+        forged.setOfferQuantity(new BigDecimal("6"));
+        long counter = counter();
+        assertThrows(InvoiceValidationException.class, () -> sales().save(sale(List.of(forged), "0")));
+        assertEquals(counter, counter(), "refused before the number was taken");
+        sales().save(sale(List.of(seven), "0"));
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("the global limit with two tills: the second waits on the offer's lock, then sees what the first"
+            + " took - where a plain read would still see its old snapshot")
+    void theGlobalLimitWithTwoTills() throws Exception {
+        int firstTwo = quantityOffer(STAMP + " first two", juice, "3", "100", null, "2");
+        // Juice already carries example 2's offer; stop it, so this one is what reaches the juice from here.
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.OFFER_UPDATE);
+        int threeFor100 = scalar("SELECT id FROM offer WHERE name = '" + STAMP + " 3 for 100'");
+        offers().stop(threeFor100, offers().find(threeFor100).orElseThrow().version());
+        Offer limited = offers().find(firstTwo).orElseThrow();
+        int host = scalar("SELECT MAX(invoice_number) FROM total_sales");
+
+        ExecutorService tills = Executors.newFixedThreadPool(2);
+        try {
+            CountDownLatch firstLocked = new CountDownLatch(1);
+            CountDownLatch release = new CountDownLatch(1);
+            Future<BigDecimal> first = tills.submit(() -> PriceTierService.Transactions.jdbc().execute(() -> {
+                BigDecimal left = offers().timesLeft(List.of(limited), 0, true).get(firstTwo);
+                firstLocked.countDown();
+                assertTrue(release.await(60, TimeUnit.SECONDS));
+                executeHere("INSERT INTO sales (invoice_number, num, type, quantity, price, buy_price, total_sel_price,"
+                        + " total_buy_price, total_profit, discount, type_value, offer_id, offer_discount,"
+                        + " offer_quantity) VALUES (" + host + ", " + juice + ", 1, 3, 40, 25, 120, 75, 25, 20, 1, "
+                        + firstTwo + ", 20, 3)");
+                return left;
+            }));
+            assertTrue(firstLocked.await(60, TimeUnit.SECONDS));
+            Future<BigDecimal[]> second = tills.submit(() -> PriceTierService.Transactions.jdbc().execute(() -> {
+                // A plain read first, as the save's reads before the offers are: the snapshot is taken here.
+                scalarHere("SELECT COUNT(*) FROM sales");
+                BigDecimal locked = offers().timesLeft(List.of(limited), 0, true).get(firstTwo);
+                BigDecimal plain = offers().timesLeft(List.of(limited), 0, false).get(firstTwo);
+                return new BigDecimal[]{locked, plain};
+            }));
+            Thread.sleep(1500);
+            assertFalse(second.isDone(), "the second till waits on the offer's row");
+            release.countDown();
+            assertEquals(0, new BigDecimal("2").compareTo(first.get(60, TimeUnit.SECONDS)));
+            BigDecimal[] seen = second.get(60, TimeUnit.SECONDS);
+            assertEquals(0, BigDecimal.ONE.compareTo(seen[0]), "the locking read sees the first till's group");
+            assertEquals(0, new BigDecimal("2").compareTo(seen[1]),
+                    "a plain read in the same transaction would not: its snapshot is older than the first till's commit");
+        } finally {
+            tills.shutdownNow();
+        }
+
+        // And through the save: one group left, seven juices take one; after it, none is left for anybody.
+        signIn(AppPermissions.SALES_CREATE, AppPermissions.ITEMS_SHOW);
+        Sales seven = line(new Sales(), juice, 25, 7, "40", "0");
+        offerLines(List.of(seven));
+        assertEquals(20.0, seven.getDiscount(), "one group left, however many are on the invoice");
+        Sales late = line(new Sales(), juice, 25, 3, "40", "0");
+        offerLines(List.of(late));
+        sales().save(sale(List.of(seven), "0"));
+        long counter = counter();
+        assertThrows(InvoiceValidationException.class, () -> sales().save(sale(List.of(late), "0")),
+                "the screen saw a group left before the other sale took it");
+        assertEquals(counter, counter());
+        assertEquals(0, new BigDecimal("6").compareTo(new JdbcOfferRepository().usage(firstTwo).units()),
+                "two groups of three, all the limit allows");
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("an install that ran V85 and sold with an offer upgrades to V86 with each line's covered units")
+    void theBackfill() throws Exception {
+        String older = SCHEMA_PREFIX + "v85_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        try (Connection connection = DriverManager.getConnection(jdbcUrl(""), username, password);
+             Statement statement = connection.createStatement()) {
+            statement.execute("CREATE DATABASE `" + older + "` CHARACTER SET utf8mb4");
+        }
+        try {
+            Flyway.configure().dataSource(jdbcUrl(older), username, password)
+                    .locations("filesystem:" + migrationsBeforeV86().toAbsolutePath().toString().replace('\\', '/'))
+                    .validateOnMigrate(false).cleanDisabled(true).load().migrate();
+            try (Connection connection = DriverManager.getConnection(jdbcUrl(older), username, password);
+                 Statement statement = connection.createStatement()) {
+                statement.execute("INSERT INTO items (barcode, nameItem, sub_num, buy_price, sel_price1, sel_price2,"
+                        + " sel_price3, unit_id, mini_quantity, user_id) VALUES ('BF', 'BF', 1, 25, 40, 0, 0, 1, 0, 1)");
+                statement.execute("INSERT INTO offer (name, kind, status, starts_on, percent) VALUES ('ten', 'PERCENT',"
+                        + " 'ACTIVE', CURRENT_DATE, 10)");
+                statement.execute("INSERT INTO offer (name, kind, status, starts_on, amount, unit_id) VALUES ('carton',"
+                        + " 'AMOUNT', 'ACTIVE', CURRENT_DATE, 5, 2)");
+                statement.execute("INSERT INTO total_sales (invoice_number, sup_code, invoice_date, total, discount,"
+                        + " paid_up, delegate_id) VALUES (1, 1, CURRENT_DATE, 0, 0, 0, 1)");
+                statement.execute("INSERT INTO sales (invoice_number, num, type, quantity, price, buy_price, type_value,"
+                        + " discount, offer_id, offer_discount) SELECT 1, id, 2, 2, 480, 300, 12, 96,"
+                        + " (SELECT id FROM offer WHERE name = 'ten'), 96 FROM items WHERE barcode = 'BF'");
+                statement.execute("INSERT INTO sales (invoice_number, num, type, quantity, price, buy_price, type_value,"
+                        + " discount, offer_id, offer_discount) SELECT 1, id, 2, 3, 480, 300, 12, 15,"
+                        + " (SELECT id FROM offer WHERE name = 'carton'), 15 FROM items WHERE barcode = 'BF'");
+            }
+            Flyway.configure().dataSource(jdbcUrl(older), username, password).locations("classpath:db/migration")
+                    .validateOnMigrate(false).cleanDisabled(true).load().migrate();
+            try (Connection connection = DriverManager.getConnection(jdbcUrl(older), username, password);
+                 Statement statement = connection.createStatement();
+                 ResultSet rows = statement.executeQuery("SELECT o.name, s.offer_quantity FROM sales s"
+                         + " JOIN offer o ON o.id = s.offer_id ORDER BY s.id")) {
+                assertTrue(rows.next());
+                assertEquals("ten", rows.getString(1));
+                assertEquals(0, new BigDecimal("24").compareTo(rows.getBigDecimal(2)),
+                        "a percentage counts base units: two cartons of twelve");
+                assertTrue(rows.next());
+                assertEquals(0, new BigDecimal("3").compareTo(rows.getBigDecimal(2)),
+                        "an offer written for the carton counts cartons");
+            }
+        } finally {
+            try (Connection connection = DriverManager.getConnection(jdbcUrl(""), username, password);
+                 Statement statement = connection.createStatement()) {
+                statement.execute("DROP DATABASE IF EXISTS `" + older + "`");
+            }
+        }
+    }
+
+    /**
+     * Every migration before V86 and {@code R__triggers.sql} cut at its V86 section - a trigger naming a column
+     * V86 adds cannot be built before it - and no views, which name them too; the upgrade builds them all.
+     */
+    private static Path migrationsBeforeV86() throws Exception {
+        Path source = Paths.get(OfferDatabaseAcceptanceTest.class.getResource("/db/migration").toURI());
+        Path target = Files.createTempDirectory("offer-migrations-v85-");
+        target.toFile().deleteOnExit();
+        try (var files = Files.list(source)) {
+            for (Path file : files.toList()) {
+                String name = file.getFileName().toString();
+                if ((name.matches("V(\\d+)__.*") && Integer.parseInt(name.substring(1, name.indexOf("__"))) >= 86)
+                        || name.equals("R__views.sql")) {
+                    continue;
+                }
+                String sql = Files.readString(file, StandardCharsets.UTF_8);
+                if (name.equals("R__triggers.sql")) {
+                    int cut = sql.indexOf("-- offers, quantity and gifts (V86)");
+                    assertTrue(cut > 0, "the V86 section of R__triggers.sql is where this test expects it");
+                    sql = sql.substring(0, cut);
+                }
+                Files.writeString(target.resolve(name), sql, StandardCharsets.UTF_8);
+                target.resolve(name).toFile().deleteOnExit();
+            }
+        }
+        return target;
+    }
+
     // --- the screen's own path -------------------------------------------------------------------------------
 
-    /** The offers the till would apply, written on the lines as the invoice screen writes them. */
+    /**
+     * The offers the till would apply, written on the lines as the invoice screen writes them - what a limit has
+     * left read the way the screen reads it, plainly.
+     */
     private static void offerLines(List<? extends BasePurchasesAndSales> lines) throws Exception {
-        InvoiceOfferPreview preview = new InvoiceOfferPreview(new InvoiceOffers.JdbcGroups());
+        InvoiceOfferPreview preview = new InvoiceOfferPreview(new InvoiceOffers.JdbcGroups(),
+                (limited, exceptInvoice) -> offers().timesLeft(limited, exceptInvoice, false));
         preview.setOffers(offers().inForce());
         preview.run(lines, TODAY, 1);
     }
@@ -567,6 +868,26 @@ class OfferDatabaseAcceptanceTest {
         try (Connection connection = ConnectionManager.acquire();
              Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql);
+        }
+    }
+
+    /** {@link #execute} inside a transaction open on this thread: its connection is borrowed, never closed. */
+    private static void executeHere(String sql) throws Exception {
+        Connection connection = ConnectionManager.acquire();
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } finally {
+            ConnectionManager.release(connection);
+        }
+    }
+
+    private static int scalarHere(String sql) throws Exception {
+        Connection connection = ConnectionManager.acquire();
+        try (Statement statement = connection.createStatement(); ResultSet rows = statement.executeQuery(sql)) {
+            assertTrue(rows.next(), sql);
+            return rows.getInt(1);
+        } finally {
+            ConnectionManager.release(connection);
         }
     }
 
