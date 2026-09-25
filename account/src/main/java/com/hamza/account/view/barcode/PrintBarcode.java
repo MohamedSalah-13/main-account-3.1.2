@@ -60,7 +60,9 @@ import static com.hamza.account.config.PropertiesName.getBarcodeLabelNameOverflo
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintBarcode;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintName;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintPrice;
+import static com.hamza.account.config.PropertiesName.getBarcodeLabelOfferPrice;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPriceTier;
+import static com.hamza.account.config.PropertiesName.setBarcodeLabelOfferPrice;
 import static com.hamza.account.config.PropertiesName.setBarcodeLabelPriceTier;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelShowDouble;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelWidthMm;
@@ -136,6 +138,9 @@ public class PrintBarcode implements AppSettingInterface {
         TableColumn<PrintBarcodeModel, String> name = Columns.text("name", PrintBarcodeModel::getName);
         TableColumn<PrintBarcodeModel, String> price = Columns.text("price",
                 row -> MoneyMath.text(row.getPrice()));
+        // The offer's price where one is printed (phase E); the tier's is then struck through beside it.
+        TableColumn<PrintBarcodeModel, String> offerPrice = Columns.text("barcode.print.column.offer.price",
+                row -> row.getOfferPrice() == null ? "" : MoneyMath.text(row.getOfferPrice()));
         TableColumn<PrintBarcodeModel, Integer> quantity = Columns.column("quantity",
                 PrintBarcodeModel::getQuantity);
         quantity.setEditable(true);
@@ -146,7 +151,7 @@ public class PrintBarcode implements AppSettingInterface {
             updateSummary();
         });
 
-        tableView.getColumns().setAll(barcode, name, price, quantity);
+        tableView.getColumns().setAll(barcode, name, price, offerPrice, quantity);
         tableView.setItems(rows);
         tableView.setEditable(true);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -209,13 +214,63 @@ public class PrintBarcode implements AppSettingInterface {
         javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(8, caption, comboTier);
         row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         options.add(row, 0, 2, 2, 1);
+        configureOfferPrice(options);
         showTier(comboTier.getValue() == null ? 1 : comboTier.getValue().id());
     }
 
+    private final CheckBox checkOfferPrice = new CheckBox();
+    private final com.hamza.account.features.offers.OfferService offerService =
+            com.hamza.account.controller.others.ServiceRegistry.get(com.hamza.account.features.offers.OfferService.class);
+    private int shownTier = 1;
+
+    /**
+     * The price of an offer in force, the tier's struck through beside it (phase E) - offered only with the
+     * offers add-on, under the price option, and remembered by this computer as the tier is. Off until ticked:
+     * a promotion's price left on a shelf after the promotion is a price the till will not charge.
+     */
+    private void configureOfferPrice(javafx.scene.layout.GridPane options) {
+        if (offerService == null || !offerService.enabled()) {
+            return;
+        }
+        checkOfferPrice.setText(text("barcode.print.offer.price"));
+        checkOfferPrice.getStyleClass().add("modern-check-box");
+        checkOfferPrice.setSelected(getBarcodeLabelOfferPrice());
+        checkOfferPrice.disableProperty().bind(checkShowPrice.selectedProperty().not());
+        checkOfferPrice.selectedProperty().addListener((observable, before, now) -> {
+            setBarcodeLabelOfferPrice(now);
+            showOffers();
+            tableView.refresh();
+            requestPreview(false);
+        });
+        options.add(checkOfferPrice, 0, 3, 2, 1);
+    }
+
     private void showTier(int tierId) {
+        shownTier = tierId;
         rows.forEach(row -> row.showTier(tierId));
+        showOffers();
         tableView.refresh();
         requestPreview(false);
+    }
+
+    /** Each row's offer price at the tier shown, or none - read afresh, as the offers may have moved. */
+    private void showOffers() {
+        if (!checkOfferPrice.isSelected() || offerService == null) {
+            rows.forEach(PrintBarcodeModel::clearOffer);
+            return;
+        }
+        try {
+            List<com.hamza.account.features.offers.Offer> offers = offerService.inForce();
+            List<Integer> items = rows.stream().map(PrintBarcodeModel::getItemId).filter(Objects::nonNull).toList();
+            java.util.Map<Integer, com.hamza.account.features.invoice.InvoiceOffers.ItemGroups> groups =
+                    offers.isEmpty() || items.isEmpty() ? java.util.Map.of()
+                            : new com.hamza.account.features.invoice.InvoiceOffers.JdbcGroups().groupsOf(items);
+            java.time.LocalDate today = java.time.LocalDate.now();
+            rows.forEach(row -> row.showOffer(offers, groups, today, shownTier));
+        } catch (Exception e) {
+            rows.forEach(PrintBarcodeModel::clearOffer);
+            handleFailure(e);
+        }
     }
 
     private void configureActions() {
@@ -473,7 +528,8 @@ public class PrintBarcode implements AppSettingInterface {
 
     private BarcodePrintBatch batch(List<PrintBarcodeModel> source) {
         List<BarcodePrintLine> lines = source.stream()
-                .map(row -> new BarcodePrintLine(row.getBarcode(), row.getName(), row.getPrice(), row.getQuantity()))
+                .map(row -> new BarcodePrintLine(row.getBarcode(), row.getName(), row.getPrintedPrice(),
+                        row.getQuantity(), row.getOfferPrice() == null ? null : row.getPrice()))
                 .toList();
         return new BarcodePrintBatch(lines, comboPrinter == null ? "" : comboPrinter.getValue(), currentOptions());
     }

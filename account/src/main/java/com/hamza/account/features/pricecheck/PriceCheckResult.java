@@ -19,10 +19,27 @@ public sealed interface PriceCheckResult {
      *                     item does not track batches, none is left, or the setting is off
      * @param image        the item's picture bytes, or null - loaded with the item, so it
      *                     costs no query of its own
+     * @param offer        what an offer in force says about one of this unit at the screen's tier, or null
+     *                     (docs/pricing-and-offers-plan.md phase E) - a price the till will charge, or an
+     *                     offer told in words
      */
     record Found(int itemId, String itemName, String unitName, double price, double quantity,
                  double total, double balance, boolean scaleBarcode, LocalDate nearestExpiry,
-                 byte[] image) implements PriceCheckResult {
+                 byte[] image, com.hamza.account.features.offers.OfferPriceTag offer) implements PriceCheckResult {
+
+        /** An answer no offer reaches. */
+        public Found(int itemId, String itemName, String unitName, double price, double quantity, double total,
+                     double balance, boolean scaleBarcode, LocalDate nearestExpiry, byte[] image) {
+            this(itemId, itemName, unitName, price, quantity, total, balance, scaleBarcode, nearestExpiry, image,
+                    null);
+        }
+
+        /** What a weighed packet comes to under the offer's price for the unit, or null without one. */
+        public Double offerTotal() {
+            return offer == null || !offer.hasPrice() ? null
+                    : offer.offerPrice().multiply(java.math.BigDecimal.valueOf(quantity))
+                    .setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
+        }
     }
 
     /**

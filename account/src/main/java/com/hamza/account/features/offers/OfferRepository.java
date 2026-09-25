@@ -49,6 +49,40 @@ public interface OfferRepository {
 
     boolean nameTaken(String name, int exceptId) throws DaoException;
 
+    /** Whether an offer other than {@code exceptId} carries this barcode. */
+    default boolean barcodeTaken(String barcode, int exceptId) throws DaoException {
+        return false;
+    }
+
+    /** The name of the item that answers to this code, or null when none does. */
+    default String itemHoldingBarcode(String barcode) throws DaoException {
+        return null;
+    }
+
+    /**
+     * What each offer's lines came to over a period - the sales dated in it less the returns dated in it - by
+     * offer. {@code withCost} reads the lines' cost; without it every figure's cost is null.
+     */
+    default Map<Integer, OfferFigures> figures(LocalDate from, LocalDate to, boolean withCost) throws DaoException {
+        return Map.of();
+    }
+
+    /** How many sales dated in the period any offer reached, each counted once. */
+    default int invoicesReached(LocalDate from, LocalDate to) throws DaoException {
+        return 0;
+    }
+
+    /** One offer's items over a period, the most it sold for first. */
+    default List<OfferPerformanceItem> performanceItems(int offerId, LocalDate from, LocalDate to,
+                                                        boolean withCost) throws DaoException {
+        return List.of();
+    }
+
+    /** Each named item's stock across every warehouse and its minimum. */
+    default List<OfferAlerts.ItemBalance> balancesOf(Collection<Integer> itemIds) throws DaoException {
+        return List.of();
+    }
+
     /** Locks the row and answers its version, or empty when there is no such offer. */
     Optional<LocalDateTime> lockVersion(int offerId) throws DaoException;
 

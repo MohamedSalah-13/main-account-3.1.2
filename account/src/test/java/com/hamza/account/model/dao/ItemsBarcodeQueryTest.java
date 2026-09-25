@@ -59,6 +59,14 @@ class ItemsBarcodeQueryTest {
     }
 
     @Test
+    @DisplayName("a bundle's barcode is asked apart, each code bound against the one column - never a fourth branch")
+    void bundlesAreAskedApart() {
+        assertEquals("SELECT barcode, name FROM offer WHERE barcode IN (?,?)", ItemsDao.bundleBarcodesSql(2));
+        assertTrue(!ItemsDao.takenBarcodesSql(1, false).contains("offer"),
+                "the union of three columns stays three: offer is a migration's table and can differ in collation");
+    }
+
+    @Test
     @DisplayName("asking for the first answer asks the database for one row")
     void firstOnlyLimits() {
         assertTrue(ItemsDao.takenBarcodesSql(1, true).endsWith("LIMIT 1"));

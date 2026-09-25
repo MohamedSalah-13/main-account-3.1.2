@@ -136,6 +136,38 @@ public class ReportsButtons extends LoadData {
         };
     }
 
+    /** What the offers gave and sold (phase E) - a tab, as the other sales reports of a period. */
+    public ButtonWithPerm offerPerformance() {
+        return new ButtonWithPerm() {
+            @Override
+            public PermissionKey getPermissionType() {
+                return AppPermissions.OFFER_SHOW;
+            }
+
+            @Override
+            public void action() {
+
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return LanguageManager.getInstance().getString("offer.performance.title");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = com.hamza.account.controller.reports.OfferPerformanceController.standard().pane();
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
+        };
+    }
+
     public ButtonWithPerm returnReasonsReport() {
         return new ButtonWithPerm() {
             @Override
@@ -322,6 +354,7 @@ public class ReportsButtons extends LoadData {
         openers.put(ReportEntry.ITEMS_RANK, run(itemSales(StatementPeriod.THIS_MONTH), tabPane));
         openers.put(ReportEntry.ITEMS_DAILY, run(itemSales(StatementPeriod.TODAY), tabPane));
         openers.put(ReportEntry.RETURN_REASONS, run(returnReasonsReport(), tabPane));
+        openers.put(ReportEntry.OFFER_PERFORMANCE, run(offerPerformance(), tabPane));
 
         openers.put(ReportEntry.CUSTOMER_BALANCES, run(mainScreenData.getAccountButtonsCustom(), tabPane));
         openers.put(ReportEntry.CUSTOMER_AGEING, () -> new OpenApplication<>(

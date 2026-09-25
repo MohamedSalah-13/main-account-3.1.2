@@ -40,6 +40,9 @@ public enum ReportEntry {
             ProductFeatures.REPORT_ITEMS_DAILY, AppPermissions.REPORTS_SHOW_ITEMS),
     RETURN_REASONS(ReportSection.SALES, "report.returns.reasons.title", "report.hub.describe.return.reasons",
             ProductFeatures.REPORT_RETURN_REASONS, AppPermissions.REPORTS_SHOW_RETURNS),
+    // The offers add-on's, from the offers screen's button: its key and the sales reports' (phase E).
+    OFFER_PERFORMANCE(ReportSection.SALES, "offer.performance.title", "report.hub.describe.offer.performance",
+            ProductFeatures.OFFERS, AppPermissions.OFFER_SHOW, AppPermissions.REPORTS_SHOW_SALES),
 
     CUSTOMER_BALANCES(ReportSection.PARTIES, "party.balances.customers.title", "report.hub.describe.customer.balances",
             ProductFeatures.CUSTOMERS_ACCOUNT, AppPermissions.CUSTOMER_ACCOUNT_SHOW),

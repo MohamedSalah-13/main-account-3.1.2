@@ -177,10 +177,10 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
         drawBars(graphics, symbol, fit, (width - fit.totalDots()) / 2 + fit.quietZoneDots(), cursor, barcodeHeight);
         cursor += barcodeHeight;
 
-        String details = details(line, options);
+        List<DetailPiece> details = details(line, options);
         if (!details.isEmpty() && detailsHeight > 0) {
             int fontSize = Math.max(1, Math.min(pointsToDots(options.nameFontSize(), dpi), detailsHeight - 1));
-            drawCentered(graphics, details, new Font(Font.SANS_SERIF, Font.BOLD, fontSize),
+            drawDetails(graphics, details, new Font(Font.SANS_SERIF, Font.BOLD, fontSize),
                     margin, cursor, availableWidth, detailsHeight);
         }
     }
@@ -211,14 +211,6 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
         layout.draw(graphics, x + width - layout.getAdvance(), baseline);
     }
 
-    private static void drawCentered(Graphics2D graphics, String text, Font font,
-                                     int x, int y, int width, int height) {
-        TextLayout layout = layout(graphics, text, font);
-        float baseline = y + Math.max(layout.getAscent(),
-                (height - textHeight(layout)) / 2f + layout.getAscent());
-        layout.draw(graphics, x + (width - layout.getAdvance()) / 2f, baseline);
-    }
-
     private static TextLayout layout(Graphics2D graphics, String value, Font font) {
         String text = Objects.requireNonNullElse(value, "");
         boolean rightToLeft = Bidi.requiresBidi(text.toCharArray(), 0, text.length());
@@ -231,12 +223,56 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
         return layout.getAscent() + layout.getDescent() + layout.getLeading();
     }
 
-    private static String details(BarcodePrintLine line, BarcodeLabelOptions options) {
-        StringBuilder value = new StringBuilder();
-        if (options.showBarcodeNumber()) value.append(line.barcode());
-        if (options.showBarcodeNumber() && options.showPrice()) value.append(" - ");
-        if (options.showPrice()) value.append(MoneyMath.text(line.price()));
-        return value.toString();
+    /** One run of the details line: its text, and whether it is struck through - an offer's old price. */
+    record DetailPiece(String text, boolean struck) {
+    }
+
+    /**
+     * The barcode's number and the price, left to right - digits read the same in either language. With an
+     * offer the price is the offer's and the list price follows it struck through (phase E).
+     */
+    static List<DetailPiece> details(BarcodePrintLine line, BarcodeLabelOptions options) {
+        List<DetailPiece> pieces = new ArrayList<>();
+        if (options.showBarcodeNumber()) pieces.add(new DetailPiece(line.barcode(), false));
+        if (options.showBarcodeNumber() && options.showPrice()) pieces.add(new DetailPiece(" - ", false));
+        if (options.showPrice()) {
+            pieces.add(new DetailPiece(MoneyMath.text(line.price()), false));
+            if (line.oldPrice() != null) {
+                pieces.add(new DetailPiece("  ", false));
+                pieces.add(new DetailPiece(MoneyMath.text(line.oldPrice()), true));
+            }
+        }
+        return pieces;
+    }
+
+    /**
+     * The details centred, piece by piece, a struck piece with a rule through the middle of its digits - a
+     * whole dot at least, as every mark a thermal head burns.
+     */
+    private static void drawDetails(Graphics2D graphics, List<DetailPiece> pieces, Font font,
+                                    int x, int y, int width, int height) {
+        List<TextLayout> layouts = pieces.stream().map(piece -> layout(graphics, piece.text(), font)).toList();
+        float advance = 0;
+        float ascent = 0;
+        float tallest = 0;
+        for (TextLayout layout : layouts) {
+            advance += layout.getAdvance();
+            ascent = Math.max(ascent, layout.getAscent());
+            tallest = Math.max(tallest, textHeight(layout));
+        }
+        float baseline = y + Math.max(ascent, (height - tallest) / 2f + ascent);
+        float cursor = x + (width - advance) / 2f;
+        for (int index = 0; index < pieces.size(); index++) {
+            TextLayout layout = layouts.get(index);
+            layout.draw(graphics, cursor, baseline);
+            if (pieces.get(index).struck()) {
+                int thickness = Math.max(1, Math.round(font.getSize2D() / 12f));
+                int strikeY = Math.round(baseline - layout.getAscent() * 0.35f);
+                graphics.fillRect(Math.round(cursor), strikeY - thickness / 2, Math.round(layout.getAdvance()),
+                        thickness);
+            }
+            cursor += layout.getAdvance();
+        }
     }
 
     private static PrintService findPrinter(String printerName) {

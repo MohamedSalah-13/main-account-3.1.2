@@ -189,6 +189,9 @@ public class OffersController {
             add.getStyleClass().add("app-primary-button");
             toolbar.extra(add);
         }
+        if (com.hamza.account.authorization.AuthorizationGuard.isGranted(AppPermissions.REPORTS_SHOW_SALES)) {
+            toolbar.extra(ListToolbar.button("offer.performance.open", AppIcon.REPORT, this::openPerformance));
+        }
         FlowPane row = toolbar.installIn(new FlowPane(8, 8));
         row.setAlignment(Pos.CENTER_LEFT);
         return new VBox(8, row, panel);
@@ -318,6 +321,9 @@ public class OffersController {
             line = detailLine(line, "offers.detail.net", Columns.money(usage.net()));
             line = detailLine(line, "offers.detail.first", usage.firstUsed() == null ? "" : usage.firstUsed().toString());
             line = detailLine(line, "offers.detail.last", usage.lastUsed() == null ? "" : usage.lastUsed().toString());
+            if (row.offer().barcode() != null) {
+                line = detailLine(line, "offers.detail.barcode", row.offer().barcode());
+            }
             if (row.offer().notes() != null) {
                 detailLine(line, "offers.detail.notes", row.offer().notes());
             }
@@ -351,6 +357,31 @@ public class OffersController {
                     row != null && row.used())) {
                 changedHere();
             }
+        } catch (Exception e) {
+            AllAlerts.handleError(text("offers.title"), e);
+        }
+    }
+
+    /** What the offers gave and sold (phase E), in a window of its own over this screen. */
+    private void openPerformance() {
+        try {
+            new com.hamza.account.view.OpenApplication<>(new com.hamza.controlsfx.interfaceData.AppSettingInterface() {
+                @Override
+                public javafx.scene.layout.Pane pane() {
+                    return new com.hamza.account.controller.reports.OfferPerformanceController(service,
+                            com.hamza.account.features.party.statement.StatementPeriod.THIS_MONTH).pane();
+                }
+
+                @Override
+                public String title() {
+                    return text("offer.performance.title");
+                }
+
+                @Override
+                public boolean resize() {
+                    return true;
+                }
+            });
         } catch (Exception e) {
             AllAlerts.handleError(text("offers.title"), e);
         }
@@ -458,13 +489,7 @@ public class OffersController {
     // ---- words -------------------------------------------------------------------------------
 
     static String kindName(OfferKind kind) {
-        return switch (kind) {
-            case PERCENT -> text("offer.kind.percent");
-            case AMOUNT -> text("offer.kind.amount");
-            case PRICE -> text("offer.kind.price");
-            case QUANTITY_PRICE -> text("offer.kind.quantity.price");
-            case BUY_GET -> text("offer.kind.buy.get");
-        };
+        return OfferWords.kind(kind);
     }
 
     static String statusName(OfferStatus status) {
@@ -504,23 +529,8 @@ public class OffersController {
         return WEEK.stream().filter(days::contains).map(OffersController::dayName).collect(Collectors.joining("، "));
     }
 
-    /**
-     * What the offer gives, in a few words. Every figure stands between words: "2 + 1" in a right-to-left
-     * cell reads "1 + 2", which is the opposite offer.
-     */
     static String valueText(OfferRow row) {
-        Offer offer = row.offer();
-        return switch (offer.kind()) {
-            case PERCENT -> plain(offer.percent()) + "%";
-            case AMOUNT -> Columns.money(offer.amount());
-            case PRICE -> Columns.money(offer.offerPrice());
-            case QUANTITY_PRICE -> text("offer.value.quantity.price", plain(offer.buyQuantity()),
-                    Columns.money(offer.offerPrice()));
-            case BUY_GET -> offer.getPercent().compareTo(BigDecimal.valueOf(100)) == 0
-                    ? text("offer.value.buy.get.free", plain(offer.buyQuantity()), plain(offer.getQuantity()))
-                    : text("offer.value.buy.get.percent", plain(offer.buyQuantity()), plain(offer.getQuantity()),
-                            plain(offer.getPercent()));
-        };
+        return OfferWords.value(row.offer());
     }
 
     static String plain(BigDecimal value) {
@@ -550,6 +560,9 @@ public class OffersController {
         };
         if (label.target().reward()) {
             return text("offer.target.gift") + " " + what;
+        }
+        if (label.target().component()) {
+            return text("offer.target.component", plain(label.target().quantity())) + " " + what;
         }
         return label.target().excluded() ? text("offer.target.except") + " " + what : what;
     }

@@ -8,12 +8,15 @@ import com.hamza.account.delete.DeletionService;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.OffersChanged;
 import com.hamza.account.features.pricing.PriceTierService;
+import com.hamza.account.features.profitloss.statement.ComparisonBasis;
+import com.hamza.account.features.profitloss.statement.ProfitLossPeriod;
 import com.hamza.account.features.productprofile.ProductFeatureAccess;
 import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,7 +45,7 @@ import java.util.function.Supplier;
  * <b>Reading the offers in force asks no permission</b>: the cashier sells with them, as with the tier
  * names. The screen's reads ask {@code offer.show}, and each write its own key, before anything is read.
  * <p>
- * Three rules beyond the form's:
+ * Four rules beyond the form's:
  * <ul>
  *   <li><b>An offer never reaches back</b> before the day it is written or switched on: its start is today or
  *       later. The save re-runs the engine on an edited invoice with the offers in force on the invoice's own
@@ -52,6 +55,8 @@ import java.util.function.Supplier;
  *       not before the last day it was used - and nothing else. Stop it and write another.</li>
  *   <li><b>An edit made on another till is not overwritten</b>: the row's {@code updated_at} is compared as
  *       it is written.</li>
+ *   <li><b>A bundle's barcode is nobody else's</b> (V87): no other offer carries it - {@code offer_barcode_uk}
+ *       says so too - and no item answers to it, or a scan would be a coin toss between the two.</li>
  * </ul>
  * Every write announces {@link OffersChanged} inside its transaction, so the other tills rebuild their
  * snapshot only for a write that happened.
@@ -213,6 +218,15 @@ public final class OfferService {
     public List<OfferCostCheck.BelowCost> belowCost(Offer offer, Set<Integer> activeTiers) throws DaoException {
         requireReadable();
         AuthorizationGuard.require(AppPermissions.SHOW_COLUMN_BUY_PRICE);
+        if (offer.kind() == OfferKind.BUNDLE) {
+            List<OfferCostCheck.Candidate> components = new ArrayList<>();
+            for (OfferTarget component : offer.components()) {
+                repository.candidates(component.unitId()).stream()
+                        .filter(candidate -> candidate.itemId() == component.itemId())
+                        .findFirst().ifPresent(components::add);
+            }
+            return OfferCostCheck.below(offer, components, activeTiers);
+        }
         OfferCostCheck.Candidate gift = null;
         var giftTarget = offer.rewardTarget();
         if (giftTarget.isPresent()) {
@@ -239,6 +253,59 @@ public final class OfferService {
         return AuthorizationGuard.isGranted(AppPermissions.OFFER_DELETE);
     }
 
+    // ---- what the offers did (phase E) --------------------------------------------------------
+
+    /**
+     * What each offer gave and sold over a period, against the period before (the profit and loss's rule). A
+     * sales report, so it asks {@code reports.show.sales} on top of the offers' key - and reads the cost only
+     * for a reader holding {@code reports.show.profit}, the key every other profit here asks.
+     */
+    public OfferPerformanceReport performance(ProfitLossPeriod period) throws DaoException {
+        Objects.requireNonNull(period, "period");
+        requireReadable();
+        AuthorizationGuard.require(AppPermissions.REPORTS_SHOW_SALES);
+        boolean withCost = costVisible();
+        ProfitLossPeriod previous = period.previous(ComparisonBasis.PREVIOUS_PERIOD);
+        Map<Integer, OfferFigures> now = repository.figures(period.from(), period.to(), withCost);
+        Map<Integer, OfferFigures> before = repository.figures(previous.from(), previous.to(), withCost);
+        java.util.Set<Integer> ids = new java.util.TreeSet<>(now.keySet());
+        ids.addAll(before.keySet());
+        List<OfferPerformanceRow> rows = new ArrayList<>();
+        for (Offer offer : repository.byIds(ids)) {
+            rows.add(new OfferPerformanceRow(offer, now.get(offer.id()), before.get(offer.id())));
+        }
+        return new OfferPerformanceReport(period, previous, rows,
+                repository.invoicesReached(period.from(), period.to()), withCost);
+    }
+
+    /** One offer's items over the report's period - its row's drawer. */
+    public List<OfferPerformanceItem> performanceItems(int offerId, ProfitLossPeriod period) throws DaoException {
+        Objects.requireNonNull(period, "period");
+        requireReadable();
+        AuthorizationGuard.require(AppPermissions.REPORTS_SHOW_SALES);
+        return repository.performanceItems(offerId, period.from(), period.to(), costVisible());
+    }
+
+    /** Whether a cost - and so a profit - is read and shown in the performance report. */
+    public boolean costVisible() {
+        return AuthorizationGuard.isGranted(AppPermissions.REPORTS_SHOW_PROFIT);
+    }
+
+    /** The switched-on offers whose last day is today or tomorrow - the reminder's question. */
+    public List<OfferAlerts.Ending> endingSoon(LocalDate day) throws DaoException {
+        requireReadable();
+        return OfferAlerts.ending(repository.active(), day);
+    }
+
+    /** The items the switched-on offers name by themselves that are gone or down to their minimum. */
+    public List<OfferAlerts.ShortItem> shortOfStock(LocalDate day) throws DaoException {
+        requireReadable();
+        List<Offer> active = repository.active();
+        java.util.Set<Integer> named = OfferAlerts.namedItems(active, day);
+        return named.isEmpty() ? List.of()
+                : OfferAlerts.shortOfStock(active, repository.balancesOf(named), day);
+    }
+
     // ---- writing ------------------------------------------------------------------------------
 
     /**
@@ -254,6 +321,7 @@ public final class OfferService {
         requireNotBackdated(offer.startsOn());
         return transactions.execute(() -> {
             requireNameFree(offer.name(), 0);
+            requireBarcodeFree(offer.barcode(), 0);
             int id = insert(offer);
             changeAnnouncer.announce(new OffersChanged());
             return id;
@@ -283,6 +351,7 @@ public final class OfferService {
                 requireNotBackdated(offer.startsOn());
             }
             requireNameFree(offer.name(), offer.id());
+            requireBarcodeFree(offer.barcode(), offer.id());
             Offer written = offer.withStatus(stored.status());
             if (!writeOrDuplicate(() -> repository.update(written, version))) {
                 throw new BusinessRuleException("offer.error.stale");
@@ -360,6 +429,19 @@ public final class OfferService {
         }
     }
 
+    private void requireBarcodeFree(String barcode, int exceptId) throws DaoException {
+        if (barcode == null) {
+            return;
+        }
+        if (repository.barcodeTaken(barcode, exceptId)) {
+            throw new UserValidationException("offer.error.barcode.duplicate");
+        }
+        String item = repository.itemHoldingBarcode(barcode);
+        if (item != null) {
+            throw new UserValidationException(LanguageManager.getInstance().getString("offer.error.barcode.item", item));
+        }
+    }
+
     private int insert(Offer offer) throws DaoException {
         int[] id = new int[1];
         writeOrDuplicate(() -> {
@@ -370,18 +452,22 @@ public final class OfferService {
     }
 
     /**
-     * The name check is a courtesy for the ordinary case; two tills saving one name both pass it and
-     * {@code offer_name_uk} refuses the second - which is said with the same sentence rather than a
-     * reference code.
+     * The name and barcode checks are a courtesy for the ordinary case; two tills saving one name both pass it
+     * and {@code offer_name_uk} refuses the second - which is said with the same sentence rather than a
+     * reference code. The same for a bundle's barcode and {@code offer_barcode_uk}.
      */
     private static boolean writeOrDuplicate(Write write) throws DaoException {
         try {
             return write.run();
         } catch (DaoException failure) {
             for (Throwable link = failure; link != null; link = link.getCause()) {
-                if (link instanceof SQLIntegrityConstraintViolationException
-                        && link.getMessage() != null && link.getMessage().contains("offer_name_uk")) {
-                    throw new UserValidationException("offer.error.name.duplicate", failure);
+                if (link instanceof SQLIntegrityConstraintViolationException && link.getMessage() != null) {
+                    if (link.getMessage().contains("offer_name_uk")) {
+                        throw new UserValidationException("offer.error.name.duplicate", failure);
+                    }
+                    if (link.getMessage().contains("offer_barcode_uk")) {
+                        throw new UserValidationException("offer.error.barcode.duplicate", failure);
+                    }
                 }
             }
             throw failure;

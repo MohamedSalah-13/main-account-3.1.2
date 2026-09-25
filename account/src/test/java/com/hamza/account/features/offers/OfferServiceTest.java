@@ -43,6 +43,8 @@ class OfferServiceTest {
     private final List<String> journal = new ArrayList<>();
     private final List<AppEvent> announced = new ArrayList<>();
     private boolean addOn = true;
+    /** Who holds a bundle's barcode: another offer, an item by its name, or nobody. */
+    private String barcodeOwner;
     private UserSessionContext session;
     private OfferService service;
 
@@ -91,6 +93,18 @@ class OfferServiceTest {
                                                                 boolean lock) {
                 journal.add("used " + offerIds + " but " + exceptInvoice + (lock ? " locked" : ""));
                 return usedUnits;
+            }
+            @Override public boolean barcodeTaken(String barcode, int exceptId) {
+                return "offer".equals(barcodeOwner);
+            }
+            @Override public String itemHoldingBarcode(String barcode) {
+                return "offer".equals(barcodeOwner) ? null : barcodeOwner;
+            }
+            @Override public Map<Integer, OfferFigures> figures(LocalDate from, LocalDate to, boolean withCost) {
+                journal.add("figures " + from + " " + to + (withCost ? " with cost" : ""));
+                OfferFigures some = new OfferFigures(1, 1, null, null, BigDecimal.ONE, BigDecimal.ONE, null,
+                        BigDecimal.TEN, null, withCost ? BigDecimal.ONE : null);
+                return from.getMonthValue() == 9 ? Map.of(1, some) : Map.of(2, some);
             }
             @Override public boolean nameTaken(String name, int exceptId) {
                 return stored.values().stream().anyMatch(o -> o.name().equals(name) && o.id() != exceptId);
@@ -228,6 +242,50 @@ class OfferServiceTest {
         List<Offer> offers = service.forDocument(TODAY, service.offersOnDocument(15));
         assertEquals(List.of(1, 9), offers.stream().map(Offer::id).toList());
         assertEquals(Set.of(), service.offersOnDocument(0), "a new document carries none");
+    }
+
+    @Test
+    @DisplayName("a bundle's barcode is refused when another bundle carries it, and when an item answers to it")
+    void bundleBarcodes() throws Exception {
+        signIn(AppPermissions.OFFER_CREATE);
+        Offer bundle = new Offer(0, "طقم", OfferKind.BUNDLE, OfferStatus.DRAFT, TODAY, null, null, 0, null, null,
+                new BigDecimal("150"), null, null, null, null, null, null, null, "6221", null,
+                List.of(OfferTarget.component(1, null, BigDecimal.ONE), OfferTarget.component(2, null, BigDecimal.ONE)),
+                Set.of(), null);
+        barcodeOwner = "offer";
+        UserValidationException another = assertThrows(UserValidationException.class, () -> service.create(bundle));
+        assertEquals("offer.error.barcode.duplicate", another.getMessage());
+        barcodeOwner = "زيت";
+        UserValidationException item = assertThrows(UserValidationException.class, () -> service.create(bundle));
+        assertTrue(item.getMessage().contains("زيت"), item.getMessage());
+        assertTrue(journal.isEmpty(), "nothing written");
+        barcodeOwner = null;
+        assertEquals(7, service.create(bundle));
+    }
+
+    @Test
+    @DisplayName("the performance report asks the sales reports' key too, reads the period before, and a cost only"
+            + " for a reader who may see a profit")
+    void performance() throws Exception {
+        stored.put(1, offer(1, OfferStatus.ACTIVE, TODAY.minusDays(30), "10"));
+        stored.put(2, offer(2, OfferStatus.STOPPED, TODAY.minusDays(60), "5"));
+        var september = new com.hamza.account.features.profitloss.statement.ProfitLossPeriod(
+                LocalDate.of(2026, 9, 1), TODAY);
+        signIn(AppPermissions.OFFER_SHOW);
+        assertThrows(BusinessRuleException.class, () -> service.performance(september));
+        assertTrue(journal.isEmpty(), "nothing read before the refusal");
+
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.REPORTS_SHOW_SALES);
+        OfferPerformanceReport report = service.performance(september);
+        assertEquals(List.of("figures 2026-09-01 2026-09-24", "figures 2026-08-01 2026-08-24"), journal);
+        assertEquals(List.of(1, 2), report.rows().stream().map(row -> row.offer().id()).toList(),
+                "an offer with figures in either period");
+        assertTrue(report.profit().isEmpty());
+
+        journal.clear();
+        signIn(AppPermissions.OFFER_SHOW, AppPermissions.REPORTS_SHOW_SALES, AppPermissions.REPORTS_SHOW_PROFIT);
+        assertTrue(service.performance(september).profit().isPresent());
+        assertTrue(journal.getFirst().endsWith("with cost"));
     }
 
     private static List<Offer> assertDoesNotThrowList(org.junit.jupiter.api.function.ThrowingSupplier<List<Offer>> read) {
