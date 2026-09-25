@@ -4,6 +4,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.PriceTiersChanged;
 import com.hamza.account.features.party.statement.StatementPeriod;
+import com.hamza.account.features.pricing.MissingPriceScope;
 import com.hamza.account.features.pricing.PriceTier;
 import com.hamza.account.features.pricing.PriceTierCatalog;
 import com.hamza.account.features.pricing.PriceTierForm;
@@ -85,6 +86,8 @@ public class PriceTiersController {
     private final TableView<TierReports.MissingPrice> missingTable = new TableView<>();
     private final Pagination missingPages = new Pagination(1, 0);
     private final Label missingCount = new Label();
+    private final CheckBox missingIncludeIdle = new CheckBox(text("pricing.tiers.missing.include.idle"));
+    private final Label missingIdleNote = new Label();
 
     private final PeriodPicker belowPeriod = new PeriodPicker("pt");
     private final TextField belowSearch = new TextField();
@@ -375,10 +378,18 @@ public class PriceTiersController {
         missingSearch.setOnAction(event -> loadMissing(0));
         HBox bar = new HBox(8);
         bar.setAlignment(Pos.CENTER_LEFT);
-        new ListToolbar().searchField(missingSearch)
+        // Shown only while a tier in use has nobody on it - there is nothing to include otherwise.
+        missingIncludeIdle.setVisible(false);
+        missingIncludeIdle.managedProperty().bind(missingIncludeIdle.visibleProperty());
+        missingIncludeIdle.selectedProperty().addListener((observable, before, now) -> loadMissing(0));
+        new ListToolbar().searchField(missingSearch, missingIncludeIdle)
                 .refresh(ListToolbar.refreshButton(() -> loadMissing(0)))
                 .extra(missingCount)
                 .installIn(bar);
+        missingIdleNote.setWrapText(true);
+        missingIdleNote.getStyleClass().add("form-hint");
+        missingIdleNote.setVisible(false);
+        missingIdleNote.managedProperty().bind(missingIdleNote.visibleProperty());
 
         missingTable.getColumns().add(Columns.text("barcode", TierReports.MissingPrice::barcode));
         missingTable.getColumns().add(Columns.text("name", TierReports.MissingPrice::name));
@@ -398,7 +409,7 @@ public class PriceTiersController {
             return missingTable;
         });
         VBox.setVgrow(missingPages, Priority.ALWAYS);
-        VBox box = new VBox(10, bar, missingPages);
+        VBox box = new VBox(10, bar, missingIdleNote, missingPages);
         box.setPadding(new Insets(12));
         return box;
     }
@@ -409,8 +420,14 @@ public class PriceTiersController {
             for (TableColumn<TierReports.MissingPrice, ?> column : missingTable.getColumns()) {
                 if (column.getUserData() instanceof Integer tier) column.setText(catalog.name(tier));
             }
-            List<Integer> active = catalog.active().stream().map(PriceTier::id).toList();
-            TierReports.MissingPage found = reportService.missing(active, missingSearch.getText(),
+            // Not every tier in use: one nobody is sold at would list the whole catalogue (§10.5).
+            MissingPriceScope scope = MissingPriceScope.of(catalog, tierService.activeCustomersByTier(),
+                    missingIncludeIdle.isSelected());
+            missingIncludeIdle.setVisible(!scope.idle().isEmpty());
+            missingIdleNote.setVisible(scope.leftOut());
+            missingIdleNote.setText(text("pricing.tiers.missing.idle.note", scope.idle().stream()
+                    .map(tier -> "«" + tier + "»").collect(Collectors.joining("، "))));
+            TierReports.MissingPage found = reportService.missing(scope.counted(), missingSearch.getText(),
                     PAGE_SIZE, page * PAGE_SIZE);
             missingTable.getItems().setAll(found.rows());
             missingCount.setText(text("pricing.tiers.missing.count", found.total()));

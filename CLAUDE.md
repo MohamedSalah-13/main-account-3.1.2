@@ -27,9 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,232 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-25 after phase C of the offers (forty-five tests, six of them
-gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
+**4,238 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-25 after the missing-prices report stopped counting the tiers
+nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
+tests, six of them gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
 architecture rule (`pricing-and-offers-plan.md` §11.6); 4,186 after phase B of the offers (seventy tests, nine of
 them gated on MySQL); 4,116 with 353 skipped after phase A of the price tiers (seventy-three tests,
 eight of them gated on MySQL); 4,043 with 346 skipped after wiping the users was locked to the
@@ -3338,7 +3339,7 @@ and a customer's tier in `custom.price_id`; what was missing was everything arou
   save as the rule, before the number is allocated; a saved line whose price did not move is exempt. The
   price tiers screen's third tab lists who sold under the list, when, and what it gave away.
 - **The tiers screen** (`PriceTiersController`, the items screen's "other" menu): names, on/off, the fill
-  rule, customers per tier; the items missing a price on a tier in use; and the sales below the list. A
+  rule, customers per tier; the items missing a price on a tier somebody is sold at; and the sales below the list. A
   tier's name is read **by its id** - `SelPriceItemService` read them by position from a query with no order,
   and is gone with `DialogCashPaid` (dead) and `SelPriceNamesChanged` (never published; `PriceTiersChanged` is
   announced by the service and relayed to every till).
@@ -3348,6 +3349,11 @@ and a customer's tier in `custom.price_id`; what was missing was everything arou
   (the catalogue locked, recomputed, compared, each figure written only if it still holds what was read).
   The preview opens on **"only the items with no price on this tier"**, since a typed wholesale price is a
   decision; unticking it overwrites them too, and the preview says so first.
+- **The missing-prices report counts tier 1 and the tiers an active customer is on** (`MissingPriceScope`, §10.5).
+  V84 left all three switched on, and on a shop that never sold at the other two the report listed the whole
+  catalogue. Switching the unused ones off on upgrade was declined - a tier switched off leaves every combo, and a
+  shop may keep one for its labels - so a tier in use with nobody on it is named under the bar instead, with a
+  switch beside the search that counts it all the same.
 - **`%` in a bundle value is a crash, not a character**: `LanguageManager.getString` runs `String.format`
   on every value, so "النسبة %" threw `UnknownFormatConversionException` and the heading read as its key.
   Only the screen found it.
