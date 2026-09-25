@@ -222,15 +222,28 @@ public class PrintBarcode implements AppSettingInterface {
     private final com.hamza.account.features.offers.OfferService offerService =
             com.hamza.account.controller.others.ServiceRegistry.get(com.hamza.account.features.offers.OfferService.class);
     private int shownTier = 1;
+    private final com.hamza.controlsfx.observer.Subscriptions subscriptions =
+            new com.hamza.controlsfx.observer.Subscriptions();
 
     /**
      * The price of an offer in force, the tier's struck through beside it (phase E) - offered only with the
      * offers add-on, under the price option, and remembered by this computer as the tier is. Off until ticked:
      * a promotion's price left on a shelf after the promotion is a price the till will not charge.
+     * <p>
+     * So the prices shown follow the offers while the window is open - an offer stopped, edited or started
+     * on any till ({@code OffersChanged}) - and a batch is built only after they are read again
+     * ({@link #refreshOfferPrices}), since an offer also ends by its date with nothing announcing it.
      */
     private void configureOfferPrice(javafx.scene.layout.GridPane options) {
         if (offerService == null || !offerService.enabled()) {
             return;
+        }
+        com.hamza.controlsfx.observer.EventBus bus = com.hamza.account.controller.others.ServiceRegistry.get(
+                com.hamza.controlsfx.observer.EventBus.class);
+        if (bus != null) {
+            subscriptions.add(bus.subscribe(com.hamza.account.features.events.OffersChanged.class,
+                    event -> refreshOfferPrices()));
+            subscriptions.disposeWith(tableView);
         }
         checkOfferPrice.setText(text("barcode.print.offer.price"));
         checkOfferPrice.getStyleClass().add("modern-check-box");
@@ -248,6 +261,16 @@ public class PrintBarcode implements AppSettingInterface {
     private void showTier(int tierId) {
         shownTier = tierId;
         rows.forEach(row -> row.showTier(tierId));
+        showOffers();
+        tableView.refresh();
+        requestPreview(false);
+    }
+
+    /** The offer prices read again and shown - before a batch leaves for the printer or the preview. */
+    private void refreshOfferPrices() {
+        if (!checkOfferPrice.isSelected()) {
+            return;
+        }
         showOffers();
         tableView.refresh();
         requestPreview(false);
@@ -401,6 +424,7 @@ public class PrintBarcode implements AppSettingInterface {
     }
 
     private void printBatch() {
+        refreshOfferPrices();
         BarcodePrintBatch batch = batch(rows);
         List<BarcodePrintProblem> problems = BarcodePrintValidation.forPrint(batch);
         if (!problems.isEmpty()) {
@@ -443,6 +467,7 @@ public class PrintBarcode implements AppSettingInterface {
      * it is opened again.
      */
     private void previewAll() {
+        refreshOfferPrices();
         BarcodePrintBatch batch = batch(rows);
         List<BarcodePrintProblem> problems = BarcodePrintValidation.forPreview(batch);
         if (!problems.isEmpty()) {

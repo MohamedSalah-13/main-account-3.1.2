@@ -27,9 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,323 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-25 after phases D and E of the offers (fifty-nine tests, six of
-them gated on MySQL, `pricing-and-offers-plan.md` §13-§14); 4,264 with 368 skipped after the program side of the
+**4,326 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-25 after phases D and E of the offers and their review
+(sixty-two tests, six of them gated on MySQL, `pricing-and-offers-plan.md` §13-§14); 4,264 with 368 skipped after the program side of the
 licence server's S1 (twenty-six tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
 nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
 tests, six of them gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
@@ -3447,7 +3447,10 @@ seen.
   dearest units first, never above what they charge, shared by value. Its optional **barcode** puts the
   components on the invoice as ordinary lines (`InvoiceBundleEntry`, found in the till's snapshot, then
   `InvoiceItemPickerService` - which takes a unit now - and `addLine`), so each moves its own stock and carries
-  its own cost; a bundle switched on but outside its days or tiers is refused by name. **The barcode is nobody
+  its own cost; a bundle switched on but outside its days or tiers is refused by name. **All the components
+  or none**: each is resolved before any is added, and one refused on its way in - its stock, an expiry
+  question dismissed - puts the lines back as they were (`InvoiceLinesCheckpoint`), rather than leaving the
+  ones before it at their ordinary prices. **The barcode is nobody
   else's**: `OfferService` refuses one another offer or an item holds, and the item screen's three barcode checks
   in `ItemsDao` refuse one a bundle holds - asked as a separate query, never a fourth branch of the collation-
   sensitive UNION. It is not a term: it may move on a used bundle. An `INVOICE` offer ("5% from 500", or an
@@ -3459,7 +3462,8 @@ seen.
 - **Phase E (§14) says what the offers did, and where.** `OfferPriceTag` answers what one unit costs under the
   offers in force at a tier - a price for the price kinds, words for the pooled ones, nothing for an invoice
   offer - and both the price-check screen (the list price struck through above the offer's) and the shelf label
-  (`BarcodePrintLine.oldPrice`, off until ticked, per computer; price offers only) ask it. `OfferSources` are
+  (`BarcodePrintLine.oldPrice`, off until ticked, per computer; price offers only) ask it - the label screen
+  again on `OffersChanged` and before every batch it prints or previews, since an offer also ends by its date. `OfferSources` are
   two reminders - an offer ending today or tomorrow, an item an offer names by itself gone or down to its
   minimum, by the items list's own balance - silent without the add-on and for a reader without `offer.show`.
   **«أداء العروض»** (`OfferService.performance`) is each offer's times, invoices, discount that stayed given,

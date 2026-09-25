@@ -43,6 +43,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
@@ -198,7 +199,11 @@ final class OfferFormDialog {
             }
         });
         Utils.whenEnterPressed(txtName, txtValue, txtPriority, txtNotes);
-        Utils.replaceNonDigitChar(txtBarcode);
+        // Refused as typed or pasted, never rewritten: "12A34" silently becoming "1234" would save a code
+        // nobody entered (docs/new-code-rules.md ق-ل5). Digits alone and no longer than the column, as the
+        // form will judge it.
+        txtBarcode.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("[0-9]{0," + OfferForm.BARCODE_MAX + "}") ? change : null));
         ThemeManager.apply(dialog.getDialogPane().getScene());
         return dialog.showAndWait().filter(button -> button == save).isPresent();
     }
