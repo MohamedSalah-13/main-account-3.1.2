@@ -770,6 +770,13 @@
     -fx-text-fill: -app-danger;
 }
 
+/* The machine code a licence is issued for: read aloud and typed elsewhere, so every character is plain. */
+.about-machine-code {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 0.909em;
+}
+
 .about-credit-caption {
     -fx-text-fill: -app-text-muted;
 }

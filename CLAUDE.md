@@ -27,8 +27,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,238 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-25 after the missing-prices report stopped counting the tiers
+**4,263 tests** in `account` with 368 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-25 after the program side of the licence server's S1 (twenty-five
+tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
 nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
 tests, six of them gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
 architecture rule (`pricing-and-offers-plan.md` §11.6); 4,186 after phase B of the offers (seventy tests, nine of
@@ -320,7 +321,8 @@ Two documents govern work here and are kept current — read them before large c
 - **[`docs/product-plan.md`](docs/product-plan.md)** - the order the large items are built in and why
   (one developer, so one item open at a time), the hybrid selling model, and §4 the ideas log: an idea
   that arrives mid-item is written there in one line, not built. Two plans hang off it, **each with
-  its phase A built and nothing after it**: [`docs/licensing-server-plan.md`](docs/licensing-server-plan.md) - the licence stays
+  its phase A built**, and the first with the program side of the server's S1 as well (§10 of it, 2026-09-25):
+  [`docs/licensing-server-plan.md`](docs/licensing-server-plan.md) - the licence stays
   verified offline and the server only issues it, the server gets a **second key** because
   `ReleaseSigningKey` also signs emergency recovery, and an expiry never reaches `failAndExit`. Since
   2026-09-24 the server is a private repository of its own, `accountk-license-server`, with its own plan
@@ -4181,15 +4183,32 @@ is the reader lifted out of this class unchanged so the backup owner and the mac
 the same value the licence is bound to.
 
 **A second licence format exists beside that one, and it charges no failure for anything**
-(`features/license`, phase A of `docs/licensing-server-plan.md`; no server issues one yet).
-`HAMZA_LICENSE2|machine|customer|edition|issued|updatesUntil|expires` is signed by
-`LicenseServerKey` - a second key, **blank until the server's pair exists**, and blank is a state
-(`SERVER_KEY_MISSING`), not tampering. It is second because `ReleaseSigningKey` also signs emergency
-recovery, and a licence server faces the internet. `TrialManager.currentLicense` asks the new package
-first and hands the old reader only `LicenseService.filesForOlderReader()`: **a server-format file must
-never reach `validateLicense`**, which checks with the release key and ends the install over the
-signature that file would always fail. `license.dat` is now read from beside `config.xml` first and the
-program folder second, and written only to the first - the program folder is under Program Files.
+(`features/license`, phase A of `docs/licensing-server-plan.md`; issued by hand from the licence server's
+dashboard since 2026-09-25, §10). `HAMZA_LICENSE2|machine|customer|edition|issued|updatesUntil|expires` is
+signed by one of `LicenseServerKey`'s keys - a second key, because `ReleaseSigningKey` also signs emergency
+recovery and a licence server faces the internet. **It is a set of keys, never one**: rotating a single key
+would turn every file issued before it into a bad signature, and the shop would meet "trial expired". So a
+rotation is a release carrying both, the server re-signing on refresh, and months later a release dropping
+the old one. `LicenseServerKeyTest` pins **each key's published SHA-256 fingerprint** - a key pasted with one
+character wrong can still be a valid, different key, which would refuse every licence ever issued. An empty
+set is a state (`SERVER_KEY_MISSING`), not tampering. `LicenseContractTest` reads the server's own fixed files
+(`src/test/resources/contract/`, copied byte for byte from the server repository) through the real
+`LicenseEvaluator`; a format change on either side breaks the other side's test.
+
+`TrialManager.currentLicense` asks the new package first and hands the old reader only
+`LicenseService.filesForOlderReader()`, which since 2026-09-25 is **only a file that is positively the older
+licence** (`OlderLicenceFile`: the text before its first dot, read the older reader's way, begins with
+`HAMZA_ACCOUNT|`). It used to be every file that did not read as the server's format - so a server file with
+one of its first twenty characters changed (they carry the tag), a download cut short, or any file that was no
+licence at all went to `validateLicense`, which checks with the release key and, at start-up, ends the install
+over the signature it cannot verify - **before reaching a valid older licence in the program folder**, since
+the file beside `config.xml` is read first. Everything else is judged by `LicenseEvaluator` now, which charges
+nothing. Seen on the real build against a scratch MySQL: a server file with a character changed in its
+signature, and one with its first character changed, each beside `config.xml` with the older licence in the
+program folder, both logged `BAD_SIGNATURE` and opened licensed with no failure recorded. `license.dat` is read
+from beside `config.xml` first and the program folder second, and written only to the first - the program
+folder is under Program Files. The About window shows the machine code (`MachineGuid`) a licence is issued for,
+whole and with a copy button - the first draft cut it to `c373b698-a8fb-483c-9...`, which only the screen showed.
 The rule easiest to break: **an expired subscription (`READ_ONLY`) still skips the trial.** Sent down the
 trial path it meets a years-old installation date, which is "trial expired", which is the one failure
 an install gets. The question there is `skipsTrial()`, never `mayRecord()`, and
@@ -4208,9 +4227,10 @@ license the machine cannot be tested from here, since that needs the private key
 was rebuilt the same day, 636 by 333 where it was 347 by 680: its version was the preference recording
 what this computer last ran (`1.0.0` until first written), its build date Maven's `2026-09-23T02:10:00Z`
 inside an Arabic sentence that printed it `23T02:10:00Z-09-2026`, and its colours were named in code.
-**Not fixed, and worth knowing:** `currentLicense(true)` tries the files in order and a first one with a
-bad signature ends the install before the second is read - so an invalid `license.dat` beside
-`config.xml` blocks an install even when the program folder holds a valid one.
+**Not fixed, and worth knowing:** `currentLicense(true)` tries the older files in order and a first one with a
+bad signature ends the install before the second is read - so an *older-format* `license.dat` beside
+`config.xml` whose signature fails blocks an install even when the program folder holds a valid one. Since
+2026-09-25 that is true of an older-format file alone: any other file there is judged without a charge.
 
 ## Localization
 
