@@ -3,27 +3,42 @@ package com.hamza.account.view;
 import com.hamza.account.Main;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.MachineId;
+import com.hamza.account.config.ThemeManager;
+import com.hamza.account.controller.others.DialogButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.about.AboutBuild;
 import com.hamza.account.features.about.AboutLicense;
+import com.hamza.account.features.license.online.ActivationResult;
+import com.hamza.account.features.license.online.PurchaseCode;
+import com.hamza.account.features.license.online.ServerRefusal;
+import com.hamza.account.features.license.online.ServerReply;
 import com.hamza.account.features.productprofile.ProductFeatureCatalog;
 import com.hamza.account.features.productprofile.ProductProfile;
 import com.hamza.account.service.version.SystemInfoDialog;
+import com.hamza.account.trial.OnlineLicensing;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -66,7 +81,8 @@ import java.util.Optional;
  * <p>
  * <b>Activating a licence checks the file before it replaces anything</b> -
  * {@link TrialManager#install}: the start-up reads {@code license.dat} strictly, and a wrong file
- * copied over a working licence used to end the install at the next start.
+ * copied over a working licence used to end the install at the next start. That holds for both ways
+ * in: a file somebody chose, and one the licence server sent for a purchase code.
  */
 @Log4j2
 public class AboutApplication extends Application {
@@ -200,11 +216,16 @@ public class AboutApplication extends Application {
         addRow(rows, 1, "about.caption.license", licenseFile);
         addRow(rows, 2, "about.caption.machine", machineCodeRow());
 
-        Button activate = new Button(text("about.license.activate"), AppIcon.SECURITY.graphic());
-        activate.getStyleClass().add("app-neutral-button");
-        activate.setOnAction(event -> activate(activate));
+        Button byCode = new Button(text("about.license.activate.code"), AppIcon.SECURITY.graphic());
+        byCode.getStyleClass().add("app-primary-button");
+        Button byFile = new Button(text("about.license.activate"), AppIcon.SECURITY.graphic());
+        byFile.getStyleClass().add("app-neutral-button");
+        byCode.setOnAction(event -> activateByCode(byCode, byFile));
+        byFile.setOnAction(event -> activate(byFile));
+        HBox actions = new HBox(8, byCode, byFile);
+        actions.setAlignment(Pos.CENTER_LEFT);
 
-        return card(top, rows, activate);
+        return card(top, rows, actions);
     }
 
     private VBox profileCard() {
@@ -429,6 +450,107 @@ public class AboutApplication extends Application {
         } catch (Exception e) {
             AllAlerts.handleError(text("about.license.activate"), e);
         }
+    }
+
+    /**
+     * Activation with the purchase code the vendor sent ({@code OnlineLicensing}). The code is checked on
+     * this computer before the dialog closes - one wrong character is said at once, and never costs one of
+     * the server's ten attempts an hour - then sent once, off the JavaFX thread. The file that comes back is
+     * installed only after {@link TrialManager#install} has judged it, so no answer can replace a working
+     * licence with one this build does not accept.
+     */
+    private void activateByCode(Button byCode, Button byFile) {
+        Optional<String> code = askForCode(byCode);
+        if (code.isEmpty()) {
+            return;
+        }
+        byCode.setDisable(true);
+        byFile.setDisable(true);
+        Task<ActivationResult> request = new Task<>() {
+            @Override
+            protected ActivationResult call() {
+                return OnlineLicensing.activation().activate(code.get());
+            }
+        };
+        request.setOnSucceeded(event -> {
+            byCode.setDisable(false);
+            byFile.setDisable(false);
+            showActivation(request.getValue());
+        });
+        request.setOnFailed(event -> {
+            byCode.setDisable(false);
+            byFile.setDisable(false);
+            AllAlerts.handleError(text("about.license.activate.code"), request.getException());
+        });
+        Thread thread = new Thread(request, "about-activate-by-code");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /** The code, typed or pasted - refused in place while it fails its own check. */
+    private Optional<String> askForCode(Button owner) {
+        TextField field = new TextField();
+        field.setPromptText("AK-XXXX-XXXX-XXXX-XXXX");
+        field.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        field.setPrefColumnCount(26);
+        field.setTextFormatter(new TextFormatter<>(change -> change.getControlNewText().length() <= 40 ? change : null));
+        Label prompt = new Label(text("about.license.code.prompt"));
+        prompt.getStyleClass().add("form-label");
+        Label problem = new Label();
+        problem.getStyleClass().add("form-error");
+        problem.setWrapText(true);
+        problem.managedProperty().bind(problem.visibleProperty());
+        problem.setVisible(false);
+        field.textProperty().addListener((observable, before, after) -> problem.setVisible(false));
+
+        Dialog<String> dialog = new Dialog<>();
+        dialog.initOwner(owner.getScene().getWindow());
+        dialog.setTitle(text("about.license.activate.code"));
+        dialog.setHeaderText(text("about.license.code.header"));
+        dialog.getDialogPane().setContent(new VBox(8, prompt, field, problem));
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        DialogButtons.changeNameAndGraphic(dialog.getDialogPane());
+        Button ok = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        ok.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> field.getText() == null || field.getText().isBlank(), field.textProperty()));
+        ok.addEventFilter(ActionEvent.ACTION, event -> {
+            if (PurchaseCode.normalise(field.getText()).isEmpty()) {
+                problem.setText(text("license.online.code.invalid"));
+                problem.setVisible(true);
+                event.consume();
+            }
+        });
+        dialog.setResultConverter(button -> button == ButtonType.OK ? field.getText() : null);
+        ChangeOrientation.sceneOrientation(dialog.getDialogPane().getScene());
+        ThemeManager.apply(dialog.getDialogPane().getScene());
+        Platform.runLater(field::requestFocus);
+        return dialog.showAndWait().map(String::strip).filter(typed -> !typed.isEmpty());
+    }
+
+    private void showActivation(ActivationResult result) {
+        if (result.kind() == ActivationResult.Kind.ACTIVATED) {
+            ServerReply.Activation licence = result.activation();
+            AllAlerts.alertSaveWithMessage(licence == null
+                    ? text("about.license.activated")
+                    : language.getString("license.online.activated",
+                    licence.customerName() == null ? "-" : licence.customerName(),
+                    licence.seatsUsed(), licence.seatsTotal(),
+                    licence.updatesUntil() == null ? "-" : longDate(licence.updatesUntil())));
+            refreshStatus();
+            return;
+        }
+        ServerReply.Refused refused = result.refused();
+        String message;
+        if (refused != null && refused.refusal() == ServerRefusal.SEATS_FULL) {
+            message = language.getString(result.messageKey(),
+                    refused.seatsUsed() == null ? 0 : refused.seatsUsed(),
+                    refused.seatsTotal() == null ? 0 : refused.seatsTotal());
+        } else if (refused != null && refused.refusal() == ServerRefusal.SERVER_ERROR) {
+            message = language.getString(result.messageKey(), refused.reference() == null ? "-" : refused.reference());
+        } else {
+            message = text(result.messageKey());
+        }
+        AllAlerts.handleError(text("about.license.activate.code"), new UserValidationException(message));
     }
 
     /**

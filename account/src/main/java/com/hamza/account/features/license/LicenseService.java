@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -72,6 +73,24 @@ public final class LicenseService {
      * present - every install there is, today - it is never read at all.
      */
     public LicenseDecision check(Supplier<LicenseClock> clockSource) {
+        return judge(clockSource).decision();
+    }
+
+    /**
+     * The bytes of the file that licenses this machine, when one does - what a refresh sends back to the
+     * licence server to be re-issued with the current terms. Only a file judged here can be it: the older
+     * licence is never sent anywhere.
+     */
+    public Optional<byte[]> licensingFile(Supplier<LicenseClock> clockSource) {
+        Judged judged = judge(clockSource);
+        return judged.decision().skipsTrial() ? Optional.of(judged.bytes()) : Optional.empty();
+    }
+
+    /** A decision and the file it was made on - null when none licenses this machine. */
+    private record Judged(LicenseDecision decision, byte[] bytes) {
+    }
+
+    private Judged judge(Supplier<LicenseClock> clockSource) {
         LicenseDecision reason = null;
         LicenseClock clock = null;
         String machine = machineId.get();
@@ -85,14 +104,14 @@ public final class LicenseService {
             }
             LicenseDecision decision = evaluator.evaluate(bytes, machine, clock.today());
             if (decision.skipsTrial()) {
-                return decision;
+                return new Judged(decision, bytes);
             }
             log.warn("The licence file {} does not license this machine: {}", candidate, decision.status());
             if (reason == null) {
                 reason = decision;
             }
         }
-        return reason != null ? reason : LicenseDecision.without(LicenseStatus.ABSENT, LocalDate.now());
+        return new Judged(reason != null ? reason : LicenseDecision.without(LicenseStatus.ABSENT, LocalDate.now()), null);
     }
 
     /**
