@@ -1,29 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabShortcutsController" spacing="12.0" styleClass="settings-root">
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabShortcutsController">
     <children>
-        <Label fx:id="labelTitle" styleClass="section-title" />
-        <Label fx:id="labelDescription" wrapText="true" />
-        <TableView fx:id="table" VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="columnCommand" prefWidth="280.0" />
-                <TableColumn fx:id="columnShortcut" prefWidth="180.0" />
-            </columns>
-        </TableView>
-        <GridPane hgap="10.0" vgap="8.0">
+        <VBox spacing="14.0" styleClass="app-container,settings-shortcuts-page" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
-                <Label fx:id="labelCommand" GridPane.rowIndex="0" />
-                <Label fx:id="labelShortcut" GridPane.rowIndex="1" />
-                <TextField fx:id="txtShortcut" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                <VBox spacing="4.0" styleClass="settings-shortcuts-heading">
+                    <children>
+                        <Label fx:id="labelTitle" styleClass="settings-title" />
+                        <Label fx:id="labelDescription" styleClass="settings-subtitle" wrapText="true" />
+                    </children>
+                </VBox>
+                <VBox spacing="10.0" styleClass="app-card,settings-shortcuts-table-card" VBox.vgrow="ALWAYS">
+                    <children>
+                        <TableView fx:id="table" styleClass="modern-table,settings-shortcuts-table" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="columnCommand" minWidth="220.0" prefWidth="440.0" />
+                                <TableColumn fx:id="columnShortcut" minWidth="150.0" prefWidth="240.0" />
+                            </columns>
+                        </TableView>
+                    </children>
+                </VBox>
+                <VBox spacing="10.0" styleClass="app-card,settings-shortcuts-editor">
+                    <children>
+                        <GridPane hgap="12.0" vgap="8.0">
+                            <columnConstraints>
+                                <ColumnConstraints />
+                                <ColumnConstraints hgrow="ALWAYS" />
+                            </columnConstraints>
+                            <children>
+                                <Label fx:id="labelCommand" styleClass="form-label" GridPane.rowIndex="0" />
+                                <Label fx:id="labelShortcut" styleClass="form-label" GridPane.rowIndex="1" />
+                                <TextField fx:id="txtShortcut" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            </children>
+                        </GridPane>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="settings-shortcuts-actions">
+                            <children>
+                                <Button fx:id="btnReset" styleClass="neutral-button" />
+                                <Button fx:id="btnResetAll" styleClass="neutral-button" />
+                                <Label fx:id="labelMessage" styleClass="settings-subtitle" maxWidth="1.7976931348623157E308" wrapText="true" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
             </children>
-        </GridPane>
-        <HBox spacing="8.0">
-            <children>
-                <Button fx:id="btnReset" styleClass="neutral-button" />
-                <Button fx:id="btnResetAll" styleClass="neutral-button" />
-                <Label fx:id="labelMessage" wrapText="true" HBox.hgrow="ALWAYS" />
-            </children>
-        </HBox>
+        </VBox>
     </children>
-</VBox>
+</AnchorPane>

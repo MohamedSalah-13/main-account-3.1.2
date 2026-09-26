@@ -25,7 +25,7 @@
         <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane"
                     AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
                     AnchorPane.topAnchor="0.0">
-            <content>
+                    <content>
                 <VBox fx:id="root" spacing="14.0" styleClass="app-container">
                     <children>
                         <VBox spacing="2.0">
@@ -107,7 +107,14 @@
                                               text="%settings.notifications.rulesSection"/>
                                         <Label styleClass="settings-subtitle" wrapText="true"
                                                text="%settings.notifications.rulesHint"/>
-                                        <GridPane fx:id="gridSources" hgap="14.0" vgap="8.0"/>
+                                        <GridPane fx:id="gridSources" hgap="12.0" vgap="10.0" styleClass="notification-rules-grid">
+                                            <columnConstraints>
+                                                <ColumnConstraints percentWidth="42.0" minWidth="200.0" hgrow="ALWAYS" />
+                                                <ColumnConstraints percentWidth="18.0" minWidth="120.0" hgrow="ALWAYS" />
+                                                <ColumnConstraints percentWidth="23.0" minWidth="160.0" hgrow="ALWAYS" />
+                                                <ColumnConstraints percentWidth="17.0" minWidth="105.0" hgrow="ALWAYS" />
+                                            </columnConstraints>
+                                        </GridPane>
                                     </children>
                                 </VBox>
                             </children>

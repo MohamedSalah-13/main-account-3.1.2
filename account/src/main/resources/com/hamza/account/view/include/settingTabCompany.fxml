@@ -1,122 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ProgressIndicator?>
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.*?>
 
-<!-- The controller is named here rather than set on the loader: OpenFxmlApplication
-     hands its own instance back through a controller factory, so the declaration costs
-     nothing at runtime and gives the editor something to check the fx:id fields against. -->
-
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingCompanyController">
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.hamza.account.controller.setting.SettingCompanyController">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="settings-scroll-pane"
+                    AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <content>
                 <VBox spacing="14.0" styleClass="app-container">
                     <children>
-
-                        <!-- Header -->
                         <VBox spacing="4.0">
                             <children>
-                                <Label styleClass="settings-title" text="%settings.company.tabTitle" />
-                                <Label styleClass="settings-subtitle" text="%settings.company.pageSubtitle" />
+                                <Label fx:id="companyTitle" styleClass="settings-title" text="%settings.company.tabTitle" />
+                                <Label fx:id="companySubtitle" styleClass="settings-subtitle" text="%settings.company.overviewSubtitle" wrapText="true" />
                             </children>
                         </VBox>
-
-                        <!-- The form, and the logo beside it -->
-                        <HBox spacing="14.0">
+                        <!-- One card groups the company fields, logo and their save actions. -->
+                        <VBox spacing="14.0" styleClass="app-card">
                             <children>
-
-                                <VBox spacing="10.0" styleClass="app-card" HBox.hgrow="ALWAYS">
+                                <HBox spacing="18.0">
                                     <children>
-                                        <Label styleClass="section-title" text="%settings.company.basicInfo" />
-
-                                        <GridPane hgap="10.0" vgap="10.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints halignment="RIGHT" minWidth="90.0" prefWidth="110.0" />
-                                                <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" minWidth="180.0" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints minHeight="30.0" />
-                                                <RowConstraints minHeight="30.0" />
-                                                <RowConstraints minHeight="30.0" />
-                                                <RowConstraints minHeight="30.0" />
-                                                <RowConstraints minHeight="30.0" />
-                                            </rowConstraints>
+                                        <VBox minWidth="0.0" spacing="12.0" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label fx:id="labelName" styleClass="form-label" text="%name" />
-                                                <TextField fx:id="textNameCompany" styleClass="modern-input" GridPane.columnIndex="1" />
-
-                                                <Label fx:id="labelAddress" styleClass="form-label" text="%address" GridPane.rowIndex="1" />
-                                                <TextField fx:id="textAddress" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-
-                                                <Label fx:id="labelTel" styleClass="form-label" text="%tel" GridPane.rowIndex="2" />
-                                                <TextField fx:id="textTel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-
-                                                <Label fx:id="labelTax" styleClass="form-label" text="%tax" GridPane.rowIndex="3" />
-                                                <TextField fx:id="textTax" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-
-                                                <Label fx:id="labelCom" styleClass="form-label" text="%commercial" GridPane.rowIndex="4" />
-                                                <TextField fx:id="textCom" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                            </children>
-                                        </GridPane>
-                                    </children>
-                                    <padding>
-                                        <Insets bottom="14.0" left="14.0" right="14.0" top="14.0" />
-                                    </padding>
-                                </VBox>
-
-                                <VBox maxWidth="260.0" minWidth="230.0" spacing="10.0" styleClass="app-card">
-                                    <children>
-                                        <Label styleClass="section-title" text="%settings.company.logoTitle" />
-
-                                        <!-- Clicking or dropping a picture here is the same as pressing "choose file". -->
-                                        <VBox fx:id="logoDropZone" alignment="CENTER" minHeight="180.0" spacing="8.0" styleClass="logo-drop" VBox.vgrow="ALWAYS">
-                                            <children>
-                                                <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="190.0" pickOnBounds="true" preserveRatio="true" />
+                                                <Label fx:id="basicInfoTitle" styleClass="section-title" text="%settings.company.basicInfo" />
+                                                <GridPane hgap="12.0" vgap="12.0">
+                                                    <columnConstraints>
+                                                        <ColumnConstraints percentWidth="50.0" minWidth="0.0" hgrow="ALWAYS" />
+                                                        <ColumnConstraints percentWidth="50.0" minWidth="0.0" hgrow="ALWAYS" />
+                                                    </columnConstraints>
+                                                    <children>
+                                                        <VBox spacing="5.0">
+                                                            <children>
+                                                                <Label fx:id="labelName" styleClass="form-label" text="%name" />
+                                                                <TextField fx:id="textNameCompany" styleClass="modern-input" />
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="5.0" GridPane.columnIndex="1">
+                                                            <children>
+                                                                <Label fx:id="labelAddress" styleClass="form-label" text="%address" />
+                                                                <TextField fx:id="textAddress" styleClass="modern-input" />
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="5.0" GridPane.rowIndex="1">
+                                                            <children>
+                                                                <Label fx:id="labelTel" styleClass="form-label" text="%tel" />
+                                                                <TextField fx:id="textTel" styleClass="modern-input" />
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="5.0" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                                                            <children>
+                                                                <Label fx:id="labelTax" styleClass="form-label" text="%tax" />
+                                                                <TextField fx:id="textTax" styleClass="modern-input" />
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="5.0" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                                                            <children>
+                                                                <Label fx:id="labelCom" styleClass="form-label" text="%commercial" />
+                                                                <TextField fx:id="textCom" styleClass="modern-input" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </GridPane>
                                             </children>
                                         </VBox>
-
-                                        <Label fx:id="labelLogoInfo" styleClass="kpi-hint" text="" wrapText="true" />
-
-                                        <HBox alignment="CENTER" spacing="8.0">
+                                        <VBox minWidth="210.0" prefWidth="230.0" maxWidth="230.0" spacing="8.0" styleClass="company-logo-panel">
                                             <children>
-                                                <Button fx:id="btnAddImage" maxWidth="1.7976931348623157E308" mnemonicParsing="false" styleClass="success-button" text="%choose_file" HBox.hgrow="ALWAYS" />
-                                                <Button fx:id="btnClearImage" maxWidth="1.7976931348623157E308" mnemonicParsing="false" styleClass="danger-button" text="%delete" HBox.hgrow="ALWAYS" />
+                                                <Label fx:id="logoTitle" styleClass="section-title" text="%settings.company.logoTitle" />
+                                                <VBox fx:id="logoDropZone" alignment="CENTER" minHeight="155.0" spacing="8.0" styleClass="logo-drop">
+                                                    <children>
+                                                        <ImageView fx:id="imageView" fitHeight="130.0" fitWidth="180.0" pickOnBounds="true" preserveRatio="true" />
+                                                    </children>
+                                                </VBox>
+                                                <Label fx:id="labelLogoInfo" minHeight="-Infinity" styleClass="kpi-hint" text="" wrapText="true" />
+                                                <HBox alignment="CENTER" spacing="8.0">
+                                                    <children>
+                                                        <Button fx:id="btnAddImage" maxWidth="Infinity" mnemonicParsing="false" styleClass="success-button" text="%choose_file" HBox.hgrow="ALWAYS" />
+                                                        <Button fx:id="btnClearImage" maxWidth="Infinity" mnemonicParsing="false" styleClass="danger-button" text="%delete" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
                                             </children>
-                                        </HBox>
+                                        </VBox>
                                     </children>
-                                    <padding>
-                                        <Insets bottom="14.0" left="14.0" right="14.0" top="14.0" />
-                                    </padding>
-                                </VBox>
+                                </HBox>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="company-actions">
+                                    <children>
+                                        <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
+                                        <Label fx:id="labelStatus" minWidth="0.0" styleClass="kpi-hint" text="" wrapText="true" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="btnReset" disable="true" mnemonicParsing="false" styleClass="neutral-button" text="%cancel" />
+                                        <Button fx:id="btnSave" disable="true" mnemonicParsing="false" styleClass="primary-button" text="%common.save" />
+                                    </children>
+                                </HBox>
                             </children>
-                        </HBox>
-
-                        <!-- Actions -->
-                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card">
-                            <children>
-                                <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
-                                <Label fx:id="labelStatus" styleClass="kpi-hint" text="" />
-                                <Region HBox.hgrow="ALWAYS" />
-                                <Button fx:id="btnReset" disable="true" mnemonicParsing="false" styleClass="neutral-button" text="%cancel" />
-                                <Button fx:id="btnSave" disable="true" mnemonicParsing="false" styleClass="primary-button" text="%common.save" />
-                            </children>
-                            <padding>
-                                <Insets bottom="8.0" left="12.0" right="12.0" top="8.0" />
-                            </padding>
-                        </HBox>
+                        </VBox>
+                        <VBox fx:id="systemSettings" spacing="14.0" />
                     </children>
                 </VBox>
             </content>

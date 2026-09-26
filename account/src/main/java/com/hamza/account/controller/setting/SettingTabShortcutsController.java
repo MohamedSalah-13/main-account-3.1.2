@@ -2,6 +2,7 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.features.shortcuts.SidebarShortcut;
 import com.hamza.account.features.shortcuts.SidebarShortcutManager;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -45,6 +46,8 @@ public final class SettingTabShortcutsController implements Initializable {
         txtShortcut.setPromptText(lm.getString("settings.shortcuts.capture"));
         btnReset.setText(lm.getString("settings.shortcuts.reset"));
         btnResetAll.setText(lm.getString("settings.shortcuts.resetAll"));
+        btnReset.setGraphic(AppIcon.CLEAR.graphic());
+        btnResetAll.setGraphic(AppIcon.REFRESH.graphic());
 
         columnCommand.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().name()));
         columnShortcut.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().combination()));

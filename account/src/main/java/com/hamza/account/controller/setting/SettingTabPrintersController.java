@@ -1,6 +1,7 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.features.export.ReportOutputMode;
 import com.hamza.account.features.export.ReportPaperSize;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -85,6 +86,14 @@ public class SettingTabPrintersController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnSetDefault.setGraphic(AppIcon.CONFIRM.graphic());
+        btnNormalSettings.setGraphic(AppIcon.SETTINGS.graphic());
+        btnBarcodeSettings.setGraphic(AppIcon.SETTINGS.graphic());
+        btnThermalSettings.setGraphic(AppIcon.SETTINGS.graphic());
+        btnNormalTest.setGraphic(AppIcon.PRINT.graphic());
+        btnBarcodeTest.setGraphic(AppIcon.PRINT.graphic());
+        btnThermalTest.setGraphic(AppIcon.PRINT.graphic());
         wireOutputRole(comboNormal, labelNormalMissing, value -> setSettingPrinterNormal(value));
         wireOutputRole(comboBarcode, labelBarcodeMissing, value -> setSettingPrinterBarcode(value));
         wireOutputRole(comboThermal, labelThermalMissing, value -> setSettingPrinterThermal(value));

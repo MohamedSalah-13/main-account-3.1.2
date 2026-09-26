@@ -21,8 +21,6 @@ import com.hamza.account.features.checkbox.impl.setting.BarcodePrintPrice;
 import com.hamza.account.features.checkbox.impl.setting.CheckPrintBarcode;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.SupGroupService;
-import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -51,8 +49,6 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
-import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
 
 @Log4j2
 @FxmlPath(pathFile = "include/settingTabBarcode.fxml")
@@ -82,9 +78,9 @@ public class SettingTabBarcodeController implements Initializable {
             checkValidateCheckDigit;
     @FXML private Button btnPrintCalibrationTest;
     @FXML
-    private ComboBox<String> comboMain, comboSub, comboType, comboNameOverflow, comboScaleValueType;
+    private ComboBox<String> comboNameOverflow, comboScaleValueType;
     @FXML
-    private Label labelMain, labelSub, labelType, previewName, previewBarcode, previewDetails, previewSize,
+    private Label previewName, previewBarcode, previewDetails, previewSize,
             labelCalibrationPrinter, labelCalibrationHelp;
     @FXML
     private Label labelComposition, labelValueDigits, labelCompositionProblem, labelTestResult;
@@ -100,9 +96,8 @@ public class SettingTabBarcodeController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        otherSetting();
+        configureScaleControls();
         action();
-        comboSetting(daoFactory);
         barcodeScaleSetting();
         barcodeLabelSetting();
         barcodeLabelCalibrationSetting();
@@ -135,11 +130,7 @@ public class SettingTabBarcodeController implements Initializable {
      * turning the feature on. The fields that only mean something once it is on stay
      * gated.
      */
-    private void otherSetting() {
-        labelMain.setText(LanguageManager.getInstance().getString("mainGroup"));
-        labelSub.setText(LanguageManager.getInstance().getString("subGroup"));
-        labelType.setText(LanguageManager.getInstance().getString("settings.barcode.units"));
-
+    private void configureScaleControls() {
         textBarcodeStart.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountScale.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountBarcode.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
@@ -157,36 +148,6 @@ public class SettingTabBarcodeController implements Initializable {
         new CheckBox_Setting(showBarcode, checkPrintBarcode);
     }
 
-
-    private void comboSetting(DaoFactory daoFactory) {
-        SupGroupService supGroupService = new SupGroupService(daoFactory);
-        UnitsService unitsService = new UnitsService(daoFactory);
-        List<String> unitsModelNames = getUnitsModelNames(unitsService);
-        comboSub.setItems(FXCollections.observableArrayList(getSubGroupsNames(supGroupService)));
-        comboType.setItems(FXCollections.observableArrayList(unitsModelNames));
-
-        comboSubSetting(comboSub, supGroupService, true, comboMain);
-        comboTypeSetting(comboType, unitsService, true);
-    }
-
-
-    private List<String> getUnitsModelNames(UnitsService unitsService) {
-        try {
-            return unitsService.getUnitsModelNames();
-        } catch (DaoException e) {
-            log.error(e.getMessage(), e);
-            return List.of();
-        }
-    }
-
-    private List<String> getSubGroupsNames(SupGroupService supGroupService) {
-        try {
-            return supGroupService.getSubGroupsNames();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return List.of();
-        }
-    }
 
     private void configureLabelPreview() {
         showName.selectedProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
@@ -344,6 +305,7 @@ public class SettingTabBarcodeController implements Initializable {
 
     private void setPositiveInteger(TextField field, int value, int minimum, int maximum,
                                     java.util.function.IntConsumer saver) {
+        field.setTextFormatter(TextFormat.createNumericTextFormatter());
         field.setText(String.valueOf(value));
         field.textProperty().addListener((observable, oldValue, text) -> {
             if (text.matches("\\d+")) {
@@ -388,11 +350,13 @@ public class SettingTabBarcodeController implements Initializable {
         setWeightLimit(textMinWeight, getSettingBarcodeMinWeight(), PropertiesName::setSettingBarcodeMinWeight);
         setWeightLimit(textMaxWeight, getSettingBarcodeMaxWeight(), PropertiesName::setSettingBarcodeMaxWeight);
 
+        textTestBarcode.setTextFormatter(TextFormat.createNumericTextFormatter());
         textTestBarcode.textProperty().addListener((observable, oldValue, value) -> runTestBarcode());
         updateComposition();
     }
 
     private void setWeightLimit(TextField field, double value, java.util.function.DoubleConsumer saver) {
+        field.setTextFormatter(new javafx.scene.control.TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
         field.setText(String.valueOf(value));
         field.textProperty().addListener((observable, oldValue, text) -> {
             try {
@@ -474,13 +438,10 @@ public class SettingTabBarcodeController implements Initializable {
     }
 
     private void setTextBarcodeData(TextField textField, int property) {
+        textField.setTextFormatter(TextFormat.createNumericTextFormatter());
         textField.setText(String.valueOf(property));
         textField.textProperty().addListener((observableValue, s, t1) -> {
-            if (!t1.matches("\\d*")) {
-                // Drop what is not a digit. This used to replace it with "0", so typing
-                // "2a" left "20" behind - a number the operator never asked for.
-                textField.setText(t1.replaceAll("\\D", ""));
-            } else if (!t1.isEmpty()) {
+            if (!t1.isEmpty()) {
                 if (textField.equals(textBarcodeStart)) {
                     setSettingBarcodeStart(Integer.parseInt(t1));
                 }

@@ -41,6 +41,9 @@ class SharedSettingsAreMarkedTest {
      * oversight, and the test fails if one of them gains a screen and stays on this list.
      */
     private static final Set<String> NOT_ON_ANY_SCREEN = Set.of(
+            // The default-customer picker was deliberately removed from Settings.
+            // Existing sales still read the saved shop-wide default.
+            "DEFAULT_CUSTOMER",
             // Not a user setting at all: which machine owns the scheduled backup. It is
             // shop-wide state of the same shape, and the machines screen moves it with a
             // button rather than a tick box.

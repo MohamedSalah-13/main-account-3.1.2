@@ -1474,6 +1474,252 @@
    rather than as a plain preview: a dashed outline that lights up on hover and
    while a file is being dragged over it. */
 
+.settings-main-root .section-title {
+    -fx-text-fill: -app-text-strong;
+}
+
+.company-logo-panel {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.909em;
+    -fx-padding: 0.909em;
+}
+
+.company-actions {
+    -fx-border-color: -app-border transparent transparent transparent;
+    -fx-border-width: 0.091em 0 0 0;
+    -fx-padding: 1.091em 0 0 0;
+}
+
+.settings-font-sample {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.727em;
+    -fx-padding: 0.909em;
+}
+
+.settings-font-preview {
+    -fx-text-fill: -app-text-strong;
+}
+
+.notification-rules-grid {
+    -fx-padding: 0.545em 0;
+}
+
+.notification-rule-header {
+    -fx-text-fill: -app-text-strong;
+    -fx-fill: -app-text-strong;
+    -fx-padding: 0.364em 0.273em;
+}
+
+.notification-rule-name {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.091em;
+    -fx-padding: 0.364em 0.273em;
+}
+
+.notification-rule-status {
+    -fx-background-radius: 1.091em;
+    -fx-padding: 0.455em 0.636em;
+    -fx-font-weight: bold;
+}
+
+.notification-rule-enabled {
+    -fx-background-color: -app-success-soft;
+    -fx-text-fill: -app-success;
+}
+
+.notification-rule-disabled {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text-muted;
+}
+
+/* Barcode settings: align the print-layout and scale-reader tools in two clear columns. */
+.barcode-settings-page {
+    -fx-padding: 1.25em;
+}
+
+.barcode-settings-heading {
+    -fx-padding: 0.25em 0.2em 0.4em 0.2em;
+}
+
+.barcode-settings-card {
+    -fx-padding: 1.35em;
+}
+
+.barcode-settings-fields {
+    -fx-padding: 0.2em 0;
+}
+
+.barcode-print-options {
+    -fx-padding: 0.4em 0 0.1em 0;
+}
+
+.barcode-scale-toggle {
+    -fx-font-weight: bold;
+}
+
+.barcode-composition-card {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 0.9em 1em;
+}
+
+.barcode-composition-value {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.barcode-label-preview {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 1em;
+}
+
+.barcode-label-frame {
+    -fx-stroke: -app-text-strong;
+}
+
+.barcode-test-result {
+    -fx-padding: 0.3em 0.2em 0;
+}
+
+/* Settings options: keep related switches together and leave room for their Arabic labels. */
+.settings-options-page {
+    -fx-padding: 1.25em;
+}
+
+.settings-options-heading {
+    -fx-padding: 0.25em 0.2em 0.4em 0.2em;
+}
+
+.settings-options-grid {
+    -fx-padding: 0.2em 0 0.8em 0;
+}
+
+.settings-option-card {
+    -fx-padding: 1.35em;
+}
+
+.settings-option-card .separator .line {
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.5px;
+}
+
+.settings-return-limit-row {
+    -fx-padding: 0.2em 0.1em;
+}
+
+.settings-return-limit {
+    -fx-pref-width: 150px;
+    -fx-max-width: 190px;
+}
+
+/* Printers: group each output role with the actions that belong to it. */
+.printer-settings-page {
+    -fx-padding: 1.25em;
+}
+
+.printer-settings-heading {
+    -fx-padding: 0.25em 0.2em 0.4em 0.2em;
+}
+
+.printer-settings-card {
+    -fx-padding: 1.3em;
+}
+
+.printer-status-bar {
+    -fx-background-color: -app-primary-soft;
+}
+
+.printer-role-list {
+    -fx-padding: 0.3em 0 0;
+}
+
+.printer-role-row {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.85em;
+    -fx-padding: 0.75em 0.85em;
+}
+
+.printer-settings-grid {
+    -fx-padding: 0.1em 0 0.8em;
+}
+
+/* Keyboard shortcuts: let the command list use the space, and keep editing below it. */
+.settings-shortcuts-page {
+    -fx-padding: 1.25em;
+}
+
+.settings-shortcuts-heading {
+    -fx-padding: 0.25em 0.2em 0.4em 0.2em;
+}
+
+.settings-shortcuts-table-card {
+    -fx-min-height: 310px;
+    -fx-padding: 0.9em;
+}
+
+.settings-shortcuts-table {
+    -fx-background-radius: 0.9em;
+}
+
+.settings-shortcuts-editor {
+    -fx-padding: 1.2em;
+}
+
+.settings-shortcuts-actions {
+    -fx-padding: 0.25em 0 0;
+}
+
+/* Accounting period: make the live lock state, its controls and its audit trail distinct. */
+.settings-period-page {
+    -fx-padding: 1.25em;
+}
+
+.settings-period-heading {
+    -fx-padding: 0.25em 0.2em 0.4em 0.2em;
+}
+
+.settings-period-status {
+    -fx-background-color: -app-primary-soft;
+    -fx-padding: 1.15em 1.35em;
+}
+
+.settings-period-actions,
+.settings-period-history {
+    -fx-padding: 1.25em;
+}
+
+.settings-period-fields {
+    -fx-padding: 0.1em 0;
+}
+
+.settings-period-buttons {
+    -fx-padding: 0.3em 0 0;
+}
+
+/* Workstations: surface the backup owner separately from the machine registry. */
+.settings-workstations-page {
+    -fx-padding: 1.25em;
+}
+
+.settings-workstations-heading {
+    -fx-padding: 0.25em 0.2em 0.4em 0.2em;
+}
+
+.workstation-owner-card {
+    -fx-background-color: -app-primary-soft;
+    -fx-padding: 1.05em 1.3em;
+}
+
+.workstation-table-card {
+    -fx-min-height: 320px;
+    -fx-padding: 0.9em;
+}
+
+.settings-workstations-actions {
+    -fx-padding: 0.1em 0;
+}
+
 .logo-drop {
     -fx-background-color: -app-neutral-soft;
     -fx-background-radius: 1.273em;

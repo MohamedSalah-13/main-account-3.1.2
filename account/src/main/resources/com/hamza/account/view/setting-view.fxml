@@ -17,7 +17,6 @@
                          VBox.vgrow="ALWAYS">
                     <tabs>
                         <Tab text="%settings.company.tabTitle"/>
-                        <Tab text="%others"/>
                         <Tab text="%items"/>
                         <Tab text="%show"/>
                     </tabs>

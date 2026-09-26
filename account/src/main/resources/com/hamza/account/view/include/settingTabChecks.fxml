@@ -1,116 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
 
 <AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabCheckController">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <ScrollPane fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <content>
-                <VBox spacing="18.0" styleClass="app-container">
+                <VBox spacing="14.0" styleClass="app-container,settings-options-page">
                     <children>
-                        <VBox spacing="5.0">
+                        <VBox spacing="3.0" styleClass="settings-options-heading">
                             <children>
                                 <Label styleClass="settings-title" text="%settings.checks.pageTitle" />
-                                <Label styleClass="settings-subtitle" text="%settings.checks.pageSubtitle" />
+                                <Label styleClass="settings-subtitle" text="%settings.checks.pageSubtitle" wrapText="true" />
                             </children>
                         </VBox>
-
-                        <VBox spacing="18.0" styleClass="app-card" VBox.vgrow="SOMETIMES">
+                        <GridPane hgap="14.0" vgap="14.0" styleClass="settings-options-grid">
+                            <columnConstraints>
+                                <ColumnConstraints percentWidth="50.0" hgrow="ALWAYS" />
+                                <ColumnConstraints percentWidth="50.0" hgrow="ALWAYS" />
+                            </columnConstraints>
                             <children>
-                                <VBox spacing="12.0" styleClass="settings-section-card">
+                                <VBox spacing="12.0" styleClass="app-card,settings-option-card">
                                     <children>
-                                        <Text fx:id="textItem" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title" text="Items" />
-
-                                        <HBox spacing="24.0">
-                                            <children>
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkBalance" mnemonicParsing="false" styleClass="modern-check-box" text="Check Balance Items" />
-                                                    </children>
-                                                </VBox>
-
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkShowImageHint" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showImageHint" />
-                                                    </children>
-                                                </VBox>
-                                            </children>
-                                        </HBox>
+                                        <Label fx:id="textItem" styleClass="section-title" text="%items" />
+                                        <Separator styleClass="settings-separator" />
+                                        <CheckBox fx:id="checkBalance" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.itemAlert" wrapText="true" />
+                                        <CheckBox fx:id="checkShowImageHint" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.showImageHint" wrapText="true" />
                                     </children>
                                 </VBox>
 
-                                <Separator styleClass="settings-separator" />
-
-                                <VBox spacing="12.0" styleClass="settings-section-card">
+                                <VBox spacing="12.0" styleClass="app-card,settings-option-card" GridPane.columnIndex="1">
                                     <children>
-                                        <Text fx:id="textInvoice" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title" text="Invoice" />
-
-                                        <HBox spacing="24.0">
-                                            <children>
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkSelWithoutBalance" mnemonicParsing="false" styleClass="modern-check-box" text="Sales Without Balance" />
-                                                        <CheckBox fx:id="checkReturnRequireSource" mnemonicParsing="false" styleClass="modern-check-box" text="Return requires source invoice" />
-                                                        <TextField fx:id="txtReturnFreeLimit" promptText="Free return limit (0 = none)" />
-                                                        <CheckBox fx:id="updatePriceInInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Update Price In Invoice" />
-                                                        <CheckBox fx:id="printReceiptInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Print invoice receipt" />
-                                                        <CheckBox fx:id="showScreenAlone" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showSeparateScreen" />
-                                                    </children>
-                                                </VBox>
-
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkIncreaseItemOnTable" mnemonicParsing="false" styleClass="modern-check-box" text="increase Item On Table" />
-                                                        <CheckBox fx:id="checkBackupAfterSave" mnemonicParsing="false" styleClass="modern-check-box" text="backup after save invoice" />
-                                                        <CheckBox fx:id="checkPrintReceiptAccount" mnemonicParsing="false" styleClass="modern-check-box" text="Print invoice receipt" />
-                                                        <CheckBox fx:id="checkInvoicePaid" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showPaidScreen" />
-                                                    </children>
-                                                </VBox>
-
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkAddItemDirect" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.addItemDirect" />
-                                                    </children>
-                                                </VBox>
-                                            </children>
-                                        </HBox>
+                                        <Label fx:id="textOthers" styleClass="section-title" text="%settings.checks.reportSection" />
+                                        <Separator styleClass="settings-separator" />
+                                        <CheckBox fx:id="checkPrintTitleInReports" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.printTitleInReports" wrapText="true" />
+                                        <CheckBox fx:id="checkShowTotals" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.showTotalsOnHome" wrapText="true" />
                                     </children>
                                 </VBox>
 
-                                <Separator styleClass="settings-separator" />
-
-                                <VBox spacing="12.0" styleClass="settings-section-card">
+                                <VBox spacing="12.0" styleClass="app-card,settings-option-card" GridPane.rowIndex="1">
                                     <children>
-                                        <Text fx:id="textOthers" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title" text="Other" />
-
-                                        <HBox spacing="24.0">
+                                        <Label fx:id="textInvoice" styleClass="section-title" text="%settings.checks.invoiceSection" />
+                                        <Separator styleClass="settings-separator" />
+                                        <CheckBox fx:id="checkSelWithoutBalance" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.sellWithoutBalance" wrapText="true" />
+                                        <CheckBox fx:id="checkReturnRequireSource" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.returnRequireSource" wrapText="true" />
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="settings-return-limit-row">
                                             <children>
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkPrintTitleInReports" mnemonicParsing="false" styleClass="modern-check-box" />
-                                                        <CheckBox fx:id="checkShowBeforePrint" mnemonicParsing="false" styleClass="modern-check-box" text="Show Before Print" />
-                                                    </children>
-                                                </VBox>
-
-                                                <VBox spacing="12.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkShowTotals" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showTotalsOnHome" />
-                                                    </children>
-                                                </VBox>
+                                                <Label styleClass="form-label" text="%settings.checks.returnFreeLimit" wrapText="true" HBox.hgrow="ALWAYS" />
+                                                <TextField fx:id="txtReturnFreeLimit" styleClass="modern-input,settings-return-limit" promptText="%settings.checks.returnFreeLimit" />
                                             </children>
                                         </HBox>
+                                        <Separator styleClass="settings-separator" />
+                                        <CheckBox fx:id="updatePriceInInvoice" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.updatePriceInInvoice" wrapText="true" />
+                                        <CheckBox fx:id="checkIncreaseItemOnTable" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.mergeDuplicateItems" wrapText="true" />
+                                        <CheckBox fx:id="checkAddItemDirect" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.addItemDirect" wrapText="true" />
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="12.0" styleClass="app-card,settings-option-card" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <children>
+                                        <Label styleClass="section-title" text="%settings.checks.invoiceDisplaySection" />
+                                        <Separator styleClass="settings-separator" />
+                                        <CheckBox fx:id="checkInvoicePaid" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.showPaidScreen" wrapText="true" />
+                                        <CheckBox fx:id="showScreenAlone" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.showSeparateScreen" wrapText="true" />
+                                        <Separator styleClass="settings-separator" />
+                                        <CheckBox fx:id="checkShowBeforePrint" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.showBeforePrint" wrapText="true" />
+                                        <CheckBox fx:id="printReceiptInvoice" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.printReceiptInvoice" wrapText="true" />
+                                        <CheckBox fx:id="checkPrintReceiptAccount" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.printAccountThermal" wrapText="true" />
+                                        <CheckBox fx:id="checkBackupAfterSave" maxWidth="1.7976931348623157E308" styleClass="modern-check-box" text="%settings.checks.backupAfterSave" wrapText="true" />
                                     </children>
                                 </VBox>
                             </children>
-                        </VBox>
+                        </GridPane>
                     </children>
                 </VBox>
             </content>

@@ -1,6 +1,7 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.period.AccountingLock;
 import com.hamza.account.period.PeriodLockService;
@@ -75,6 +76,8 @@ public class SettingTabPeriodLockController {
 
     @FXML
     public void initialize() {
+        btnClose.setGraphic(AppIcon.CALENDAR.graphic());
+        btnReopen.setGraphic(AppIcon.HISTORY.graphic());
         buildTable();
         buildActions();
 

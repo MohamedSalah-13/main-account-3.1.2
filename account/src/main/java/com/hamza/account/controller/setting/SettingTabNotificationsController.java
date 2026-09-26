@@ -17,6 +17,7 @@ import com.hamza.controlsfx.notifications.NotificationSource;
 import com.hamza.controlsfx.notifications.WindowsNotifier;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -224,6 +225,8 @@ public class SettingTabNotificationsController implements Initializable {
         for (Map.Entry<String, String> category : NotificationCategories.displayNames().entrySet()) {
             String key = category.getKey();
             CheckBox checkBox = new CheckBox(category.getValue());
+            checkBox.setWrapText(true);
+            checkBox.setMaxWidth(Double.MAX_VALUE);
             checkBox.getStyleClass().add("modern-check-box");
             // Stored as "muted", shown as "enabled" - a settings screen full of
             // negatives is where users misread what they are switching off.
@@ -262,7 +265,7 @@ public class SettingTabNotificationsController implements Initializable {
 
         NotificationScheduler scheduler = bootstrap.getScheduler();
         List<NotificationSource> sources = scheduler.sources().stream()
-                .sorted(Comparator.comparing(NotificationSource::displayName))
+                .sorted(Comparator.comparing(this::ruleDisplayName))
                 .toList();
 
         if (sources.isEmpty()) {
@@ -278,17 +281,39 @@ public class SettingTabNotificationsController implements Initializable {
 
         int row = 1;
         for (NotificationSource source : sources) {
+            Label name = new Label(ruleDisplayName(source));
+            name.setWrapText(true);
+            name.setMaxWidth(Double.MAX_VALUE);
+            name.setMinHeight(34.0);
+            name.setAlignment(Pos.CENTER_LEFT);
+            name.getStyleClass().add("notification-rule-name");
+            Spinner<Integer> interval = intervalSpinner(scheduler, source);
+            interval.setMaxWidth(Double.MAX_VALUE);
+            ComboBox<NotificationChannel> channel = channelCombo(source);
+            channel.setMaxWidth(Double.MAX_VALUE);
+            Label status = stateLabel(source);
+            status.setWrapText(true);
+            status.setMaxWidth(Double.MAX_VALUE);
+            status.setAlignment(Pos.CENTER);
             gridSources.addRow(row++,
-                    new Label(source.displayName()),
-                    intervalSpinner(scheduler, source),
-                    channelCombo(source),
-                    stateLabel(source));
+                    name, interval, channel, status);
         }
+    }
+
+    private String ruleDisplayName(NotificationSource source) {
+        return switch (source.id()) {
+            case "items.low-stock" -> LanguageManager.getInstance().getString("settings.notifications.rule.lowStock");
+            case "customers.credit-limit" -> LanguageManager.getInstance().getString("settings.notifications.rule.creditLimit");
+            case "backup.stale" -> LanguageManager.getInstance().getString("settings.notifications.rule.backupStale");
+            case "treasury.negative-balance" -> LanguageManager.getInstance().getString("settings.notifications.rule.negativeTreasury");
+            default -> source.displayName();
+        };
     }
 
     private Label header(String text) {
         Label label = new Label(text);
-        label.getStyleClass().add("section-title");
+        label.setWrapText(true);
+        label.getStyleClass().addAll("section-title", "notification-rule-header");
         return label;
     }
 
@@ -297,6 +322,8 @@ public class SettingTabNotificationsController implements Initializable {
                 ? LanguageManager.getInstance().getString("settings.notifications.enabled")
                 : LanguageManager.getInstance().getString("settings.notifications.disabled"));
         label.getStyleClass().add("settings-subtitle");
+        label.getStyleClass().add("notification-rule-status");
+        label.getStyleClass().add(source.enabled() ? "notification-rule-enabled" : "notification-rule-disabled");
         return label;
     }
 

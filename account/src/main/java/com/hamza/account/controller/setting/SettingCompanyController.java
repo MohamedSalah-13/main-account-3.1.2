@@ -2,7 +2,7 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.company.CompanyLogo;
 import com.hamza.account.features.company.CompanyService;
@@ -18,12 +18,12 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import lombok.extern.log4j.Log4j2;
@@ -37,7 +37,6 @@ import java.util.ResourceBundle;
 import java.util.function.UnaryOperator;
 
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 /**
  * The company tab of the settings screen — the name, address, phone, tax and commercial
@@ -48,7 +47,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
  * picture currently on display; together they are what "saved" means, and everything on
  * the form is compared against them to decide whether there is anything to save. The
  * logo is deliberately <em>not</em> read back out of the {@code ImageView} at save time:
- * the view shows a placeholder when there is no logo, and reading the view meant pressing
+ * an earlier view showed a placeholder when there was no logo, and reading the view meant pressing
  * "delete" and then "save" wrote the placeholder into the database rather than clearing
  * the column. See {@link CompanyLogo}.
  *
@@ -80,7 +79,6 @@ public class SettingCompanyController implements Initializable {
 
     private final CompanyService companyService = ServiceRegistry.get(CompanyService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
-    private final Image placeholder = placeholder();
 
     /**
      * Whether this user may save at all.
@@ -116,9 +114,11 @@ public class SettingCompanyController implements Initializable {
     @FXML
     private Label labelName, labelAddress, labelTel, labelTax, labelCom, labelLogoInfo, labelStatus;
     @FXML
+    private Label companyTitle, companySubtitle, basicInfoTitle, logoTitle;
+    @FXML
     private TextField textAddress, textCom, textNameCompany, textTax, textTel;
     @FXML
-    private VBox logoDropZone;
+    private VBox logoDropZone, systemSettings;
     @FXML
     private ProgressIndicator progress;
 
@@ -138,6 +138,10 @@ public class SettingCompanyController implements Initializable {
 
     private void labelsAndPrompts() {
         var lm = LanguageManager.getInstance();
+        companyTitle.setText(lm.getString("settings.company.tabTitle"));
+        companySubtitle.setText(lm.getString("settings.company.overviewSubtitle"));
+        basicInfoTitle.setText(lm.getString("settings.company.basicInfo"));
+        logoTitle.setText(lm.getString("settings.company.logoTitle"));
         labelName.setText(lm.getString("name"));
         labelAddress.setText(lm.getString("address"));
         labelTel.setText(lm.getString("tel"));
@@ -165,7 +169,7 @@ public class SettingCompanyController implements Initializable {
         textCom.setTextFormatter(limit(COMMERCIAL_LIMIT, null));
         textTel.setTextFormatter(limit(TEL_LIMIT, TEL_ALLOWED));
 
-        whenEnterPressed(textNameCompany, textAddress, textTel, textTax, textCom);
+        whenEnterPressed(textNameCompany, textAddress, textTel, textTax, textCom, btnSave);
         fields().forEach(field -> field.textProperty().addListener((observable, old, value) -> refreshDirty()));
     }
 
@@ -210,11 +214,10 @@ public class SettingCompanyController implements Initializable {
     }
 
     private void buttonGraphic() {
-        var images = new Image_Setting();
-        btnClearImage.setGraphic(createIcon(images.erase));
-        btnAddImage.setGraphic(createIcon(images.folder));
-        btnSave.setGraphic(createIcon(images.save));
-        btnReset.setGraphic(createIcon(images.cancel));
+        btnClearImage.setGraphic(AppIcon.DELETE.graphic());
+        btnAddImage.setGraphic(AppIcon.ADD.graphic());
+        btnSave.setGraphic(AppIcon.SAVE.graphic());
+        btnReset.setGraphic(AppIcon.CLEAR.graphic());
     }
 
 
@@ -358,21 +361,23 @@ public class SettingCompanyController implements Initializable {
     }
 
     private void showLogo() {
-        imageView.setImage(logo == null ? placeholder : logo.toFxImage());
+        imageView.setImage(logo == null ? null : logo.toFxImage());
         labelLogoInfo.setText(logo == null
                 ? LanguageManager.getInstance().getString("settings.company.noLogo")
                 : logo.summary());
         btnClearImage.setDisable(logo == null);
     }
 
-    private Image placeholder() {
-        try {
-            var stream = new Image_Setting().defaultBlog;
-            return stream == null ? null : new Image(stream);
-        } catch (Exception e) {
-            log.warn("The default logo image could not be loaded", e);
-            return null;
-        }
+    public void setSystemSettings(Pane content) {
+        systemSettings.getChildren().setAll(content);
+    }
+
+    /** Refresh captions without replacing a form holding unsaved company details. */
+    public void refreshLanguage() {
+        labelsAndPrompts();
+        labelStatus.setText(statusText(unsavedChanges));
+        labelLogoInfo.setText(logo == null
+                ? LanguageManager.getInstance().getString("settings.company.noLogo") : logo.summary());
     }
 
     // ------------------------------------------------------------------

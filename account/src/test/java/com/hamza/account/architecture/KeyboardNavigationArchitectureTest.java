@@ -59,7 +59,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/UpdateSomeItems.java",
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
-            "com/hamza/account/controller/setting/SettingTabLanguageController.java",
             "com/hamza/account/controller/users/AddUserController.java",
             "com/hamza/account/controller/users/UserPermissionController.java");
 

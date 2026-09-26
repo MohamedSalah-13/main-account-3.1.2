@@ -1,6 +1,7 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.config.MachineId;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.features.workstation.Workstation;
 import com.hamza.account.features.workstation.WorkstationService;
 import com.hamza.account.openFxml.FxmlPath;
@@ -44,6 +45,9 @@ public class WorkstationsController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnMakeOwner.setGraphic(AppIcon.PIN.graphic());
+        btnForget.setGraphic(AppIcon.DELETE.graphic());
         buildColumns();
         refresh();
     }

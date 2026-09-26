@@ -7,11 +7,12 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.others.TextFormat;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Tooltip;
-import javafx.scene.text.Text;
+import javafx.scene.control.Label;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -50,7 +51,7 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private CheckBox checkShowTotals, checkInvoicePaid, showScreenAlone;
     @FXML
-    private Text textInvoice, textItem, textOthers;
+    private Label textInvoice, textItem, textOthers;
 
 
     @Override
@@ -63,7 +64,7 @@ public class SettingTabCheckController implements Initializable {
         var lm = LanguageManager.getInstance();
         textItem.setText(lm.getString("items"));
         textInvoice.setText(lm.getString("settings.checks.invoiceSection"));
-        textOthers.setText(lm.getString("others"));
+        textOthers.setText(lm.getString("settings.checks.reportSection"));
     }
 
     private void forItems() {
@@ -117,6 +118,7 @@ public class SettingTabCheckController implements Initializable {
 
         // The ceiling only means anything while free returns are allowed at all.
         txtReturnFreeLimit.setPromptText(lm.getString("settings.checks.returnFreeLimit"));
+        txtReturnFreeLimit.setTextFormatter(new javafx.scene.control.TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
         txtReturnFreeLimit.setText(String.valueOf(getReturnFreeLimit()));
         txtReturnFreeLimit.disableProperty().bind(checkReturnRequireSource.selectedProperty());
         txtReturnFreeLimit.focusedProperty().addListener((observable, was, isFocused) -> {

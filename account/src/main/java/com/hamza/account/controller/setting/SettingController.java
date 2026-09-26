@@ -79,31 +79,30 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private void addTabs() throws Exception {
-        // Keep the four declarative tabs and replace both their content and any optional tabs.
+        // Keep the three declarative tabs and replace their content and optional tabs.
         // FXML resolves %keys only when it is loaded, so replacing the content is what makes a
         // language switch visible immediately instead of asking the user to close Settings.
-        while (pane.getTabs().size() > 4) {
+        while (pane.getTabs().size() > 3) {
             pane.getTabs().removeLast();
         }
         var lm = LanguageManager.getInstance();
         // tab company
         Tab tabCompany = pane.getTabs().getFirst();
-        // A company form with unsaved edits keeps its content (and its old captions) rather
-        // than losing what was typed; it takes the new language the next time it is opened.
+        // Keep unsaved company edits when the language changes within this same tab.
         if (companyController == null || !companyController.hasUnsavedChanges()) {
             tabCompany.setContent(getTabCompany());
+        } else {
+            companyController.refreshLanguage();
         }
         tabCompany.setText(lm.getString("settings.company.tabTitle"));
-        // tab language
-        Tab tabLanguage = pane.getTabs().get(1);
-        tabLanguage.setContent(getTabLanguage());
-        tabLanguage.setText(lm.getString("others"));
+        // Refresh immediate preferences even when the company form has unsaved edits.
+        companyController.setSystemSettings(getTabLanguage());
         // tab barcode
-        Tab tabBarcode = pane.getTabs().get(2);
+        Tab tabBarcode = pane.getTabs().get(1);
         tabBarcode.setContent(getTabBarcode());
         tabBarcode.setText(lm.getString("items"));
         // tab checks
-        Tab tabChecks = pane.getTabs().get(3);
+        Tab tabChecks = pane.getTabs().get(2);
         tabChecks.setContent(getTabChecks());
         tabChecks.setText(lm.getString("show"));
         pane.getTabs().add(new Tab(lm.getString("settings.printers.tabTitle"), getTabPrinters()));
@@ -154,7 +153,7 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private Pane getTabLanguage() throws Exception {
-        SettingTabLanguageController languageController = new SettingTabLanguageController(dataPublisher);
+        SettingTabLanguageController languageController = new SettingTabLanguageController();
         return new OpenFxmlApplication(languageController).getPane();
     }
 

@@ -1,133 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.RadioButton?>
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToggleGroup?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
-
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabLanguageController">
+<VBox spacing="12.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.hamza.account.controller.setting.SettingTabLanguageController">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-            <content>
-                <VBox spacing="18.0" styleClass="app-container">
+        <Label styleClass="settings-subtitle" text="%settings.company.preferencesHint" wrapText="true" />
+        <GridPane fx:id="preferencesGrid" hgap="14.0" vgap="14.0">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="40.0" minWidth="0.0" hgrow="ALWAYS" />
+                <ColumnConstraints percentWidth="60.0" minWidth="0.0" hgrow="ALWAYS" />
+            </columnConstraints>
+            <children>
+                <VBox fx:id="languageCard" minWidth="0.0" spacing="12.0" styleClass="app-card" GridPane.valignment="TOP">
                     <children>
-                        <VBox spacing="5.0">
-                            <children>
-                                <Label styleClass="settings-title" text="%settings.language.pageTitle" />
-                                <Label styleClass="settings-subtitle" text="%settings.language.pageSubtitle" />
-                            </children>
-                        </VBox>
-
-                        <GridPane hgap="5.0" styleClass="app-card" vgap="5.0" VBox.vgrow="SOMETIMES">
-                            <columnConstraints>
-                                <ColumnConstraints maxWidth="-Infinity" />
-                                <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />
-                                <ColumnConstraints maxWidth="-Infinity" />
-                            </columnConstraints>
-
-                            <children>
-                                <Label styleClass="form-label" text="%settings.language.themeLabel" />
-                                <HBox alignment="CENTER_LEFT" spacing="24.0" GridPane.columnIndex="1">
-                                    <children>
-                                        <RadioButton fx:id="radioLight" mnemonicParsing="false" styleClass="modern-radio" text="%settings.language.themeLight">
-                                            <toggleGroup>
-                                                <ToggleGroup fx:id="group" />
-                                            </toggleGroup>
-                                        </RadioButton>
-                                        <RadioButton fx:id="radioDark" mnemonicParsing="false" styleClass="modern-radio" text="%settings.language.themeDark" toggleGroup="$group" />
-                                    </children>
-                                </HBox>
-
-                                <Label fx:id="labelLanguage" styleClass="form-label" text="%settings.language" GridPane.rowIndex="1" />
-                                <ComboBox fx:id="comboLanguage" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-
-                                <!-- Beside the language on purpose: the interface's language and the program's currency are
-                                     the two things every figure on every screen is written in. -->
-                                <Label fx:id="labelCurrency" styleClass="form-label" text="%settings.currency" GridPane.rowIndex="2" GridPane.valignment="TOP" />
-                                <VBox spacing="3.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
-                                    <children>
-                                        <ComboBox fx:id="comboCurrency" prefWidth="320.0" styleClass="modern-input" />
-                                        <Label fx:id="labelCurrencyPreview" styleClass="settings-subtitle" />
-                                        <!-- One line on purpose: JavaFX wrapped a long Arabic sentence here past its own
-                                             wrapping width, off the card (rendered 2026-09-23). The rest is the tooltip. -->
-                                        <Label fx:id="labelCurrencyNote" minHeight="-Infinity" styleClass="settings-subtitle" wrapText="true" />
-                                    </children>
-                                </VBox>
-
-                                <Label fx:id="labelPath" styleClass="form-label" text="%settings.image.pathLabel" GridPane.rowIndex="3" />
-                                <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="%settings.image.none" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="3">
-                                    <children>
-                                        <Button fx:id="btnPath" mnemonicParsing="false" styleClass="icon-button" text="..." />
-                                        <Button fx:id="btnDeleteImage" mnemonicParsing="false" styleClass="danger-button" />
-                                    </children>
-                                </HBox>
-
-                                <Label styleClass="form-label" text="%settings.language.salesInvoiceSection" GridPane.rowIndex="4" />
-                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="info-text" text="%settings.language.salesInvoiceHint" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-
-                                <Label styleClass="form-label" text="%invoice.customer" GridPane.rowIndex="5" />
-                                <TextField fx:id="txtNameCustomer" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                                <Button fx:id="btnSaveCustomer" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="5" />
-
-                                <Label styleClass="form-label" text="%invoice.delegate" GridPane.rowIndex="6" />
-                                <TextField fx:id="txtNameDelegate" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="6" />
-                                <Button fx:id="btnSaveDelegate" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="6" />
-
-                                <Label fx:id="labelRate" styleClass="form-label" text="%rate" GridPane.rowIndex="7" />
-                                <TextField fx:id="textRateSel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="7" />
-
-                                <Label fx:id="labelMiniRate" styleClass="form-label" text="%settings.language.printerSerialResetLabel" GridPane.rowIndex="8" />
-                                <TextField fx:id="textSerial" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="8" />
-
-                                <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="9" />
-                                <ComboBox fx:id="comboUiScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="9" />
-
-                                <Label fx:id="labelFont" styleClass="form-label" text="%settings.language.fontLabel" GridPane.rowIndex="10" />
-                                <ComboBox fx:id="comboFont" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="10" />
-                                <Button fx:id="btnAddFont" mnemonicParsing="false" styleClass="neutral-button" text="%settings.language.addFontButton" GridPane.columnIndex="2" GridPane.rowIndex="10" />
-                                <Label fx:id="labelFontPreview" maxWidth="1.7976931348623157E308" styleClass="font-preview" text="%settings.language.fontPreviewSample" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="11" />
-                                <Label fx:id="labelFontSupport" styleClass="font-support" text="%settings.language.fontArabicSupportUnknown" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="12" />
-
-                                <Label styleClass="form-label" text="%settings.tables.sectionTitle" GridPane.rowIndex="13" />
-                                <VBox spacing="6.0" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="13">
-                                    <children>
-                                        <CheckBox fx:id="checkColumnDividers" mnemonicParsing="false" styleClass="modern-radio" text="%settings.tables.showColumnDividers" />
-                                        <CheckBox fx:id="checkFillColumns" mnemonicParsing="false" styleClass="modern-radio" text="%settings.tables.fillColumns" />
-                                    </children>
-                                </VBox>
-                            </children>
-                     <rowConstraints>
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                        <RowConstraints />
-                     </rowConstraints>
-                        </GridPane>
+                        <Label styleClass="section-title" text="%settings.company.languageCurrencyTitle" />
+                        <Label styleClass="form-label" text="%settings.language" />
+                        <ComboBox fx:id="comboLanguage" maxWidth="Infinity" styleClass="modern-input" />
+                        <Label styleClass="form-label" text="%settings.currency" />
+                        <ComboBox fx:id="comboCurrency" maxWidth="Infinity" styleClass="modern-input" />
+                        <Label fx:id="labelCurrencyPreview" styleClass="settings-subtitle" />
+                        <Label fx:id="labelCurrencyNote" minHeight="-Infinity" styleClass="settings-subtitle" wrapText="true" />
                     </children>
                 </VBox>
-            </content>
-        </ScrollPane>
+                <VBox fx:id="appearanceCard" minWidth="0.0" spacing="12.0" styleClass="app-card" GridPane.columnIndex="1" GridPane.valignment="TOP">
+                    <children>
+                        <Label styleClass="section-title" text="%settings.company.appearanceTitle" />
+                        <GridPane hgap="12.0" vgap="10.0">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="100.0" halignment="LEFT" />
+                                <ColumnConstraints minWidth="0.0" hgrow="ALWAYS" />
+                            </columnConstraints>
+                            <children>
+                                <Label styleClass="form-label" text="%settings.language.themeLabel" />
+                                <HBox alignment="CENTER_LEFT" spacing="16.0" GridPane.columnIndex="1">
+                                    <children>
+                                        <RadioButton fx:id="radioLight" styleClass="modern-radio" text="%settings.language.themeLight">
+                                            <toggleGroup><ToggleGroup fx:id="group" /></toggleGroup>
+                                        </RadioButton>
+                                        <RadioButton fx:id="radioDark" styleClass="modern-radio" text="%settings.language.themeDark" toggleGroup="$group" />
+                                    </children>
+                                </HBox>
+                                <Label styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="comboUiScale" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Label styleClass="form-label" text="%settings.language.fontLabel" GridPane.rowIndex="2" />
+                                <HBox spacing="8.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                    <children>
+                                        <ComboBox fx:id="comboFont" minWidth="0.0" maxWidth="Infinity" styleClass="modern-input" HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="btnAddFont" minWidth="-Infinity" styleClass="neutral-button" text="%settings.language.addFontButton" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </GridPane>
+                        <VBox spacing="4.0" styleClass="settings-font-sample">
+                            <children>
+                                <Label fx:id="labelFontPreview" minHeight="-Infinity" maxWidth="Infinity" styleClass="settings-font-preview" text="%settings.language.fontPreviewSample" wrapText="true" />
+                                <Label fx:id="labelFontSupport" styleClass="settings-subtitle" text="%settings.language.fontArabicSupportUnknown" wrapText="true" />
+                            </children>
+                        </VBox>
+                        <Label styleClass="form-label" text="%settings.tables.sectionTitle" />
+                        <CheckBox fx:id="checkColumnDividers" styleClass="modern-radio" text="%settings.tables.showColumnDividers" wrapText="true" />
+                        <CheckBox fx:id="checkFillColumns" styleClass="modern-radio" text="%settings.tables.fillColumns" wrapText="true" />
+                    </children>
+                </VBox>
+            </children>
+        </GridPane>
     </children>
-</AnchorPane>
+</VBox>
