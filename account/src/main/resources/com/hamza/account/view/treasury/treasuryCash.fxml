@@ -22,12 +22,15 @@
                 <Insets bottom="18" left="28" right="28" top="24" />
             </padding>
 
-            <VBox spacing="6">
-                <Label styleClass="page-title" text="%treasury.cash.title" />
-                <Label styleClass="page-subtitle" text="%treasury.cash.subtitle" />
-            </VBox>
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label styleClass="page-title" text="%treasury.cash.title" />
+                    <Label styleClass="page-subtitle" text="%treasury.cash.subtitle" />
+                </VBox>
+                <Button fx:id="formToggleButton" onAction="#toggleMovementForm" styleClass="neutral-button" text="%treasury.form.hide" />
+            </HBox>
 
-            <VBox spacing="5.0" styleClass="app-card">
+            <VBox fx:id="movementForm" spacing="5.0" styleClass="app-card">
                 <GridPane hgap="18" vgap="14">
                     <columnConstraints>
                         <ColumnConstraints minWidth="130" prefWidth="140" />

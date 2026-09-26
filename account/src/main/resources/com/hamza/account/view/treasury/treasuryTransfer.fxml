@@ -22,12 +22,15 @@
                 <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
             </padding>
 
-            <VBox spacing="6">
-                <Label styleClass="page-title" text="%treasury.transfer.title" />
-                <Label styleClass="page-subtitle" text="%treasury.transfer.subtitle" />
-            </VBox>
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label styleClass="page-title" text="%treasury.transfer.title" />
+                    <Label styleClass="page-subtitle" text="%treasury.transfer.subtitle" />
+                </VBox>
+                <Button fx:id="formToggleButton" onAction="#toggleTransferForm" styleClass="neutral-button" text="%treasury.form.hide" />
+            </HBox>
 
-            <VBox spacing="5.0" styleClass="app-card">
+            <VBox fx:id="transferForm" spacing="5.0" styleClass="app-card">
                 <GridPane hgap="18" vgap="14">
                     <columnConstraints>
                         <ColumnConstraints minWidth="130" prefWidth="140" />

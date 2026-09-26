@@ -35,6 +35,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
@@ -64,6 +65,12 @@ public class TreasuryCashController {
 
     @FXML
     private BorderPane root;
+
+    @FXML
+    private VBox movementForm;
+
+    @FXML
+    private Button formToggleButton;
 
     @FXML
     private ComboBox<TreasuryBalanceSummary> treasuryCombo;
@@ -119,6 +126,7 @@ public class TreasuryCashController {
 
     @FXML
     private void initialize() {
+        updateMovementFormToggle(true);
         datePicker.setValue(LocalDate.now());
 
         directionCombo.setItems(FXCollections.observableArrayList(CashDirection.values()));
@@ -192,6 +200,17 @@ public class TreasuryCashController {
         datePicker.valueProperty().addListener((obs, was, now) -> showAvailable());
 
         reload();
+    }
+
+    @FXML
+    private void toggleMovementForm() {
+        updateMovementFormToggle(!movementForm.isVisible());
+    }
+
+    private void updateMovementFormToggle(boolean expanded) {
+        movementForm.setVisible(expanded);
+        movementForm.setManaged(expanded);
+        formToggleButton.setText(text(expanded ? "treasury.form.hide" : "treasury.form.show"));
     }
 
     @FXML

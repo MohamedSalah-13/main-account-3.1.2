@@ -32,6 +32,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -60,6 +61,12 @@ public class TreasuryTransferController {
 
     @FXML
     private BorderPane root;
+
+    @FXML
+    private VBox transferForm;
+
+    @FXML
+    private Button formToggleButton;
 
     @FXML
     private ComboBox<TreasuryBalanceSummary> fromCombo;
@@ -121,6 +128,7 @@ public class TreasuryTransferController {
 
     @FXML
     private void initialize() {
+        updateTransferFormToggle(true);
         datePicker.setValue(LocalDate.now());
 
         historyTable = new TreasuryHistoryTable<>(transfersTable, "treasuryTransfersTable", List.of(
@@ -157,6 +165,17 @@ public class TreasuryTransferController {
         receivedField.textProperty().addListener((obs, was, now) -> showImpliedRate());
 
         reload();
+    }
+
+    @FXML
+    private void toggleTransferForm() {
+        updateTransferFormToggle(!transferForm.isVisible());
+    }
+
+    private void updateTransferFormToggle(boolean expanded) {
+        transferForm.setVisible(expanded);
+        transferForm.setManaged(expanded);
+        formToggleButton.setText(text(expanded ? "treasury.form.hide" : "treasury.form.show"));
     }
 
     @FXML
