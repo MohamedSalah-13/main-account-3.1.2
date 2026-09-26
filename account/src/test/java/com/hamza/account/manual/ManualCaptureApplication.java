@@ -289,8 +289,12 @@ public final class ManualCaptureApplication extends Application {
     private void finishPage(ManualPage page, List<Window> before, int tabsBefore,
                            List<ManualPage> remaining, int index, String picture) {
         List<Stage> opened = newStages(before);
-        Optional<Stage> screen = opened.stream()
-                .max(Comparator.comparingDouble(ManualCaptureApplication::area))
+        boolean tabOpened = tabs().map(pane -> pane.getTabs().size() > tabsBefore).orElse(false);
+        boolean newestRequested = page.click().stream().anyMatch(click ->
+                List.of(click.split("\\s*>>\\s*")).contains("CAPTURE_NEWEST_WINDOW"));
+        Optional<Stage> screen = (newestRequested
+                ? opened.stream().max(Comparator.comparingInt(opened::indexOf))
+                : opened.stream().max(Comparator.comparingDouble(ManualCaptureApplication::area)))
                 .filter(candidate -> !isAlert(candidate));
         if (screen.isPresent()) {
             shoot(picture, screen.get().getScene().getRoot());
@@ -300,9 +304,11 @@ public final class ManualCaptureApplication extends Application {
             opened.forEach(Stage::close);
         } else if (tabs().map(pane -> pane.getTabs().size()).orElse(0) > tabsBefore) {
             shoot(picture, stage.getScene().getRoot());
-            closeNewestTab();
         } else {
             skipped.put(picture, "pressing the button opened neither a window nor a tab");
+        }
+        if (tabOpened) {
+            closeNewestTab();
         }
         next(remaining, index + 1);
     }
@@ -456,8 +462,47 @@ public final class ManualCaptureApplication extends Application {
             return;
         }
         String caption = actions.get(index);
-        if (caption.equals("DOUBLECLICK_FIRST_ROW") || caption.startsWith("DOUBLECLICK_INVOICE_")) {
-            Optional<TableView<?>> table = findTable(stage.getScene().getRoot());
+        if (caption.equals("CAPTURE_NEWEST_WINDOW")) {
+            after(settle, () -> press(page, before, index + 1, complete));
+            return;
+        }
+        if (caption.equals("SELECT_FIRST_ROW")) {
+            Optional<TableView<?>> table = topmostTable();
+            if (table.isEmpty() || table.get().getItems().isEmpty()) {
+                warnings.add(page.screenshot().orElse(page.id()) + ": no row to select");
+            } else {
+                table.get().getSelectionModel().selectFirst();
+            }
+            after(settle, () -> press(page, before, index + 1, complete));
+            return;
+        }
+        if (caption.startsWith("ROW_ACTION_ID_")) {
+            int actionSeparator = caption.indexOf('_', "ROW_ACTION_ID_".length());
+            if (actionSeparator < 0) {
+                warnings.add(page.screenshot().orElse(page.id()) + ": invalid row action " + caption);
+                after(settle, complete);
+                return;
+            }
+            String rowId = caption.substring("ROW_ACTION_ID_".length(), actionSeparator);
+            String actionName = caption.substring(actionSeparator + 1);
+            Optional<Button> action = rowActionButton(rowId, actionName);
+            if (action.isEmpty()) {
+                warnings.add(page.screenshot().orElse(page.id())
+                        + ": no row action \"" + actionName + "\" for row " + rowId);
+                after(settle, complete);
+                return;
+            }
+            if (index + 1 < actions.size()) {
+                after(settle, () -> press(page, before, index + 1, complete));
+            } else {
+                after(settle, complete);
+            }
+            Platform.runLater(action.get()::fire);
+            return;
+        }
+        if (caption.equals("DOUBLECLICK_FIRST_ROW") || caption.startsWith("DOUBLECLICK_ROW_ID_")
+                || caption.startsWith("DOUBLECLICK_INVOICE_")) {
+            Optional<TableView<?>> table = topmostTable();
             if (table.isEmpty() || table.get().getItems().isEmpty()) {
                 warnings.add(page.screenshot().orElse(page.id()) + ": no invoice row to open");
                 after(settle, complete);
@@ -465,14 +510,16 @@ public final class ManualCaptureApplication extends Application {
             }
             TableView<?> view = table.get();
             int rowIndex = 0;
-            if (caption.startsWith("DOUBLECLICK_INVOICE_")) {
-                String invoiceId = caption.substring("DOUBLECLICK_INVOICE_".length());
+            if (caption.startsWith("DOUBLECLICK_INVOICE_") || caption.startsWith("DOUBLECLICK_ROW_ID_")) {
+                String marker = caption.startsWith("DOUBLECLICK_INVOICE_")
+                        ? "DOUBLECLICK_INVOICE_" : "DOUBLECLICK_ROW_ID_";
+                String invoiceId = caption.substring(marker.length());
                 rowIndex = java.util.stream.IntStream.range(0, view.getItems().size())
                         .filter(candidateIndex -> invoiceId.equals(rowId(view.getItems().get(candidateIndex))))
                         .findFirst().orElse(-1);
             }
             if (rowIndex < 0) {
-                warnings.add(page.screenshot().orElse(page.id()) + ": invoice row was not found");
+                warnings.add(page.screenshot().orElse(page.id()) + ": requested row was not found");
                 after(settle, complete);
                 return;
             }
@@ -513,8 +560,8 @@ public final class ManualCaptureApplication extends Application {
         List<Stage> visible = Window.getWindows().stream().filter(Window::isShowing)
                 .filter(Stage.class::isInstance).map(Stage.class::cast)
                 .filter(candidate -> candidate.getScene() != null).toList();
-        Optional<Button> button = visible.stream().sorted(Comparator.comparingDouble(
-                        ManualCaptureApplication::area).reversed())
+        Optional<Button> button = visible.stream()
+                .sorted(Comparator.comparingInt(visible::indexOf).reversed())
                 .map(candidate -> findButton(candidate.getScene().getRoot(), caption))
                 .filter(Optional::isPresent).map(Optional::get).findFirst()
                 .or(() -> findButton(stage.getScene().getRoot(), caption));
@@ -575,11 +622,51 @@ public final class ManualCaptureApplication extends Application {
         return Optional.empty();
     }
 
+    private Optional<TableView<?>> topmostTable() {
+        List<Stage> visible = Window.getWindows().stream().filter(Window::isShowing)
+                .filter(Stage.class::isInstance).map(Stage.class::cast)
+                .filter(candidate -> candidate.getScene() != null).toList();
+        return visible.stream().max(Comparator.comparingInt(visible::indexOf))
+                .flatMap(candidate -> findTable(candidate.getScene().getRoot()));
+    }
+
+    /** Selects an employee and fires the matching icon in that employee's own action cell. */
+    private Optional<Button> rowActionButton(String rowId, String actionName) {
+        Optional<TableView<?>> maybeTable = topmostTable();
+        if (maybeTable.isEmpty()) {
+            return Optional.empty();
+        }
+        TableView<?> table = maybeTable.get();
+        int index = java.util.stream.IntStream.range(0, table.getItems().size())
+                .filter(candidate -> rowId.equals(rowId(table.getItems().get(candidate))))
+                .findFirst().orElse(-1);
+        if (index < 0) {
+            return Optional.empty();
+        }
+        table.getSelectionModel().select(index);
+        table.scrollTo(index);
+        table.applyCss();
+        table.layout();
+        return table.lookupAll(".table-row-cell").stream()
+                .filter(javafx.scene.control.TableRow.class::isInstance)
+                .map(javafx.scene.control.TableRow.class::cast)
+                .filter(row -> rowId.equals(rowId(row.getItem())))
+                .map(row -> findButton(row, actionName))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
     private String rowId(Object row) {
         try {
             return String.valueOf(row.getClass().getMethod("getId").invoke(row));
-        } catch (ReflectiveOperationException ignored) {
-            return "";
+        } catch (ReflectiveOperationException noBeanGetter) {
+            try {
+                // Feature records expose id() while the older invoice beans expose getId().
+                return String.valueOf(row.getClass().getMethod("id").invoke(row));
+            } catch (ReflectiveOperationException noRecordAccessor) {
+                return "";
+            }
         }
     }
 
