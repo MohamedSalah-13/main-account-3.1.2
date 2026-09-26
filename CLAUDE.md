@@ -27,9 +27,10 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,361 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-26 after the program side of the licence server's S2, activation by
-code and the refresh (thirty-five tests, none gated, `licensing-server-plan.md` §12); 4,326 after phases D and E of the
+**4,366 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-26 after About learned a server licence's dates (five tests); 4,361
+after the program side of the licence server's S2, activation by code and the refresh (thirty-five tests, none gated,
+`licensing-server-plan.md` §12); 4,326 after phases D and E of the
 offers and their review (sixty-two tests, six of them gated on MySQL, `pricing-and-offers-plan.md` §13-§14); 4,264 with 368 skipped after the program side of the
 licence server's S1 (twenty-six tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
 nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
@@ -4291,8 +4292,13 @@ no file at all (`theLicencePackageDeletesNoFile`), and every refusal a refresh c
 (`LicenseRefreshTest`); and nothing received is written before this build judged it. `JdkLicenseServerHttp` is
 `JdkHttpText`'s rules for a POST: HTTPS only, five and ten seconds, 64KB, no redirect followed. The real client was
 run against the real server on 2026-09-26 with a code never issued (`UNKNOWN_CODE`) and a text that is no licence
-(`SIGNATURE_INVALID`); **a real activation - a code, a licence file, About saying activated - has not been run from
-the program yet**, and no release carries it.
+(`SIGNATURE_INVALID`), and **the first real activation by code was seen the same day** - licence 3 in the dashboard,
+one of two seats taken by the developer's machine, About saying activated. The rest of S2's closing criterion (a
+second machine, a third refused, a release, a renewal arriving) has not been run, and no release carries it. That
+first picture is why **About now says a server licence's dates** (`AboutLicense.of(info, decision)`): it said
+"unlimited" for every licence - true of the older file, which has no date, and wrong for one whose updates end in three
+months. Perpetual, or a subscription until a day with the days left, then its grace, then ended; and a line of its own
+for the last day of updates. The dates are read beside the trial check and shown, never decided on.
 
 **Not fixed, and worth knowing:** `currentLicense(true)` tries the older files in order and a first one with a
 bad signature ends the install before the second is read - so an *older-format* `license.dat` beside
