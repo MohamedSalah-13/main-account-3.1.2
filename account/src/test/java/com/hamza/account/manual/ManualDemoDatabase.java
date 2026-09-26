@@ -54,6 +54,10 @@ public final class ManualDemoDatabase {
         boolean drop = args.length > 1 && args[1].equals("--drop");
 
         Server server = readServerFromThisMachinesConfig();
+        if (args.length > 1 && args[1].equals("--exists")) {
+            System.out.println("demo database exists: " + exists(server));
+            return;
+        }
         if (drop) {
             execute(server, "DROP DATABASE IF EXISTS `" + SCHEMA + "`");
             deleteQuietly(configDir.resolve("config.xml"));
@@ -153,6 +157,20 @@ public final class ManualDemoDatabase {
         try (Connection connection = DriverManager.getConnection(root, server.username(), server.password());
              Statement sql = connection.createStatement()) {
             sql.execute(statement);
+        }
+    }
+
+    /** Read-only preflight so a capture run never seeds an existing demo database blindly. */
+    private static boolean exists(Server server) throws Exception {
+        String root = "jdbc:mysql://" + server.host() + ":" + server.port()
+                + "/?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=LOCAL";
+        try (Connection connection = DriverManager.getConnection(root, server.username(), server.password());
+             var statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = ?")) {
+            statement.setString(1, SCHEMA);
+            try (var rows = statement.executeQuery()) {
+                return rows.next() && rows.getInt(1) > 0;
+            }
         }
     }
 

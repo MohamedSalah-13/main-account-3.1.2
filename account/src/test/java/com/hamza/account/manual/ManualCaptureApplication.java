@@ -3,6 +3,8 @@ package com.hamza.account.manual;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.controller.main.MainScreenController;
 import com.hamza.account.config.ThemeManager;
+import com.hamza.account.config.PropertiesName;
+import com.hamza.account.features.export.ReportOutputMode;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.shortcuts.SidebarShortcut;
 import com.hamza.account.model.dao.DaoFactory;
@@ -21,6 +23,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TableView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.image.WritableImage;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -63,6 +68,9 @@ public final class ManualCaptureApplication extends Application {
 
     /** Where the pictures go. */
     private static final String IMAGES = "account.manual.images";
+    /** Optional subsystem-only source tree, leaving the complete product manual untouched. */
+    private static final String MANUAL_FOLDER = "account.manual.folder";
+    private static final String ONLY_PAGE = "account.manual.only";
     /** How long a screen is given to load its data before the picture is taken. */
     private static final String SETTLE = "account.manual.settle";
 
@@ -83,6 +91,8 @@ public final class ManualCaptureApplication extends Application {
     private boolean widerThisTime;
     private MainScreenController main;
     private ThemeManager.Theme themeBefore;
+    private String reportModeBefore;
+    private boolean receiptModeBefore;
 
     @Override
     public void start(Stage primaryStage) {
@@ -98,12 +108,24 @@ public final class ManualCaptureApplication extends Application {
         // The theme is a java.util.prefs value belonging to this Windows account, not to the demo
         // database, so it is set for the length of the run and put back in report()/fail().
         themeBefore = ThemeManager.getCurrentTheme();
+        reportModeBefore = PropertiesName.getReportPdfOutputMode();
+        receiptModeBefore = PropertiesName.getPrintPaperReceiptInvoice();
         ThemeManager.setCurrentTheme(ThemeManager.Theme.LIGHT);
+        PropertiesName.setReportPdfOutputMode(ReportOutputMode.PREVIEW.name());
+        PropertiesName.setPrintPaperReceiptInvoice(false);
 
         List<ManualPage> pages;
         try {
             Files.createDirectories(images);
-            pages = ManualSource.load(Path.of(System.getProperty("account.manual.root", ".")));
+            Path manualFolder = System.getProperty(MANUAL_FOLDER) == null
+                    ? ManualSource.folder(Path.of(System.getProperty("account.manual.root", ".")))
+                    : Path.of(System.getProperty(MANUAL_FOLDER));
+            List<ManualPage> loadedPages = ManualSource.loadFrom(manualFolder);
+            String onlyPage = System.getProperty(ONLY_PAGE);
+            if (onlyPage != null && !onlyPage.isBlank()) {
+                loadedPages = loadedPages.stream().filter(page -> page.id().equals(onlyPage)).toList();
+            }
+            pages = loadedPages;
         } catch (IOException failure) {
             fail("Could not read the manual", failure);
             return;
@@ -111,7 +133,7 @@ public final class ManualCaptureApplication extends Application {
 
         Thread worker = new Thread(() -> {
             try {
-                DownLoadApplication.bootstrapForTooling();
+                DownLoadApplication.bootstrapForManualCapture();
                 Platform.runLater(() -> shootLoginThen(pages));
             } catch (Exception failure) {
                 Platform.runLater(() -> fail("Could not start the application", failure));
@@ -254,28 +276,35 @@ public final class ManualCaptureApplication extends Application {
             }
         });
 
-        after(settle, () -> press(page, before), () -> {
-            List<Stage> opened = newStages(before);
-            Optional<Stage> screen = opened.stream()
-                    .max(Comparator.comparingDouble(ManualCaptureApplication::area))
-                    .filter(stage -> !isAlert(stage));
-            if (screen.isPresent()) {
-                shoot(picture, screen.get().getScene().getRoot());
-                opened.forEach(Stage::close);
-            } else if (!opened.isEmpty()) {
-                // An alert is not the screen. The first run saved the backup screen's own
-                // "saved everything" dialog as the backup screen's picture, at 720x292, and
-                // nothing said so - which is the whole reason the choice is not "the newest window".
-                skipped.put(picture, "only a dialog opened: " + describe(opened));
-                opened.forEach(Stage::close);
-            } else if (tabs().map(pane -> pane.getTabs().size()).orElse(0) > tabsBefore) {
-                shoot(picture, stage.getScene().getRoot());
-                closeNewestTab();
+        after(settle, () -> {
+            Runnable capture = () -> finishPage(page, before, tabsBefore, remaining, index, picture);
+            if (page.click().isPresent()) {
+                press(page, before, 0, capture);
             } else {
-                skipped.put(picture, "pressing the button opened neither a window nor a tab");
+                capture.run();
             }
-            next(remaining, index + 1);
         });
+    }
+
+    private void finishPage(ManualPage page, List<Window> before, int tabsBefore,
+                           List<ManualPage> remaining, int index, String picture) {
+        List<Stage> opened = newStages(before);
+        Optional<Stage> screen = opened.stream()
+                .max(Comparator.comparingDouble(ManualCaptureApplication::area))
+                .filter(candidate -> !isAlert(candidate));
+        if (screen.isPresent()) {
+            shoot(picture, screen.get().getScene().getRoot());
+            opened.forEach(Stage::close);
+        } else if (!opened.isEmpty()) {
+            skipped.put(picture, "only a dialog opened: " + describe(opened));
+            opened.forEach(Stage::close);
+        } else if (tabs().map(pane -> pane.getTabs().size()).orElse(0) > tabsBefore) {
+            shoot(picture, stage.getScene().getRoot());
+            closeNewestTab();
+        } else {
+            skipped.put(picture, "pressing the button opened neither a window nor a tab");
+        }
+        next(remaining, index + 1);
     }
 
     /**
@@ -419,36 +448,106 @@ public final class ManualCaptureApplication extends Application {
      * bar with a result area, and opening one is not asking it anything. Photographed without this,
      * the manual's reports chapter documented six filter bars.
      */
-    private void press(ManualPage page, List<Window> before) {
-        page.click().ifPresent(caption -> {
-            List<Stage> opened = newStages(before);
-            Optional<Button> button = opened.stream()
-                    .map(stage -> stage.getScene().getRoot())
-                    .map(root -> findButton(root, caption))
-                    .filter(Optional::isPresent).map(Optional::get)
-                    .findFirst()
-                    .or(() -> findButton(stage.getScene().getRoot(), caption));
-            if (button.isEmpty()) {
-                // Reported, not fatal. The screen is still worth a picture, and losing it as well
-                // punishes the page twice for naming a button that has since been renamed.
-                warnings.add(page.screenshot().orElse(page.id())
-                        + ": no button named \"" + caption + "\" - photographed without pressing it");
+    private void press(ManualPage page, List<Window> before, int index, Runnable complete) {
+        List<String> actions = page.click().stream().flatMap(value -> java.util.Arrays.stream(value.split("\\s*>>\\s*")))
+                .map(String::trim).filter(value -> !value.isEmpty()).toList();
+        if (index >= actions.size()) {
+            after(settle, complete);
+            return;
+        }
+        String caption = actions.get(index);
+        if (caption.equals("DOUBLECLICK_FIRST_ROW") || caption.startsWith("DOUBLECLICK_INVOICE_")) {
+            Optional<TableView<?>> table = findTable(stage.getScene().getRoot());
+            if (table.isEmpty() || table.get().getItems().isEmpty()) {
+                warnings.add(page.screenshot().orElse(page.id()) + ": no invoice row to open");
+                after(settle, complete);
                 return;
             }
-            try {
-                button.get().fire();
-            } catch (RuntimeException failure) {
-                warnings.add(page.screenshot().orElse(page.id())
-                        + ": pressing \"" + caption + "\" failed: " + failure);
+            TableView<?> view = table.get();
+            int rowIndex = 0;
+            if (caption.startsWith("DOUBLECLICK_INVOICE_")) {
+                String invoiceId = caption.substring("DOUBLECLICK_INVOICE_".length());
+                rowIndex = java.util.stream.IntStream.range(0, view.getItems().size())
+                        .filter(candidateIndex -> invoiceId.equals(rowId(view.getItems().get(candidateIndex))))
+                        .findFirst().orElse(-1);
             }
-        });
+            if (rowIndex < 0) {
+                warnings.add(page.screenshot().orElse(page.id()) + ": invoice row was not found");
+                after(settle, complete);
+                return;
+            }
+            view.getSelectionModel().select(rowIndex);
+            view.scrollTo(rowIndex);
+            if (index + 1 < actions.size()) {
+                after(settle, () -> press(page, before, index + 1, complete));
+            } else {
+                after(settle, complete);
+            }
+            javafx.event.Event event = new MouseEvent(MouseEvent.MOUSE_CLICKED,
+                    12, 12, 12, 12, MouseButton.PRIMARY, 2,
+                    false, false, false, false, false, false, false,
+                    false, false, true, null);
+            Platform.runLater(() -> javafx.event.Event.fireEvent(view, event));
+            return;
+        }
+        if (caption.equals("PRINT_INVOICE_1011")) {
+            Optional<Stage> invoice = Window.getWindows().stream().filter(Window::isShowing)
+                    .filter(Stage.class::isInstance).map(Stage.class::cast)
+                    .filter(candidate -> candidate.getScene() != null)
+                    .filter(candidate -> containsLabel(candidate.getScene().getRoot(), "فاتورة بيع"))
+                    .findFirst();
+            Optional<Button> print = invoice.flatMap(candidate -> findButton(candidate.getScene().getRoot(), "طباعة"));
+            if (print.isPresent()) {
+                if (index + 1 < actions.size()) {
+                    after(settle, () -> press(page, before, index + 1, complete));
+                } else {
+                    after(settle, complete);
+                }
+                Platform.runLater(print.get()::fire);
+            } else {
+                warnings.add(page.screenshot().orElse(page.id()) + ": invoice print button was not found");
+                after(settle, complete);
+            }
+            return;
+        }
+        List<Stage> visible = Window.getWindows().stream().filter(Window::isShowing)
+                .filter(Stage.class::isInstance).map(Stage.class::cast)
+                .filter(candidate -> candidate.getScene() != null).toList();
+        Optional<Button> button = visible.stream().sorted(Comparator.comparingDouble(
+                        ManualCaptureApplication::area).reversed())
+                .map(candidate -> findButton(candidate.getScene().getRoot(), caption))
+                .filter(Optional::isPresent).map(Optional::get).findFirst()
+                .or(() -> findButton(stage.getScene().getRoot(), caption));
+        if (button.isEmpty()) {
+            warnings.add(page.screenshot().orElse(page.id())
+                    + ": no button named \"" + caption + "\" - photographed without pressing it");
+            after(settle, complete);
+            return;
+        }
+        // Schedule the next step before firing: showAndWait() enters a nested event loop, which
+        // is exactly where the following click must run for modal forms and print previews.
+        if (index + 1 < actions.size()) {
+            after(settle, () -> press(page, before, index + 1, complete));
+        } else {
+            after(settle, complete);
+        }
+        try {
+            Platform.runLater(button.get()::fire);
+        } catch (RuntimeException failure) {
+            warnings.add(page.screenshot().orElse(page.id())
+                    + ": pressing \"" + caption + "\" failed: " + failure);
+        }
     }
 
     /** The first enabled button whose caption contains the text, anywhere under this node. */
     private Optional<Button> findButton(Node root, String caption) {
-        if (root instanceof Button button && !button.isDisabled()
-                && button.getText() != null && button.getText().contains(caption)) {
-            return Optional.of(button);
+        if (root instanceof Button button && !button.isDisabled()) {
+            String tooltip = button.getTooltip() == null ? "" : button.getTooltip().getText();
+            String accessible = button.getAccessibleText() == null ? "" : button.getAccessibleText();
+            if ((button.getText() != null && button.getText().contains(caption))
+                    || tooltip.contains(caption) || accessible.contains(caption)) {
+                return Optional.of(button);
+            }
         }
         if (root instanceof javafx.scene.Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
@@ -459,6 +558,44 @@ public final class ManualCaptureApplication extends Application {
             }
         }
         return Optional.empty();
+    }
+
+    private Optional<TableView<?>> findTable(Node root) {
+        if (root instanceof TableView<?> table) {
+            return Optional.of(table);
+        }
+        if (root instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                Optional<TableView<?>> found = findTable(child);
+                if (found.isPresent()) {
+                    return found;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private String rowId(Object row) {
+        try {
+            return String.valueOf(row.getClass().getMethod("getId").invoke(row));
+        } catch (ReflectiveOperationException ignored) {
+            return "";
+        }
+    }
+
+    private boolean containsLabel(Node root, String text) {
+        if (root instanceof javafx.scene.control.Labeled labeled
+                && labeled.getText() != null && labeled.getText().contains(text)) {
+            return true;
+        }
+        if (root instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (containsLabel(child, text)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void report() {
@@ -520,5 +657,10 @@ public final class ManualCaptureApplication extends Application {
             ThemeManager.setCurrentTheme(themeBefore);
             themeBefore = null;
         }
+        if (reportModeBefore != null) {
+            PropertiesName.setReportPdfOutputMode(reportModeBefore);
+            reportModeBefore = null;
+        }
+        PropertiesName.setPrintPaperReceiptInvoice(receiptModeBefore);
     }
 }

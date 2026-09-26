@@ -29,9 +29,12 @@ public final class ManualDemoSetup {
                     + "at the demo database rather than at the one this machine normally uses.");
             System.exit(2);
         }
-        Path seed = Path.of(args.length > 0 ? args[0] : "docs/manual/demo-data.sql");
+        Path seed = Path.of("docs/manual/demo-data.sql");
         System.out.println("migrating " + ManualDemoDatabase.SCHEMA + " ...");
         new DatabaseMigrationService(new ConnectionToDatabase()).updateDatabaseIfNeeded();
         ManualDemoDatabase.seed(seed);
+        for (String additionalSeed : args) {
+            ManualDemoDatabase.seed(Path.of(additionalSeed));
+        }
     }
 }

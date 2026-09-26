@@ -40,6 +40,7 @@ import com.hamza.account.features.productprofile.ProductProfile;
 import com.hamza.account.features.productprofile.ProductProfileCodec;
 import com.hamza.account.features.productprofile.ProductProfileException;
 import com.hamza.account.features.productprofile.ProductProfileService;
+import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.features.profitloss.ProfitLossService;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.features.stocktransfer.StockTransferService;
@@ -175,11 +176,27 @@ public class DownLoadApplication extends Application {
      * half-wired application is a picture of a defect the running program does not have.
      */
     public static void bootstrapForTooling() {
-        bootstrap(StartupProgress.SILENT);
+        bootstrap(StartupProgress.SILENT, true, false);
+    }
+
+    /**
+     * Starts the real application services against the disposable, seeded database used by the
+     * screenshot manual. The capture fixture is not a customer session, so it does not consume or
+     * validate this workstation's trial record. Normal startup and {@link #bootstrapForTooling()}
+     * continue to run the trial check; the signed product profile and authorization checks still
+     * govern which features and screens the fixture can open.
+     */
+    public static void bootstrapForManualCapture() {
+        bootstrap(StartupProgress.SILENT, false, true);
     }
 
     /** The start, step by step, told to {@code progress} as it goes - the window's lines are these. */
     private static BootstrapResult bootstrap(StartupProgress progress) {
+        return bootstrap(progress, true, false);
+    }
+
+    private static BootstrapResult bootstrap(StartupProgress progress, boolean verifyTrial,
+                                             boolean includeDocumentedOffersAddon) {
         progress.begin(StartupStep.CONFIGURATION);
         connectionToDatabase = new ConnectionToDatabase();
         MigrationResult migration = new DatabaseMigrationService(connectionToDatabase, progress)
@@ -194,9 +211,18 @@ public class DownLoadApplication extends Application {
         ShopReportSetup.install();
         BackupPolicy.claimIfUnowned();
         progress.begin(StartupStep.LICENSE);
-        checkTrialStatus();
+        if (verifyTrial) {
+            checkTrialStatus();
+        }
         progress.begin(StartupStep.PRODUCT);
         ProductProfile productProfile = loadProductProfile();
+        if (includeDocumentedOffersAddon) {
+            // The user-provided reference screenshot confirms this manual is for an installation
+            // that includes offers. Enable just that add-on in this disposable capture session;
+            // do not save or sign a product profile, and leave every normal startup gate intact.
+            ServiceRegistry.register(ProductFeatureAccess.class, feature ->
+                    productProfile.isEnabled(feature) || feature.equals(ProductFeatures.OFFERS));
+        }
         progress.begin(StartupStep.SERVICES);
         registerServices(daoFactory, productProfile);
         progress.finish();

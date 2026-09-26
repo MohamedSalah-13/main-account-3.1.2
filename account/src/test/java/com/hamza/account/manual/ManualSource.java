@@ -38,7 +38,11 @@ public final class ManualSource {
     }
 
     public static List<ManualPage> load(Path root) throws IOException {
-        Path folder = folder(root);
+        return loadFrom(folder(root));
+    }
+
+    /** Loads a dedicated subsystem guide without registering it in the complete manual. */
+    public static List<ManualPage> loadFrom(Path folder) throws IOException {
         if (!Files.isDirectory(folder)) {
             throw new IOException("The manual folder is missing: " + folder.toAbsolutePath());
         }
