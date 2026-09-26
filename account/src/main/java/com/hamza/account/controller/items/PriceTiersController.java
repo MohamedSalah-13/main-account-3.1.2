@@ -41,6 +41,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -202,9 +203,25 @@ public class PriceTiersController {
     }
 
     private Node tiersTab() {
+        Label title = new Label(text("pricing.tiers.title"));
+        title.getStyleClass().add("page-title");
+        Label note = new Label(text("pricing.tiers.note"));
+        note.setWrapText(true);
+        note.getStyleClass().add("page-subtitle");
+        VBox heading = new VBox(4, title, note);
+
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setHgap(12);
+        grid.setVgap(14);
+        grid.setMaxWidth(Double.MAX_VALUE);
+        double[] columnWidths = {5, 17, 8, 22, 11, 14, 10, 13};
+        for (double width : columnWidths) {
+            ColumnConstraints constraint = new ColumnConstraints();
+            constraint.setPercentWidth(width);
+            constraint.setHgrow(Priority.ALWAYS);
+            constraint.setMinWidth(0);
+            grid.getColumnConstraints().add(constraint);
+        }
         grid.addRow(0, header("pricing.tiers.column.tier"), header("pricing.tiers.column.name"),
                 header("pricing.tiers.column.active"), header("pricing.tiers.column.source"),
                 header("pricing.tiers.column.percent"), header("pricing.tiers.column.rounding"),
@@ -213,6 +230,13 @@ public class PriceTiersController {
         for (int id : PriceTiers.IDS) {
             TierRow row = new TierRow(id);
             rows.add(row);
+            row.name.setMaxWidth(Double.MAX_VALUE);
+            row.source.setMaxWidth(Double.MAX_VALUE);
+            row.percent.setMaxWidth(Double.MAX_VALUE);
+            row.rounding.setMaxWidth(Double.MAX_VALUE);
+            row.customers.setMaxWidth(Double.MAX_VALUE);
+            row.customers.setAlignment(Pos.CENTER);
+            row.apply.setMaxWidth(Double.MAX_VALUE);
             grid.addRow(id, new Label(String.valueOf(id)), row.name, row.active, row.source, row.percent,
                     row.rounding, row.customers, row.apply);
             enterOrder.addAll(List.of(row.name, row.source, row.percent, row.rounding));
@@ -221,20 +245,24 @@ public class PriceTiersController {
         enterOrder.add(btnSave);
         com.hamza.controlsfx.others.Utils.whenEnterPressed(enterOrder.toArray(javafx.scene.control.Control[]::new));
 
-        Label note = new Label(text("pricing.tiers.note"));
-        note.setWrapText(true);
-        note.getStyleClass().add("form-hint");
+        VBox tiersCard = new VBox(grid);
+        tiersCard.getStyleClass().add("app-card");
+        VBox.setVgrow(tiersCard, Priority.NEVER);
 
         btnSave.getStyleClass().add("primary-button");
         btnSave.setDisable(!tierService.canEdit());
         btnSave.setOnAction(event -> saveTiers());
         Button btnReload = new Button(text("refresh"));
+        btnReload.getStyleClass().add("neutral-button");
         btnReload.setOnAction(event -> loadTiers());
-        HBox buttons = new HBox(8, btnSave, btnReload);
+        HBox buttons = new HBox(10, btnSave, btnReload);
         buttons.setAlignment(Pos.CENTER_LEFT);
+        HBox footer = new HBox(buttons);
+        footer.getStyleClass().add("app-card");
 
-        VBox box = new VBox(14, grid, note, buttons);
-        box.setPadding(new Insets(16));
+        VBox box = new VBox(14, heading, tiersCard, footer);
+        box.getStyleClass().add("page-container");
+        box.setPadding(new Insets(18));
         return box;
     }
 

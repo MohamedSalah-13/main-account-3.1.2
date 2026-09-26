@@ -39,6 +39,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.io.File;
@@ -132,6 +133,12 @@ public class TreasuryController {
     @FXML
     private BorderPane root;
 
+    @FXML
+    private VBox treasuryForm;
+
+    @FXML
+    private Button formToggleButton;
+
     private final TreasuryService treasuryService;
     private final TreasuryBalanceService balanceService;
     private final EventBus eventBus;
@@ -151,6 +158,7 @@ public class TreasuryController {
 
     @FXML
     private void initialize() {
+        updateTreasuryFormToggle(true);
         typeCombo.setItems(FXCollections.observableArrayList(TreasuryType.values()));
         typeCombo.setConverter(new StringConverter<>() {
             @Override
@@ -496,6 +504,17 @@ public class TreasuryController {
         if (fee == null || fee.signum() < 0 || fee.compareTo(new BigDecimal("100")) > 0) {
             throw new UserValidationException(text("treasury.error.fee.range"));
         }
+    }
+
+    @FXML
+    private void toggleTreasuryForm() {
+        updateTreasuryFormToggle(!treasuryForm.isVisible());
+    }
+
+    private void updateTreasuryFormToggle(boolean expanded) {
+        treasuryForm.setVisible(expanded);
+        treasuryForm.setManaged(expanded);
+        formToggleButton.setText(text(expanded ? "treasury.form.hide" : "treasury.form.show"));
     }
 
     private String text(String key) {

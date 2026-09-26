@@ -56,8 +56,9 @@ public final class LogApplication {
         if (stage.getIcons().isEmpty()) stage.getIcons().add(new Image(new Image_Setting().tools));
         stage.setOnCloseRequest(event -> Platform.exit());
         stage.sizeToScene();
-        stage.centerOnScreen();
         stage.show();
+        // Center after the window is visible so the window manager uses its decorated bounds.
+        Platform.runLater(stage::centerOnScreen);
     }
 
     private LoginResult authenticate(String username, String password) throws Exception {
