@@ -4284,7 +4284,8 @@ to `https://api.hamzasoftware.com/api/v1/activate` off the JavaFX thread. **The 
 (`LicensingArchitectureTest`), so `OnlineLicensing` in `account.trial` hands it `TrialManager::install` as a
 `LicenceInstaller`. The server answers a code and never a sentence: `ServerRefusal` is its closed list of fourteen plus
 `UNEXPECTED`, each with a key, and `ServerRefusalTest` holds both to the three bundles and to the server's names. Two
-minutes after a sign-in, once a day, `OnlineLicensing.afterSignIn` sends the server-format file that licenses this
+minutes after a sign-in - once a day for each run of the program, not for each machine: a machine opened three times
+asks three times, well inside the server's thirty - `OnlineLicensing.afterSignIn` sends the server-format file that licenses this
 machine to `/refresh` - a renewal made in the dashboard arrives by itself - or, on a trial with three days or fewer
 left, reminds the user to activate while About can still be opened. **Three rules carry it, each pinned**: the start-up
 never asks the server (`theStartUpNeverAsksTheLicenceServer`); no answer ever removes a licence - the package deletes
@@ -4293,8 +4294,12 @@ no file at all (`theLicencePackageDeletesNoFile`), and every refusal a refresh c
 `JdkHttpText`'s rules for a POST: HTTPS only, five and ten seconds, 64KB, no redirect followed. The real client was
 run against the real server on 2026-09-26 with a code never issued (`UNKNOWN_CODE`) and a text that is no licence
 (`SIGNATURE_INVALID`), and **the first real activation by code was seen the same day** - licence 3 in the dashboard,
-one of two seats taken by the developer's machine, About saying activated. The rest of S2's closing criterion (a
-second machine, a third refused, a release, a renewal arriving) has not been run, and no release carries it. That
+one of two seats taken by the developer's machine, About saying activated. **S2 closed the same day**
+(`licensing-server-plan.md` §12.1, every step read back from the server's `event_log`): a second machine to "2 of 2",
+a third refused `SEATS_FULL`, one released in the dashboard and the third let in, a re-activation taking no new seat,
+an extended date arriving by itself three minutes after a sign-in, and the program starting and selling with no
+internet. The second and third machines were the program's own `OnlineActivation` under other `MachineGuid`s, each
+file judged by the real evaluator and none written - not two real computers. No release carries it yet. That
 first picture is why **About now says a server licence's dates** (`AboutLicense.of(info, decision)`): it said
 "unlimited" for every licence - true of the older file, which has no date, and wrong for one whose updates end in three
 months. Perpetual, or a subscription until a day with the days left, then its grace, then ended; and a line of its own

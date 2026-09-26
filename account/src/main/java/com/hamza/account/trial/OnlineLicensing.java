@@ -30,7 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Two entries, and neither is on the start-up path or the JavaFX thread (ق-1):
  * <ul>
  *   <li>{@link #activation()} - the About window's "activate with a code", run by the window in a task.</li>
- *   <li>{@link #afterSignIn()} - two minutes after the sign-in, in the background, once a day at most: a
+ *   <li>{@link #afterSignIn()} - two minutes after the sign-in, in the background, once a day at most in each
+ *       run of the program (a machine opened three times asks three times, well inside the server's thirty): a
  *       machine with a server licence asks for its current terms (a renewal arrives by itself); a machine
  *       on the trial with {@link #TRIAL_REMINDER_DAYS} days or fewer left is reminded to activate while it
  *       still can - once the trial is over the program closes before the About window can be opened.</li>
