@@ -29,6 +29,8 @@ class LicensingArchitectureTest {
             Path.of("src", "main", "java", "com", "hamza", "account", "features", "license");
     private static final Path TRIAL_MANAGER =
             Path.of("src", "main", "java", "com", "hamza", "account", "trial", "TrialManager.java");
+    private static final Path START_UP =
+            Path.of("src", "main", "java", "com", "hamza", "account", "view", "DownLoadApplication.java");
 
     /**
      * Nothing about a server-issued licence ends the program or charges a failure: not a
@@ -87,6 +89,43 @@ class LicensingArchitectureTest {
                 "private LicenseCheckResult currentLicense(boolean strict)");
         assertTrue(caller.contains("decision.skipsTrial()"));
         assertFalse(caller.contains("mayRecord"));
+    }
+
+    /**
+     * The licence server issues; it never takes a licence away (ق-1, ق-4; {@code licensing-server-plan.md}
+     * §9). No answer - a refusal, a revoked licence, a released machine - may remove the file this machine
+     * holds, so nothing in the package deletes a file at all: a licence is only ever replaced, whole, by one
+     * that was judged first.
+     */
+    @Test
+    void theLicencePackageDeletesNoFile() throws IOException {
+        List<String> offences = new ArrayList<>();
+        try (Stream<Path> sources = Files.walk(LICENSE_PACKAGE)) {
+            for (Path source : sources.filter(path -> path.toString().endsWith(".java")).toList()) {
+                String code = withoutComments(Files.readString(source));
+                for (String forbidden : List.of("Files.delete", "deleteIfExists", ".delete()", "deleteOnExit")) {
+                    if (code.contains(forbidden)) {
+                        offences.add(source.getFileName() + " mentions " + forbidden);
+                    }
+                }
+            }
+        }
+        assertTrue(offences.isEmpty(), String.join("\n", offences));
+    }
+
+    /**
+     * The start-up reads the licence on the disk and asks nobody (ق-1): a shop with no internet, or a
+     * licence server that is down, starts exactly as it always did. The server is asked from the About
+     * window and after the sign-in, in the background - never on the way in.
+     */
+    @Test
+    void theStartUpNeverAsksTheLicenceServer() throws IOException {
+        for (Path startUp : List.of(START_UP, TRIAL_MANAGER)) {
+            String code = withoutComments(Files.readString(startUp));
+            for (String forbidden : List.of("license.online", "OnlineLicensing", "LicenseServer", "LicenseRefresh")) {
+                assertFalse(code.contains(forbidden), startUp.getFileName() + " mentions " + forbidden);
+            }
+        }
     }
 
     private static String withoutComments(String source) {

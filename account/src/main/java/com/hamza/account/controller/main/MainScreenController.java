@@ -22,6 +22,7 @@ import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.model.domain.Users;
+import com.hamza.account.trial.OnlineLicensing;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -583,6 +584,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void setupNotificationBell() {
         notificationBellSlot.getChildren().setAll(NotificationBootstrap.start().createBell());
+        // After the inbox exists: what it finds - a renewal, a trial nearly over - arrives as a notification.
+        OnlineLicensing.afterSignIn();
     }
 
     private void setupYouTube() {

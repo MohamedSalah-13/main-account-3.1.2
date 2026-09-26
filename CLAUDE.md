@@ -27,9 +27,11 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**4,326 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
-`mvn clean test` reports, measured on 2026-09-25 after phases D and E of the offers and their review
-(sixty-two tests, six of them gated on MySQL, `pricing-and-offers-plan.md` §13-§14); 4,264 with 368 skipped after the program side of the
+**4,366 tests** in `account` with 374 skipped (below), and 124 in `controlsfx` - the figures
+`mvn clean test` reports, measured on 2026-09-26 after About learned a server licence's dates (five tests); 4,361
+after the program side of the licence server's S2, activation by code and the refresh (thirty-five tests, none gated,
+`licensing-server-plan.md` §12); 4,326 after phases D and E of the
+offers and their review (sixty-two tests, six of them gated on MySQL, `pricing-and-offers-plan.md` §13-§14); 4,264 with 368 skipped after the program side of the
 licence server's S1 (twenty-six tests, `licensing-server-plan.md` §10); 4,238 after the missing-prices report stopped counting the tiers
 nobody is on (six tests, `pricing-and-offers-plan.md` §10.5); 4,232 after phase C of the offers (forty-five
 tests, six of them gated on MySQL); 4,187 with 362 skipped after the check of phase B's screens added one
@@ -1415,7 +1417,8 @@ balance and no report moves, and correcting yesterday's rate never rewrites yest
 The currencies screen's button fetches, a dialog shows each currency's fetched rate beside the recorded
 one, and only what somebody ticks is recorded - the internet suggests, the shop decides.
 
-- **It is the only outbound connection this program makes**, so `JdkHttpText` is narrow on purpose:
+- **It was the only outbound connection this program made** until the licence server's (see **Licensing**,
+  held to the same rules by `JdkLicenseServerHttp`), so `JdkHttpText` is narrow on purpose:
   HTTPS only, five seconds to connect and ten to answer, a body over 1MB refused, the system's proxy,
   and the client built on the first press. Nothing leaves but the base currency's ISO code, and both
   halves - fetching and recording - ask `currency.rate.update`. `module-info` requires `java.net.http`.
@@ -4271,6 +4274,31 @@ holder is converted through the dashboard's legacy import, with a year of update
 the last one** does a release remove `validateLicense`. A holder who installed that release unconverted would meet
 "trial expired" at start-up with no way to reach About to install a file. Until that release the older reader and
 its tampering rule stay exactly as they are; do not remove them on the strength of the decision alone.
+
+**Activation by purchase code talks to the licence server** (`features/license/online`, the server's S2,
+`licensing-server-plan.md` §12; since 2026-09-26). The About window's «تفعيل بالكود» takes `AK-XXXX-XXXX-XXXX-XXXX`,
+checks its last character on this computer (`PurchaseCode`, a copy of the server's, pinned by the same fixed example)
+- so a mistyped code is said in the dialog and never costs one of the server's ten attempts an hour - and sends it once
+to `https://api.hamzasoftware.com/api/v1/activate` off the JavaFX thread. **The file that comes back goes through
+`TrialManager.install`**, the very check a chosen file passes; the package cannot name the trial
+(`LicensingArchitectureTest`), so `OnlineLicensing` in `account.trial` hands it `TrialManager::install` as a
+`LicenceInstaller`. The server answers a code and never a sentence: `ServerRefusal` is its closed list of fourteen plus
+`UNEXPECTED`, each with a key, and `ServerRefusalTest` holds both to the three bundles and to the server's names. Two
+minutes after a sign-in, once a day, `OnlineLicensing.afterSignIn` sends the server-format file that licenses this
+machine to `/refresh` - a renewal made in the dashboard arrives by itself - or, on a trial with three days or fewer
+left, reminds the user to activate while About can still be opened. **Three rules carry it, each pinned**: the start-up
+never asks the server (`theStartUpNeverAsksTheLicenceServer`); no answer ever removes a licence - the package deletes
+no file at all (`theLicencePackageDeletesNoFile`), and every refusal a refresh can meet leaves the file byte for byte
+(`LicenseRefreshTest`); and nothing received is written before this build judged it. `JdkLicenseServerHttp` is
+`JdkHttpText`'s rules for a POST: HTTPS only, five and ten seconds, 64KB, no redirect followed. The real client was
+run against the real server on 2026-09-26 with a code never issued (`UNKNOWN_CODE`) and a text that is no licence
+(`SIGNATURE_INVALID`), and **the first real activation by code was seen the same day** - licence 3 in the dashboard,
+one of two seats taken by the developer's machine, About saying activated. The rest of S2's closing criterion (a
+second machine, a third refused, a release, a renewal arriving) has not been run, and no release carries it. That
+first picture is why **About now says a server licence's dates** (`AboutLicense.of(info, decision)`): it said
+"unlimited" for every licence - true of the older file, which has no date, and wrong for one whose updates end in three
+months. Perpetual, or a subscription until a day with the days left, then its grace, then ended; and a line of its own
+for the last day of updates. The dates are read beside the trial check and shown, never decided on.
 
 **Not fixed, and worth knowing:** `currentLicense(true)` tries the older files in order and a first one with a
 bad signature ends the install before the second is read - so an *older-format* `license.dat` beside
